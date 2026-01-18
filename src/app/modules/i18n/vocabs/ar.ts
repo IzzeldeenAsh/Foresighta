@@ -210,7 +210,7 @@ INSIGHTER_REQUESTS: {
       "FILTERED_MESSAGE": "لا توجد عناصر معرفة تطابق معايير التصفية الحالية. حاول تعديل عوامل التصفية أو عرض كل المعرفة."
     }
   },
-    PUBLISHED_KNOWLEDGE_DASHBOARD: "المنشورات",
+    PUBLISHED_KNOWLEDGE_DASHBOARD: "المستندات",
     TOTAL_DASHBOARD: "المجموع",
     KNOWLEDGE_DOCUMENTS_INFO:'ملخص المستند',
     DESCRIBE_KNOWLEDGE_AND_DOCUMENTS: 'قدم وصفًا للمعرفة والمستندات المرتبطة بها.',
@@ -1211,7 +1211,7 @@ INSIGHTER_REQUESTS: {
     SAVING: "جاري الحفظ...",
     REPLACE_FILE: "استبدل الملف",
     CHOOSE_FILE: "اختر الملف",
-    PUBLISH_KNOWLEDGE: "نشر الإنسايت",
+    PUBLISH_KNOWLEDGE: "نشر المستند",
     COMPLETED: "تم الإنتهاء",
     PUBLISH_OPTIONS: "خيارات النشر",
     SELECT_PUBLISH_METHOD: "اختر كيف تريد نشر معرفتك",

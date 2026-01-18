@@ -11,7 +11,7 @@ const routes: Routes = [
     component: ViewMyKnowledgeComponent,
     data: {
       breadcrumb: [
-        { label: 'My insights library', link: '/app/insighter-dashboard/my-knowledge/general' },
+        { label: 'My library', link: '/app/insighter-dashboard/my-knowledge/general' },
         { label: 'View Knowledge', link: '' }
       ]
     },
@@ -26,7 +26,7 @@ const routes: Routes = [
     component:ViewMyPackagesComponent,
     data: {
       breadcrumb: [
-        { label: 'My insights library', link: '/app/insighter-dashboard/my-knowledge/general' },
+        { label: 'My library', link: '/app/insighter-dashboard/my-knowledge/general' },
         { label: 'View Knowledge', link: '' }
       ]
     },

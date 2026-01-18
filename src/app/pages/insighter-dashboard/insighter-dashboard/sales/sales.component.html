@@ -19,21 +19,21 @@
         <a class="nav-link text-active-primary pb-4"
           [class.active]="activeTab === 'analytics'"
           (click)="setActiveTab('analytics')">
-          {{ lang === 'ar' ? "نظرة عامة" : 'Sales Overview' }}
+          {{ lang === 'ar' ? "نظرة عامة" : 'Overview' }}
         </a>
       </li>
       <li class="nav-item">
         <a class="nav-link text-active-primary pb-4"
           [class.active]="activeTab === 'sold-details'"
           (click)="setActiveTab('sold-details')">
-          {{ lang === 'ar' ? 'الوثائق' : 'Sold Documents' }}
+          {{ lang === 'ar' ? 'الوثائق' : 'Documents' }}
         </a>
       </li>
       <li class="nav-item">
         <a class="nav-link text-active-primary pb-4"
           [class.active]="activeTab === 'sold-meetings'"
           (click)="setActiveTab('sold-meetings')">
-          {{ lang === 'ar' ? 'الجلسات الاستشارية' : 'Meetings' }}
+          {{ lang === 'ar' ? 'الجلسات الاستشارية' : 'Sessions' }}
         </a>
       </li>
     </ul>
