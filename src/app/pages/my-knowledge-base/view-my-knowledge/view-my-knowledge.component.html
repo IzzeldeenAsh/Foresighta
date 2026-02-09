@@ -72,7 +72,7 @@
           </button>
             <!-- Only show edit button if not in review -->
             <button class="btn btn-xs btn-success d-flex align-items-center" 
-            [routerLink]="['/app/edit-knowledge/stepper', knowledge.id]"
+            (click)="navigateToIncompleteStep()"
             *ngIf="knowledge.status !== 'in_review' && 
               !(
               (knowledge.status === 'scheduled') && 

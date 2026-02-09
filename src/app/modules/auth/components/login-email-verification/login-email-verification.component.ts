@@ -236,7 +236,7 @@ export class LoginEmailVerificationComponent extends BaseComponent implements On
 
     const lang = this.lang || this.selectedLang || "en";
     if (isLocalhost) {
-      window.location.replace(`https://foresighta.co/${lang}/home`);
+      window.location.replace(`https://insightabusiness.com/${lang}/home`);
     } else {
       window.location.replace(`https://www.foresighta.co/${lang}/home`);
     }

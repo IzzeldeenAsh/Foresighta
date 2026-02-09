@@ -769,7 +769,7 @@ export class Step5Component extends BaseComponent implements OnInit {
     if (!this.publishedKnowledge) return '';
     const knowledgeType = this.publishedKnowledge.type?.toLowerCase() || 'statistic';
     const slug = this.publishedKnowledge.slug || '';
-    return `https://foresighta.co/${this.lang}/knowledge/${knowledgeType}/${slug}`;
+    return `https://insightabusiness.com/${this.lang}/knowledge/${knowledgeType}/${slug}`;
   }
 
   getSocialShareTitle(): string {

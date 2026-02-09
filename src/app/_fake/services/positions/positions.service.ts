@@ -32,9 +32,9 @@ export interface PaginatedResponse<T> {
   providedIn: 'root'
 })
 export class PositionsService {
-  private apiUrl = 'https://api.foresighta.co/api/admin/setting/position';
-  private createApi = 'https://api.foresighta.co/api/admin/setting/position';
-  private updateDeleteApi = 'https://api.foresighta.co/api/admin/setting/position';
+  private apiUrl = 'https://api.insightabusiness.com/api/admin/setting/position';
+  private createApi = 'https://api.insightabusiness.com/api/admin/setting/position';
+  private updateDeleteApi = 'https://api.insightabusiness.com/api/admin/setting/position';
   private isLoadingSubject = new BehaviorSubject<boolean>(false);
   public isLoading$: Observable<boolean> = this.isLoadingSubject.asObservable();
   currentLang: string = 'en';

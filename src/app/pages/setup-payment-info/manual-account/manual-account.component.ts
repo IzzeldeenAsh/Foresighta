@@ -217,7 +217,7 @@ export class ManualAccountComponent extends BaseComponent implements OnInit, Aft
   }
 
   loadCountries() {
-    console.log('Starting to load countries from API: https://api.foresighta.co/api/common/setting/country/list');
+    console.log('Starting to load countries from API: https://api.insightabusiness.com/api/common/setting/country/list');
 
     this.countriesService.getCountries().subscribe({
       next: (countries) => {

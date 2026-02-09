@@ -55,7 +55,7 @@ export class SetupPaymentGuard implements CanActivate {
         'Accept-Language':'en'
     });
 
-    return this.http.get<any>('https://api.foresighta.co/api/insighter/payment/account/details', { headers }).pipe(
+    return this.http.get<any>('https://api.insightabusiness.com/api/insighter/payment/account/details', { headers }).pipe(
       map(response => {
         if (response && response.data && response.data.primary) {
           const primaryData = response.data.primary;

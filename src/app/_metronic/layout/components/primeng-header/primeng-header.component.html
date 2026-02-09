@@ -4,7 +4,7 @@
   <div class="desktop-header" *ngIf="!isSmallScreen">
     <div class="header-container d-flex justify-content-between align-items-center w-100">
       <div class="header-logo">
-        <a [href]="getHomeUrl()">
+        <a [href]="getHomeUrlForLogo()" (click)="onLogoClick($event)">
           <ng-container *ngIf="!isDashboardRoute">
             <img *ngIf="lang === 'en'" src="./assets/media/LOGO-KNOLD/KNOLDG-01.png" alt="Logo" />
           <img *ngIf="lang === 'ar'" src="./assets/media/LOGO-KNOLD/ANSIGHTAAr-05.png" alt="Logo"  />
@@ -40,7 +40,7 @@
                 <div class="padding-industries-menu">
                   <div class="d-flex justify-content-between align-items-center mb-2">
                     <h3 class="fs-5 fw-semibold m-0">Featured Industries</h3>
-                    <a [href]="'https://foresighta.co/' + lang + '/all-industries'" class="text-primary fs-7">View all industries</a>
+                    <a [href]="'https://insightabusiness.com/' + lang + '/all-industries'" class="text-primary fs-7">View all industries</a>
                   </div>
                   
                   <div class="separator mb-3"></div>
@@ -74,7 +74,7 @@
                         <p class="text-muted fs-7 mt-1 mb-0">Discover comprehensive insights across various sectors</p>
                       </div>
                       <div class="col-3 text-end">
-                        <a [href]="'https://foresighta.co/' + lang + '/all-industries'" class="btn btn-primary btn-sm px-3 fs-7">Browse All</a>
+                        <a [href]="'https://insightabusiness.com/' + lang + '/all-industries'" class="btn btn-primary btn-sm px-3 fs-7">Browse All</a>
                       </div>
                     </div>
                   </div>
@@ -232,7 +232,7 @@
           <app-keenicon [name]="'abstract-14'" [type]="'outline'" class="fs-2"></app-keenicon>
         </button> -->
         <div class="mobile-logo">
-          <a [href]="getHomeUrl()">
+          <a [href]="getHomeUrlForLogo()" (click)="onLogoClick($event)">
             <img src="./assets/media/logos/custom-2.svg" alt="Logo" class="h-30px" />
           </a>
         </div>
@@ -342,7 +342,7 @@
             <div class="bg-light p-2 rounded">
               <h5 class="fs-6 fw-semibold mb-0">Explore All Industries</h5>
               <p class="text-muted fs-7 mt-1 mb-2">Discover comprehensive insights across various sectors</p>
-              <a [href]="'https://foresighta.co/' + lang + '/all-industries'" class="btn btn-primary btn-sm w-100 fs-7" (click)="sidebarVisible = false">
+              <a [href]="'https://insightabusiness.com/' + lang + '/all-industries'" class="btn btn-primary btn-sm w-100 fs-7" (click)="sidebarVisible = false">
                 Browse All
               </a>
             </div>

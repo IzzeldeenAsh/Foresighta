@@ -18,7 +18,7 @@ export interface InsightersResponse {
   providedIn: 'root'
 })
 export class InsightersService {
-  private readonly API_URL = 'https://api.foresighta.co/api/company/insighter/list';
+  private readonly API_URL = 'https://api.insightabusiness.com/api/company/insighter/list';
 
   private isLoadingSubject = new BehaviorSubject<boolean>(false);
   public isLoading$ = this.isLoadingSubject.asObservable();

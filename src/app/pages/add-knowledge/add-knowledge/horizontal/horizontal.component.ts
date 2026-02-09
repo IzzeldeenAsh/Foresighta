@@ -2,7 +2,7 @@ import { Component, Injector, OnInit, ViewChild, ViewContainerRef, QueryList, Vi
 import { BaseComponent } from 'src/app/modules/base.component';
 import { ICreateKnowldege, inits } from '../create-account.helper';
 import { BehaviorSubject, concatMap, from, Observable, map } from 'rxjs';
-import { Router } from '@angular/router';
+import { Router, NavigationStart } from '@angular/router';
 import { ActivatedRoute } from '@angular/router';
 import { KnowledgeService } from 'src/app/_fake/services/knowledge/knowledge.service';
 import { AddInsightStepsService, UpdateKnowledgeAbstractsRequest } from 'src/app/_fake/services/add-insight-steps/add-insight-steps.service';
@@ -10,6 +10,7 @@ import { RegionsService } from 'src/app/_fake/services/region/regions.service';
 import * as moment from 'moment';
 import { SubStepDocumentsComponent } from '../steps/step2/sub-step-documents/sub-step-documents.component';
 import { TopicsService } from 'src/app/_fake/services/topic-service/topic.service';
+import { filter } from 'rxjs/operators';
 
 @Component({
   selector: 'app-horizontal',
@@ -28,6 +29,8 @@ export class HorizontalComponent extends BaseComponent implements OnInit {
   );
   isLoading = false;
   
+  private hasShownDraftToast = false;
+  private static readonly DRAFT_TOAST_FLAG_KEY = 'knoldg:draft_saved_toast';
   @ViewChild(SubStepDocumentsComponent) documentsComponent: SubStepDocumentsComponent;
   @ViewChild('step3Component') step3Component: any;
   @ViewChild('step4Component') step4Component: any;
@@ -46,7 +49,77 @@ export class HorizontalComponent extends BaseComponent implements OnInit {
     super(injector);
   }
 
+  private initialStep: number | null = null;
+
+  override ngOnDestroy(): void {
+    // Clear the external redirect flag when leaving the wizard
+    try {
+      sessionStorage.removeItem(HorizontalComponent.DRAFT_TOAST_FLAG_KEY);
+    } catch {}
+
+    super.ngOnDestroy();
+  }
+
+  private shouldShowSavedAsDraftToast(): boolean {
+    // Only for create flow (not edit mode)
+    if (this.isEditMode) return false;
+
+    // Only if knowledge was actually created (first upload creates it)
+    if (!this.knowledgeId || this.knowledgeId <= 0) return false;
+
+    const publishStatus = this.account$.value?.publish_status;
+
+    // If it's published or scheduled, don't show "Saved as Draft"
+    if (publishStatus === 'published' || publishStatus === 'scheduled') return false;
+
+    // Show if user didn't reach publish completion (step <= 5),
+    // OR they finished but explicitly kept it unpublished (draft).
+    return this.currentStep$.value <= 5 || publishStatus === 'unpublished';
+  }
+
+  private syncDraftFlagForExternalRedirect() {
+    // This flag is used by the Angular header logo click to pass a query param to the Next.js app.
+    try {
+      if (this.shouldShowSavedAsDraftToast()) {
+        sessionStorage.setItem(HorizontalComponent.DRAFT_TOAST_FLAG_KEY, Date.now().toString());
+      } else {
+        sessionStorage.removeItem(HorizontalComponent.DRAFT_TOAST_FLAG_KEY);
+      }
+    } catch {
+      // ignore (e.g. Safari private mode)
+    }
+  }
+
   ngOnInit(): void {
+    // If user leaves the wizard before submitting the last step,
+    // show an info toast that the insight was saved as draft.
+    const navSub = this.router.events
+      .pipe(filter((e): e is NavigationStart => e instanceof NavigationStart))
+      .subscribe((e) => {
+        if (!this.shouldShowSavedAsDraftToast()) return;
+
+        // Leaving the stepper route to somewhere else
+        const currentUrl = this.router.url || '';
+        const isCurrentlyInStepper = currentUrl.includes('/add-knowledge/stepper');
+        const isNavigatingWithinStepper = (e.url || '').includes('/add-knowledge/stepper');
+        if (!isCurrentlyInStepper || isNavigatingWithinStepper) return;
+
+        if (this.hasShownDraftToast) return;
+        this.hasShownDraftToast = true;
+
+        const msg = this.lang === 'ar' ? 'تم حفظ المعرفة كمسودة' : 'Insight saved as Draft';
+        this.showInfo('', msg);
+      });
+    this.unsubscribe.push(navSub);
+
+    // Read the optional ?step= query parameter
+    this.route.queryParams.subscribe(queryParams => {
+      const stepParam = queryParams['step'];
+      if (stepParam) {
+        this.initialStep = +stepParam;
+      }
+    });
+
     this.route.params.subscribe(params => {
       const id = params['id'];
       if (id) {
@@ -67,6 +140,12 @@ export class HorizontalComponent extends BaseComponent implements OnInit {
     this.addInsightStepsService.isLoading$.subscribe(isLoading => {
       this.isLoading = isLoading;
     });
+
+    // Keep external redirect draft flag in sync while user is in the wizard
+    const stepSub = this.currentStep$.subscribe(() => this.syncDraftFlagForExternalRedirect());
+    this.unsubscribe.push(stepSub);
+    const accountSub = this.account$.subscribe(() => this.syncDraftFlagForExternalRedirect());
+    this.unsubscribe.push(accountSub);
   }
 
   private loadKnowledgeData() {
@@ -131,6 +210,12 @@ export class HorizontalComponent extends BaseComponent implements OnInit {
             this.updateAccount(updatedAccount, true);
             this.isCurrentFormValid$.next(true);
             this.isLoading = false;
+
+            // Jump to the requested step if provided via ?step= query param
+            if (this.initialStep && this.initialStep >= 1 && this.initialStep <= this.formsCount) {
+              this.currentStep$.next(this.initialStep);
+              this.initialStep = null; // Only apply once
+            }
           });
         },
         error: (error) => {
@@ -149,6 +234,7 @@ export class HorizontalComponent extends BaseComponent implements OnInit {
 
     this.account$.next(updatedAccount);
     this.isCurrentFormValid$.next(isFormValid);
+    this.syncDraftFlagForExternalRedirect();
 
     // If the knowledgeType has changed and it's valid, handle the API call
     if (part.knowledgeType && isFormValid) {
@@ -261,6 +347,7 @@ export class HorizontalComponent extends BaseComponent implements OnInit {
     } else {
       // For other steps, just proceed without any special handling
       this.currentStep$.next(nextStep);
+      this.syncDraftFlagForExternalRedirect();
     }
   }
 
@@ -752,6 +839,7 @@ export class HorizontalComponent extends BaseComponent implements OnInit {
       return;
     }
     this.currentStep$.next(prevStep);
+    this.syncDraftFlagForExternalRedirect();
   }
 
   private handleServerErrors(error: any) {

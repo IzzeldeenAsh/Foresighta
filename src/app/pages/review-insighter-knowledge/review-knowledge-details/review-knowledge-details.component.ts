@@ -59,7 +59,7 @@ export class ReviewKnowledgeDetailsComponent extends BaseComponent implements On
         });
         
         // Use company API endpoint to get knowledge data
-        this.http.get<any>(`https://api.foresighta.co/api/company/library/knowledge/${this.knowledgeId}`, { headers })
+        this.http.get<any>(`https://api.insightabusiness.com/api/company/library/knowledge/${this.knowledgeId}`, { headers })
           .subscribe({
             next: (response) => {
               this.knowledge = response.data;

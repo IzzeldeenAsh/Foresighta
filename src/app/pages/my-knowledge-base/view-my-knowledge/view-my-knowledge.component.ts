@@ -489,8 +489,61 @@ export class ViewMyKnowledgeComponent extends BaseComponent implements OnInit {
     );
   }
 
+  /**
+   * Determine the first incomplete step for the add-knowledge stepper.
+   * Step 1: Knowledge type (always complete if knowledge exists)
+   * Step 2: Documents uploaded
+   * Step 3: Document abstracts/descriptions
+   * Step 4: Knowledge info (title, description, industry, topic, language, target market, tags)
+   * Returns the step number (1-4 in edit mode) of the first incomplete step.
+   */
+  getFirstIncompleteStep(): number {
+    if (!this.knowledge) return 1;
+
+    // Step 1: Knowledge type — always set for existing knowledge
+    if (!this.knowledge.type) return 1;
+
+    // Step 2: At least one document must exist
+    if (!this.documents || !this.documents.data || this.documents.data.length === 0) return 2;
+
+    // Step 3: All documents must have descriptions (abstracts)
+    const docsWithoutDescription = this.documents.data.filter(
+      (doc) => !doc.description || !doc.description.trim()
+    );
+    if (docsWithoutDescription.length > 0) return 3;
+
+    // Step 4: Knowledge details — title, description, industry, topic, language, target market, tags
+    if (
+      !this.knowledge.title ||
+      !this.knowledge.description ||
+      !this.knowledge.industry ||
+      !this.knowledge.topic ||
+      !this.knowledge.language ||
+      (
+        (!this.knowledge.countries || this.knowledge.countries.length === 0) &&
+        (!this.knowledge.regions || this.knowledge.regions.length === 0) &&
+        (!this.knowledge.economic_blocs || this.knowledge.economic_blocs.length === 0)
+      ) ||
+      !this.knowledge.tags ||
+      this.knowledge.tags.length === 0
+    ) {
+      return 4;
+    }
+
+    // All steps complete — default to step 4 (last step in edit mode) so user can review
+    return 4;
+  }
+
   navigateToEdit(): void {
     this.router.navigate(['/app/edit-knowledge/stepper', this.knowledge.id]);
+  }
+
+  navigateToIncompleteStep(): void {
+    const step = this.getFirstIncompleteStep();
+    this.router.navigate(
+      ['/app/edit-knowledge/stepper', this.knowledge.id],
+      { queryParams: { step } }
+    );
   }
 
   openShareDialog(): void {
@@ -533,7 +586,7 @@ export class ViewMyKnowledgeComponent extends BaseComponent implements OnInit {
   getShareableLink(): string {
     const knowledgeType = this.knowledge.type?.toLowerCase() || 'statistic';
     const slug = this.knowledge.slug || '';
-    return `https://foresighta.co/${this.lang}/knowledge/${knowledgeType}/${slug}`;
+    return `https://insightabusiness.com/${this.lang}/knowledge/${knowledgeType}/${slug}`;
   }
 
   getSocialShareTitle(): string {
@@ -789,7 +842,7 @@ export class ViewMyKnowledgeComponent extends BaseComponent implements OnInit {
         "name": "Insightabusiness.com",
         "logo": {
           "@type": "ImageObject",
-          "url": "https://foresighta.co/assets/logo.png"
+          "url": "https://insightabusiness.com/assets/logo.png"
         }
       },
       "mainEntityOfPage": {

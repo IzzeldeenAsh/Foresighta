@@ -89,7 +89,7 @@ export class CallbackComponent extends BaseComponent implements OnInit {
   }
 
   private redirectToLogin(): void {
-    const loginUrl = 'https://app.foresighta.co/auth/login';
+    const loginUrl = 'https://app.insightabusiness.com/auth/login';
     console.log('[callback] Redirecting to login:', loginUrl);
     window.location.href = loginUrl;
   }
@@ -117,7 +117,7 @@ export class CallbackComponent extends BaseComponent implements OnInit {
       // On localhost, cookies won't be shared across ports (4200 -> 3000),
       // so always go through Next.js callback to set token on :3000 domain.
       if (isLocalhost) {
-        const nextCallbackUrl = `https://foresighta.co/${currentLang}/callback?token=${encodeURIComponent(this.getTokenFromCookie() || '')}&returnUrl=${encodeURIComponent(returnUrl)}`;
+        const nextCallbackUrl = `https://insightabusiness.com/${currentLang}/callback?token=${encodeURIComponent(this.getTokenFromCookie() || '')}&returnUrl=${encodeURIComponent(returnUrl)}`;
         window.location.replace(nextCallbackUrl);
       } else {
         window.location.replace(returnUrl);
@@ -125,13 +125,13 @@ export class CallbackComponent extends BaseComponent implements OnInit {
       setTimeout(() => {
         if (window.location.href.includes('/auth/callback')) {
           window.location.href = isLocalhost
-            ? `https://foresighta.co/${currentLang}/callback?token=${encodeURIComponent(this.getTokenFromCookie() || '')}&returnUrl=${encodeURIComponent(returnUrl)}`
+            ? `https://insightabusiness.com/${currentLang}/callback?token=${encodeURIComponent(this.getTokenFromCookie() || '')}&returnUrl=${encodeURIComponent(returnUrl)}`
             : returnUrl;
         }
       }, 200);
       return;
     } else if (isSocialSignup) {
-      const signupUrl = `https://foresighta.co/${currentLang}`;
+      const signupUrl = `https://insightabusiness.com/${currentLang}`;
       console.log('[callback] Redirecting social signup to:', signupUrl);
       window.location.replace(signupUrl);
       setTimeout(() => {
@@ -159,7 +159,7 @@ export class CallbackComponent extends BaseComponent implements OnInit {
           console.log('[callback] Redirecting to returnUrl:', returnUrl);
           // Force redirect - try both methods
           if (isLocalhost) {
-            const nextCallbackUrl = `https://foresighta.co/${currentLang}/callback?token=${encodeURIComponent(this.getTokenFromCookie() || '')}&returnUrl=${encodeURIComponent(returnUrl)}`;
+            const nextCallbackUrl = `https://insightabusiness.com/${currentLang}/callback?token=${encodeURIComponent(this.getTokenFromCookie() || '')}&returnUrl=${encodeURIComponent(returnUrl)}`;
             window.location.replace(nextCallbackUrl);
           } else {
             window.location.replace(returnUrl);
@@ -168,7 +168,7 @@ export class CallbackComponent extends BaseComponent implements OnInit {
           setTimeout(() => {
             if (window.location.href.includes('/auth/callback')) {
               window.location.href = isLocalhost
-                ? `https://foresighta.co/${currentLang}/callback?token=${encodeURIComponent(this.getTokenFromCookie() || '')}&returnUrl=${encodeURIComponent(returnUrl)}`
+                ? `https://insightabusiness.com/${currentLang}/callback?token=${encodeURIComponent(this.getTokenFromCookie() || '')}&returnUrl=${encodeURIComponent(returnUrl)}`
                 : returnUrl;
             }
           }, 200);
@@ -185,7 +185,7 @@ export class CallbackComponent extends BaseComponent implements OnInit {
     // Determine the correct base URL
     let baseUrl: string;
     if (isLocalhost) {
-      baseUrl = `https://foresighta.co/${currentLang}/home`;
+      baseUrl = `https://insightabusiness.com/${currentLang}/home`;
     } else {
       // For production, use www.foresighta.co (not foresighta.co:3000)
       baseUrl = `https://www.foresighta.co/${currentLang}/home`;

@@ -609,7 +609,7 @@ export class UpgradeToCompanyComponent
     if (email) {
       this.gettingCodeLoader = true;
       const getCodeSub = this.http
-        .post("https://api.foresighta.co/api/auth/company/code/send", {
+        .post("https://api.insightabusiness.com/api/auth/company/code/send", {
           verified_email: email,
         }, {
           headers: {

@@ -7,7 +7,7 @@ import { TranslationService } from 'src/app/modules/i18n';
   providedIn: 'root'
 })
 export class CommonService {
-  private apiUrl = 'https://api.foresighta.co/api/common/setting';
+  private apiUrl = 'https://api.insightabusiness.com/api/common/setting';
   private isLoadingSubject = new BehaviorSubject<boolean>(false);
   public isLoading$: Observable<boolean> = this.isLoadingSubject.asObservable();
   currentLang: string = 'en';

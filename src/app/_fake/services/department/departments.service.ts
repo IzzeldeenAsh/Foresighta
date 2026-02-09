@@ -20,9 +20,9 @@ export interface DepartmentResponse {
   providedIn: 'root'
 })
 export class DepartmentsService {
-  private apiUrl = 'https://api.foresighta.co/api/common/setting/department/list'; // Replace with the actual API URL
-  private createApi = "https://api.foresighta.co/api/admin/setting/department"; // Replace with the actual API URL
-  private updateDeleteApi = "https://api.foresighta.co/api/admin/setting/department"; // Replace with the actual API URL
+  private apiUrl = 'https://api.insightabusiness.com/api/common/setting/department/list'; // Replace with the actual API URL
+  private createApi = "https://api.insightabusiness.com/api/admin/setting/department"; // Replace with the actual API URL
+  private updateDeleteApi = "https://api.insightabusiness.com/api/admin/setting/department"; // Replace with the actual API URL
   private isLoadingSubject = new BehaviorSubject<boolean>(false);
   public isLoading$: Observable<boolean> = this.isLoadingSubject.asObservable();
   currentLang:string = "en"

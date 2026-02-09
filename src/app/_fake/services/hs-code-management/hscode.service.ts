@@ -31,9 +31,9 @@ export interface HSCodeResponse {
   providedIn: 'root',
 })
 export class HSCodeService {
-  private apiUrl = 'https://api.foresighta.co/api/common/setting/hs-code/list';
-  private createApi = 'https://api.foresighta.co/api/admin/setting/hs-code';
-  private updateDeleteApi = 'https://api.foresighta.co/api/admin/setting/hs-code';
+  private apiUrl = 'https://api.insightabusiness.com/api/common/setting/hs-code/list';
+  private createApi = 'https://api.insightabusiness.com/api/admin/setting/hs-code';
+  private updateDeleteApi = 'https://api.insightabusiness.com/api/admin/setting/hs-code';
   private isLoadingSubject = new BehaviorSubject<boolean>(false);
   public isLoading$: Observable<boolean> =
     this.isLoadingSubject.asObservable();
@@ -83,7 +83,7 @@ export class HSCodeService {
 
     this.setLoading(true);
     return this.http
-      .get<HSCodeResponse>(`https://api.foresighta.co/api/common/setting/hs-code/isic-code/${isicCodeId}`, { headers })
+      .get<HSCodeResponse>(`https://api.insightabusiness.com/api/common/setting/hs-code/isic-code/${isicCodeId}`, { headers })
       .pipe(
         map((res) => res.data),
         catchError((error) => this.handleError(error)),

@@ -713,7 +713,7 @@ export class SignUpComponent extends BaseComponent implements OnInit {
     const signUpReturnUrl = this.getSignUpReturnUrlFromCookie();
     const token = this.authService.getTokenFromCookie();
     const lang = this.lang || this.selectedLang || "en";
-    const nextBase = environment.mainAppUrl || "https://foresighta.co";
+    const nextBase = environment.mainAppUrl || "https://insightabusiness.com";
 
     if (signUpReturnUrl) {
       this.clearSignUpReturnUrlCookie();
