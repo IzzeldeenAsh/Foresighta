@@ -254,7 +254,7 @@ export class MyMeetingsComponent extends BaseComponent implements OnInit {
   goToClientProfile(meeting: Meeting): void {
     if (meeting.client.uuid) {
       const currentLocale = localStorage.getItem('language') || 'en';
-      const url = `https://insightabusiness.com/${currentLocale}/profile/${meeting.client.uuid}?entity=insighter`;
+      const url = `https://foresighta.co/${currentLocale}/profile/${meeting.client.uuid}?entity=insighter`;
       window.open(url, '_blank');
     }
   }
@@ -262,7 +262,7 @@ export class MyMeetingsComponent extends BaseComponent implements OnInit {
   openClientProfileInNewTab(meeting: SentMeeting): void {
     if (meeting.client && meeting.client.uuid) {
       const currentLocale = localStorage.getItem('language') || 'en';
-      const url = `https://insightabusiness.com/${currentLocale}/profile/${meeting.client.uuid}?entity=insighter`;
+      const url = `https://foresighta.co/${currentLocale}/profile/${meeting.client.uuid}?entity=insighter`;
       window.open(url, '_blank');
     }
   }
@@ -697,7 +697,7 @@ export class MyMeetingsComponent extends BaseComponent implements OnInit {
   // Sent meetings methods
   goToInsighterProfile(insighterUuid: string): void {
     const currentLocale = localStorage.getItem('language') || 'en';
-    window.location.href = `https://insightabusiness.com/${currentLocale}/profile/${insighterUuid}?entity=insighter&tab=meet`;
+    window.location.href = `https://foresighta.co/${currentLocale}/profile/${insighterUuid}?entity=insighter&tab=meet`;
   }
 
   canJoinMeeting(meeting: SentMeeting): boolean {

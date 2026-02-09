@@ -22,7 +22,7 @@ export interface OrderStatisticsResponse {
   providedIn: 'root'
 })
 export class OrderStatisticsService {
-  private readonly API_URL = 'https://api.insightabusiness.com/api';
+  private readonly API_URL = 'https://api.foresighta.co/api';
   private currentLang = 'en';
   private isLoadingSubject = new BehaviorSubject<boolean>(false);
   private statisticsSubject = new BehaviorSubject<OrderStatistics | null>(null);

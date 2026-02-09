@@ -340,7 +340,7 @@ export class LoginComponent extends BaseComponent implements OnInit, OnDestroy {
         'Accept': 'application/json',
         'Accept-Language': this.selectedLang || 'en',
       });
-      return this.http.post('https://api.insightabusiness.com/api/account/timezone/set',
+      return this.http.post('https://api.foresighta.co/api/account/timezone/set',
         { timezone: userTimezone },
         { headers }
       );

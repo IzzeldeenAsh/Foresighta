@@ -69,7 +69,7 @@ export class Step2Component implements OnInit, OnChanges, OnDestroy  {
 
       return timer(500).pipe( // Debounce for 500ms
         switchMap(() => {
-          return this.http.post<{exists: boolean}>('https://api.insightabusiness.com/api/account/insighter/company/name-exists', {
+          return this.http.post<{exists: boolean}>('https://api.foresighta.co/api/account/insighter/company/name-exists', {
             legal_name: control.value.trim()
           }, {
             headers: new HttpHeaders({

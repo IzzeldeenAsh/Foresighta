@@ -87,7 +87,7 @@ npm run serve:ssr          # Serve SSR build
 
 ### Environment Configuration
 
-Development uses mock services (`isMockEnabled: true`) with local API endpoints. Production connects to `https://api.insightabusiness.com/api`.
+Development uses mock services (`isMockEnabled: true`) with local API endpoints. Production connects to `https://api.foresighta.co/api`.
 
 Cookie configuration supports cross-subdomain authentication with secure settings for production deployment.
 

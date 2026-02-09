@@ -80,7 +80,7 @@ export interface ClientMeetingStatistics {
   providedIn: 'root'
 })
 export class MeetingsService {
-  private apiUrl = 'https://api.insightabusiness.com/api/insighter/meeting/list';
+  private apiUrl = 'https://api.foresighta.co/api/insighter/meeting/list';
   private isLoadingSubject = new BehaviorSubject<boolean>(false);
   public isLoading$: Observable<boolean> = this.isLoadingSubject.asObservable();
   currentLang: string = 'en';
@@ -134,7 +134,7 @@ export class MeetingsService {
   // Update meeting status (approve/postpone)
   updateMeetingStatus(meetingUuid: string, status: 'approved' | 'postponed', notes: string): Observable<any> {
     console.log('MeetingsService.updateMeetingStatus called with meetingUuid:', meetingUuid, 'status:', status, 'notes:', notes);
-    const url = `https://api.insightabusiness.com/api/insighter/meeting/action/${meetingUuid}`;
+    const url = `https://api.foresighta.co/api/insighter/meeting/action/${meetingUuid}`;
     console.log('API URL being called:', url);
     const headers = this.getHeaders();
     
@@ -154,7 +154,7 @@ export class MeetingsService {
   // Get available hours for reschedule (for current authenticated user)
   getAvailableHours(): Observable<AvailableHoursResponse> {
     const headers = this.getHeaders();
-    const url = `https://api.insightabusiness.com/api/insighter/meeting/available/hours`;
+    const url = `https://api.foresighta.co/api/insighter/meeting/available/hours`;
 
     // Calculate date range - from tomorrow to 3 months from tomorrow
     const tomorrow = new Date();
@@ -178,7 +178,7 @@ export class MeetingsService {
   // Reschedule meeting
   rescheduleMeeting(meetingUuid: string, rescheduleData: RescheduleRequest): Observable<any> {
     const headers = this.getHeaders();
-    const url = `https://api.insightabusiness.com/api/insighter/meeting/reschedule/${meetingUuid}`;
+    const url = `https://api.foresighta.co/api/insighter/meeting/reschedule/${meetingUuid}`;
 
     this.setLoading(true);
     return this.http.post(url, rescheduleData, { headers }).pipe(
@@ -191,7 +191,7 @@ export class MeetingsService {
   // Archive meeting
   archiveMeeting(meetingUuid: string): Observable<any> {
     const headers = this.getHeaders();
-    const url = `https://api.insightabusiness.com/api/insighter/meeting/archive/${meetingUuid}`;
+    const url = `https://api.foresighta.co/api/insighter/meeting/archive/${meetingUuid}`;
 
     this.setLoading(true);
     return this.http.post(url, {}, { headers }).pipe(
@@ -204,7 +204,7 @@ export class MeetingsService {
   // Get archived meetings
   getArchivedMeetings(page: number = 1, perPage: number = 10): Observable<MeetingResponse> {
     const headers = this.getHeaders();
-    const url = 'https://api.insightabusiness.com/api/insighter/meeting/list';
+    const url = 'https://api.foresighta.co/api/insighter/meeting/list';
 
     let params = new HttpParams()
       .set('page', page.toString())
@@ -222,7 +222,7 @@ export class MeetingsService {
   // Get client meeting statistics
   getClientMeetingStatistics(): Observable<{ data: ClientMeetingStatistics }> {
     const headers = this.getHeaders();
-    const url = 'https://api.insightabusiness.com/api/insighter/meeting/statistics';
+    const url = 'https://api.foresighta.co/api/insighter/meeting/statistics';
 
     return this.http.get<{ data: ClientMeetingStatistics }>(url, { headers }).pipe(
       map(response => response),

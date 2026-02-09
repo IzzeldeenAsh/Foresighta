@@ -7,12 +7,12 @@ import { TranslationService } from 'src/app/modules/i18n/translation.service';
   providedIn: 'root'
 })
 export class UpdateProfileService {
-  private postProfileUrl = 'https://api.insightabusiness.com/api/account/profile';
-  private insighterSocialUrl = 'https://api.insightabusiness.com/api/insighter/social';
-  private companySocialUrl = 'https://api.insightabusiness.com/api/company/social';
-  private deleteCertificateUrl = 'https://api.insightabusiness.com/api/account/profile/certification';
-  private updateCompanyInfoUrl = 'https://api.insightabusiness.com/api/account/profile/company/info';
-  private deleteCompanyCertificateUrl = 'https://api.insightabusiness.com/api/account/profile/company/certification';
+  private postProfileUrl = 'https://api.foresighta.co/api/account/profile';
+  private insighterSocialUrl = 'https://api.foresighta.co/api/insighter/social';
+  private companySocialUrl = 'https://api.foresighta.co/api/company/social';
+  private deleteCertificateUrl = 'https://api.foresighta.co/api/account/profile/certification';
+  private updateCompanyInfoUrl = 'https://api.foresighta.co/api/account/profile/company/info';
+  private deleteCompanyCertificateUrl = 'https://api.foresighta.co/api/account/profile/company/certification';
   private isLoadingSubject = new BehaviorSubject<boolean>(false);
   public isLoading$: Observable<boolean> = this.isLoadingSubject.asObservable();
   currentLang:string = "en"
@@ -131,7 +131,7 @@ export class UpdateProfileService {
     });
 
     this.setLoading(true);
-    return this.http.post<any>('https://api.insightabusiness.com/api/account/profile/certification', formData, { headers }).pipe(
+    return this.http.post<any>('https://api.foresighta.co/api/account/profile/certification', formData, { headers }).pipe(
       map((res) => res),
       catchError((error) => this.handleError(error)),
       finalize(() => this.setLoading(false))
@@ -149,7 +149,7 @@ export class UpdateProfileService {
     });
 
     this.setLoading(true);
-    return this.http.post<any>('https://api.insightabusiness.com/api/account/profile/company/certification', formData, { headers }).pipe(
+    return this.http.post<any>('https://api.foresighta.co/api/account/profile/company/certification', formData, { headers }).pipe(
       map((res) => res),
       catchError((error) => this.handleError(error)),
       finalize(() => this.setLoading(false))

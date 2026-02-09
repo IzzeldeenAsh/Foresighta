@@ -17,7 +17,7 @@ export abstract class BaseComponent implements OnDestroy, AfterViewInit {
    unsubscribe$ = new Subject<void>();
   protected unsubscribe: Subscription[] = [];
   lang: string='en';
-  clientBaseUrl = 'https://insightabusiness.com';
+  clientBaseUrl = 'https://foresighta.co';
   
 
   constructor(protected injector: Injector) {

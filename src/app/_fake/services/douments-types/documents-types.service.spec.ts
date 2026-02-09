@@ -19,7 +19,7 @@ export interface DocumentResponse {
   providedIn: 'root'
 })
 export class DocumentsService {
-  private apiUrl = 'https://api.insightabusiness.com/api/common/setting/insighter/document-type/list';
+  private apiUrl = 'https://api.foresighta.co/api/common/setting/insighter/document-type/list';
   private isLoadingSubject = new BehaviorSubject<boolean>(false);
   public isLoading$: Observable<boolean> = this.isLoadingSubject.asObservable();
   currentLang: string = "en";

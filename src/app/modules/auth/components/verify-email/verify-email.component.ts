@@ -25,7 +25,7 @@
     error: boolean = false;
     loading: boolean = true;
 
-    private insightaHost: string = "https://api.insightabusiness.com";
+    private insightaHost: string = "https://api.foresighta.co";
     verified: boolean = false;
     showSignUpButton: boolean = false;
 
@@ -128,7 +128,7 @@
               // so always go through Next.js callback to set token on :3000 domain.
               const token = this.getTokenFromCookie();
               if (token) {
-                window.location.href = `https://insightabusiness.com/${this.lang}/callback?token=${encodeURIComponent(token)}&returnUrl=${encodeURIComponent(signUpReturnUrl)}`;
+                window.location.href = `https://foresighta.co/${this.lang}/callback?token=${encodeURIComponent(token)}&returnUrl=${encodeURIComponent(signUpReturnUrl)}`;
               } else {
                 window.location.href = signUpReturnUrl;
               }
@@ -137,7 +137,7 @@
 
             // Fallback: redirect to Next.js callback URL with token from cookies
             const token = this.getTokenFromCookie();
-            window.location.href = `https://insightabusiness.com/${this.lang}/callback/${token}`;
+            window.location.href = `https://foresighta.co/${this.lang}/callback/${token}`;
             this.verificationStatusKey = 'AUTH.VERIFY_EMAIL.EMAIL_SUCCESSFULLY_VERIFIED';
             this.verificationStatus = this.translationService.getTranslation(this.verificationStatusKey);
             this.verified = true;

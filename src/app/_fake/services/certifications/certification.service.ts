@@ -17,7 +17,7 @@ export interface Certification {
   providedIn: 'root'
 })
 export class CertificationService {
-  private apiUrl = 'https://api.insightabusiness.com/api/account/profile/certification'; // Base URL
+  private apiUrl = 'https://api.foresighta.co/api/account/profile/certification'; // Base URL
   private isLoadingSubject = new BehaviorSubject<boolean>(false);
   public isLoading$ = this.isLoadingSubject.asObservable();
   currentLang: string = 'en';

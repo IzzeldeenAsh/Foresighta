@@ -57,7 +57,7 @@ export interface PaginatedTopicResponse {
   providedIn: 'root'
 })
 export class TopicsService {
-  private insightaHost = 'https://api.insightabusiness.com';
+  private insightaHost = 'https://api.foresighta.co';
   private apiUrl = `${this.insightaHost}/api/common/setting/topic/list`;
   private createApi = `${this.insightaHost}/api/admin/setting/topic`;
   private updateDeleteApi = `${this.insightaHost}/api/admin/setting/topic`;

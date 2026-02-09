@@ -17,7 +17,7 @@ export interface Certification {
   providedIn: 'root'
 })
 export class InsighterAsCompany {
-  private apiUrl = 'https://api.insightabusiness.com/api/account/insighter/individual/register-as-company'; // Base URL
+  private apiUrl = 'https://api.foresighta.co/api/account/insighter/individual/register-as-company'; // Base URL
   private isLoadingSubject = new BehaviorSubject<boolean>(false);
   public isLoading$ = this.isLoadingSubject.asObservable();
   currentLang: string = 'en';

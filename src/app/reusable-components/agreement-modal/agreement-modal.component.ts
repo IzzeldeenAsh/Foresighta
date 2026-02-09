@@ -303,7 +303,7 @@ export class AgreementModalComponent extends BaseComponent  implements OnChanges
       this.submitting = false;
       return;
     }
-    const url = `https://api.insightabusiness.com/api/account/agreement/accept/${finalUuid}`;
+    const url = `https://api.foresighta.co/api/account/agreement/accept/${finalUuid}`;
     const headers = new HttpHeaders({
       Accept: 'application/json',
       'Accept-Language': this.lang,

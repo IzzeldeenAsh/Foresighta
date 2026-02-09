@@ -8,8 +8,8 @@ import { TranslationService } from 'src/app/modules/i18n/translation.service';
   providedIn: 'root'
 })
 export class PasswordResetService {
-  private forgetPasswordUrl = 'https://api.insightabusiness.com/api/auth/password/forget';
-  private resetPasswordUrl = 'https://api.insightabusiness.com/api/auth/password/reset';
+  private forgetPasswordUrl = 'https://api.foresighta.co/api/auth/password/forget';
+  private resetPasswordUrl = 'https://api.foresighta.co/api/auth/password/reset';
   private isLoadingSubject = new BehaviorSubject<boolean>(false);
   public isLoading$ = this.isLoadingSubject.asObservable();
   currentLang: string = 'en';

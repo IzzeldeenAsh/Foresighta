@@ -18,7 +18,7 @@ interface UserType {
   providedIn: "root",
 })
 export class ProfileService {
-  private readonly API_URL = "https://api.insightabusiness.com/api/account/profile";
+  private readonly API_URL = "https://api.foresighta.co/api/account/profile";
   private profileCache$: Observable<any> | null = null;
   private isLoadingSubject = new BehaviorSubject<boolean>(false);
   private userSubject = new BehaviorSubject<UserType | null>(null);

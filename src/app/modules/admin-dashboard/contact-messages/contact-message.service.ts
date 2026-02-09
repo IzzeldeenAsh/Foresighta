@@ -42,7 +42,7 @@ export interface ContactMessagesResponse {
   providedIn: 'root'
 })
 export class ContactMessageService {
-  private apiUrl = 'https://api.insightabusiness.com/api/admin/setting/contact-us';
+  private apiUrl = 'https://api.foresighta.co/api/admin/setting/contact-us';
   private headers = new HttpHeaders({
     'Content-Type': 'application/json',
     'Accept': 'application/json',

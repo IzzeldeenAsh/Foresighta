@@ -37,7 +37,7 @@ export class CorsTestComponent implements OnInit {
     this.result = null;
 
     // Test a specific API endpoint that's causing CORS issues
-    const url = 'https://api.insightabusiness.com/api/common/setting/country/list';
+    const url = 'https://api.foresighta.co/api/common/setting/country/list';
     const headers = new HttpHeaders({
       'Accept': 'application/json',
       'Content-Type': 'application/json',

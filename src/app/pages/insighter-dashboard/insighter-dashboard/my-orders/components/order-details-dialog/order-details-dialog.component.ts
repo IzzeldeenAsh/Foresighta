@@ -14,7 +14,7 @@ type Language = 'ar' | 'en';
 export class OrderDetailsDialogComponent {
   @Input() lang: Language = 'en';
   @Input() order: Order | null = null;
-  @Input() clientBaseUrl: string = 'https://insightabusiness.com';
+  @Input() clientBaseUrl: string = 'https://foresighta.co';
 
   private _visible = false;
 

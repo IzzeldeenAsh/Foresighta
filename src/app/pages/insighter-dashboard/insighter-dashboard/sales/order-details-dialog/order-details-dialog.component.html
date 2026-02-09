@@ -106,7 +106,7 @@
         <div class="flex-grow-1">
           <div class="mb-2">
             <a *ngIf="order.user.uuid; else justName"
-               [href]="'https://insightabusiness.com/' + lang + '/profile/' + order.user.uuid + '?entity=insighter'"
+               [href]="'https://foresighta.co/' + lang + '/profile/' + order.user.uuid + '?entity=insighter'"
                target="_blank"
                class="text-info text-decoration-none fw-bold client-name-link d-flex align-items-center">
               <span class="me-2">{{ order.user.name }}</span>
@@ -149,7 +149,7 @@
         <div class="flex-grow-1">
           <div class="mb-2">
             <a *ngIf="order.orderable?.insighter?.uuid; else justInsighterName"
-               [href]="'https://insightabusiness.com/' + lang + '/profile/' + order.orderable?.insighter?.uuid + '?entity=insighter'"
+               [href]="'https://foresighta.co/' + lang + '/profile/' + order.orderable?.insighter?.uuid + '?entity=insighter'"
                target="_blank"
                class="text-info text-decoration-none fw-bold d-flex align-items-center">
               <span class="me-2">{{ order.orderable?.insighter?.name }}</span>

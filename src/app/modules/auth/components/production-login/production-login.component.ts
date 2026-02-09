@@ -271,7 +271,7 @@ export class ProductionLoginComponent extends BaseComponent implements OnInit, O
 
     if (isLocalhost) {
       // For localhost, use localhost:3000 (typical Next.js dev server)
-      return `https://insightabusiness.com/${this.selectedLang}/home`;
+      return `https://foresighta.co/${this.selectedLang}/home`;
     }
 
     // For production, redirect to www.foresighta.co
