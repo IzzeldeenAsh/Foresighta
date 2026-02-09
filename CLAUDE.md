@@ -78,7 +78,7 @@ npm run serve:ssr          # Serve SSR build
 **Cross-Domain Authentication**: 
 - Configured for `*.foresighta.co` domain with cookie sharing
 - Cross-domain authentication helper component for subdomain integration
-- Environment-specific API endpoints (dev: localhost, prod: api.foresighta.co)
+- Environment-specific API endpoints (dev: localhost, prod: api.insightabusiness.com)
 
 **Role-Based System**:
 - Multiple user types: Insighter, Company, Admin
@@ -87,7 +87,7 @@ npm run serve:ssr          # Serve SSR build
 
 ### Environment Configuration
 
-Development uses mock services (`isMockEnabled: true`) with local API endpoints. Production connects to `https://api.foresighta.co/api`.
+Development uses mock services (`isMockEnabled: true`) with local API endpoints. Production connects to `https://api.insightabusiness.com/api`.
 
 Cookie configuration supports cross-subdomain authentication with secure settings for production deployment.
 

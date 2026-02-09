@@ -7,7 +7,7 @@ import { TranslationService } from 'src/app/modules/i18n';
   providedIn: 'root'
 })
 export class ChangePasswordService {
-  private apiUrl = 'https://api.foresighta.co/api/account/password/change';
+  private apiUrl = 'https://api.insightabusiness.com/api/account/password/change';
   private isLoadingSubject = new BehaviorSubject<boolean>(false);
   public isLoading$: Observable<boolean> = this.isLoadingSubject.asObservable();
   currentLang:string ='en'

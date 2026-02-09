@@ -13,8 +13,8 @@ export interface SetPasswordPayload {
   providedIn: 'root',
 })
 export class SetPasswordService {
-  private readonly sendCodeUrl = 'https://api.foresighta.co/api/account/password/code/send';
-  private readonly setPasswordUrl = 'https://api.foresighta.co/api/account/password/set';
+  private readonly sendCodeUrl = 'https://api.insightabusiness.com/api/account/password/code/send';
+  private readonly setPasswordUrl = 'https://api.insightabusiness.com/api/account/password/set';
 
   private isLoadingSubject = new BehaviorSubject<boolean>(false);
   public isLoading$: Observable<boolean> = this.isLoadingSubject.asObservable();

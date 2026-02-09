@@ -378,7 +378,7 @@ export class PrimengHeaderComponent implements OnInit, OnDestroy {
       top_sub_industry: 1
     };
 
-    this.http.post<IndustriesResponse>('https://api.foresighta.co/api/platform/industries/menu', body, { headers })
+    this.http.post<IndustriesResponse>('https://api.insightabusiness.com/api/platform/industries/menu', body, { headers })
       .subscribe({
         next: (response) => {
           this.industries = response.data;
@@ -574,7 +574,7 @@ export class PrimengHeaderComponent implements OnInit, OnDestroy {
       //   'Accept-Language': this.lang || 'en'
       // });
 
-      // this.http.put('https://api.foresighta.co/api/account/notification/read', {}, { headers })
+      // this.http.put('https://api.insightabusiness.com/api/account/notification/read', {}, { headers })
       //   .subscribe({
       //     next: () => {
       //       // Refresh notifications from API

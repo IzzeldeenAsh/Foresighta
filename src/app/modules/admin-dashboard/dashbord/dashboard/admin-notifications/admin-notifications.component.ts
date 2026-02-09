@@ -76,7 +76,7 @@ export class AdminNotificationsComponent extends BaseComponent implements OnInit
       'Accept-Language': this.translationService.getSelectedLanguage()
     });
     
-    this.http.put(`https://api.foresighta.co/api/account/notification/read/${notificationId}`, {}, { headers })
+    this.http.put(`https://api.insightabusiness.com/api/account/notification/read/${notificationId}`, {}, { headers })
       .subscribe(
         () => {
           // Update local state to mark this notification as read

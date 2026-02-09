@@ -61,7 +61,7 @@ export interface ProductionLoginResponse {
   providedIn: 'root'
 })
 export class ProductionLoginService {
-  private readonly API_BASE_URL = 'https://api.foresighta.co/api';
+  private readonly API_BASE_URL = 'https://api.insightabusiness.com/api';
   private readonly LOGIN_ENDPOINT = `${this.API_BASE_URL}/auth/login`;
 
   constructor(private http: HttpClient) {}
@@ -121,7 +121,7 @@ export class ProductionLoginService {
       'Accept-Language': locale
     });
     
-    return this.http.get('https://api.foresighta.co/api/auth/provider/google', { 
+    return this.http.get('https://api.insightabusiness.com/api/auth/provider/google', { 
       headers,
       responseType: 'text'
     });
@@ -136,7 +136,7 @@ export class ProductionLoginService {
       'Accept-Language': locale
     });
     
-    return this.http.get('https://api.foresighta.co/api/auth/provider/linkedin-openid', {
+    return this.http.get('https://api.insightabusiness.com/api/auth/provider/linkedin-openid', {
       headers,
       responseType: 'text'
     });
