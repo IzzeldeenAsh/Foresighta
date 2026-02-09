@@ -10,7 +10,7 @@ export const environment = {
   apiUrl: 'api',
 
   // Realtime (Pusher) configuration
-  pusherKey: (window as any)?.__env?.PUSHER_KEY || '81566bb993a074e07d41 ',
+  pusherKey: (window as any)?.__env?.PUSHER_KEY || '41745ad5e299f4af9e36 ',
   pusherCluster: (window as any)?.__env?.PUSHER_CLUSTER || 'eu',
   pusherAuthEndpoint: (window as any)?.__env?.PUSHER_AUTH_ENDPOINT || 'https://api.foresighta.co/broadcasting/auth',
   
