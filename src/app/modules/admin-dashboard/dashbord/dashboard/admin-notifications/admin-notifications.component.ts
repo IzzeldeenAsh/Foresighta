@@ -142,7 +142,7 @@ export class AdminNotificationsComponent extends BaseComponent implements OnInit
     if (notification.type === 'knowledge' && notification.category) {
       // Construct the URL for knowledge page with sub_page and param
       const lang = this.translationService.getSelectedLanguage() || 'en';
-      const knowledgeUrl = `https://foresighta.co/${lang}/knowledge/${notification.category}/${notification.param || ''}?tab=ask`;
+      const knowledgeUrl = `https://insightabusiness.com/${lang}/knowledge/${notification.category}/${notification.param || ''}?tab=ask`;
       
       // Navigate to the external URL
       window.open(knowledgeUrl, '_blank');

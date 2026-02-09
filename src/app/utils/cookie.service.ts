@@ -13,7 +13,7 @@ export interface CookieOptions {
   providedIn: 'root'
 })
 export class CookieService {
-  private readonly DEFAULT_DOMAIN = '.foresighta.co';
+  private readonly DEFAULT_DOMAIN = '.insightabusiness.com';
   private readonly DEFAULT_PATH = '/';
   private readonly DEFAULT_MAX_AGE = 60 * 60 * 24 * 365; // 1 year
 

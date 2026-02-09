@@ -4,7 +4,7 @@ import { Injectable } from '@angular/core';
   providedIn: 'root'
 })
 export class ProductionCookieService {
-  private readonly DEFAULT_DOMAIN = '.foresighta.co';
+  private readonly DEFAULT_DOMAIN = '.insightabusiness.com';
   private readonly DEFAULT_PATH = '/';
   private readonly DEFAULT_MAX_AGE = 60 * 60 * 24 * 365; // 1 year
 
@@ -20,7 +20,7 @@ export class ProductionCookieService {
   }
 
   /**
-   * Sets a cookie with .foresighta.co domain for cross-domain sharing
+   * Sets a cookie with .insightabusiness.com domain for cross-domain sharing
    */
   setCookie(name: string, value: string, options: {
     maxAge?: number;

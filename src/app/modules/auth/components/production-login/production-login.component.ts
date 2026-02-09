@@ -150,7 +150,7 @@ export class ProductionLoginComponent extends BaseComponent implements OnInit, O
         `Path=/`,
         `Max-Age=${60 * 60}`, // 1 hour
         `SameSite=None`,
-        `Domain=.foresighta.co`,
+        `Domain=.insightabusiness.com`,
         `Secure`
       ];
     }
@@ -189,7 +189,7 @@ export class ProductionLoginComponent extends BaseComponent implements OnInit, O
   private handleLoginSuccess(userData: any): void {
     const token = userData.token;
     
-    // Store token in cookie with .foresighta.co domain for cross-domain sharing
+    // Store token in cookie with .insightabusiness.com domain for cross-domain sharing
     this.productionCookieService.setAuthToken(token);
     
     // Store preferred language
@@ -221,8 +221,8 @@ export class ProductionLoginComponent extends BaseComponent implements OnInit, O
           const returnUrlObj = new URL(this.returnUrl);
           const allowedDomains = [
             'foresighta.co', 
-            'www.foresighta.co', 
-            'app.foresighta.co',
+            'www.insightabusiness.com', 
+            'app.insightabusiness.com',
             'insightabusiness.com',
             'localhost',
             '127.0.0.1'
@@ -271,11 +271,11 @@ export class ProductionLoginComponent extends BaseComponent implements OnInit, O
 
     if (isLocalhost) {
       // For localhost, use localhost:3000 (typical Next.js dev server)
-      return `https://foresighta.co/${this.selectedLang}/home`;
+      return `https://insightabusiness.com/${this.selectedLang}/home`;
     }
 
-    // For production, redirect to www.foresighta.co
-    return `https://www.foresighta.co/${this.selectedLang}/home`;
+    // For production, redirect to www.insightabusiness.com
+    return `https://www.insightabusiness.com/${this.selectedLang}/home`;
   }
 
   private handleLoginError(error: any): void {

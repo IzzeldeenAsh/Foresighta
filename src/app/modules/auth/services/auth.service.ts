@@ -78,7 +78,7 @@ export class AuthService implements OnDestroy {
         `Path=/`,
         `Max-Age=${60 * 60 * 24 * 7}`, // 7 days
         `SameSite=None`,
-        `Domain=.foresighta.co`,
+        `Domain=.insightabusiness.com`,
         `Secure`
       ];
     }
@@ -115,7 +115,7 @@ export class AuthService implements OnDestroy {
         'Path=/',
         'Max-Age=-1',
         'SameSite=None',
-        'Domain=.foresighta.co',
+        'Domain=.insightabusiness.com',
         'Secure'
       ];
     }
@@ -140,7 +140,7 @@ export class AuthService implements OnDestroy {
         `Path=/`,
         `Max-Age=${60 * 60}`, // 1 hour
         `SameSite=None`,
-        `Domain=.foresighta.co`,
+        `Domain=.insightabusiness.com`,
         `Secure`
       ];
     }

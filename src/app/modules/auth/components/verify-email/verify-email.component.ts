@@ -128,7 +128,7 @@
               // so always go through Next.js callback to set token on :3000 domain.
               const token = this.getTokenFromCookie();
               if (token) {
-                window.location.href = `https://foresighta.co/${this.lang}/callback?token=${encodeURIComponent(token)}&returnUrl=${encodeURIComponent(signUpReturnUrl)}`;
+                window.location.href = `https://insightabusiness.com/${this.lang}/callback?token=${encodeURIComponent(token)}&returnUrl=${encodeURIComponent(signUpReturnUrl)}`;
               } else {
                 window.location.href = signUpReturnUrl;
               }
@@ -137,7 +137,7 @@
 
             // Fallback: redirect to Next.js callback URL with token from cookies
             const token = this.getTokenFromCookie();
-            window.location.href = `https://foresighta.co/${this.lang}/callback/${token}`;
+            window.location.href = `https://insightabusiness.com/${this.lang}/callback/${token}`;
             this.verificationStatusKey = 'AUTH.VERIFY_EMAIL.EMAIL_SUCCESSFULLY_VERIFIED';
             this.verificationStatus = this.translationService.getTranslation(this.verificationStatusKey);
             this.verified = true;
@@ -246,7 +246,7 @@
           'Path=/',
           'Max-Age=-1',
           'SameSite=None',
-          'Domain=.foresighta.co',
+          'Domain=.insightabusiness.com',
           'Secure'
         ];
       }
@@ -257,7 +257,7 @@
     private safeDecodeURIComponent(value: string): string {
       // Angular router typically decodes query params, but the value may still be encoded.
       // We decode once (safely) to support links like:
-      // ?url=https:%2F%2Fapi.foresighta.co%2Fapi%2Femail%2Fverify%2F...%3Fexpires%3D...%26signature%3D...
+      // ?url=https:%2F%2Fapi.insightabusiness.com%2Fapi%2Femail%2Fverify%2F...%3Fexpires%3D...%26signature%3D...
       try {
         return decodeURIComponent(value);
       } catch {

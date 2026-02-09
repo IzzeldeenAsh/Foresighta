@@ -199,8 +199,8 @@ export class LoginEmailVerificationComponent extends BaseComponent implements On
         const returnUrlObj = new URL(this.returnUrl);
         const allowedDomains = [
           "foresighta.co",
-          "www.foresighta.co",
-          "app.foresighta.co",
+          "www.insightabusiness.com",
+          "app.insightabusiness.com",
           "insightabusiness.com",
           "localhost",
           "127.0.0.1",
@@ -236,9 +236,9 @@ export class LoginEmailVerificationComponent extends BaseComponent implements On
 
     const lang = this.lang || this.selectedLang || "en";
     if (isLocalhost) {
-      window.location.replace(`https://foresighta.co/${lang}/home`);
+      window.location.replace(`https://insightabusiness.com/${lang}/home`);
     } else {
-      window.location.replace(`https://www.foresighta.co/${lang}/home`);
+      window.location.replace(`https://www.insightabusiness.com/${lang}/home`);
     }
   }
 }

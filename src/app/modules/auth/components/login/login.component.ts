@@ -285,7 +285,7 @@ export class LoginComponent extends BaseComponent implements OnInit, OnDestroy {
         `Path=/`,
         `Max-Age=${60 * 60}`, // 1 hour
         `SameSite=None`,
-        `Domain=.foresighta.co`,
+        `Domain=.insightabusiness.com`,
         `Secure`
       ];
     }
@@ -302,7 +302,7 @@ export class LoginComponent extends BaseComponent implements OnInit, OnDestroy {
       // Handle absolute URLs
       const absolute = new URL(url, window.location.origin);
       const isNextHost = absolute.hostname === 'localhost' && absolute.port === '3000';
-      const isProdNextHost = absolute.hostname.endsWith('insightabusiness.com') && absolute.hostname !== 'app.foresighta.co';
+      const isProdNextHost = absolute.hostname.endsWith('insightabusiness.com') && absolute.hostname !== 'app.insightabusiness.com';
       if (isNextHost || isProdNextHost) {
         const adjustedPath = this.ensureLocalePrefix(absolute.pathname, lang);
         absolute.pathname = adjustedPath;

@@ -57,7 +57,7 @@
                     </div>
                   </div>
                   <a *ngIf="order.orderable.meeting_booking?.insighter?.uuid; else justInsighterName"
-                     [href]="'https://foresighta.co/' + lang + '/profile/' + order.orderable.meeting_booking?.insighter?.uuid + '?entity=insighter'"
+                     [href]="'https://insightabusiness.com/' + lang + '/profile/' + order.orderable.meeting_booking?.insighter?.uuid + '?entity=insighter'"
                      target="_blank"
                      class="text-info text-decoration-none fs-7 me-2">
                     {{ order.orderable.meeting_booking?.insighter?.name }}
@@ -114,7 +114,7 @@
                   <div class="d-flex align-items-center">
                     <div class="symbol symbol-30px me-2">
                       <a *ngIf="order.user.uuid"
-                         [href]="'https://foresighta.co/' + lang + '/profile/' + order.user.uuid + '?entity=insighter'"
+                         [href]="'https://insightabusiness.com/' + lang + '/profile/' + order.user.uuid + '?entity=insighter'"
                          target="_blank"
                          class="text-decoration-none d-block">
                         <img *ngIf="order.user.profile_photo_url"
@@ -147,7 +147,7 @@
                       <div class="fs-8 text-muted">{{ lang === 'ar' ? 'الجلسة الاستشارية مع' : 'Session with' }}</div>
                       <div class="fw-semibold fs-7">
                         <a *ngIf="order.user.uuid; else justUserName"
-                           [href]="'https://foresighta.co/' + lang + '/profile/' + order.user.uuid + '?entity=insighter'"
+                           [href]="'https://insightabusiness.com/' + lang + '/profile/' + order.user.uuid + '?entity=insighter'"
                            target="_blank"
                            class="text-primary text-decoration-none">
                           {{ order.user.name }}
