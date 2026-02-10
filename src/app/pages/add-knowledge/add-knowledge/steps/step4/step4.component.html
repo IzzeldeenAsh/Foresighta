@@ -643,7 +643,7 @@
       pInputText
       class="w-100"
       formControlName="customTopic"
-      [ngClass]="{'is-invalid': form.get('customTopic')?.hasError('required') && form.get('customTopic')?.touched, 'border-red': form.get('customTopic')?.hasError('required') && form.get('customTopic')?.touched}"
+      [ngClass]="{'is-invalid': (form.get('customTopic')?.hasError('required') || form.get('customTopic')?.hasError('duplicateTopic')) && form.get('customTopic')?.touched, 'border-red': (form.get('customTopic')?.hasError('required') || form.get('customTopic')?.hasError('duplicateTopic')) && form.get('customTopic')?.touched}"
       placeholder="{{ 'ENTER_CUSTOM_TOPIC' | translate }}"
     />
     <!-- Duplicate Topic Error -->

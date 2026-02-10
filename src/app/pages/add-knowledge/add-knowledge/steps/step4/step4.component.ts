@@ -1,4 +1,4 @@
-import { Component, Injector, Input, OnInit, OnDestroy, ViewChild, ChangeDetectorRef } from '@angular/core';
+import { Component, Injector, Input, OnInit, OnDestroy, ViewChild, ChangeDetectorRef, ElementRef } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, AbstractControl, ValidationErrors, ValidatorFn } from '@angular/forms';
 import { Subscription, forkJoin, of, delay, finalize, interval, timer, takeWhile, takeUntil, Subject, debounceTime, filter } from 'rxjs';
 import { ICreateKnowldege } from '../../create-account.helper';
@@ -147,7 +147,8 @@ export class Step4Component extends BaseComponent implements OnInit, OnDestroy {
     private knowledgeService: KnowledgeService,
     private addInsightStepsService: AddInsightStepsService,
     private cdr: ChangeDetectorRef,
-    private regionsService: RegionsService
+    private regionsService: RegionsService,
+    private elRef: ElementRef
   ) {
     super(injector);
   }
@@ -1622,6 +1623,27 @@ export class Step4Component extends BaseComponent implements OnInit, OnDestroy {
     this.aiAbstractError = true;
     this.showEditor = true;
     this.cdr.detectChanges();
+  }
+
+  /**
+   * Sets the duplicateTopic error on the customTopic control and scrolls to it.
+   * Called from horizontal component when the suggest topic API returns a "name already taken" error.
+   */
+  setDuplicateTopicError(): void {
+    const customTopicControl = this.form.get('customTopic');
+    if (customTopicControl) {
+      customTopicControl.setErrors({ duplicateTopic: true });
+      customTopicControl.markAsTouched();
+      this.cdr.detectChanges();
+
+      // Scroll to the custom topic input section
+      setTimeout(() => {
+        const errorElement = this.elRef.nativeElement.querySelector('.invalid-feedback.d-block');
+        if (errorElement) {
+          errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 100);
+    }
   }
 
   // Custom year picker methods

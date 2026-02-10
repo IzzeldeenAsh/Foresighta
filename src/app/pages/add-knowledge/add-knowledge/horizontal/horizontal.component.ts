@@ -653,7 +653,18 @@ export class HorizontalComponent extends BaseComponent implements OnInit {
             this.updateKnowledgeDetailsAndProceed(updateRequest, nextStep);
           },
           error: (error) => {
-            this.handleServerErrors(error);
+            // Check if this is a "name already taken" error (duplicate topic)
+            const serverErrors = error?.error?.errors;
+            const isDuplicateNameError = serverErrors && (
+              serverErrors['name.en'] || serverErrors['name.ar'] || serverErrors['name']
+            );
+
+            if (isDuplicateNameError && step4Component && typeof step4Component.setDuplicateTopicError === 'function') {
+              // Set the duplicate topic error on the customTopic control and scroll to it
+              step4Component.setDuplicateTopicError();
+            } else {
+              this.handleServerErrors(error);
+            }
             this.isLoading = false;
           }
         });
