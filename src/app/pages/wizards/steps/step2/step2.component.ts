@@ -1,4 +1,4 @@
-import { Component, ElementRef, Input, OnDestroy, OnInit, OnChanges, SimpleChanges, ViewChild,AfterViewInit, ChangeDetectorRef    } from '@angular/core';
+import { Component, ElementRef, Input, OnDestroy, OnInit, OnChanges, SimpleChanges, ViewChild, ChangeDetectorRef } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ValidatorFn, AbstractControl, ValidationErrors, FormControl, AsyncValidatorFn } from '@angular/forms';
 import { Observable, Subscription, fromEvent, map, startWith, forkJoin, of, timer } from 'rxjs';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
@@ -34,6 +34,7 @@ export class Step2Component implements OnInit, OnChanges, OnDestroy  {
   form: FormGroup;
   @Input() defaultValues: Partial<ICreateAccount>;
   @ViewChild('fileInput') fileInput: ElementRef<HTMLInputElement>;
+  @ViewChild('step2FormRoot', { read: ElementRef }) step2FormRoot?: ElementRef<HTMLElement>;
   defaultImage = 'https://au.eragroup.com/wp-content/uploads/2018/02/logo-placeholder.png';
   private unsubscribe: Subscription[] = [];
 
@@ -325,6 +326,7 @@ getFileIcon(file: File): string {
    const consultingFieldsControl = this.form.get('consultingFields');
    consultingFieldsControl?.setValue(this.allConsultingFieldSelected);
    consultingFieldsControl?.markAsTouched();
+   consultingFieldsControl?.markAsDirty();
    consultingFieldsControl?.updateValueAndValidity();
    
    this.updateParentModel({consultingFields:this.allConsultingFieldSelected}, this.checkForm());
@@ -336,6 +338,7 @@ getFileIcon(file: File): string {
     const isicCodesControl = this.form.get('isicCodes');
     isicCodesControl?.setValue(this.allIndustriesSelected);
     isicCodesControl?.markAsTouched();
+    isicCodesControl?.markAsDirty();
     isicCodesControl?.updateValueAndValidity();
     
     this.updateParentModel({isicCodes:this.allIndustriesSelected}, this.checkForm());
@@ -369,7 +372,7 @@ getFileIcon(file: File): string {
           companyAddress: [this.defaultValues.companyAddress || '', [Validators.required]],
           aboutCompany: [this.defaultValues.aboutCompany || '', [Validators.required]],
           country: [this.defaultValues.country || '', [Validators.required]],
-          phoneCountryCode: [this.defaultValues.phoneCountryCode || ''],
+          phoneCountryCode: [this.defaultValues.phoneCountryCode || '', [Validators.required]],
           phoneCompanyNumber: [
             this.defaultValues.phoneCompanyNumber || '',
             [
@@ -435,14 +438,75 @@ onFileChange(event: any) {
    * @returns boolean indicating if the form is valid
    */
   validateAndMarkTouched(): boolean {
-    // Mark all fields as touched to show validation errors
+    // Mark all fields as touched/dirty to show validation errors + red borders.
     Object.keys(this.form.controls).forEach(key => {
       const control = this.form.get(key);
       control?.markAsTouched();
+      control?.markAsDirty();
       // Don't call updateValueAndValidity() as it triggers async validators unnecessarily
     });
-    
-    // Check if form is valid and not pending (important for async validators)
-    return this.form.valid && !this.form.pending;
+
+    const isValid = this.form.valid && !this.form.pending;
+
+    // If invalid, scroll to the first invalid required field (corporate focus).
+    if (!isValid) {
+      this.cdr.detectChanges();
+      setTimeout(() => this.scrollToFirstInvalidControl(), 0);
+    }
+
+    return isValid;
+  }
+
+  isControlInvalid(controlName: string): boolean {
+    const control = this.form?.get(controlName);
+    return !!(control && control.invalid && (control.touched || control.dirty));
+  }
+
+  private scrollToFirstInvalidControl(): void {
+    const root = this.step2FormRoot?.nativeElement;
+    if (!root || !this.form) return;
+
+    const accountType = this.defaultValues?.accountType;
+
+    // Prefer a deterministic order (especially important for corporate flow).
+    const orderedControlSelectors: Array<{ control: string; selector: string }> =
+      accountType === 'corporate'
+        ? [
+            { control: 'logo', selector: '[data-control="logo"]' },
+            { control: 'legalName', selector: '[formcontrolname="legalName"]' },
+            { control: 'companyAddress', selector: '[formcontrolname="companyAddress"]' },
+            { control: 'country', selector: 'app-country-dropdown[formcontrolname="country"]' },
+            { control: 'phoneCountryCode', selector: '[data-control="companyPhone"]' },
+            { control: 'phoneCompanyNumber', selector: '[data-control="companyPhone"]' },
+            { control: 'consultingFields', selector: '[data-control="consultingFields"]' },
+            { control: 'isicCodes', selector: '[data-control="isicCodes"]' },
+            { control: 'aboutCompany', selector: '[formcontrolname="aboutCompany"]' },
+          ]
+        : [
+            { control: 'isicCodes', selector: '[data-control="isicCodes"]' },
+            { control: 'consultingFields', selector: '[data-control="consultingFields"]' },
+            { control: 'bio', selector: '[formcontrolname="bio"]' },
+            { control: 'country', selector: 'app-country-dropdown[formcontrolname="country"]' },
+          ];
+
+    for (const item of orderedControlSelectors) {
+      const control = this.form.get(item.control);
+      if (!control || !control.invalid) continue;
+
+      const target = root.querySelector(item.selector) as HTMLElement | null;
+      if (!target) continue;
+
+      // Scroll with an offset to avoid sticky headers hiding the field.
+      const y = target.getBoundingClientRect().top + window.scrollY - 120;
+      window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
+
+      // Try to focus an actual input inside the target.
+      const focusable = (target.matches('input,textarea,select,button')
+        ? target
+        : (target.querySelector('input,textarea,select,button,[tabindex]') as HTMLElement | null)) as HTMLElement | null;
+      focusable?.focus?.();
+
+      break;
+    }
   }
 }

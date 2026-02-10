@@ -12,6 +12,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { filter } from 'rxjs/operators';
 import { PusherClientService } from 'src/app/services/pusher-client.service';
 import type { Channel } from 'pusher-js';
+import { ToastService } from 'src/app/_fake/services/toast-service/toast.service';
 //d
 interface CustomMenuItem extends MenuItem {
   expanded?: boolean;
@@ -74,6 +75,8 @@ export class PrimengHeaderComponent implements OnInit, OnDestroy {
   isMobileUserDropdownOpen: boolean = false;
   private breakpointSubscription: Subscription;
   private profileSubscription: Subscription;
+  private profileUpdateSubscription: Subscription;
+  private wasInAddKnowledgeWizard: boolean = false;
 
   // User profile data
   userName: string = '';
@@ -182,7 +185,8 @@ export class PrimengHeaderComponent implements OnInit, OnDestroy {
     private http: HttpClient,
     private pusherClient: PusherClientService,
     private ngZone: NgZone,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private toastService: ToastService
   ) {
     this.lang = this.translationService.getSelectedLanguage();
   }
@@ -209,7 +213,7 @@ export class PrimengHeaderComponent implements OnInit, OnDestroy {
       });
 
     // Load profile and fetch industries
-    this.profileService.getProfile().subscribe({
+    this.profileSubscription = this.profileService.getProfile().subscribe({
       next: (profile) => {
         this.profile = profile;
         this.loadUserProfile();
@@ -232,7 +236,19 @@ export class PrimengHeaderComponent implements OnInit, OnDestroy {
       }
     });
 
+    // React to profile refreshes (e.g. after wizard submit) and update header/menu immediately
+    this.profileUpdateSubscription = this.profileService.profileUpdate$.subscribe(() => {
+      this.profileService.getProfile().subscribe({
+        next: (profile) => {
+          this.profile = profile;
+          this.loadUserProfile();
+          this.initializeMenu();
+        },
+      });
+    });
+
     // Subscribe to route changes
+    this.wasInAddKnowledgeWizard = this.router.url?.includes('/app/add-knowledge/stepper');
     this.router.events.pipe(
       filter(event => event instanceof NavigationEnd)
     ).subscribe((event) => {
@@ -245,6 +261,9 @@ export class PrimengHeaderComponent implements OnInit, OnDestroy {
       if (this.isSmallScreen) {
         this.sidebarVisible = false;
       }
+
+      // If the user just left the Add Knowledge wizard, show "Saved as draft" once
+      this.maybeShowDraftSavedToastAfterLeavingWizard(navEvent.urlAfterRedirects || navEvent.url);
     });
     
     // Also check the initial route
@@ -274,6 +293,34 @@ export class PrimengHeaderComponent implements OnInit, OnDestroy {
   private static readonly DRAFT_TOAST_FLAG_KEY = 'knoldg:draft_saved_toast';
   private static readonly NEXT_TOAST_QUERY_KEY = 'toast';
   private static readonly NEXT_TOAST_QUERY_VALUE = 'draft_saved';
+
+  private getAndClearDraftToastFlag(): boolean {
+    try {
+      const exists = !!sessionStorage.getItem(PrimengHeaderComponent.DRAFT_TOAST_FLAG_KEY);
+      if (exists) {
+        sessionStorage.removeItem(PrimengHeaderComponent.DRAFT_TOAST_FLAG_KEY);
+      }
+      return exists;
+    } catch {
+      return false;
+    }
+  }
+
+  private maybeShowDraftSavedToastAfterLeavingWizard(nowUrl: string) {
+    const isInWizardNow = nowUrl?.includes('/app/add-knowledge/stepper');
+    const didJustLeaveWizard = this.wasInAddKnowledgeWizard && !isInWizardNow;
+
+    // Always keep state updated
+    this.wasInAddKnowledgeWizard = isInWizardNow;
+
+    if (!didJustLeaveWizard) return;
+
+    const shouldShow = this.getAndClearDraftToastFlag();
+    if (!shouldShow) return;
+
+    const msg = this.lang === 'ar' ? 'تم حفظ المعرفة كمسودة' : 'Insight saved as Draft';
+    this.toastService.info(msg, '');
+  }
 
   private shouldAppendDraftToastToNextUrl(): boolean {
     // Only if user is currently in Add Knowledge wizard
@@ -316,9 +363,8 @@ export class PrimengHeaderComponent implements OnInit, OnDestroy {
     if (this.breakpointSubscription) {
       this.breakpointSubscription.unsubscribe();
     }
-    if (this.profileSubscription) {
-      this.profileSubscription.unsubscribe();
-    }
+    if (this.profileSubscription) this.profileSubscription.unsubscribe();
+    if (this.profileUpdateSubscription) this.profileUpdateSubscription.unsubscribe();
     
     // Unsubscribe realtime
     try {
@@ -497,13 +543,19 @@ export class PrimengHeaderComponent implements OnInit, OnDestroy {
     ] as CustomMenuItem[];
   }
 
+  /**
+   * True when user has only the 'client' role (no insighter, company, or company-insighter).
+   */
+  isClientOnly(): boolean {
+    return this.hasRole(['client']) && !this.hasRole(['insighter']) && !this.hasRole(['company']) && !this.hasRole(['company-insighter']);
+  }
+
   // Determines the correct route for the Add Knowledge button based on user roles
   getAddKnowledgeRoute(): string {
-    if(this.profile?.roles?.includes('client') && !this.profile?.roles?.includes('company-insighter') && !this.profile?.roles?.includes('company') && !this.profile?.roles?.includes('insighter') ){
+    if (this.isClientOnly()) {
       return '/app/insighter-register/vertical';
-    }else{
-      return '/app/add-knowledge/stepper';
     }
+    return '/app/add-knowledge/stepper';
   }
 
   toggleSidebar() {

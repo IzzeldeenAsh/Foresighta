@@ -2,7 +2,7 @@ import { Component, Injector, OnInit, ViewChild, ViewContainerRef, QueryList, Vi
 import { BaseComponent } from 'src/app/modules/base.component';
 import { ICreateKnowldege, inits } from '../create-account.helper';
 import { BehaviorSubject, concatMap, from, Observable, map } from 'rxjs';
-import { Router, NavigationStart } from '@angular/router';
+import { Router } from '@angular/router';
 import { ActivatedRoute } from '@angular/router';
 import { KnowledgeService } from 'src/app/_fake/services/knowledge/knowledge.service';
 import { AddInsightStepsService, UpdateKnowledgeAbstractsRequest } from 'src/app/_fake/services/add-insight-steps/add-insight-steps.service';
@@ -10,7 +10,6 @@ import { RegionsService } from 'src/app/_fake/services/region/regions.service';
 import * as moment from 'moment';
 import { SubStepDocumentsComponent } from '../steps/step2/sub-step-documents/sub-step-documents.component';
 import { TopicsService } from 'src/app/_fake/services/topic-service/topic.service';
-import { filter } from 'rxjs/operators';
 
 @Component({
   selector: 'app-horizontal',
@@ -29,7 +28,6 @@ export class HorizontalComponent extends BaseComponent implements OnInit {
   );
   isLoading = false;
   
-  private hasShownDraftToast = false;
   private static readonly DRAFT_TOAST_FLAG_KEY = 'knoldg:draft_saved_toast';
   @ViewChild(SubStepDocumentsComponent) documentsComponent: SubStepDocumentsComponent;
   @ViewChild('step3Component') step3Component: any;
@@ -51,21 +49,9 @@ export class HorizontalComponent extends BaseComponent implements OnInit {
 
   private initialStep: number | null = null;
 
-  override ngOnDestroy(): void {
-    // Clear the external redirect flag when leaving the wizard
-    try {
-      sessionStorage.removeItem(HorizontalComponent.DRAFT_TOAST_FLAG_KEY);
-    } catch {}
-
-    super.ngOnDestroy();
-  }
-
   private shouldShowSavedAsDraftToast(): boolean {
     // Only for create flow (not edit mode)
     if (this.isEditMode) return false;
-
-    // Only if knowledge was actually created (first upload creates it)
-    if (!this.knowledgeId || this.knowledgeId <= 0) return false;
 
     const publishStatus = this.account$.value?.publish_status;
 
@@ -91,27 +77,6 @@ export class HorizontalComponent extends BaseComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    // If user leaves the wizard before submitting the last step,
-    // show an info toast that the insight was saved as draft.
-    const navSub = this.router.events
-      .pipe(filter((e): e is NavigationStart => e instanceof NavigationStart))
-      .subscribe((e) => {
-        if (!this.shouldShowSavedAsDraftToast()) return;
-
-        // Leaving the stepper route to somewhere else
-        const currentUrl = this.router.url || '';
-        const isCurrentlyInStepper = currentUrl.includes('/add-knowledge/stepper');
-        const isNavigatingWithinStepper = (e.url || '').includes('/add-knowledge/stepper');
-        if (!isCurrentlyInStepper || isNavigatingWithinStepper) return;
-
-        if (this.hasShownDraftToast) return;
-        this.hasShownDraftToast = true;
-
-        const msg = this.lang === 'ar' ? 'تم حفظ المعرفة كمسودة' : 'Insight saved as Draft';
-        this.showInfo('', msg);
-      });
-    this.unsubscribe.push(navSub);
-
     // Read the optional ?step= query parameter
     this.route.queryParams.subscribe(queryParams => {
       const stepParam = queryParams['step'];
@@ -146,6 +111,9 @@ export class HorizontalComponent extends BaseComponent implements OnInit {
     this.unsubscribe.push(stepSub);
     const accountSub = this.account$.subscribe(() => this.syncDraftFlagForExternalRedirect());
     this.unsubscribe.push(accountSub);
+
+    // Ensure the flag is correct on initial load
+    this.syncDraftFlagForExternalRedirect();
   }
 
   private loadKnowledgeData() {

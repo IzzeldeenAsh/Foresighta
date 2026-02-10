@@ -91,15 +91,43 @@ export class UserInnerComponent extends BaseComponent implements OnInit, AfterVi
     'language': false
   };
 
+  private static readonly DRAFT_TOAST_FLAG_KEY = 'knoldg:draft_saved_toast';
+  private static readonly NEXT_TOAST_QUERY_KEY = 'toast';
+  private static readonly NEXT_TOAST_QUERY_VALUE = 'draft_saved';
+
   constructor(
     private auth: AuthService,
     private translationService: TranslationService,
     private getProfileService: ProfileService,
     private elementRef: ElementRef,
     private renderer: Renderer2,
+    private router: Router,
     injector: Injector
   ) {
     super(injector);
+  }
+
+  private shouldAppendDraftToastToExternalUrl(): boolean {
+    // Only if user is currently in Add Knowledge wizard
+    if (!this.router.url?.includes('/app/add-knowledge/stepper')) return false;
+    try {
+      return !!sessionStorage.getItem(UserInnerComponent.DRAFT_TOAST_FLAG_KEY);
+    } catch {
+      return false;
+    }
+  }
+
+  getMyInsighterPageUrl(uuid: string): string {
+    const base = `${environment.mainAppUrl}/${this.lang}/profile/${uuid}?entity=insighter`;
+    if (!this.shouldAppendDraftToastToExternalUrl()) return base;
+
+    try {
+      const u = new URL(base);
+      u.searchParams.set(UserInnerComponent.NEXT_TOAST_QUERY_KEY, UserInnerComponent.NEXT_TOAST_QUERY_VALUE);
+      return u.toString();
+    } catch {
+      return base;
+    }
   }
 
   ngOnInit(): void {

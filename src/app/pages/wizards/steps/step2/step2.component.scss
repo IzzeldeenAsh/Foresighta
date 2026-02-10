@@ -25,3 +25,13 @@
   .fit-content{
     width: fit-content;
   }
+
+  // Make invalid state visible for custom form controls (CVA components).
+  :host ::ng-deep app-country-dropdown.is-invalid,
+  :host ::ng-deep app-phone-number-input.is-invalid,
+  :host ::ng-deep shared-tree-selector.is-invalid,
+  :host ::ng-deep .image-input.is-invalid {
+    border: 1px solid var(--bs-danger);
+    border-radius: 0.475rem;
+    padding: 0.25rem;
+  }

@@ -5,7 +5,7 @@
 </div>
 
 <!-- Content (shown when loading is complete) -->
-<div *ngIf="!(isLoading$ | async)">
+<div *ngIf="!(isLoading$ | async)" #step2FormRoot>
   <div class="pb-10 pb-lg-15">
     <h2 class="fw-bolder text-gray-900">
       {{ "INSIGHTER_WIZARD.INSIGHTER_INFO" | translate }}
@@ -17,10 +17,11 @@
   <div [formGroup]="form">
     <!-- Personal Account Section -->
     <ng-container *ngIf="defaultValues.accountType === 'personal'">
-      <div class="mb-10 row">
+      <div class="mb-10 row gap-4">
           <!-- Industry -->
-          <div class=" col-12">
+          <div class=" col-12" data-control="isicCodes">
             <shared-tree-selector
+            [ngClass]="{ 'is-invalid': isControlInvalid('isicCodes') }"
             [title]="lang === 'ar' ? 'المجالات' : 'Specialties (Industries)'"
             [currentLang]="this.lang"
             [placeholder]="
@@ -49,8 +50,9 @@
             </div>
           </div>
         <!-- Consulting Fields -->
-        <div class=" col-12">
+        <div class=" col-12" data-control="consultingFields">
           <shared-tree-selector
+        [ngClass]="{ 'is-invalid': isControlInvalid('consultingFields') }"
         [title]="lang === 'ar' ? 'التخصصات' : 'Expertise'"
          
           [currentLang]="this.lang"
@@ -94,6 +96,7 @@
             <textarea
               name="bio"
               class="form-control"
+              [class.is-invalid]="isControlInvalid('bio')"
               rows="3"
               formControlName="bio"
             ></textarea>
@@ -123,7 +126,8 @@
           [enableSearch]="true"
           [showClear]="true"
           [lang]="lang"
-          [isInvalid]="!!(form.get('country')?.hasError('required') && form.get('country')?.touched)"
+          [ngClass]="{ 'is-invalid': isControlInvalid('country') }"
+          [isInvalid]="isControlInvalid('country')"
         ></app-country-dropdown>
         <div
           *ngIf="
@@ -165,13 +169,14 @@
     <ng-container *ngIf="defaultValues.accountType === 'corporate'">
       <!-- Logo -->
       <div class="mb-10 row">
-        <div class="col-12">
+        <div class="col-12" data-control="logo">
           <label class="form-label mb-3 required">
             {{ "INSIGHTER_WIZARD.COMPANYLOGO" | translate }}
           </label>
           <div class="d-flex flex-column">
             <div
               class="image-input logo-placeholder image-input-outline fit-content"
+              [ngClass]="{ 'is-invalid': isControlInvalid('logo') }"
               data-kt-image-input="true"
             >
               <!--begin::Image preview wrapper-->
@@ -256,6 +261,7 @@
             formControlName="legalName"
             type="text"
             class="form-control"
+            [class.is-invalid]="isControlInvalid('legalName')"
             placeholder="{{
               'INSIGHTER_WIZARD.LEGAL_NAME_PLACEHOLDER' | translate
             }}"
@@ -297,6 +303,7 @@
             formControlName="companyAddress"
             type="text"
             class="form-control"
+            [class.is-invalid]="isControlInvalid('companyAddress')"
             placeholder="{{ 'INSIGHTER_WIZARD.COMPANY_ADDRESS' | translate }}"
           />
           <div
@@ -323,7 +330,8 @@
           [enableSearch]="true"
           [showClear]="true"
           [lang]="lang"
-          [isInvalid]="!!(form.get('country')?.hasError('required') && form.get('country')?.touched)"
+          [ngClass]="{ 'is-invalid': isControlInvalid('country') }"
+          [isInvalid]="isControlInvalid('country')"
         ></app-country-dropdown>
         <div
           *ngIf="
@@ -337,7 +345,7 @@
       </div>
 
       <!-- Phone Number -->
-      <div class="mb-10 fv-row">
+      <div class="mb-10 fv-row" data-control="companyPhone">
         <label class="form-label mb-3 required">
           {{ "INSIGHTER_WIZARD.PHONE_NUMBER" | translate }}
         </label>
@@ -358,11 +366,12 @@
         ></app-phone-number-input>
       </div>
       <!-- Consulting Fied + Industry -->
-      <div class="mb-10 row">
+      <div class="mb-10 row gap-4">
         <!-- Consulting Fields -->
-        <div class="col-12">
+        <div class="col-12" data-control="consultingFields">
           <shared-tree-selector
-            [title]="lang === 'ar' ? 'التخصصات' : 'Expertise'"
+          [title]="lang === 'ar' ? 'التخصصات' : 'Expertise'"
+            [type]="'expertise'"
             [currentLang]="this.lang"
             [placeholder]="
               'AUTH.REGISTRATION.CONSULTING_FIELD_PLACEHOLDER' | translate
@@ -391,7 +400,7 @@
         </div>
      
         <!-- ISIC Codes -->
-        <div class="col-12">
+        <div class="col-12" data-control="isicCodes">
           <shared-tree-selector
           [title]="lang === 'ar' ? 'المجالات' : 'Specialties (Industries)'"
           [currentLang]="this.lang"
@@ -431,10 +440,20 @@
             <textarea
               name="aboutCompany"
               class="form-control"
+              [class.is-invalid]="isControlInvalid('aboutCompany')"
               rows="3"
               formControlName="aboutCompany"
             ></textarea>
           </div>
+        </div>
+        <div
+          *ngIf="
+            form.get('aboutCompany')?.hasError('required') &&
+            form.get('aboutCompany')?.touched
+          "
+          class="fv-plugins-message-container invalid-feedback"
+        >
+          {{ "INSIGHTER_WIZARD.ABOUT_COMPANY_REQUIRED" | translate }}
         </div>
       </div>
     </ng-container>

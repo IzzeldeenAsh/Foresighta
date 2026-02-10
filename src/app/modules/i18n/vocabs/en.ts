@@ -762,7 +762,7 @@ Your wealth of insight is valued and many are eager to learn from it.
 
       UPLOADED_FILES: "Uploaded Files",
       DOCUMENT_TYPE: "Document Type",
-      SELECT_DOCUMENT_TYPE: "Select Document Type",
+      SELECT_DOCUMENT_TYPE: "Document Type",
       DOCUMENT_TYPE_REQUIRED: "Document type is required.",
       COMPANYLOGO:" Company Logo",
       VERIFY_FILES: "Uploaded Files",
@@ -891,7 +891,7 @@ Your wealth of insight is valued and many are eager to learn from it.
       WEBSITE: 'Website',
       CERTIFICATIONS: 'Certifications',
       DOCUMENT_TYPE_REQUIRED: 'Document type is required.',
-      SELECT_DOCUMENT_TYPE: 'Select Document Type',
+      SELECT_DOCUMENT_TYPE: 'Document Type',
       ADD_CERTIFICATION: 'Add Certification',
       SAVE_CHANGES: 'Save Changes',
       "CHANGE_PASSWORD": "Change Password",

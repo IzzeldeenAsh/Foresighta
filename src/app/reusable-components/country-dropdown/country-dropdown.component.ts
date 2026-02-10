@@ -311,14 +311,12 @@ export class CountryDropdownComponent implements OnInit, OnChanges, ControlValue
   }
 
   private computeFlagSrc(country: Country): string {
-    if (country.file_url) {
-      return country.file_url;
-    }
+ 
     return `assets/media/flags/${country.flag}.svg`;
   }
 
   getFlagSrc(country: Country): string {
-    return (country as any)._flagSrc || this.computeFlagSrc(country);
+    return  this.computeFlagSrc(country);
   }
 
   // --- Helpers ---

@@ -765,6 +765,7 @@ export class DocumentModalComponent extends BaseComponent implements OnInit, OnC
   saveDocument(): void {
     if (this.documentForm.invalid) {
       this.documentForm.markAllAsTouched();
+      this.markAllControlsDirty(this.documentForm);
       return;
     }
 
@@ -780,6 +781,15 @@ export class DocumentModalComponent extends BaseComponent implements OnInit, OnC
     } else {
       this.saveNewDocument();
     }
+  }
+
+  private markAllControlsDirty(form: FormGroup): void {
+    if (!form?.controls) return;
+    Object.values(form.controls).forEach((control: any) => {
+      // FormControl/FormGroup both have markAsDirty
+      control?.markAsDirty?.();
+      control?.updateValueAndValidity?.({ emitEvent: false });
+    });
   }
 
   private saveNewDocument(): void {

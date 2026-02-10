@@ -410,6 +410,13 @@ export class VerticalComponent extends BaseComponent implements OnInit {
             next: (response) => {
               if(user.verificationMethod === "uploadDocument"){
                 this.onPendingMessage=true
+                // Refresh profile even in pending state (company info / roles may change)
+                const profileSub = this.getProfileService.refreshProfile().subscribe({
+                  next: (profile) => {
+                    this.userRoles = profile.roles || [];
+                  }
+                });
+                this.unsubscribe.push(profileSub);
               }else{
                 this.onSuccessMessage=true;
                 // Refresh profile to get updated roles
