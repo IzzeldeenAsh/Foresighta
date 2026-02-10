@@ -84,11 +84,14 @@ export class ProductionCookieService {
   }
 
   /**
-   * Sets the preferred language cookie
+   * Sets the preferred language cookie.
+   * Uses SameSite=Lax to match Next.js cookie handling - both apps are on
+   * subdomains of .insightabusiness.com so Lax is correct and more compatible.
    */
   setPreferredLanguage(language: string): void {
     this.setCookie('preferred_language', language, {
-      maxAge: this.DEFAULT_MAX_AGE
+      maxAge: this.DEFAULT_MAX_AGE,
+      sameSite: 'Lax'
     });
   }
 
@@ -100,18 +103,21 @@ export class ProductionCookieService {
   }
 
   /**
-   * Clears a cookie by name
+   * Clears a cookie by name.
+   * Handles cookies set by both Angular (SameSite=None) and Next.js (SameSite=Lax).
    */
   clearCookie(name: string): void {
     const isLocalhost = this.isLocalhost();
     
     const clearVariations = [
-      // Local variation
+      // Local variation (no domain)
       `${name}=; Path=/; Max-Age=-1`,
-      // Production domain variation
+      // Production domain variation (SameSite=None) - cookies set by Angular
       `${name}=; Domain=${this.DEFAULT_DOMAIN}; Path=/; Max-Age=-1; Secure; SameSite=None`,
+      // Production domain variation (SameSite=Lax) - cookies set by Next.js
+      `${name}=; Domain=${this.DEFAULT_DOMAIN}; Path=/; Max-Age=-1; Secure; SameSite=Lax`,
       // Fallback without domain
-      `${name}=; Path=/; Max-Age=-1; ${isLocalhost ? 'SameSite=Lax' : 'Secure; SameSite=None'}`
+      `${name}=; Path=/; Max-Age=-1; ${isLocalhost ? 'SameSite=Lax' : 'Secure; SameSite=Lax'}`
     ];
 
     clearVariations.forEach(variation => {

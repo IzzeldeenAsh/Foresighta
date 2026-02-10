@@ -55,14 +55,13 @@ export class LangSwitchButtonComponent implements OnInit {
     const newLang = this.selectedLang === 'en' ? 'ar' : 'en';
 
     // Change the language in the app
+    // translationService.setLanguage() handles: ngx-translate switch, localStorage,
+    // cookie (via CookieService.setPreferredLanguage), direction/font, and notifying subscribers
     this.selectedLang = newLang;
     this.translationService.setLanguage(newLang);
 
     // Update font based on the new language
     this.fontService.updateFont(this.selectedLang);
-
-    // Set the language preference using centralized cookie service
-    this.cookieService.setPreferredLanguage(newLang);
 
     // Reload the page to apply language changes
     window.location.reload();
