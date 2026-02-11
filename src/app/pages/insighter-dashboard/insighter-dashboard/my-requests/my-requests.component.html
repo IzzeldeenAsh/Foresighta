@@ -252,12 +252,15 @@ styleClass=""
                             
                             <!-- Center-Right: Status -->
                             <div class="d-none d-md-flex align-items-center mx-4">
-                                <div class="badge badge-pill" [ngClass]="{
-                                    'badge-light-warning': request.final_status === 'pending',
-                                    'badge-light-success': request.final_status === 'approved',
-                                    'badge-light-danger': request.final_status === 'declined'
-                                }">
-                                    {{ 'USER_REQUESTS.STATUS.' + (request.final_status | uppercase) | translate }}
+                                <div 
+                                    class="badge badge-pill" 
+                                    [ngClass]="{
+                                        'badge-light-warning': request.final_status === 'pending',
+                                        'badge-light-success': request.final_status === 'approved',
+                                        'badge-light-danger': request.final_status === 'declined' || request.final_status === 'rejected'
+                                    }"
+                                >
+                                    {{ 'USER_REQUESTS.STATUS.' + (request.final_status ? request.final_status.toUpperCase() : '') | translate }}
                                 </div>
                             </div>
                             <!-- Action Button -->

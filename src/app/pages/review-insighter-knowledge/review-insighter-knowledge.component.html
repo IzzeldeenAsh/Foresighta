@@ -266,48 +266,39 @@
                   <small class="text-muted">{{ 'NOTES_WILL_BE_VISIBLE_TO_INSIGHTER' | translate }}</small>
                 </div>
                 
-                <!-- Action Buttons -->
-                <div class="d-flex gap-3 flex-wrap">
-                  <button 
-                    class="btn btn-outline text-success flex-grow-1 hover-bg-light-success" 
-                    (click)="approveKnowledge()"
-                    [disabled]="isLoading">
-                    <i class="ki-duotone ki-check fs-2 me-2">
-                      <span class="path1"></span>
-                      <span class="path2"></span>
-                    </i>
-                    {{ 'APPROVE' | translate }}
-                  </button>
-                  <button 
-                    class="btn btn-outline text-danger flex-grow-1 hover-bg-light-danger" 
-                    (click)="rejectKnowledge()"
-                    [disabled]="isLoading"
-                    [ngbTooltip]="lang === 'ar' ? 'رفض جزئي: يسمح للإنسايتر بإعادة الإرسال لاحقاً.' : 'Partial reject: allows the insighter to resubmit later.'"
-                    container="body"
-                    placement="top">
-                    <i class="ki-duotone ki-cross fs-2 me-2">
-                      <span class="path1"></span>
-                      <span class="path2"></span>
-                    </i>
-                    {{ 'PARTIAL_REJECT' | translate }}
-                  </button>
-                </div>
+	                <!-- Action Buttons -->
+	                <div class="d-flex gap-2 flex-wrap">
+	                  <button 
+	                    class="btn btn-sm btn-light-success fw-semibold flex-grow-1 review-action-btn" 
+	                    (click)="approveKnowledge()"
+	                    [disabled]="isLoading">
+	                    <i class="ki-outline ki-check"></i>
+	                    {{ 'APPROVE' | translate }}
+	                  </button>
+	                  <button 
+	                    class="btn btn-sm btn-light-warning fw-semibold flex-grow-1 review-action-btn" 
+	                    (click)="rejectKnowledge()"
+	                    [disabled]="isLoading"
+	                    [ngbTooltip]="lang === 'ar' ? 'رفض جزئي: يسمح للإنسايتر بإعادة الإرسال لاحقاً.' : 'Partial reject: allows the insighter to resubmit later.'"
+	                    container="body"
+	                    placement="top">
+	                    <i class="ki-outline ki-arrow-left"></i>
+	                    {{ 'RETURN_FOR_REVIEW' | translate }}
+	                  </button>
+	                </div>
 
-                <!-- Final Reject -->
-                <button
-                  class="btn btn-danger w-100 mt-3"
-                  (click)="totalRejectKnowledge()"
-                  [disabled]="isLoading"
-                  [ngbTooltip]="lang === 'ar' ? 'رفض نهائي: لن يُسمح بأي رد/إعادة إرسال بعده.' : 'Final reject: no follow-up response/resubmission will be allowed.'"
-                  container="body"
-                  placement="top"
-                >
-                  <i class="ki-duotone ki-cross fs-2 me-2">
-                    <span class="path1"></span>
-                    <span class="path2"></span>
-                  </i>
-                  {{ 'FINAL_REJECT' | translate }}
-                </button>
+	                <!-- Final Reject -->
+	                <button
+	                  class="btn btn-sm btn-light-danger fw-semibold w-100 mt-3 review-action-btn"
+	                  (click)="totalRejectKnowledge()"
+	                  [disabled]="isLoading"
+	                  [ngbTooltip]="lang === 'ar' ? 'رفض نهائي: لن يُسمح بأي رد/إعادة إرسال بعده.' : 'Final reject: no follow-up response/resubmission will be allowed.'"
+	                  container="body"
+	                  placement="top"
+	                >
+	                  <i class="ki-outline ki-cross-circle"></i>
+	                  {{ 'REJECT' | translate }}
+	                </button>
               </div>
             </div>
           </div>

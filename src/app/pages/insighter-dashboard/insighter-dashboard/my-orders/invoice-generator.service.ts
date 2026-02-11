@@ -424,7 +424,7 @@ export class InvoiceGeneratorService {
     </table>
 
     <div class="footer">
-        Thank you for your business © 2026Insighta | info@insightabusiness.com
+        Thank you for your business © 2026 Insighta | info@insightabusiness.com
     </div>
 
 </div>

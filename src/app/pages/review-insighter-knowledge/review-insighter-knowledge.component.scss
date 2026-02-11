@@ -133,6 +133,21 @@
   padding: 30px 10px;
 }
 
+.review-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 0.65rem;
+  padding-top: 0.55rem;
+  padding-bottom: 0.55rem;
+
+  i {
+    font-size: 1.15rem;
+    line-height: 1;
+  }
+}
+
 .content-wrapper {
   position: relative;
   z-index: 1;
