@@ -107,6 +107,7 @@ export const locale = {
     APPROVE: 'Approve',
     REJECT: 'Reject',
     PARTIAL_REJECT: 'Partial Reject',
+    RETURN_FOR_REVIEW: 'Return for Review',
     FINAL_REJECT: 'Final Reject',
     STAFF_NOTES: 'Staff Notes',
     INDUSTRY: 'Industry',
@@ -919,7 +920,8 @@ Your wealth of insight is valued and many are eager to learn from it.
       STATUS: {
         PENDING: 'Pending',
         APPROVED: 'Approved',
-        DECLINED: 'Declined'
+        DECLINED: 'Declined',
+        REJECTED: 'Rejected'
       },
       "NO_REQUESTS": {
         "TITLE": "No Requests Found",

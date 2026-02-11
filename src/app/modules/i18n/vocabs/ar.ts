@@ -12,6 +12,7 @@ export const locale = {
     CHAPTER_NAME_REQUIRED: 'اسم الفصل مطلوب',
     SUB_CHAPTER_NAME_REQUIRED: 'اسم الفصل الفرعي مطلوب',
     PARTIAL_REJECT: 'رفض جزئي',
+    RETURN_FOR_REVIEW: 'إعادة للمراجعة',
     ENTER_CHAPTER_NAME: 'أدخل اسم الفصل',
     ENTER_SUB_CHAPTER_NAME: 'أدخل اسم الفصل الفرعي',
     BUILD_YOUR_TEAM: 'ابني فريقك',
@@ -872,7 +873,8 @@ INSIGHTER_REQUESTS: {
       STATUS: {
         PENDING: 'قيد الانتظار',
         APPROVED: 'تمت الموافقة',
-        DECLINED: 'مرفوض'
+        DECLINED: 'مرفوض',
+        REJECTED: 'رفض'
       },
       "NO_REQUESTS": {
         "TITLE": "No Requests Found",
