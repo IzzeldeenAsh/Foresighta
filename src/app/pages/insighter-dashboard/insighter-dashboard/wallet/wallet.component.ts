@@ -232,24 +232,26 @@ export class WalletComponent extends BaseComponent implements OnInit, OnDestroy,
 
     // Handle special cases for meeting-related transactions
     if (service === 'book_meeting') {
-      return this.lang === 'ar' ? 'حجز اجتماع' : 'Book Meeting';
+      return this.lang === 'ar' ? 'حجز جلسة استشارية' : 'Book Session';
     }
     if (service === 'income_meeting') {
-      return this.lang === 'ar' ? 'دخل من اجتماع' : 'Meeting Income';
+      return this.lang === 'ar' ? 'دخل من جلسة استشارية' : 'Session Income';
     }
     if (service === 'income_knowledge') {
-      return this.lang === 'ar' ? 'مبيعات المستندات' : 'Knowledge Income';
+      return this.lang === 'ar' ? 'مبيعات المستندات' : 'Insights Income';
     }
     if (service === 'purchase_knowledge') {
-      return this.lang === 'ar' ? 'شراء المعرفة' : 'Knowledge Purchase';
+      return this.lang === 'ar' ? 'شراء المستندات' : 'Insights Purchase';
     }
 
     // Check if service contains knowledge sales keywords
     const normalizedService = service.toLowerCase().trim();
     if (normalizedService.includes('knowledge') && (normalizedService.includes('sales') || normalizedService.includes('income'))) {
-      return this.lang === 'ar' ? 'مبيعات المستندات' : (normalizedService.includes('sales') ? 'Knowledge Sales' : 'Knowledge Income');
+      return this.lang === 'ar' ? 'مبيعات المستندات' : (normalizedService.includes('sales') ? 'Insights Sales' : 'Insights Income');
     }
-
+    if (service === 'خدمة الاجتماع' || service.includes('اجتماع') || service.includes('meeting')) {
+      return this.lang === 'ar' ? 'جلسة استشارية' : 'Session';
+    } 
     // Default formatting for other services
     return service
       .split('_')
@@ -509,9 +511,9 @@ export class WalletComponent extends BaseComponent implements OnInit, OnDestroy,
       'currentWalletBalance': { en: 'Balance', ar: 'الرصيد' },
       'transactionsHistory': { en: 'Transactions', ar: 'الحركات المالية' },
       'transactionsSubtitle': { en: 'Track money coming in and going out from this area.', ar: 'تتبع الأموال الواردة والصادرة من هذه المنطقة.' },
-      'service': { en: 'Transactions', ar: 'الحركة' },
+      'service': { en: 'Transactions', ar: 'الخدمة' },
       'date': { en: 'Date', ar: 'التاريخ' },
-      'transaction': { en: 'Description ', ar: 'المعاملة' },
+      'transaction': { en: 'Description ', ar: 'الحركة' },
       'type': { en: 'Type', ar: 'النوع' },
       'transactionType': { en: 'Type', ar: 'النوع' },
       'operationType': { en: 'Operation', ar: 'العملية' },
@@ -532,7 +534,7 @@ export class WalletComponent extends BaseComponent implements OnInit, OnDestroy,
       'orderNumber': { en: 'Order Number', ar: 'رقم الطلب' },
       'invoiceNumber': { en: 'Invoice Number', ar: 'رقم الفاتورة' },
       'status': { en: 'Status', ar: 'الحالة' },
-      'knowledgeItems': { en: 'Knowledge Items', ar: 'عناصر المعرفة' },
+      'knowledgeItems': { en: 'Insights Items', ar: 'عناصر المستندات' },
       'meetingDetails': { en: 'Session Details', ar: 'تفاصيل الجلسة الاستشارية' },
       'meetingTitle': { en: 'Session Title', ar: 'عنوان الجلسة الاستشارية' },
       'meetingStatus': { en: 'Session Status', ar: 'حالة الجلسة الاستشارية' },
