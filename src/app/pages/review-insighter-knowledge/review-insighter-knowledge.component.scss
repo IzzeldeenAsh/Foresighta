@@ -74,10 +74,7 @@
   border-radius: 10px;
   background-color: #fff;
   box-shadow: 0 0 24px 0 rgba(3, 31, 66, 0.05);
-  margin-top: -300px;
-  position: sticky;
   border: 1px solid #DFDFDF;
-  z-index: 1;
   @media (max-width: 991px) {
     position: relative;
     top: 0;
@@ -113,6 +110,22 @@
         color: #4f5158;
       }
     }
+  }
+}
+
+.review-sidebar {
+  z-index: 1;
+
+  @media (min-width: 992px) {
+    --review-sidebar-top: 120px;
+    top: var(--review-sidebar-top);
+    margin-top: -300px;
+    max-height: calc(100vh - var(--review-sidebar-top) - 24px);
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: 6px;
+    padding-bottom: 12px;
+    -webkit-overflow-scrolling: touch;
   }
 }
 
