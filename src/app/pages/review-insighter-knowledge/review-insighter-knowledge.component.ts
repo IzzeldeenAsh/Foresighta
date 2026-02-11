@@ -276,7 +276,7 @@ export class ReviewInsighterKnowledgeComponent extends BaseComponent implements 
       },
       reject: {
         title: 'Are you sure you want to finally reject this knowledge?',
-        text: 'This is a final rejection and no follow-up response/resubmission will be allowed.',
+        text: 'This is a final rejection and no follow-up response will be allowed.',
         confirmButton: 'Yes, reject it permanently!',
         cancelButton: 'Cancel'
       },

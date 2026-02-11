@@ -210,7 +210,7 @@ export class ViewMyKnowledgeComponent extends BaseComponent implements OnInit {
     return this.knowledge && 
            this.knowledge.account_manager_process && 
            this.knowledge.account_manager_process.need_to_review === true && 
-           this.knowledge.account_manager_process.action === 'resend_review';
+           this.knowledge.account_manager_process.action === 'review';
   }
   
   isPendingResendReview(): boolean {

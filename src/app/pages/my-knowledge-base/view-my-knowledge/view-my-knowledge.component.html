@@ -684,8 +684,6 @@
                     class="btn btn-info w-100"
                     (click)="sendToReview()"
                     *ngIf="knowledge.status !== 'in_review' && 
-                          (knowledge.status === 'unpublished' || knowledge.status === 'scheduled') && 
-                          knowledge.publish_as !== 'package' && 
                           hasRequiredFields() && 
                           isCompanyInsighter() && 
                           needsReview() &&

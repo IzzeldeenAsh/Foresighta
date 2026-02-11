@@ -129,7 +129,7 @@ styleClass=""
                                 <div class="badge badge-pill" [ngClass]="{
                                     'badge-light-warning': request.final_status === 'pending',
                                     'badge-light-success': request.final_status === 'approved',
-                                    'badge-light-danger': request.final_status === 'declined'
+                                    'badge-light-danger': request.final_status === 'declined' || request.final_status === 'rejected'
                                 }">
                                     {{ 'USER_REQUESTS.FILTER.' + (request.final_status | uppercase) | translate }}
                                 </div>
@@ -280,10 +280,15 @@ styleClass=""
         <div *ngIf="!(isLoading$ | async) && filteredInsighterRequests.length === 0 && hasInsighterFilters()" class="text-center py-8 bg-light-secondary rounded">
             <div class="my-3">
                 <i class="bi bi-funnel fs-1 text-gray-400 mb-3 d-block"></i>
-                <h4 class="fw-bold text-gray-800 mb-2">No Matching Requests</h4>
-                <p class="text-gray-600 fs-6 px-3">No insighter requests match your current filter criteria.</p>
+                <h4 class="fw-bold text-gray-800 mb-2">
+                  {{ lang === 'ar' ? 'لا يوجد طلبات مطابقة' : 'No Matching Requests' }}
+                </h4>
+                <p class="text-gray-600 fs-6 px-3">
+                  {{ lang === 'ar' ? 'لا توجد طلبات انسايتر تطابق معايير التصفية الحالية.' : 'No insighter requests match your current filter criteria.' }}
+                </p>
                 <button class="btn btn-sm btn-light-primary mt-2" (click)="clearInsighterFilters()">
-                    <i class="bi bi-x-circle me-1"></i> Clear Filters
+                  <i class="bi bi-x-circle me-1"></i>
+                  {{ lang === 'ar' ? 'إلغاء التصفية' : 'Clear Filters' }}
                 </button>
             </div>
         </div>
@@ -310,7 +315,7 @@ styleClass=""
             <div class="badge" [ngClass]="{
                 'badge-light-warning': selectedRequest.final_status === 'pending',
                 'badge-light-success': selectedRequest.final_status === 'approved', 
-                'badge-light-danger': selectedRequest.final_status === 'declined'
+                'badge-light-danger': selectedRequest.final_status === 'declined' || selectedRequest.final_status === 'rejected'
             }">
                 {{ selectedRequest.final_status | titlecase }}
             </div>
