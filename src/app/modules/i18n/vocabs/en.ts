@@ -1230,7 +1230,7 @@ Your wealth of insight is valued and many are eager to learn from it.
   CHOOSE_ECONOMIC_BLOCK: "Choose Economic Block",
   SELECT_DATE_TIME: "Select Date and Time",
   SELECT_DATE_AND_TIME: "Select a date and time for publishing",
-  ENTER_CUSTOM_TOPIC: "Enter Custom Topic",
+  ENTER_CUSTOM_TOPIC: "Initiate Custom Topic",
   DUPLICATE_TOPIC: "This topic already exists. Please choose a different name.",
   KNOWLEDGE_DOCUMENTS: "Knowledge Documents",
   DATA_DOCUMENTS: "Upload Document",

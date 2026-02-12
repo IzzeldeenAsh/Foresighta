@@ -709,7 +709,7 @@
                     disabled
                   >
                     <i class="ki-outline ki-cross-circle fs-4 me-2"></i>
-                    Rejected
+                   {{lang==='ar' ? 'مرفوض' : ' Rejected'}}
                   </button>
 
                   <!-- Show publish button when not needing review or user is not company-insighter -->
@@ -946,7 +946,11 @@
           </div>
         </div>
 
-  
+        <div class="mb-5" *ngIf="isLeavePromptActive">
+          <button class="btn btn-light w-100" (click)="closeSocialShareModal()">
+            {{ lang === 'ar' ? 'إلغاء والمتابعة' : 'Cancel and continue' }}
+          </button>
+        </div>
 
         <!-- Social Media Buttons -->
         <div class="d-flex justify-content-center gap-3 mb-4">

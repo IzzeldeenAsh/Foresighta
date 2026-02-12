@@ -4,11 +4,13 @@ import { ViewMyKnowledgeComponent } from './view-my-knowledge/view-my-knowledge.
 import { KnowledgeAnalyticsComponent } from './view-my-knowledge/knowledge-analytics/knowledge-analytics.component';
 import { KnowledgeDetailsComponent } from './view-my-knowledge/knowledge-details/knowledge-details.component';
 import { ViewMyPackagesComponent } from './view-my-packages/view-my-packages.component';
+import { PendingChangesGuard } from '../../guards/pending-changes.guard';
 
 const routes: Routes = [
   {
     path: 'view-my-knowledge/:id',
     component: ViewMyKnowledgeComponent,
+    canDeactivate: [PendingChangesGuard],
     data: {
       breadcrumb: [
         { label: 'My library', link: '/app/insighter-dashboard/my-knowledge/general' },
