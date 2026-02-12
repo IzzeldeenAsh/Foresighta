@@ -337,15 +337,23 @@
                     </div>
 
                     <div class="d-flex flex-column gap-3 mb-4" >
-                 
-                      <button 
-                      class="btn btn-sm"
-                      [class.btn-danger]="packageDetails.status === 'published'"
-                      [class.btn-primary]="packageDetails.status !== 'published'"
-                      (click)="updatePackageStatus()"
-                      [disabled]="isLoading">
-                      {{ packageDetails.status === 'published' ? 'Unpublish' : 'Publish' }}
-                    </button>
+                      <button
+                        *ngIf="hasRejectedKnowledgeRequest(); else publishActionButton"
+                        class="btn btn-sm btn-light-danger"
+                        disabled>
+                        Rejected
+                      </button>
+
+                      <ng-template #publishActionButton>
+                        <button
+                          class="btn btn-sm"
+                          [class.btn-danger]="packageDetails.status === 'published'"
+                          [class.btn-primary]="packageDetails.status !== 'published'"
+                          (click)="updatePackageStatus()"
+                          [disabled]="isLoading">
+                          {{ packageDetails.status === 'published' ? 'Unpublish' : 'Publish' }}
+                        </button>
+                      </ng-template>
                    
                     <!-- <button 
                     class="btn btn-sm"

@@ -703,6 +703,15 @@
                     {{lang ==='ar'  ? "الإرسال للمراجعة" : "Resend To Review"}}
                   </button>
 
+                  <button
+                    class="btn btn-light-danger w-100 disabled opacity-75"
+                    *ngIf="isRejectedRequest()"
+                    disabled
+                  >
+                    <i class="ki-outline ki-cross-circle fs-4 me-2"></i>
+                    Rejected
+                  </button>
+
                   <!-- Show publish button when not needing review or user is not company-insighter -->
                   <button
                     class="btn btn-info w-100"
@@ -711,7 +720,8 @@
                           (knowledge.status === 'unpublished' || knowledge.status === 'scheduled') && 
                           knowledge.publish_as !== 'package' && 
                           hasRequiredFields() && 
-                          (!isCompanyInsighter() || !needsReview())"
+                          (!isCompanyInsighter() || !needsReview()) &&
+                          !isRejectedRequest()"
                   >
                     <i class="ki-outline ki-cart fs-4 me-2"></i>
                     {{ 'VIEW_MY_KNOWLEDGE.PUBLISH' | translate }}
@@ -723,7 +733,7 @@
                   <button
                     class="btn btn-info w-100"
                     (click)="publishAs('package')"
-                    *ngIf="knowledge.status !== 'in_review' && knowledge.publish_as === 'both'"
+                    *ngIf="knowledge.status !== 'in_review' && knowledge.publish_as === 'both' && !isRejectedRequest()"
                   >
                     <i class="ki-duotone ki-package fs-4 me-2">
                       <span class="path1"></span>
@@ -735,7 +745,7 @@
                   <button
                     class="btn btn-info w-100"
                     (click)="publishAs('both')"
-                    *ngIf="knowledge.status !== 'in_review' && knowledge.publish_as === 'package' && (knowledge.status === 'published')"
+                    *ngIf="knowledge.status !== 'in_review' && knowledge.publish_as === 'package' && (knowledge.status === 'published') && !isRejectedRequest()"
                   >
                     <i class="ki-duotone ki-package fs-4 me-2">
                       <span class="path1"></span>
@@ -751,7 +761,8 @@
                     *ngIf="knowledge.status !== 'in_review' && 
                           (knowledge.status === 'unpublished' || knowledge.status === 'scheduled') && 
                           hasRequiredFields() && 
-                          (!isCompanyInsighter() || !needsReview())"
+                          (!isCompanyInsighter() || !needsReview()) &&
+                          !isRejectedRequest()"
                   >
                    @if(knowledge.status === 'scheduled'){
                     {{ 'VIEW_MY_KNOWLEDGE.CHANGE_SCHEDULE' | translate }}

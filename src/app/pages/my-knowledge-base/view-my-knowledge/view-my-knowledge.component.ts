@@ -221,6 +221,10 @@ export class ViewMyKnowledgeComponent extends BaseComponent implements OnInit {
            this.knowledge.account_manager_process.request_status === 'pending';
   }
 
+  isRejectedRequest(): boolean {
+    return this.knowledge?.account_manager_process?.request_status === 'rejected';
+  }
+
   sendToReview(): void {
     Swal.fire({
       title: this.lang === 'ar' ? 'هل أنت متأكد؟' : 'Are you sure?',

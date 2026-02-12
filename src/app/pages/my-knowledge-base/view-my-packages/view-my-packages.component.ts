@@ -151,6 +151,12 @@ export class ViewMyPackagesComponent extends BaseComponent implements OnInit {
     });
   }
 
+  hasRejectedKnowledgeRequest(): boolean {
+    return this.knowledgeItems.some(
+      (item) => item.account_manager_process?.request_status === 'rejected'
+    );
+  }
+
   editDiscount(): void {
     if (!this.packageDetails) return;
 
