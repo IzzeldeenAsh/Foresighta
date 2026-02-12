@@ -12,6 +12,7 @@ import { Topic, TopicsService } from 'src/app/_fake/services/topic-service/topic
 import { EconomicBloc } from 'src/app/_fake/services/economic-block/economic-block.service';
 import { IsicCodesService } from 'src/app/_fake/services/isic-code/isic-codes.service';
 import { TagsService } from 'src/app/_fake/services/tags/tags.service';
+import { Dropdown } from 'primeng/dropdown';
 import { KnowledgeService } from 'src/app/_fake/services/knowledge/knowledge.service';
 import { AddInsightStepsService } from 'src/app/_fake/services/add-insight-steps/add-insight-steps.service';
 import { RegionsService } from 'src/app/_fake/services/region/regions.service';
@@ -114,6 +115,7 @@ export class Step4Component extends BaseComponent implements OnInit, OnDestroy {
 
   @ViewChild('regionSelector') regionSelector: any;
   @ViewChild('economicBlockSelector') economicBlockSelector: any;
+  @ViewChild('topicDropdown') topicDropdown?: Dropdown;
 
   aiAbstractError = false;
 
@@ -126,6 +128,10 @@ export class Step4Component extends BaseComponent implements OnInit, OnDestroy {
   showEditor = false;
   private stopPolling$ = new Subject<void>();
 
+  dropdownOverlaysOpen = 0;
+  get isDropdownBackdropVisible(): boolean {
+    return this.dropdownOverlaysOpen > 0;
+  }
 
   // Add tracking for AI-generated fields
   aiGeneratedFields: Record<string, boolean> = {
@@ -223,6 +229,8 @@ export class Step4Component extends BaseComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.elRef?.nativeElement?.ownerDocument?.body?.classList.remove('step4-dropdown-overlay-open');
+
     // Clean up AI generation polling
     if (this.stopPolling$) {
       this.stopPolling$.next();
@@ -236,6 +244,24 @@ export class Step4Component extends BaseComponent implements OnInit, OnDestroy {
 
     // Call parent destroy
     super.ngOnDestroy();
+  }
+
+  onDropdownOverlayShow(): void {
+    this.dropdownOverlaysOpen += 1;
+    this.elRef?.nativeElement?.ownerDocument?.body?.classList.add('step4-dropdown-overlay-open');
+  }
+
+  onDropdownOverlayHide(): void {
+    this.dropdownOverlaysOpen = Math.max(0, this.dropdownOverlaysOpen - 1);
+    if (this.dropdownOverlaysOpen === 0) {
+      this.elRef?.nativeElement?.ownerDocument?.body?.classList.remove('step4-dropdown-overlay-open');
+    }
+  }
+
+  closeDropdownOverlays(): void {
+    this.topicDropdown?.hide?.();
+    this.dropdownOverlaysOpen = 0;
+    this.elRef?.nativeElement?.ownerDocument?.body?.classList.remove('step4-dropdown-overlay-open');
   }
 
   private initForms() {

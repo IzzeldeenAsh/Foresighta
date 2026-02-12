@@ -129,9 +129,9 @@ styleClass=""
                                 <div class="badge badge-pill" [ngClass]="{
                                     'badge-light-warning': request.final_status === 'pending',
                                     'badge-light-success': request.final_status === 'approved',
-                                    'badge-light-danger': request.final_status === 'declined'
+                                    'badge-light-danger': request.final_status === 'declined' || request.final_status === 'rejected'
                                 }">
-                                    {{ 'USER_REQUESTS.FILTER.' + (request.final_status | uppercase) | translate }}
+                                    {{ request.final_status_label }}
                                 </div>
                             </div>
                             
@@ -252,12 +252,15 @@ styleClass=""
                             
                             <!-- Center-Right: Status -->
                             <div class="d-none d-md-flex align-items-center mx-4">
-                                <div class="badge badge-pill" [ngClass]="{
-                                    'badge-light-warning': request.final_status === 'pending',
-                                    'badge-light-success': request.final_status === 'approved',
-                                    'badge-light-danger': request.final_status === 'declined'
-                                }">
-                                    {{ 'USER_REQUESTS.STATUS.' + (request.final_status | uppercase) | translate }}
+                                <div 
+                                    class="badge badge-pill" 
+                                    [ngClass]="{
+                                        'badge-light-warning': request.final_status === 'pending',
+                                        'badge-light-success': request.final_status === 'approved',
+                                        'badge-light-danger': request.final_status === 'declined' || request.final_status === 'rejected'
+                                    }"
+                                >
+                                    {{ request.final_status_label}}
                                 </div>
                             </div>
                             <!-- Action Button -->
@@ -277,10 +280,15 @@ styleClass=""
         <div *ngIf="!(isLoading$ | async) && filteredInsighterRequests.length === 0 && hasInsighterFilters()" class="text-center py-8 bg-light-secondary rounded">
             <div class="my-3">
                 <i class="bi bi-funnel fs-1 text-gray-400 mb-3 d-block"></i>
-                <h4 class="fw-bold text-gray-800 mb-2">No Matching Requests</h4>
-                <p class="text-gray-600 fs-6 px-3">No insighter requests match your current filter criteria.</p>
+                <h4 class="fw-bold text-gray-800 mb-2">
+                  {{ lang === 'ar' ? 'لا يوجد طلبات مطابقة' : 'No Matching Requests' }}
+                </h4>
+                <p class="text-gray-600 fs-6 px-3">
+                  {{ lang === 'ar' ? 'لا توجد طلبات انسايتر تطابق معايير التصفية الحالية.' : 'No insighter requests match your current filter criteria.' }}
+                </p>
                 <button class="btn btn-sm btn-light-primary mt-2" (click)="clearInsighterFilters()">
-                    <i class="bi bi-x-circle me-1"></i> Clear Filters
+                  <i class="bi bi-x-circle me-1"></i>
+                  {{ lang === 'ar' ? 'إلغاء التصفية' : 'Clear Filters' }}
                 </button>
             </div>
         </div>
@@ -307,9 +315,9 @@ styleClass=""
             <div class="badge" [ngClass]="{
                 'badge-light-warning': selectedRequest.final_status === 'pending',
                 'badge-light-success': selectedRequest.final_status === 'approved', 
-                'badge-light-danger': selectedRequest.final_status === 'declined'
+                'badge-light-danger': selectedRequest.final_status === 'declined' || selectedRequest.final_status === 'rejected'
             }">
-                {{ selectedRequest.final_status | titlecase }}
+                {{ selectedRequest.final_status_label | titlecase }}
             </div>
         </div>
 
@@ -335,7 +343,7 @@ styleClass=""
                     (click)="navigateToReview()"
                 >
                     <i class="bi bi-file-earmark-text fs-4 mx-2"></i>
-                    Review Knowledge
+            {{lang==='ar' ? "انتظار موافقة معرفة": '  Review Knowledge'}}
                 </button>
             </div>
             
@@ -347,7 +355,7 @@ styleClass=""
                     (click)="onApproveRequest()"
                 >
                     <i class="bi bi-check-circle-fill fs-4 mx-2"></i>
-                    Approve
+                  {{lang ==='ar' ? 'قبول' : 'Approve'}}
                 </button>
                 <button 
                     type="button" 
@@ -355,7 +363,7 @@ styleClass=""
                     (click)="onDeclineRequest()"
                 >
                     <i class="bi bi-x-circle-fill fs-4 mx-2"></i>
-                    Decline
+                     {{lang ==='ar' ? 'رفض' : 'Decline'}}
                 </button>
             </div>
         </div>
@@ -365,7 +373,8 @@ styleClass=""
                 <div class="card-header border-0 ps-0 pt-0">
                     <h5 class="card-title fw-semibold text-dark">
                         <i class="bi bi-pencil-square mx-2"></i>
-                        Staff Notes
+                      
+                         {{lang ==='ar' ? 'ملاحظات الإدارة' : 'Staff Notes'}}
                     </h5>
                 </div>
                 <div class="card-body px-0">
@@ -434,17 +443,17 @@ styleClass=""
               class="btn btn-primary btn-icon-primary w-100 mt-4"
               (click)="viewKnowledge()"
             >
-              View Knowledge
+            {{lang==='ar' ?  'عرض المعرفة': '  View Knowledge'}}
             </button>
         </ng-container>
             </div>
     </div>
-    <div *ngIf="hasPendingRequestOfSameType && selectedRequest?.final_status !== 'approved'" class="mt-4 alert alert-warning  border">
+    <!-- <div *ngIf="hasPendingRequestOfSameType && selectedRequest?.final_status !== 'approved'" class="mt-4 alert alert-warning  border">
         <div class="d-flex align-items-center">
             <i class="bi bi-exclamation-triangle-fill mx-2 fs-4 text-warning"></i>
             <span>{{ 'USER_REQUESTS.DIALOG.PENDING_REQUEST_EXISTS' | translate }}</span>
         </div>
     </div>
-        
+         -->
         
 </p-dialog>

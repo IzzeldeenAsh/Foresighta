@@ -657,9 +657,19 @@
  }
 }
   
-
-@media screen and (max-width: 992px) and (min-width: 577px) {
+.responsive-cont{
+  padding-top: 20px;
+}
+@media screen and (max-width: 992px)  {
   .responsive-cont {
     padding-top: 80px;
   }
 }
+
+
+@media screen and (max-width: 574px)  {
+  .responsive-cont {
+    padding-top: 50px;
+  }
+}
+

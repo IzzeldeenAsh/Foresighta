@@ -138,7 +138,7 @@ export class MyRequestsComponent extends BaseComponent implements OnInit {
       const matchesType = this.selectedType ? request.type.key === this.selectedType : true;
       const matchesStatus = this.selectedStatus ? request.final_status === this.selectedStatus : true;
       return matchesType && matchesStatus;
-    });
+    }).sort((a, b) => this.getRequestSortValue(b) - this.getRequestSortValue(a));
   }
 
   filterInsighterRequests() {
@@ -149,7 +149,7 @@ export class MyRequestsComponent extends BaseComponent implements OnInit {
       const matchesType = this.selectedInsighterType ? request.type.key === this.selectedInsighterType : true;
       const matchesStatus = this.selectedInsighterStatus ? request.final_status === this.selectedInsighterStatus : true;
       return matchesType && matchesStatus;
-    });
+    }).sort((a, b) => this.getRequestSortValue(b) - this.getRequestSortValue(a));
     
     console.log('Filtered insighter requests count:', this.filteredInsighterRequests.length);
   }
@@ -324,17 +324,66 @@ export class MyRequestsComponent extends BaseComponent implements OnInit {
 
   private getLatestChild(request: ExtendedUserRequest): ExtendedUserRequest {
     let latest = request;
+    let latestSortValue = this.getSingleRequestSortValue(request);
 
     if (request.children && request.children.length > 0) {
       for (const child of request.children as ExtendedUserRequest[]) {
         const candidate = this.getLatestChild(child);
-        if (candidate.id > latest.id) {
+        const candidateSortValue = this.getSingleRequestSortValue(candidate);
+
+        if (candidateSortValue > latestSortValue) {
           latest = candidate;
+          latestSortValue = candidateSortValue;
         }
       }
     }
 
     return latest;
+  }
+
+  private getRequestSortValue(request: ExtendedUserRequest): number {
+    return this.getSingleRequestSortValue(this.getLatestChild(request));
+  }
+
+  private getSingleRequestSortValue(request: ExtendedUserRequest): number {
+    const requestAny = request as any;
+
+    const dateCandidates: Array<string | null | undefined> = [
+      requestAny.updated_at,
+      requestAny.created_at,
+      requestAny.handel_at,
+      requestAny.handled_at,
+      requestAny.updatedAt,
+      requestAny.createdAt,
+      request.handel_at,
+    ];
+
+    for (const value of dateCandidates) {
+      if (!value) continue;
+      const parsed = this.parseRequestDate(value);
+      if (parsed !== null) return parsed;
+    }
+
+    return typeof request.id === 'number' ? request.id : Number(requestAny.id) || 0;
+  }
+
+  private parseRequestDate(value: string): number | null {
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+
+    const hasTimezone = /([zZ]|[+-]\d{2}:\d{2})$/.test(trimmed);
+    const normalized = trimmed.includes(' ') ? trimmed.replace(' ', 'T') : trimmed;
+
+    const attempts = hasTimezone
+      ? [trimmed, normalized]
+      : [trimmed, normalized, `${normalized}Z`];
+
+    for (const attempt of attempts) {
+      const parsed = Date.parse(attempt);
+      if (!Number.isNaN(parsed)) return parsed;
+    }
+
+    return null;
   }
 
   onResendRequest() {

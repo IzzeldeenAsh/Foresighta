@@ -32,6 +32,10 @@ export class ReviewInsighterKnowledgeComponent extends BaseComponent implements 
   requestUser: any = null;
   pendingRequest: any = null;
   statusRequestString: { en: string; ar: string } = { en: '', ar: '' };
+  isSocialShareModalVisible: boolean = false;
+  customShareMessage: string = '';
+  linkCopied: boolean = false;
+  navigateAfterShareClose: boolean = false;
 
   constructor(
     injector: Injector,
@@ -247,9 +251,9 @@ export class ReviewInsighterKnowledgeComponent extends BaseComponent implements 
         cancelButton: 'إلغاء'
       },
       decline: {
-        title: 'هل أنت متأكد أنك تريد الرفض الجزئي لهذه المعرفة؟',
-        text: 'أنت على وشك رفض هذه المعرفة (مع السماح بإعادة الإرسال).',
-        confirmButton: 'نعم، ارفض جزئياً!',
+        title: 'هل أنت متأكد أنك تريد إرجاع هذه المعرفة؟',
+        text: 'أنت على وشك ارجاع هذه المعرفة (مع السماح بإعادة الإرسال).',
+        confirmButton: 'نعم، ارجع!',
         cancelButton: 'إلغاء'
       },
       reject: {
@@ -263,20 +267,20 @@ export class ReviewInsighterKnowledgeComponent extends BaseComponent implements 
     // English messages
     const enMessages = {
       approve: {
-        title: 'Are you sure you want to approve this knowledge?',
-        text: 'You are about to approve this knowledge submission.',
+        title: 'Are you sure you want to approve this Insight?',
+        text: 'You are about to approve this insight submission.',
         confirmButton: 'Yes, approve it!',
         cancelButton: 'Cancel'
       },
       decline: {
-        title: 'Are you sure you want to partially reject this knowledge?',
-        text: 'You are about to partially reject this knowledge submission (resubmission allowed).',
-        confirmButton: 'Yes, partially reject it!',
+        title: 'Are you sure you want to return this insight?',
+        text: 'You are about to return this insight submission (resubmission allowed).',
+        confirmButton: 'Yes, return it!',
         cancelButton: 'Cancel'
       },
       reject: {
-        title: 'Are you sure you want to finally reject this knowledge?',
-        text: 'This is a final rejection and no follow-up response/resubmission will be allowed.',
+        title: 'Are you sure you want to finally reject this insight?',
+        text: 'This is a final rejection and no follow-up response will be allowed.',
         confirmButton: 'Yes, reject it permanently!',
         cancelButton: 'Cancel'
       },
@@ -376,7 +380,13 @@ export class ReviewInsighterKnowledgeComponent extends BaseComponent implements 
             },
             buttonsStyling: false
           }).then(() => {
-            // Navigate back to the company dashboard or other appropriate page
+            if (status === 'approve') {
+              this.loadKnowledgeData();
+              this.checkRequestStatus();
+              this.openSocialShareModal(true);
+              return;
+            }
+
             this.router.navigate(['/app/insighter-dashboard/my-requests']);
           });
         },
@@ -386,4 +396,115 @@ export class ReviewInsighterKnowledgeComponent extends BaseComponent implements 
         }
       });
   }
-} 
+
+  openSocialShareModal(navigateAfterClose: boolean = false): void {
+    this.isSocialShareModalVisible = true;
+    this.linkCopied = false;
+    this.navigateAfterShareClose = navigateAfterClose;
+
+    if (!this.customShareMessage) {
+      this.customShareMessage = this.getDefaultShareMessage();
+    }
+  }
+
+  closeSocialShareModal(): void {
+    this.isSocialShareModalVisible = false;
+
+    if (this.navigateAfterShareClose) {
+      this.navigateAfterShareClose = false;
+      this.router.navigate(['/app/insighter-dashboard/my-requests']);
+    }
+  }
+
+  getShareableLink(): string {
+    const knowledgeType = this.knowledge?.type?.toLowerCase() || 'knowledge';
+    const slug = this.knowledge?.slug || '';
+    return `https://insightabusiness.com/${this.lang}/knowledge/${knowledgeType}/${slug}`;
+  }
+
+  getSocialShareTitle(): string {
+    const knowledgeType = this.knowledge?.type
+      ? this.knowledge.type.charAt(0).toUpperCase() + this.knowledge.type.slice(1)
+      : 'Knowledge';
+    const title = this.knowledge?.title || 'Amazing Knowledge';
+    return `${knowledgeType} - ${title}`;
+  }
+
+  private translateKnowledgeTypeToArabic(type: string): string {
+    if (!type) return 'معرفة';
+    const normalized = type.toLowerCase();
+
+    switch (normalized) {
+      case 'data':
+        return 'بيانات';
+      case 'statistic':
+      case 'insight':
+      case 'insights':
+        return 'رؤية';
+      case 'report':
+      case 'reports':
+        return 'تقرير';
+      case 'manual':
+      case 'manuals':
+        return 'دليل';
+      case 'course':
+      case 'courses':
+        return 'دورة';
+      case 'media':
+        return 'وسائط';
+      case 'knowledge':
+        return 'معرفة';
+      default:
+        return type;
+    }
+  }
+
+  getDefaultShareMessage(): string {
+    if (!this.knowledge) {
+      return this.lang === 'ar' ? 'اكتب رسالة المشاركة الخاصة بك' : 'Write your share message';
+    }
+
+    const knowledgeType = this.knowledge.type || 'knowledge';
+
+    if (this.lang === 'ar') {
+      const knowledgeTypeAr = this.translateKnowledgeTypeToArabic(knowledgeType);
+      return `لقد نشرت ${knowledgeTypeAr} جديد في ...`;
+    }
+
+    return `I just published a business ${knowledgeType} in ...`;
+  }
+
+  shareToSocial(platform: string): void {
+    const shareUrl = this.getSocialShareLinkWithCustomMessage(platform);
+    window.open(shareUrl, '_blank', 'width=600,height=400');
+    this.closeSocialShareModal();
+  }
+
+  getSocialShareLinkWithCustomMessage(platform: string): string {
+    const shareUrl = this.getShareableLink();
+    const message = `${this.customShareMessage} `;
+    const title = this.getSocialShareTitle();
+
+    switch (platform) {
+      case 'facebook':
+        return `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}&quote=${encodeURIComponent(message)}`;
+      case 'twitter':
+        return `https://twitter.com/intent/tweet?text=${encodeURIComponent(message)}&url=${encodeURIComponent(shareUrl)}`;
+      case 'linkedin':
+        return `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}&title=${encodeURIComponent(title)}&summary=${encodeURIComponent(message)}`;
+      case 'whatsapp':
+        return `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}%20${encodeURIComponent(shareUrl)}`;
+      default:
+        return '';
+    }
+  }
+
+  copyToClipboard(text: string): void {
+    navigator.clipboard.writeText(text).then(() => {
+      this.linkCopied = true;
+      setTimeout(() => {
+        this.linkCopied = false;
+      }, 3000);
+    });
+  }
+}

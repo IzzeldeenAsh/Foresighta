@@ -21,7 +21,7 @@
           <!-- Industry -->
           <div class=" col-12" data-control="isicCodes">
             <shared-tree-selector
-            [ngClass]="{ 'is-invalid': isControlInvalid('isicCodes') }"
+            
             [title]="lang === 'ar' ? 'المجالات' : 'Specialties (Industries)'"
             [currentLang]="this.lang"
             [placeholder]="
@@ -52,9 +52,8 @@
         <!-- Consulting Fields -->
         <div class=" col-12" data-control="consultingFields">
           <shared-tree-selector
-        [ngClass]="{ 'is-invalid': isControlInvalid('consultingFields') }"
         [title]="lang === 'ar' ? 'التخصصات' : 'Expertise'"
-         
+         [type]="'expertise'"
           [currentLang]="this.lang"
           [placeholder]="
             'AUTH.REGISTRATION.CONSULTING_FIELD_PLACEHOLDER' | translate
@@ -126,7 +125,6 @@
           [enableSearch]="true"
           [showClear]="true"
           [lang]="lang"
-          [ngClass]="{ 'is-invalid': isControlInvalid('country') }"
           [isInvalid]="isControlInvalid('country')"
         ></app-country-dropdown>
         <div
@@ -330,7 +328,6 @@
           [enableSearch]="true"
           [showClear]="true"
           [lang]="lang"
-          [ngClass]="{ 'is-invalid': isControlInvalid('country') }"
           [isInvalid]="isControlInvalid('country')"
         ></app-country-dropdown>
         <div

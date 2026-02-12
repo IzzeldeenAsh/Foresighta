@@ -1,6 +1,6 @@
-import { Component, Injector, OnInit } from "@angular/core";
+import { Component, HostListener, Injector, OnInit } from "@angular/core";
 import { ActivatedRoute, Params, Router } from "@angular/router";
-import { forkJoin } from "rxjs";
+import { forkJoin, Observable, Observer } from "rxjs";
 import { Breadcrumb } from "src/app/_fake/models/breadcrumb.model";
 import { IKnoldgProfile } from "src/app/_fake/models/profile.interface";
 import { AddInsightStepsService, DocumentListResponse, PublishKnowledgeRequest } from "src/app/_fake/services/add-insight-steps/add-insight-steps.service";
@@ -16,6 +16,7 @@ import Swal from 'sweetalert2';
 import { KnowledgeUpdateService } from "src/app/_fake/services/knowledge/knowledge-update.service";
 import { UserRequestsService, UserRequest } from "src/app/_fake/services/user-requests/user-requests.service";
 import { Meta, Title } from '@angular/platform-browser';
+import { ComponentCanDeactivate } from "src/app/guards/pending-changes.guard";
 
 @Component({
   selector: "app-view-my-knowledge",
@@ -23,7 +24,7 @@ import { Meta, Title } from '@angular/platform-browser';
   styleUrls: ["./view-my-knowledge.component.scss"],
   providers: [DialogService]
 })
-export class ViewMyKnowledgeComponent extends BaseComponent implements OnInit {
+export class ViewMyKnowledgeComponent extends BaseComponent implements OnInit, ComponentCanDeactivate {
   breadcrumbs: Breadcrumb[] = [];
   knowledgeId: string;
   knowledge: Knowledge;
@@ -37,8 +38,13 @@ export class ViewMyKnowledgeComponent extends BaseComponent implements OnInit {
   reviewComments: string = "";
   showAllMarkets: boolean = false;
   isSocialShareModalVisible: boolean = false;
+  isLeavePromptActive: boolean = false;
   customShareMessage: string = "";
   private hasShownLanguageMismatchToast: boolean = false;
+  private previousDocumentsCount: number | null = null;
+  private shouldPromptShareOnLeave: boolean = false;
+  private hasShownSharePromptForCurrentAddition: boolean = false;
+  private pendingNavigationObserver: Observer<boolean> | null = null;
 
   // Request conversation properties
   currentRequest: any = null;
@@ -70,7 +76,13 @@ export class ViewMyKnowledgeComponent extends BaseComponent implements OnInit {
     });
     
     const paramsSubscription = this.route.params.subscribe((params: Params) => {
-      this.knowledgeId = params["id"];
+      const nextKnowledgeId = params["id"];
+      if (nextKnowledgeId !== this.knowledgeId) {
+        this.previousDocumentsCount = null;
+        this.shouldPromptShareOnLeave = false;
+        this.hasShownSharePromptForCurrentAddition = false;
+      }
+      this.knowledgeId = nextKnowledgeId;
       if (this.knowledgeId) {
         this.loadKnowledgeData();
         this.loadUserProfile();
@@ -157,6 +169,7 @@ export class ViewMyKnowledgeComponent extends BaseComponent implements OnInit {
       next: (response) => {
         this.knowledge = response.knowledge.data;
         this.documents = response.documents;
+        this.trackDocumentAddition(response.documents);
         this.isLoading = false;
 
         // Update meta tags for social sharing
@@ -210,7 +223,7 @@ export class ViewMyKnowledgeComponent extends BaseComponent implements OnInit {
     return this.knowledge && 
            this.knowledge.account_manager_process && 
            this.knowledge.account_manager_process.need_to_review === true && 
-           this.knowledge.account_manager_process.action === 'resend_review';
+           this.knowledge.account_manager_process.action === 'review';
   }
   
   isPendingResendReview(): boolean {
@@ -219,6 +232,10 @@ export class ViewMyKnowledgeComponent extends BaseComponent implements OnInit {
            this.knowledge.account_manager_process.need_to_review === true && 
            this.knowledge.account_manager_process.action === 'resend_review' && 
            this.knowledge.account_manager_process.request_status === 'pending';
+  }
+
+  isRejectedRequest(): boolean {
+    return this.knowledge?.account_manager_process?.request_status === 'rejected';
   }
 
   sendToReview(): void {
@@ -552,6 +569,7 @@ export class ViewMyKnowledgeComponent extends BaseComponent implements OnInit {
   }
 
   openSocialShareModal(): void {
+    this.isLeavePromptActive = false;
     this.isSocialShareModalVisible = true;
     this.linkCopied = false;
     // Initialize with default message if empty
@@ -562,6 +580,88 @@ export class ViewMyKnowledgeComponent extends BaseComponent implements OnInit {
 
   closeSocialShareModal(): void {
     this.isSocialShareModalVisible = false;
+    if (this.isLeavePromptActive) {
+      if (this.pendingNavigationObserver) {
+        this.completePendingNavigation();
+      } else {
+        this.clearLeavePromptState();
+      }
+    }
+    this.isLeavePromptActive = false;
+  }
+
+  canDeactivate(): boolean | Observable<boolean> {
+    if (this.pendingNavigationObserver) {
+      return false;
+    }
+
+    if (!this.shouldPromptShareOnLeave || this.hasShownSharePromptForCurrentAddition) {
+      return true;
+    }
+
+    this.hasShownSharePromptForCurrentAddition = true;
+    this.isLeavePromptActive = true;
+    this.isSocialShareModalVisible = true;
+    this.linkCopied = false;
+    if (!this.customShareMessage) {
+      this.customShareMessage = this.getDefaultShareMessage();
+    }
+
+    return new Observable<boolean>((observer) => {
+      this.pendingNavigationObserver = observer;
+      return () => {
+        if (this.pendingNavigationObserver === observer) {
+          this.pendingNavigationObserver = null;
+        }
+      };
+    });
+  }
+
+  private completePendingNavigation(): void {
+    if (!this.pendingNavigationObserver) {
+      return;
+    }
+
+    const observer = this.pendingNavigationObserver;
+    this.pendingNavigationObserver = null;
+    this.clearLeavePromptState();
+    observer.next(true);
+    observer.complete();
+  }
+
+  @HostListener('window:beforeunload', ['$event'])
+  onBeforeUnload(event: BeforeUnloadEvent): void {
+    if (!this.shouldPromptShareOnLeave || this.hasShownSharePromptForCurrentAddition) {
+      return;
+    }
+
+    this.hasShownSharePromptForCurrentAddition = true;
+    this.isLeavePromptActive = true;
+    this.isSocialShareModalVisible = true;
+    this.linkCopied = false;
+    if (!this.customShareMessage) {
+      this.customShareMessage = this.getDefaultShareMessage();
+    }
+
+    event.preventDefault();
+    event.returnValue = '';
+  }
+
+  private trackDocumentAddition(documentResponse: DocumentListResponse): void {
+    const currentDocumentsCount = documentResponse?.data?.length ?? 0;
+    if (
+      this.previousDocumentsCount !== null &&
+      currentDocumentsCount > this.previousDocumentsCount
+    ) {
+      this.shouldPromptShareOnLeave = true;
+      this.hasShownSharePromptForCurrentAddition = false;
+    }
+    this.previousDocumentsCount = currentDocumentsCount;
+  }
+
+  private clearLeavePromptState(): void {
+    this.shouldPromptShareOnLeave = false;
+    this.hasShownSharePromptForCurrentAddition = false;
   }
 
   getSocialShareLink(platform: string): string {
