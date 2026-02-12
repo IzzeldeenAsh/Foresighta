@@ -131,7 +131,7 @@ styleClass=""
                                     'badge-light-success': request.final_status === 'approved',
                                     'badge-light-danger': request.final_status === 'declined' || request.final_status === 'rejected'
                                 }">
-                                    {{ 'USER_REQUESTS.FILTER.' + (request.final_status | uppercase) | translate }}
+                                    {{ request.final_status_label }}
                                 </div>
                             </div>
                             
@@ -260,7 +260,7 @@ styleClass=""
                                         'badge-light-danger': request.final_status === 'declined' || request.final_status === 'rejected'
                                     }"
                                 >
-                                    {{ 'USER_REQUESTS.STATUS.' + (request.final_status ? request.final_status.toUpperCase() : '') | translate }}
+                                    {{ request.final_status_label}}
                                 </div>
                             </div>
                             <!-- Action Button -->
@@ -317,7 +317,7 @@ styleClass=""
                 'badge-light-success': selectedRequest.final_status === 'approved', 
                 'badge-light-danger': selectedRequest.final_status === 'declined' || selectedRequest.final_status === 'rejected'
             }">
-                {{ selectedRequest.final_status | titlecase }}
+                {{ selectedRequest.final_status_label | titlecase }}
             </div>
         </div>
 
@@ -343,7 +343,7 @@ styleClass=""
                     (click)="navigateToReview()"
                 >
                     <i class="bi bi-file-earmark-text fs-4 mx-2"></i>
-                    Review Knowledge
+            {{lang==='ar' ? "انتظار موافقة معرفة": '  Review Knowledge'}}
                 </button>
             </div>
             
@@ -355,7 +355,7 @@ styleClass=""
                     (click)="onApproveRequest()"
                 >
                     <i class="bi bi-check-circle-fill fs-4 mx-2"></i>
-                    Approve
+                  {{lang ==='ar' ? 'قبول' : 'Approve'}}
                 </button>
                 <button 
                     type="button" 
@@ -363,7 +363,7 @@ styleClass=""
                     (click)="onDeclineRequest()"
                 >
                     <i class="bi bi-x-circle-fill fs-4 mx-2"></i>
-                    Decline
+                     {{lang ==='ar' ? 'رفض' : 'Decline'}}
                 </button>
             </div>
         </div>
@@ -373,7 +373,8 @@ styleClass=""
                 <div class="card-header border-0 ps-0 pt-0">
                     <h5 class="card-title fw-semibold text-dark">
                         <i class="bi bi-pencil-square mx-2"></i>
-                        Staff Notes
+                      
+                         {{lang ==='ar' ? 'ملاحظات الإدارة' : 'Staff Notes'}}
                     </h5>
                 </div>
                 <div class="card-body px-0">
@@ -442,17 +443,17 @@ styleClass=""
               class="btn btn-primary btn-icon-primary w-100 mt-4"
               (click)="viewKnowledge()"
             >
-              View Knowledge
+            {{lang==='ar' ?  'عرض المعرفة': '  View Knowledge'}}
             </button>
         </ng-container>
             </div>
     </div>
-    <div *ngIf="hasPendingRequestOfSameType && selectedRequest?.final_status !== 'approved'" class="mt-4 alert alert-warning  border">
+    <!-- <div *ngIf="hasPendingRequestOfSameType && selectedRequest?.final_status !== 'approved'" class="mt-4 alert alert-warning  border">
         <div class="d-flex align-items-center">
             <i class="bi bi-exclamation-triangle-fill mx-2 fs-4 text-warning"></i>
             <span>{{ 'USER_REQUESTS.DIALOG.PENDING_REQUEST_EXISTS' | translate }}</span>
         </div>
     </div>
-        
+         -->
         
 </p-dialog>

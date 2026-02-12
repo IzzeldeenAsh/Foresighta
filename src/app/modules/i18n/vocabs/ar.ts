@@ -1409,7 +1409,7 @@ INSIGHTER_REQUESTS: {
     INCLUDED_IN_PACKAGE: 'مضمن في حزمة؟',
     DOCUMENTS_LANGUAGE: 'لغة المستندات',
     INDUSTRY: 'الصناعة',
-    ISIC_CODE: 'رمز ISIC',
+    ISIC_CODE: 'الرمز الصناعي (ISIC)',
     PUBLISHED_AT: 'تم النشر في',
     TARGET_MARKET: 'السوق المستهدف',
     PUBLISH: 'نشر الآن',

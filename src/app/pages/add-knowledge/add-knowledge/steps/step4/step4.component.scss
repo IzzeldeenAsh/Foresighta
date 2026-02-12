@@ -638,6 +638,15 @@
   animation-delay: 2s;
 }
 
+/* Dropdown backdrop (Topic dropdown) */
+.step4-dropdown-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(1px);
+  z-index: 999;
+}
+
 @keyframes star-pulse {
   0%, 100% {
     transform: scale(1);
@@ -651,6 +660,14 @@
 
 /* Invalid form field styling */
 :host ::ng-deep {
+  /* PrimeNG dropdown panel styling (appended to body) */
+  .step4-dropdown-panel {
+    background: #ffffff;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 0.475rem;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+  }
+
   .is-invalid,
   .ng-invalid.ng-touched,
   input.ng-invalid.ng-touched,

@@ -97,6 +97,12 @@
 
 <!-- Content Section -->
 <div *ngIf="!isLoading">
+  <div
+    *ngIf="isDropdownBackdropVisible && !isDescriptionLoading"
+    class="step4-dropdown-backdrop"
+    (click)="closeDropdownOverlays()"
+    aria-hidden="true"
+  ></div>
   <div class="pb-10 pb-lg-15">
     <h2 class="fw-bolder text-gray-900">
       {{ "VIEW_MY_KNOWLEDGE.KNOWLEDGE_DETAILS" | translate }}
@@ -596,24 +602,29 @@
       {{ "SELECT_TOPIC" | translate }}
       <i class="fas fa-exclamation-circle mx-2 fs-7" ngbTooltip="{{ 'TOPIC_TOOLTIP' | translate }}"></i>
     </label>
-    <p-dropdown
-      id="topicId"
-      formControlName="topicId"
-      [options]="topics"
-      optionLabel="name"
-      optionValue="id"
-      placeholder="{{ 'ENTER_TOPIC' | translate }}"
-      [showClear]="true"
-      [filter]="true"
-      filterBy="name,normalizedName"
-      filterPlaceholder="{{ 'SEARCH_TOPICS' | translate }}"
-      class="w-100"
-      (onChange)="onTopicSelected($event.value)"
-      [ngClass]="{'is-invalid': form.get('topicId')?.hasError('required') && form.get('topicId')?.touched, 'border-red': form.get('topicId')?.hasError('required') && form.get('topicId')?.touched}"
-    >
-      <ng-template pTemplate="emptyfilter">
-        <div class="p-3 text-center">
-          <div class="text-muted mb-2">{{ 'COMMON.NO_RESULTS_FOUND' | translate }}</div>
+	    <p-dropdown
+        #topicDropdown
+	      id="topicId"
+	      formControlName="topicId"
+	      [options]="topics"
+	      optionLabel="name"
+	      optionValue="id"
+        appendTo="body"
+        panelStyleClass="step4-dropdown-panel"
+	      placeholder="{{ 'ENTER_TOPIC' | translate }}"
+	      [showClear]="true"
+	      [filter]="true"
+	      filterBy="name,normalizedName"
+	      filterPlaceholder="{{ 'SEARCH_TOPICS' | translate }}"
+	      class="w-100"
+	      (onChange)="onTopicSelected($event.value)"
+        (onShow)="onDropdownOverlayShow()"
+        (onHide)="onDropdownOverlayHide()"
+	      [ngClass]="{'is-invalid': form.get('topicId')?.hasError('required') && form.get('topicId')?.touched, 'border-red': form.get('topicId')?.hasError('required') && form.get('topicId')?.touched}"
+	    >
+	      <ng-template pTemplate="emptyfilter">
+	        <div class="p-3 text-center">
+	          <div class="text-muted mb-2">{{ 'COMMON.NO_RESULTS_FOUND' | translate }}</div>
           <button 
             type="button" 
             class="btn btn-sm btn-light-info"

@@ -23,6 +23,8 @@ export interface Type {
     address?: string;
     company_phone?: string;
     first_name?: string;
+        final_status_label:string;
+    status_label:string;
     last_name?: string;
     roles?: string[];
     // Properties for insighter requestable objects
@@ -43,6 +45,8 @@ export interface Type {
     requestable: Requestable;
     final_status: string;
     children: UserRequest[];
+    final_status_label:string;
+    status_label:string;
     identity?:string;
   }
   

@@ -611,11 +611,11 @@
                           <div class="fw-bold mb-1" 
                                [ngClass]="currentRequest.status === 'approved' || currentRequest.final_status === 'approved' ? 
                                          'text-success' : 'text-danger'">
-                            {{ currentRequest.status === 'approved' || currentRequest.final_status === 'approved' ? 'Approved' : 'Review' }}
+                                         {{currentRequest.status_label}}
                           </div>
                           <div class="text-gray-800">{{ currentRequest.staff_notes }}</div>
                           <div class="text-muted fs-7 text-end">
-                            {{ currentRequest.status === 'declined' ? 'Rejection' : 'Response' }} 
+                           {{currentRequest.status_label}}
                             {{ currentRequest.handel_at | date:'medium' }}
                           </div>
                         </div>
@@ -652,7 +652,7 @@
                           </div>
                           <div class="text-gray-800">{{ request.staff_notes }}</div>
                           <div class="text-muted fs-7 text-end">
-                            {{ request.status === 'declined' ? 'Rejection' : 'Response' }} 
+                            {{ request.status_label}} 
                             {{ request.handel_at | date:'medium' }}
                           </div>
                         </div>
@@ -700,7 +700,7 @@
                     *ngIf="hasReviewRequest() && isCompanyInsighter() && !isPendingResendReview()"
                   >
                     <i class="ki-outline ki-check-square fs-4 me-2"></i>
-                    Resend To Review
+                    {{lang ==='ar'  ? "الإرسال للمراجعة" : "Resend To Review"}}
                   </button>
 
                   <!-- Show publish button when not needing review or user is not company-insighter -->
@@ -858,7 +858,7 @@
   <div class="modal-content">
     <!-- Modal header -->
     <div class="modal-header p-5 border-bottom">
-      <h2 class="fw-bold">Resend Insight For Review</h2>
+      <h2 class="fw-bold">{{lang ==='ar' ? 'إرسال للمدير مرة أخرى' : 'Resend Insight For Review'}}</h2>
       <div class="btn btn-icon btn-sm btn-active-light-info ms-2" (click)="closeResendReviewDialog()">
         <i class="ki-duotone ki-cross fs-2x"><span class="path1"></span><span class="path2"></span></i>
       </div>
@@ -873,7 +873,7 @@
           class="form-control form-control-solid" 
           [(ngModel)]="reviewComments" 
           rows="6" 
-          placeholder="Please provide additional notes for the review...">
+          [placeholder]='lang==="ar" ? "الرجاء إضافة ملاحظاتاك للمدير..." : "Please provide additional notes for the review..." '>
         </textarea>
       </div>
     </div>
@@ -881,7 +881,7 @@
     <!-- Modal footer -->
     <div class="modal-footer flex-center py-5 px-8 border-top">
       <button type="button" class="btn btn-light me-3" (click)="closeResendReviewDialog()">
-        Cancel
+       {{lang ==='ar' ? "إلغاء" : " Cancel"}}
       </button>
       <button type="button" 
               class="btn btn-info" 
@@ -889,7 +889,7 @@
               [class.disabled]="isLoading"
               (click)="resendReview()">
         <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
-        {{ isLoading ? 'Sending...' : 'Send' }}
+        {{ isLoading ? (lang ==='ar' ? 'جار الإرسال ... ' : 'Sending...') : (lang ==='ar' ? 'إرسال' : 'Send') }}
       </button>
     </div>
   </div>
