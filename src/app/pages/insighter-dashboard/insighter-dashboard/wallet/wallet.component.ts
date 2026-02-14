@@ -222,6 +222,16 @@ export class WalletComponent extends BaseComponent implements OnInit, OnDestroy,
 
     // Handle Arabic text that might come from API
     if (this.lang === 'ar') {
+      if (service.includes('خدمة الرؤية') || service === 'خدمة الرؤية') {
+        return 'مستند';
+      }
+      // if (service.includes('مستند') || service === 'خدمة الرؤية') {
+      //   return 'مستند';
+      // }
+      if (service.includes('خدمة الاجتماع') || service === 'خدمة الاجتماع') {
+        return 'جلسة استشارية';
+      }
+
       if (service.includes('مبيعات المعرفة') || service === 'مبيعات المعرفة') {
         return 'مبيعات المستندات';
       }

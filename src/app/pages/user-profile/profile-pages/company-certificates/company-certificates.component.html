@@ -1,4 +1,5 @@
 <p-progressBar *ngIf="loadingProfile" mode="indeterminate" [style]="{ height: '4px' }"></p-progressBar>
+
 <ng-container *ngIf="!loadingProfile && profile && profile.roles && profile.roles.includes('company') && profile.company">
   <div class="d-flex flex-wrap flex-stack mb-6">
     <!--begin::Title-->
@@ -85,7 +86,7 @@
   
   <div class="p-fluid">
     <div class="field mb-4">
-      <label for="companyDocumentType" class="block mb-2">{{ 'PROFILE.CERTIFICATE_TYPE' | translate }}</label>
+      <label for="companyDocumentType" class="d-block mb-2">{{ 'PROFILE.CERTIFICATE_TYPE' | translate }}</label>
       <p-dropdown 
         id="companyDocumentType"
         [options]="documentTypes"
@@ -95,18 +96,41 @@
         [placeholder]="'PROFILE.SELECT_CERTIFICATE_TYPE' | translate"
         [style]="{'width':'100%'}"
         appendTo="body"
-        class="w-full">
+        styleClass="w-100">
       </p-dropdown>
     </div>
 
     <div class="field mb-4">
-      <label for="companyCertificate" class="block mb-2">{{ 'PROFILE.CERTIFICATE_FILE' | translate }}</label>
+      <label class="d-block mb-2">{{ 'PROFILE.CERTIFICATE_FILE' | translate }}</label>
+    
+      <div class="input-group" [dir]="lang === 'ar' ? 'rtl' : 'ltr'">
+        
+        <button 
+          class="btn btn-secondary" 
+          type="button" 
+          (click)="fileInput.click()">
+          {{ 'CHOOSE_FILE' | translate }}
+        </button>
+
+        <input 
+          type="text" 
+          class="form-control" 
+          readonly 
+          [value]="selectedCompanyFile ? selectedCompanyFile.name : ('PROFILE.NO_FILE_CHOSEN' | translate)"
+          (click)="fileInput.click()"
+          style="background-color: #fff; cursor: pointer;"
+        >
+        
+      </div>
+
       <input 
+        #fileInput
         type="file" 
-        class="form-control"
+        style="display: none;" 
         (change)="onCompanyFileSelect($event)"
         accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">
-      <small class="text-muted">{{ 'PROFILE.SUPPORTED_FORMATS' | translate }}</small>
+        
+      <small class="text-muted d-block mt-1">{{ 'PROFILE.SUPPORTED_FORMATS' | translate }}</small>
     </div>
   </div>
 
