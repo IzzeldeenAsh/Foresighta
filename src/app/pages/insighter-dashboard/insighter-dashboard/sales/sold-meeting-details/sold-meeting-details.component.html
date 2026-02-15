@@ -105,7 +105,7 @@
                         'badge-light-danger': order.orderable.meeting_booking.status === 'rejected',
                         'badge-light-info': order.orderable.meeting_booking.status !== 'approved' && order.orderable.meeting_booking.status !== 'pending' && order.orderable.meeting_booking.status !== 'rejected'
                       }">
-                  {{ order.orderable.meeting_booking.status_name }}
+                      {{ (lang === 'ar' && order.orderable.meeting_booking.status_name === 'موافق') ? 'موافق عليه' : order.orderable.meeting_booking.status_name }}
                 </span>
               </div>
 

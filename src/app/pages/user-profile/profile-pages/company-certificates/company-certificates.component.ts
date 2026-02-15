@@ -8,6 +8,7 @@ import {
 import { ProfileService } from "src/app/_fake/services/get-profile/get-profile.service";
 import { UpdateProfileService } from "src/app/_fake/services/profile/profile.service";
 import { BaseComponent } from "src/app/modules/base.component";
+import { TranslateService } from "@ngx-translate/core";
 
 @Component({
   selector: "app-company-certificates",
@@ -16,7 +17,6 @@ import { BaseComponent } from "src/app/modules/base.component";
 })
 export class CompanyCertificatesComponent extends BaseComponent implements OnInit {
   profile: IKnoldgProfile;
-  lang: string = "en";
   loadingProfile: boolean = false;
   documentTypes: Document[];
   isLoadingDocumentTypes: boolean = false;
@@ -35,14 +35,25 @@ export class CompanyCertificatesComponent extends BaseComponent implements OnIni
     injector: Injector,
     private _profilePost: UpdateProfileService,
     private getProfileService: ProfileService,
-    public messageService: MessageService
+    public messageService: MessageService,
+    public translateService: TranslateService 
   ) {
     super(injector);
   }
 
   ngOnInit(): void {
+    this.updateLang(); 
     this.loadDocList();
     this.getProfile();
+  }
+  
+  updateLang() {
+    this.lang = this.translateService.currentLang || 'en';
+    
+    const langSub = this.translateService.onLangChange.subscribe((event) => {
+      this.lang = event.lang;
+    });
+    this.unsubscribe.push(langSub);
   }
 
   getProfile() {
