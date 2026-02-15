@@ -1,5 +1,5 @@
 import { Component, HostBinding, Injector, OnInit, AfterViewInit, ElementRef, Renderer2, Output, EventEmitter } from '@angular/core';
-import { Observable, Subscription, first } from 'rxjs';
+import { Observable, Subscription, first, of } from 'rxjs';
 import { TranslationService } from '../../../../../../modules/i18n';
 import { AuthService, UserType } from '../../../../../../modules/auth';
 import { IKnoldgProfile } from 'src/app/_fake/models/profile.interface';
@@ -7,6 +7,8 @@ import { Router } from '@angular/router';
 import { ProfileService } from 'src/app/_fake/services/get-profile/get-profile.service';
 import { BaseComponent } from 'src/app/modules/base.component';
 import { environment } from 'src/environments/environment';
+import { KnowledgeService } from 'src/app/_fake/services/knowledge/knowledge.service';
+import { catchError, map, shareReplay, switchMap } from 'rxjs/operators';
 
 @Component({
   selector: 'app-user-inner',
@@ -81,6 +83,7 @@ export class UserInnerComponent extends BaseComponent implements OnInit, AfterVi
 
   language: LanguageFlag;
   user$: Observable<IKnoldgProfile>;
+  unpublishedDraftCount$: Observable<number>;
   langs = languages;
   isRTL: boolean = false;
   
@@ -99,12 +102,35 @@ export class UserInnerComponent extends BaseComponent implements OnInit, AfterVi
     private auth: AuthService,
     private translationService: TranslationService,
     private getProfileService: ProfileService,
+    private knowledgeService: KnowledgeService,
     private elementRef: ElementRef,
     private renderer: Renderer2,
     private router: Router,
     injector: Injector
   ) {
     super(injector);
+  }
+
+  private initUserStreams(): void {
+    this.user$ = this.getProfileService.getProfile().pipe(first());
+
+    this.unpublishedDraftCount$ = this.user$.pipe(
+      switchMap((user) => {
+        const roles = user?.roles || [];
+        const canHaveDrafts =
+          roles.includes('insighter') ||
+          roles.includes('company') ||
+          roles.includes('company-insighter');
+
+        if (!canHaveDrafts) return of(0);
+
+        return this.knowledgeService.getKnowledgeStatusStatistics().pipe(
+          map((res) => res?.data?.find((s) => s.status === 'unpublished')?.count ?? 0),
+          catchError(() => of(0))
+        );
+      }),
+      shareReplay({ bufferSize: 1, refCount: true })
+    );
   }
 
   private shouldAppendDraftToastToExternalUrl(): boolean {
@@ -131,7 +157,7 @@ export class UserInnerComponent extends BaseComponent implements OnInit, AfterVi
   }
 
   ngOnInit(): void {
-    this.user$ = this.getProfileService.getProfile().pipe(first());
+    this.initUserStreams();
     this.setLanguage(this.translationService.getSelectedLanguage());
     this.isRTL = this.translationService.getSelectedLanguage() === 'ar';
     this.getProfileService.profileUpdate$.subscribe(() => {
@@ -187,7 +213,7 @@ export class UserInnerComponent extends BaseComponent implements OnInit, AfterVi
   }
 
   refreshComponentData(){
-    this.user$ = this.getProfileService.getProfile().pipe(first())
+    this.initUserStreams();
   }
 
   logout() {

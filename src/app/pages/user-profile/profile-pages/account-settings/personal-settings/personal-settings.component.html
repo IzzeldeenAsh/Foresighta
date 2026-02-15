@@ -1,295 +1,548 @@
 <!-- personal-settings.component.html -->
-<p-progressBar
-  *ngIf="isLoading$ | async"
-  mode="indeterminate"
-  [style]="{ height: '4px' }"
-></p-progressBar>
-<form [formGroup]="personalInfoForm" (ngSubmit)="onSubmit()" *ngIf="!(isLoading$ | async)">
-  <div class="card">
-    <div class="card-body">
-      <div class="personal-info">
-        <div class="row">
-          <div class="col-lg-6 mb-6 fv-row">
-            <label for="first_name" class="form-label required">
-              {{ "ACCOUNT_SETTINGS.FIRST_NAME" | translate }}
-            </label>
-            <input
-              class="d-block w-100"
-              [class.is-invalid]="isFieldInvalid('first_name')"
-              pInputText
-              id="first_name"
-              type="text"
-              formControlName="first_name"
-            />
-            <div *ngIf="isFieldInvalid('first_name')" class="invalid-feedback">
-              {{ getFieldError('first_name') }}
-            </div>
-          </div>
-          <div class="col-lg-6 mb-6 fv-row">
-            <label for="last_name" class="form-label required">
-              {{ "ACCOUNT_SETTINGS.LAST_NAME" | translate }}
-            </label>
-            <input
-              id="last_name"
-              type="text"
-              pInputText
-              formControlName="last_name"
-              class="d-block w-100"
-              [class.is-invalid]="isFieldInvalid('last_name')"
-            />
-            <div *ngIf="isFieldInvalid('last_name')" class="invalid-feedback">
-              {{ getFieldError('last_name') }}
-            </div>
-          </div>
+<ng-container
+  *ngIf="{
+    loading: (isLoading$ | async),
+    saving: (isSaving$ | async),
+    inviting: (isAcceptingInvitation$ | async)
+  } as vm"
+>
+  <p-progressBar
+    *ngIf="vm.loading || vm.saving || vm.inviting"
+    mode="indeterminate"
+    [style]="{ height: '4px' }"
+  ></p-progressBar>
+
+  <ng-container *ngIf="vm.loading; else loaded">
+    <div class="card">
+      <div class="card-body">
+        <div class="d-flex align-items-center">
+          <span class="spinner-border spinner-border-sm me-3"></span>
+          <span>{{ lang === "ar" ? "جاري التحميل..." : "Loading..." }}</span>
         </div>
-        <div class="row" *ngIf="hasRole(['insighter']) || hasRole(['company']) || hasRole(['company-insighter'])">
-          <!-- Consulting Field -->
-          <div class="col-lg-12 fv-row">
-            <shared-tree-selector *ngIf="consultingFields"
-              [title]="lang === 'ar' ? 'التخصصات' : 'Expertise'"
-              [type]="'expertise'"
-              [placeholder]="'AUTH.REGISTRATION.CONSULTING_FIELD_PLACEHOLDER' | translate"
-              [isRequired]="true"
-              [otherFieldPlaceholder]="'INSIGHTER_WIZARD.OTHER_FIELD_PLACEHOLDER' | translate"
-              [selectAllLabel]="lang === 'ar' ? 'اختر الكل' : 'Select All'"
-              [fetchedData]="consultingFields"
-              [initialSelectedNodes]="personalInfoForm.value.consulting_field" 
-              [cancelLabel]="'BUTTONS.CANCEL' | translate"
-              [currentLang]="this.lang"
-              [okLabel]="'BUTTONS.OK' | translate"
-              (nodesSelected)="onConsultingNodesSelected($event)"
-            ></shared-tree-selector>
-            <div *ngIf="isFieldInvalid('consulting_field')" class="invalid-feedback d-block">
-              {{ getFieldError('consulting_field') }}
+      </div>
+    </div>
+  </ng-container>
+
+  <ng-template #loaded>
+    <div *ngIf="!hasLoadedProfile" class="card">
+      <div class="card-body">
+        <div class="d-flex flex-column flex-sm-row align-items-start align-items-sm-center justify-content-between gap-4">
+          <div>
+            <div class="fw-bold mb-1">
+              {{ lang === "ar" ? "تعذر تحميل البيانات" : "Couldn’t load data" }}
+            </div>
+            <div class="text-muted">
+              {{ lang === "ar" ? "حاول مرة أخرى." : "Please try again." }}
             </div>
           </div>
-          <!-- Industry -->
-          <div class="col-lg-12 fv-row">
-            <!-- Debug info -->
-            <div *ngIf="!industries?.length" class="alert alert-warning">
-              {{lang == 'ar' ? 'لا يوجد بيانات للمجالات' : 'No industries data available'}}
-            </div>
-            <shared-tree-selector 
-              *ngIf="industries && industries.length > 0"
-              [title]="lang === 'ar' ? 'المجالات' : 'Specialties (Industries)'"
-              [subtitle]="lang == 'ar' ? 'اختر المجالات التي تنتمي إليها' : 'Select the industries you belong to'"
-              [isRequired]="true"
-              [placeholder]="'AUTH.REGISTRATION.INDUSTRY_PLACEHOLDER' | translate"
-              [otherFieldPlaceholder]="'INSIGHTER_WIZARD.OTHER_FIELD_PLACEHOLDER' | translate"
-              [selectAllLabel]="lang === 'ar' ? 'اختر الكل' : 'Select All'"
-              [fetchedData]="industries"
-              [initialSelectedNodes]="personalInfoForm.value.industries" 
-              [cancelLabel]="'BUTTONS.CANCEL' | translate"
-              [currentLang]="lang"
-              [okLabel]="'BUTTONS.OK' | translate"
-              (nodesSelected)="onIndustrySelected($event)"
-            ></shared-tree-selector>
-            <div *ngIf="isFieldInvalid('industries')" class="invalid-feedback d-block">
-              {{ getFieldError('industries') }}
-            </div>
-          </div>
-        </div>
-        <div class="row" >
-          <div class="col-lg-6 mb-6 fv-row">
-            <label for="country" class="form-label required">
-              {{ "ACCOUNT_SETTINGS.COUNTRY" | translate }}
-            </label>
-        
-            <p-dropdown
-              [options]="countries"
-              formControlName="country"
-              class="d-block"
-              [class.ng-invalid]="isFieldInvalid('country')"
-              [class.is-invalid]="isFieldInvalid('country')"
-              [optionLabel]="lang === 'en' ? 'names.en' : 'names.ar'"
-              placeholder="{{ 'ACCOUNT_SETTINGS.SELECT_COUNTRY' | translate }}"
-              [filter]="true"
-              [showClear]="true"
-            >
-              <ng-template pTemplate="item" let-country>
-                <div class="country-option">
-                  <img
-                    *ngIf="country.showFlag"
-                    [src]="country.flagPath"
-                    (error)="onFlagError(country)"
-                    [alt]="country.names.en"
-                    class="flag-icon w-20px mx-2"
-                  />
-                  <span>
-                    <ng-container *ngIf="lang === 'en'">
-                      {{ country.names.en }}
-                      </ng-container>
-                    <ng-container *ngIf="lang === 'ar'">
-                      {{ country.names.ar }}
-                    </ng-container>
-                  </span>
-                </div>
-              </ng-template>
-            </p-dropdown>
-            <div *ngIf="isFieldInvalid('country')" class="invalid-feedback d-block">
-              {{ getFieldError('country') }}
-            </div>
-          </div>
-          <div class="col-lg-6 mb-6 fv-row">
-            <label class="form-label">
-              {{ "ACCOUNT_SETTINGS.PHONE" | translate }}
-            </label>
-            <app-phone-number-input
-         
-              #phoneInput
-              [countries]="countries"
-              [placeholder]="lang === 'ar' ? 'رقم هاتفك' : 'Your phone number'"
-              [searchPlaceholder]="lang === 'ar' ? 'رمز البلد' : 'Country code'"
-              [lang]="lang"
-              [isRequired]="false"
-              [showValidationErrors]="true"
-              [countryCodeError]="getFieldError('phoneCountryCode')"
-              [phoneNumberError]="getFieldError('phoneNumber')"
-              [initialCountryCode]="personalInfoForm.get('phoneCountryCode')?.value"
-              [initialPhoneNumber]="personalInfoForm.get('phoneNumber')?.value"
-              (countryCodeChange)="onCountryCodeChange($event)"
-              (phoneNumberChange)="onPhoneNumberChange($event)"
-              (formattedPhoneNumberChange)="onFormattedPhoneNumberChange($event)"
-              (flagError)="onFlagError($event)"
-            ></app-phone-number-input>
-          </div>
-        </div>
-        <div class="row">
-          <div class="col-12">
-            <div class="mb-6" *ngIf="hasRole(['insighter']) || hasRole(['company']) || hasRole(['company-insighter'])">
-              <label class="form-label required">
-                {{ "ACCOUNT_SETTINGS.BIO" | translate }}
-              </label>
-              <textarea
-                formControlName="bio"
-                class="form-control min-h-300px"
-                [class.is-invalid]="isFieldInvalid('bio')"
-              ></textarea>
-              <div *ngIf="isFieldInvalid('bio')" class="invalid-feedback">
-                {{ getFieldError('bio') }}
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="row mb-6" *ngIf="hasRole(['insighter']) || hasRole(['company-insighter']) || hasRole(['company'])">
-          <div class="col-12">
-            <label class="form-label">
-              {{ "ACCOUNT_SETTINGS.SOCIAL_NETWORKS" | translate }}
-            </label>
-
-            <!-- LinkedIn -->
-            <div class="d-flex align-items-center mb-4">
-              <div class="symbol symbol-60px me-5">
-                <img src="assets/media/svg/social-logos/linkedin.svg" alt="LinkedIn" class="p-3"/>
-              </div>
-              <div class="flex-grow-1">
-                <input
-                  type="text"
-                  class="form-control "
-                  formControlName="linkedIn"
-                  [placeholder]="lang === 'ar' ? 'رابط الملف الشخصي على LinkedIn' : 'LinkedIn Profile URL'"
-                />
-              </div>
-            </div>
-
-            <!-- Facebook -->
-            <div class="d-flex align-items-center mb-4">
-              <div class="symbol symbol-60px me-5">
-                <img src="assets/media/svg/social-logos/facebook.svg" alt="Facebook" class="p-3"/>
-              </div>
-              <div class="flex-grow-1">
-                <input
-                  type="text"
-                  class="form-control "
-                  formControlName="facebook"
-                  [placeholder]="lang === 'ar' ? 'رابط الملف الشخصي على Facebook' : 'Facebook Profile URL'"
-                />
-              </div>
-            </div>
-
-            <!-- Twitter -->
-            <div class="d-flex align-items-center mb-4">
-              <div class="symbol symbol-60px me-5">
-                <img src="assets/media/svg/social-logos/x.svg" alt="Twitter" class="p-3"/>
-              </div>
-              <div class="flex-grow-1">
-                <input
-                  type="text"
-                  class="form-control "
-                  formControlName="twitter"
-                  [placeholder]="lang === 'ar' ? 'رابط الملف الشخصي على X/Twitter' : 'X/Twitter Profile URL'"
-                />
-              </div>
-            </div>
-
-            <!-- Instagram -->
-            <div class="d-flex align-items-center mb-4">
-              <div class="symbol symbol-60px me-5">
-                <img src="assets/media/svg/social-logos/instagram.svg" alt="Instagram" class="p-3"/>
-              </div>
-              <div class="flex-grow-1">
-                <input
-                  type="text"
-                  class="form-control "
-                  formControlName="instagram"
-                  [placeholder]="lang === 'ar' ? 'رابط الملف الشخصي على Instagram' : 'Instagram Profile URL'"
-                />
-              </div>
-            </div>
-
-            <!-- YouTube -->
-            <div class="d-flex align-items-center mb-4">
-              <div class="symbol symbol-60px me-5">
-                <img src="assets/media/svg/social-logos/youtube.svg" alt="YouTube" class="p-3"/>
-              </div>
-              <div class="flex-grow-1">
-                <input
-                  type="text"
-                  class="form-control"
-                  formControlName="youtube"
-                  [placeholder]="lang === 'ar' ? 'رابط قناة YouTube' : 'YouTube Channel URL'"
-                />
-              </div>
-            </div>
-
-            <!-- TikTok -->
-            <div class="d-flex align-items-center mb-4">
-              <div class="symbol symbol-60px me-5">
-                <img src="assets/media/svg/social-logos/tiktok.svg" alt="TikTok" class="p-3"/>
-              </div>
-              <div class="flex-grow-1">
-                <input
-                  type="text"
-                  class="form-control"
-                  formControlName="tiktok"
-                  [placeholder]="lang === 'ar' ? 'رابط الملف الشخصي على TikTok' : 'TikTok Profile URL'"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="d-flex justify-content-end">
-          <button
-            type="submit"
-            class="btn btn-primary"
-[disabled]="(isUpdatingProfile$ | async)"
-          >
-            <ng-container *ngIf="(isUpdatingProfile$ | async) === false">
-              <span class="indicator-label">
-                {{ "ACCOUNT_SETTINGS.SAVE_CHANGES" | translate }}
-              </span>
-            </ng-container>
-            <ng-container *ngIf="isUpdatingProfile$ | async">
-              <span class="indicator-progress" [style.display]="'block'">
-                {{ "AUTH.REGISTRATION.PLEASE_WAIT" | translate }}
-                <span
-                  class="spinner-border spinner-border-sm align-middle ms-2"
-                ></span>
-              </span>
-            </ng-container>
+          <button type="button" class="btn btn-light-primary" (click)="reload()">
+            {{ lang === "ar" ? "إعادة المحاولة" : "Retry" }}
           </button>
         </div>
       </div>
     </div>
-  </div>
-</form>
+
+    <ng-container *ngIf="hasLoadedProfile">
+      <div
+        *ngIf="loadErrors.countries || loadErrors.industries || loadErrors.consultingFields"
+        class="alert alert-light-warning d-flex flex-column flex-sm-row align-items-start align-items-sm-center justify-content-between gap-4"
+      >
+        <div>
+          {{ lang === "ar"
+            ? "لم نتمكن من تحميل بعض القوائم. قد تكون بعض الحقول غير متاحة."
+            : "Some lists failed to load. A few fields might be unavailable." }}
+        </div>
+        <button type="button" class="btn btn-sm btn-light-warning" (click)="reload()">
+          {{ lang === "ar" ? "إعادة التحميل" : "Reload" }}
+        </button>
+      </div>
+
+      <form [formGroup]="personalInfoForm" (ngSubmit)="onSubmit()">
+        <fieldset [disabled]="vm.saving || vm.inviting">
+          <div class="card mb-8">
+            <div
+              class="card-header py-4 cursor-pointer"
+              role="button"
+              tabindex="0"
+              (click)="toggleSection('personal')"
+              (keydown.enter)="toggleSection('personal')"
+              (keydown.space)="$event.preventDefault(); toggleSection('personal')"
+            >
+              <div class="card-title m-0">
+                <h5 class="m-0">
+                  <i class="bi bi-person-vcard me-2"></i>
+                  {{ lang === "ar" ? "المعلومات الشخصية" : "Personal information" }}
+                </h5>
+              </div>
+              <div class="card-toolbar">
+                <i class="bi" [ngClass]="sectionExpanded.personal ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+              </div>
+            </div>
+
+            <div class="card-body" *ngIf="sectionExpanded.personal">
+
+              <div class="row">
+                <div class="col-lg-6 mb-6 fv-row">
+                  <label for="first_name" class="form-label required">
+                    {{ "ACCOUNT_SETTINGS.FIRST_NAME" | translate }}
+                  </label>
+                  <input
+                    pInputText
+                    id="first_name"
+                    type="text"
+                    autocomplete="given-name"
+                    formControlName="first_name"
+                    class="form-control"
+                    [class.is-invalid]="isFieldInvalid('first_name')"
+                  />
+                  <div *ngIf="isFieldInvalid('first_name')" class="invalid-feedback">
+                    {{ getFieldError("first_name") }}
+                  </div>
+                </div>
+
+                <div class="col-lg-6 mb-6 fv-row">
+                  <label for="last_name" class="form-label required">
+                    {{ "ACCOUNT_SETTINGS.LAST_NAME" | translate }}
+                  </label>
+                  <input
+                    pInputText
+                    id="last_name"
+                    type="text"
+                    autocomplete="family-name"
+                    formControlName="last_name"
+                    class="form-control"
+                    [class.is-invalid]="isFieldInvalid('last_name')"
+                  />
+                  <div *ngIf="isFieldInvalid('last_name')" class="invalid-feedback">
+                    {{ getFieldError("last_name") }}
+                  </div>
+                </div>
+              </div>
+
+              <div class="row">
+                <div class="col-lg-6 mb-6 fv-row">
+                  <label for="country" class="form-label required">
+                    {{ "ACCOUNT_SETTINGS.COUNTRY" | translate }}
+                  </label>
+
+                  <p-dropdown
+                    inputId="country"
+                    [options]="countries"
+                    formControlName="country"
+                    styleClass="w-100"
+                    [class.ng-invalid]="isFieldInvalid('country')"
+                    [class.is-invalid]="isFieldInvalid('country')"
+                    [optionLabel]="lang === 'en' ? 'names.en' : 'names.ar'"
+                    placeholder="{{ 'ACCOUNT_SETTINGS.SELECT_COUNTRY' | translate }}"
+                    [filter]="true"
+                    [showClear]="true"
+                    [appendTo]="'body'"
+                  >
+                    <ng-template pTemplate="selectedItem" let-country>
+                      <ng-container *ngIf="country">
+                        <div class="country-option d-flex align-items-center">
+                          <img
+                            *ngIf="country.showFlag"
+                            [src]="country.flagPath"
+                            (error)="onFlagError(country)"
+                            [alt]="country.names?.en"
+                            class="flag-icon w-20px mx-2"
+                          />
+                          <span>
+                            <ng-container *ngIf="lang === 'en'">
+                              {{ country.names?.en }}
+                            </ng-container>
+                            <ng-container *ngIf="lang === 'ar'">
+                              {{ country.names?.ar }}
+                            </ng-container>
+                          </span>
+                        </div>
+                      </ng-container>
+                    </ng-template>
+
+                    <ng-template pTemplate="item" let-country>
+                      <div class="country-option d-flex align-items-center">
+                        <img
+                          *ngIf="country.showFlag"
+                          [src]="country.flagPath"
+                          (error)="onFlagError(country)"
+                          [alt]="country.names?.en"
+                          class="flag-icon w-20px mx-2"
+                        />
+                        <span>
+                          <ng-container *ngIf="lang === 'en'">
+                            {{ country.names?.en }}
+                          </ng-container>
+                          <ng-container *ngIf="lang === 'ar'">
+                            {{ country.names?.ar }}
+                          </ng-container>
+                        </span>
+                      </div>
+                    </ng-template>
+                  </p-dropdown>
+
+                  <div *ngIf="isFieldInvalid('country')" class="invalid-feedback d-block">
+                    {{ getFieldError("country") }}
+                  </div>
+                </div>
+
+                <div class="col-lg-6 mb-6 fv-row">
+                  <label class="form-label">
+                    {{ "ACCOUNT_SETTINGS.PHONE" | translate }}
+                  </label>
+                  <app-phone-number-input
+                    #phoneInput
+                    [countries]="countries"
+                    [placeholder]="lang === 'ar' ? 'رقم هاتفك' : 'Your phone number'"
+                    [searchPlaceholder]="lang === 'ar' ? 'رمز البلد' : 'Country code'"
+                    [lang]="lang"
+                    [isRequired]="false"
+                    [showValidationErrors]="true"
+                    [countryCodeError]="getFieldError('phoneCountryCode')"
+                    [phoneNumberError]="getFieldError('phoneNumber')"
+                    [initialCountryCode]="personalInfoForm.get('phoneCountryCode')?.value"
+                    [initialPhoneNumber]="personalInfoForm.get('phoneNumber')?.value"
+                    (countryCodeChange)="onCountryCodeChange($event)"
+                    (phoneNumberChange)="onPhoneNumberChange($event)"
+                    (formattedPhoneNumberChange)="onFormattedPhoneNumberChange($event)"
+                    (flagError)="onFlagError($event)"
+                  ></app-phone-number-input>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card mb-8" *ngIf="isProfessionalUser">
+            <div
+              class="card-header py-4 cursor-pointer"
+              role="button"
+              tabindex="0"
+              (click)="toggleSection('professional')"
+              (keydown.enter)="toggleSection('professional')"
+              (keydown.space)="$event.preventDefault(); toggleSection('professional')"
+            >
+              <div class="card-title m-0">
+                <h5 class="m-0">
+                  <i class="bi bi-briefcase me-2"></i>
+                  {{ lang === "ar" ? "المعلومات المهنية" : "Professional information" }}
+                </h5>
+              </div>
+              <div class="card-toolbar">
+                <i class="bi" [ngClass]="sectionExpanded.professional ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+              </div>
+            </div>
+
+            <div class="card-body" *ngIf="sectionExpanded.professional">
+
+              <div class="row">
+                <div class="col-12 fv-row mb-6">
+                  <shared-tree-selector
+                    *ngIf="consultingFields?.length"
+                    [title]="lang === 'ar' ? 'التخصصات' : 'Expertise'"
+                    [type]="'expertise'"
+                    [placeholder]="'AUTH.REGISTRATION.CONSULTING_FIELD_PLACEHOLDER' | translate"
+                    [isRequired]="true"
+                    [otherFieldPlaceholder]="'INSIGHTER_WIZARD.OTHER_FIELD_PLACEHOLDER' | translate"
+                    [selectAllLabel]="lang === 'ar' ? 'اختر الكل' : 'Select All'"
+                    [fetchedData]="consultingFields"
+                    [initialSelectedNodes]="personalInfoForm.value.consulting_field"
+                    [cancelLabel]="'BUTTONS.CANCEL' | translate"
+                    [currentLang]="lang"
+                    [okLabel]="'BUTTONS.OK' | translate"
+                    (nodesSelected)="onConsultingNodesSelected($event)"
+                  ></shared-tree-selector>
+
+                  <div *ngIf="!consultingFields?.length" class="text-muted">
+                    {{ lang === "ar" ? "لا توجد بيانات متاحة للتخصصات." : "No expertise data available." }}
+                  </div>
+
+                  <div *ngIf="isFieldInvalid('consulting_field')" class="invalid-feedback d-block">
+                    {{ getFieldError("consulting_field") }}
+                  </div>
+                </div>
+
+                <div class="col-12 fv-row mb-6">
+                  <shared-tree-selector
+                    *ngIf="industries?.length"
+                    [title]="lang === 'ar' ? 'المجالات' : 'Specialties (Industries)'"
+                    [subtitle]="lang == 'ar' ? 'اختر المجالات التي تنتمي إليها' : 'Select the industries you belong to'"
+                    [isRequired]="true"
+                    [placeholder]="'AUTH.REGISTRATION.INDUSTRY_PLACEHOLDER' | translate"
+                    [otherFieldPlaceholder]="'INSIGHTER_WIZARD.OTHER_FIELD_PLACEHOLDER' | translate"
+                    [selectAllLabel]="lang === 'ar' ? 'اختر الكل' : 'Select All'"
+                    [fetchedData]="industries"
+                    [initialSelectedNodes]="personalInfoForm.value.industries"
+                    [cancelLabel]="'BUTTONS.CANCEL' | translate"
+                    [currentLang]="lang"
+                    [okLabel]="'BUTTONS.OK' | translate"
+                    (nodesSelected)="onIndustrySelected($event)"
+                  ></shared-tree-selector>
+
+                  <div *ngIf="!industries?.length" class="text-muted">
+                    {{ lang === "ar" ? "لا توجد بيانات متاحة للمجالات." : "No industries data available." }}
+                  </div>
+
+                  <div *ngIf="isFieldInvalid('industries')" class="invalid-feedback d-block">
+                    {{ getFieldError("industries") }}
+                  </div>
+                </div>
+              </div>
+
+              <div class="row">
+                <div class="col-12">
+                  <label class="form-label required">
+                    {{ "ACCOUNT_SETTINGS.BIO" | translate }}
+                  </label>
+                  <textarea
+                    formControlName="bio"
+                    class="form-control min-h-300px"
+                    [class.is-invalid]="isFieldInvalid('bio')"
+                  ></textarea>
+                  <div *ngIf="isFieldInvalid('bio')" class="invalid-feedback">
+                    {{ getFieldError("bio") }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card mb-8">
+            <div
+              class="card-header py-4 cursor-pointer"
+              role="button"
+              tabindex="0"
+              (click)="toggleSection('preferences')"
+              (keydown.enter)="toggleSection('preferences')"
+              (keydown.space)="$event.preventDefault(); toggleSection('preferences')"
+            >
+              <div class="card-title m-0">
+                <h5 class="m-0">
+                  <i class="bi bi-chat-left-text me-2"></i>
+                  {{ lang === "ar" ? "تفضيلات التواصل" : "Communication preferences" }}
+                </h5>
+              </div>
+              <div class="card-toolbar">
+                <i class="bi" [ngClass]="sectionExpanded.preferences ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+              </div>
+            </div>
+
+            <div class="card-body" *ngIf="sectionExpanded.preferences">
+              <div class="row">
+                <div class="col-lg-6 mb-6 fv-row">
+                  <label class="form-label">
+                    <i class="bi bi-whatsapp me-2"></i>
+                    {{ lang === "ar" ? "رقم واتساب" : "WhatsApp number" }}
+                  </label>
+                  <app-phone-number-input
+                    #whatsAppInput
+                    [countries]="countries"
+                    [placeholder]="lang === 'ar' ? 'رقم واتساب' : 'WhatsApp number'"
+                    [searchPlaceholder]="lang === 'ar' ? 'رمز البلد' : 'Country code'"
+                    [lang]="lang"
+                    [isRequired]="false"
+                    [showValidationErrors]="false"
+                    [countryCodeError]="''"
+                    [phoneNumberError]="''"
+                    [initialCountryCode]="personalInfoForm.get('whatsapp_country_code')?.value"
+                    [initialPhoneNumber]="personalInfoForm.get('whatsapp_number')?.value"
+                    (countryCodeChange)="onWhatsAppCountryCodeChange($event)"
+                    (phoneNumberChange)="onWhatsAppNumberChange($event)"
+                    (formattedPhoneNumberChange)="onWhatsAppFormattedPhoneNumberChange($event)"
+                    (flagError)="onFlagError($event)"
+                  ></app-phone-number-input>
+                </div>
+
+                <div class="col-lg-6 mb-6 fv-row">
+                  <label class="form-label">
+                    <i class="bi bi-chat-left-dots me-2"></i>
+                    {{ lang === "ar" ? "رقم الرسائل النصية" : "SMS number" }}
+                  </label>
+                  <app-phone-number-input
+                    #smsInput
+                    [countries]="countries"
+                    [placeholder]="lang === 'ar' ? 'رقم الرسائل النصية' : 'SMS number'"
+                    [searchPlaceholder]="lang === 'ar' ? 'رمز البلد' : 'Country code'"
+                    [lang]="lang"
+                    [isRequired]="false"
+                    [showValidationErrors]="false"
+                    [countryCodeError]="''"
+                    [phoneNumberError]="''"
+                    [initialCountryCode]="personalInfoForm.get('sms_country_code')?.value"
+                    [initialPhoneNumber]="personalInfoForm.get('sms_number')?.value"
+                    (countryCodeChange)="onSmsCountryCodeChange($event)"
+                    (phoneNumberChange)="onSmsNumberChange($event)"
+                    (formattedPhoneNumberChange)="onSmsFormattedPhoneNumberChange($event)"
+                    (flagError)="onFlagError($event)"
+                  ></app-phone-number-input>
+                </div>
+              </div>
+
+              <div class="mt-2">
+                <label class="form-label">
+                  <i class="bi bi-translate me-2"></i>
+                  {{ lang === "ar" ? "لغة التواصل المفضلة" : "Preferred language" }}
+                </label>
+                <div class="d-flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    class="btn btn-sm rounded-pill"
+                    [ngClass]="isPreferredLanguage('en') ? 'btn-primary' : 'btn-light-primary'"
+                    (click)="setPreferredLanguage('en')"
+                  >
+                    {{ lang === "ar" ? "الإنجليزية" : "English" }}
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-sm rounded-pill"
+                    [ngClass]="isPreferredLanguage('ar') ? 'btn-primary' : 'btn-light-primary'"
+                    (click)="setPreferredLanguage('ar')"
+                  >
+                    {{ lang === "ar" ? "العربية" : "Arabic" }}
+                  </button>
+                </div>
+                <div class="text-muted mt-2">
+                  {{ lang === "ar"
+                    ? "هذه هي اللغة المفضلة التي سيتم استخدامها في رسائل البريد الإلكتروني وواتساب والرسائل النصية."
+                    : "This is the preferred language that emails, WhatsApp, and SMS will use." }}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card mb-8" *ngIf="supportsSocialNetworks">
+            <div
+              class="card-header py-4 cursor-pointer"
+              role="button"
+              tabindex="0"
+              (click)="toggleSection('social')"
+              (keydown.enter)="toggleSection('social')"
+              (keydown.space)="$event.preventDefault(); toggleSection('social')"
+            >
+              <div class="card-title m-0">
+                <h5 class="m-0">
+                  <i class="bi bi-share me-2"></i>
+                  {{ "ACCOUNT_SETTINGS.SOCIAL_NETWORKS" | translate }}
+                </h5>
+              </div>
+              <div class="card-toolbar">
+                <i class="bi" [ngClass]="sectionExpanded.social ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+              </div>
+            </div>
+
+            <div class="card-body" *ngIf="sectionExpanded.social">
+
+              <div class="d-flex align-items-center mb-4" *ngFor="let social of socialFields">
+                <div class="symbol symbol-60px me-5">
+                  <img
+                    [src]="'assets/media/svg/social-logos/' + social.icon + '.svg'"
+                    [alt]="social.alt"
+                    class="p-3"
+                  />
+                </div>
+                <div class="flex-grow-1">
+                  <input
+                    pInputText
+                    type="url"
+                    class="form-control"
+                    [formControlName]="social.control"
+                    [placeholder]="lang === 'ar' ? social.placeholderAr : social.placeholderEn"
+                    [class.is-invalid]="isFieldInvalid(social.control)"
+                  />
+                  <div *ngIf="isFieldInvalid(social.control)" class="invalid-feedback">
+                    {{ getFieldError(social.control) }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="d-flex justify-content-end">
+            <button type="submit" class="btn btn-primary" [disabled]="vm.saving">
+              <ng-container *ngIf="!vm.saving">
+                <span class="indicator-label">
+                  {{ "ACCOUNT_SETTINGS.SAVE_CHANGES" | translate }}
+                </span>
+              </ng-container>
+              <ng-container *ngIf="vm.saving">
+                <span class="indicator-progress" [style.display]="'block'">
+                  {{ "AUTH.REGISTRATION.PLEASE_WAIT" | translate }}
+                  <span class="spinner-border spinner-border-sm align-middle ms-2"></span>
+                </span>
+              </ng-container>
+            </button>
+          </div>
+        </fieldset>
+      </form>
+
+      <form
+        *ngIf="isClientOnlyUser"
+        [formGroup]="invitationForm"
+        (ngSubmit)="onSubmitInvitation()"
+        class="mt-8"
+      >
+        <div class="card">
+          <div
+            class="card-header py-4 cursor-pointer"
+            role="button"
+            tabindex="0"
+            (click)="toggleSection('invitation')"
+            (keydown.enter)="toggleSection('invitation')"
+            (keydown.space)="$event.preventDefault(); toggleSection('invitation')"
+          >
+            <div class="card-title m-0">
+              <h5 class="m-0">
+                <i class="bi bi-ticket-perforated me-2"></i>
+                {{ lang === "ar" ? "كود الدعوة" : "Invitation code" }}
+              </h5>
+            </div>
+            <div class="card-toolbar">
+              <i class="bi" [ngClass]="sectionExpanded.invitation ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+            </div>
+          </div>
+
+          <div class="card-body" *ngIf="sectionExpanded.invitation">
+            <div class="text-muted mb-6">
+              {{ lang === "ar"
+                ? "إذا كان لديك كود دعوة للانضمام كمُطلع (Insighter)، أدخله هنا."
+                : "If you have an invitation code to join as an Insighter, enter it here." }}
+            </div>
+
+            <div class="row align-items-end">
+              <div class="col-lg-6 mb-4 fv-row">
+                <label for="invitationCode" class="form-label required">
+                  {{ lang === "ar" ? "رمز الدعوة" : "Invitation code" }}
+                </label>
+                <input
+                  pInputText
+                  id="invitationCode"
+                  type="text"
+                  inputmode="numeric"
+                  maxlength="6"
+                  formControlName="invitationCode"
+                  class="form-control"
+                  [class.is-invalid]="isInvitationFieldInvalid('invitationCode')"
+                  [placeholder]="lang === 'ar' ? '6 أرقام' : '6 digits'"
+                />
+                <div *ngIf="isInvitationFieldInvalid('invitationCode')" class="invalid-feedback">
+                  {{ getInvitationFieldError("invitationCode") }}
+                </div>
+              </div>
+
+              <div class="col-lg-6 mb-4">
+                <button type="submit" class="btn btn-light-primary w-100" [disabled]="vm.inviting">
+                  <ng-container *ngIf="!vm.inviting">
+                    {{ lang === "ar" ? "تأكيد" : "Confirm" }}
+                  </ng-container>
+                  <ng-container *ngIf="vm.inviting">
+                    {{ "AUTH.REGISTRATION.PLEASE_WAIT" | translate }}
+                    <span class="spinner-border spinner-border-sm align-middle ms-2"></span>
+                  </ng-container>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </form>
+    </ng-container>
+  </ng-template>
+</ng-container>

@@ -25,6 +25,10 @@ export class CompanyMyDashboardComponent extends BaseComponent implements OnInit
   isArabicAndNotRtl: boolean = false;
   needsAgreement: boolean = false;
   showAgreementModal: boolean = false;
+  showNotificationPreferencesBanner = false;
+  readonly notificationBannerImageUrl =
+    "https://res.cloudinary.com/dsiku9ipv/image/upload/v1771139272/whatsappsms_l4scor.png";
+  readonly notificationPreferencesRoute = "/app/profile/settings/personal-info";
 
   private readonly knowledgeTypeColors: Record<string, string> = {
     statistic: '#0a7abf',
@@ -42,6 +46,16 @@ export class CompanyMyDashboardComponent extends BaseComponent implements OnInit
     private agreementService: AgreementService
   ) {
     super(injector);
+  }
+
+  goToNotificationPreferences(): void {
+    this.router.navigateByUrl(this.notificationPreferencesRoute);
+  }
+
+  private computeNotificationBannerVisibility(profile: any): void {
+    const whatsappNumber = String(profile?.whatsapp_number ?? "").trim();
+    const smsNumber = String(profile?.sms_number ?? "").trim();
+    this.showNotificationPreferencesBanner = !(whatsappNumber || smsNumber);
   }
 
   ngOnInit(): void {
@@ -65,6 +79,7 @@ export class CompanyMyDashboardComponent extends BaseComponent implements OnInit
     this.profileService.getProfile().subscribe({
       next: (profile: IKnoldgProfile) => {
         this.userProfile = profile;
+        this.computeNotificationBannerVisibility(profile as any);
         if (profile.roles.includes('company')) {
           this.userRole = 'company';
         } else if (profile.roles.includes('client')) {

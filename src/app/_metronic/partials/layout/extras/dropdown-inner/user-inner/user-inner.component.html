@@ -61,8 +61,13 @@
     </div>
 
     <div class="menu-item px-5">
-      <a [routerLink]="'/app/insighter-dashboard/my-knowledge/general'" class="menu-link px-5" (click)="closeDropdown.emit()">
-        {{ 'INSIGHTER.DASHBOARD.NAV.MY_KNOWLEDGE' | translate }}
+      <a [routerLink]="'/app/insighter-dashboard/my-knowledge/general'" class="menu-link px-5 d-flex justify-content-between" (click)="closeDropdown.emit()">
+        <span>{{ 'INSIGHTER.DASHBOARD.NAV.MY_KNOWLEDGE' | translate }}</span>
+        <ng-container *ngIf="unpublishedDraftCount$ | async as draftCount">
+          <span *ngIf="draftCount > 0" class="badge badge-light-danger fw-bolder fs-8 px-2 py-1 ms-2" style="border: 1px solid;">
+            {{ draftCount }} {{lang==='ar'? 'محفوظ': 'Draft'}}
+          </span>
+        </ng-container>
       </a>
     </div>
 

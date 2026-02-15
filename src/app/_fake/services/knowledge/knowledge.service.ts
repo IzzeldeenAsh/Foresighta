@@ -106,6 +106,15 @@ export interface KnowledgeTypeStatisticsResponse {
   data: KnowledgeTypeStatistic[];
 }
 
+export interface KnowledgeStatusStatistic {
+  status: string;
+  count: number;
+}
+
+export interface KnowledgeStatusStatisticsResponse {
+  data: KnowledgeStatusStatistic[];
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -229,6 +238,24 @@ export class KnowledgeService {
       catchError((error) => this.handleError(error)),
       finalize(() => this.setLoading(false))
     );
+  }
+
+  getKnowledgeStatusStatistics(): Observable<KnowledgeStatusStatisticsResponse> {
+    const headers = new HttpHeaders({
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+      'Accept-Language': this.currentLang,
+    });
+
+    return this.http
+      .get<KnowledgeStatusStatisticsResponse>(
+        `${this.baseUrl}/api/insighter/library/knowledge/status/statistics`,
+        { headers }
+      )
+      .pipe(
+        map((res) => res),
+        catchError((error) => this.handleError(error))
+      );
   }
 
   deleteKnowledge(id: number): Observable<any> {
