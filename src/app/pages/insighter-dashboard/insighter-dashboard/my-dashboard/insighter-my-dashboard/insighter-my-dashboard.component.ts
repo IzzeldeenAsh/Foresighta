@@ -1,4 +1,5 @@
 import { Component, Injector } from '@angular/core';
+import { Router } from '@angular/router';
 import { Observable } from 'rxjs';
 import { IKnoldgProfile } from 'src/app/_fake/models/profile.interface';
 import { ProfileService } from 'src/app/_fake/services/get-profile/get-profile.service';
@@ -16,17 +17,33 @@ export class InsighterMyDashboardComponent extends BaseComponent {
   isCompanyInsight: Observable<boolean>;
   needsAgreement: boolean = false;
   showAgreementModal: boolean = false;
+  showNotificationPreferencesBanner = false;
+  readonly notificationBannerImageUrl =
+    "https://res.cloudinary.com/dsiku9ipv/image/upload/v1771139272/whatsappsms_l4scor.png";
+  readonly notificationPreferencesRoute = "/app/profile/settings/personal-info";
   constructor(
     injector: Injector,
     private profileService: ProfileService,
-    private agreementService: AgreementService
+    private agreementService: AgreementService,
+    private router: Router
   ) {
     super(injector);
+  }
+
+  goToNotificationPreferences(): void {
+    this.router.navigateByUrl(this.notificationPreferencesRoute);
+  }
+
+  private computeNotificationBannerVisibility(profile: any): void {
+    const whatsappNumber = String(profile?.whatsapp_number ?? "").trim();
+    const smsNumber = String(profile?.sms_number ?? "").trim();
+    this.showNotificationPreferencesBanner = !(whatsappNumber || smsNumber);
   }
 
   ngOnInit(): void {
     this.profileService.getProfile().subscribe((profile: IKnoldgProfile) => {
       this.profile = profile;
+      this.computeNotificationBannerVisibility(profile as any);
       this.isCompanyInsight = this.profileService.isCompanyInsighter();
       // Check if there's a pending activation request based on profile status
       this.hasPendingActivationRequest = this.profile.status === 'pending' || this.profile.status === 'under_review';

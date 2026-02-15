@@ -1,6 +1,6 @@
 import { Component, Injector, OnInit } from "@angular/core";
 import { FormBuilder, FormGroup, Validators } from "@angular/forms";
-import { catchError, forkJoin, Observable, of, tap } from "rxjs";
+import { BehaviorSubject, catchError, finalize, forkJoin, Observable, of, tap } from "rxjs";
 import { IKnoldgProfile } from "src/app/_fake/models/profile.interface";
 import { ConsultingFieldTreeService } from "src/app/_fake/services/consulting-fields-tree/consulting-fields-tree.service";
 import { CountriesService } from "src/app/_fake/services/countries/countries.service";
@@ -8,7 +8,6 @@ import { ProfileService } from "src/app/_fake/services/get-profile/get-profile.s
 import { IndustryService } from "src/app/_fake/services/industries/industry.service";
 import { InvitationService } from "src/app/_fake/services/invitation/invitation.service";
 import { UpdateProfileService } from "src/app/_fake/services/profile/profile.service";
-import { AuthService } from "src/app/modules/auth";
 import { BaseComponent } from "src/app/modules/base.component";
 
 @Component({
@@ -19,22 +18,94 @@ import { BaseComponent } from "src/app/modules/base.component";
 export class PersonalSettingsComponent extends BaseComponent implements OnInit {
   personalInfoForm!: FormGroup;
   invitationForm!: FormGroup;
-  isLoadingCountries: boolean = false;
-  countries: any[] = [];  
+  countries: any[] = [];
   roles: string[] = [];
   consultingFields: any[] = [];
   industries: any[] = [];
-  isUpdatingProfile$: Observable<boolean>;
-  isLoading$: Observable<boolean> = of(false);
-  isProcessingInvitation$: Observable<boolean>;
-  profile: IKnoldgProfile;
-  allIndustriesSelected: any[] = [];
-  allConsultingFieldsSelected: any[] = [];
-  socialNetworks: {type: string, link: string}[] = [];
+  profile!: IKnoldgProfile;
+  socialNetworks: { type: string; link: string }[] = [];
+
+  hasLoadedProfile = false;
+  isProfessionalUser = false;
+  supportsSocialNetworks = false;
+  isClientOnlyUser = false;
+  sectionExpanded = {
+    personal: true,
+    professional: true,
+    preferences: true,
+    social: true,
+    invitation: true,
+  };
+
+  loadErrors = {
+    profile: false,
+    countries: false,
+    industries: false,
+    consultingFields: false,
+  };
+
+  private readonly pageLoadingSubject = new BehaviorSubject<boolean>(true);
+  readonly isLoading$ = this.pageLoadingSubject.asObservable();
+
+  private readonly savingSubject = new BehaviorSubject<boolean>(false);
+  readonly isSaving$ = this.savingSubject.asObservable();
+
+  private readonly acceptingInvitationSubject = new BehaviorSubject<boolean>(false);
+  readonly isAcceptingInvitation$ = this.acceptingInvitationSubject.asObservable();
+
+  readonly socialFields: Array<{
+    control: "linkedIn" | "facebook" | "twitter" | "instagram" | "youtube" | "tiktok";
+    icon: string;
+    alt: string;
+    placeholderEn: string;
+    placeholderAr: string;
+  }> = [
+    {
+      control: "linkedIn",
+      icon: "linkedin",
+      alt: "LinkedIn",
+      placeholderEn: "LinkedIn Profile URL",
+      placeholderAr: "رابط الملف الشخصي على LinkedIn",
+    },
+    {
+      control: "facebook",
+      icon: "facebook",
+      alt: "Facebook",
+      placeholderEn: "Facebook Profile URL",
+      placeholderAr: "رابط الملف الشخصي على Facebook",
+    },
+    {
+      control: "twitter",
+      icon: "x",
+      alt: "X/Twitter",
+      placeholderEn: "X/Twitter Profile URL",
+      placeholderAr: "رابط الملف الشخصي على X/Twitter",
+    },
+    {
+      control: "instagram",
+      icon: "instagram",
+      alt: "Instagram",
+      placeholderEn: "Instagram Profile URL",
+      placeholderAr: "رابط الملف الشخصي على Instagram",
+    },
+    {
+      control: "youtube",
+      icon: "youtube",
+      alt: "YouTube",
+      placeholderEn: "YouTube Channel URL",
+      placeholderAr: "رابط قناة YouTube",
+    },
+    {
+      control: "tiktok",
+      icon: "tiktok",
+      alt: "TikTok",
+      placeholderEn: "TikTok Profile URL",
+      placeholderAr: "رابط الملف الشخصي على TikTok",
+    },
+  ];
   
   constructor(
     injector: Injector,
-    private readonly _profileService: AuthService,
     private readonly fb: FormBuilder,
     private _countryService: CountriesService,
     private _profilePost: UpdateProfileService,
@@ -44,30 +115,47 @@ export class PersonalSettingsComponent extends BaseComponent implements OnInit {
     private _invitationService: InvitationService,
   ) {
     super(injector);
-    this.isProcessingInvitation$ = this._invitationService.isLoading$;
-    this.isUpdatingProfile$ = this._profilePost.isLoading$;
   }
 
   ngOnInit(): void {
-    this.handleAPIs();
     this.initForm();
     this.initInvitationForm();
-        
+    this.loadInitialData();
   }
 
-  handleAPIs(){
-    this.isLoading$ = of(true);
+  toggleSection(section: keyof PersonalSettingsComponent["sectionExpanded"]): void {
+    this.sectionExpanded[section] = !this.sectionExpanded[section];
+  }
+
+  setPreferredLanguage(value: "en" | "ar"): void {
+    this.personalInfoForm.get("language")?.setValue(value);
+  }
+
+  isPreferredLanguage(value: "en" | "ar"): boolean {
+    return this.personalInfoForm.get("language")?.value === value;
+  }
+
+  reload(): void {
+    this.loadInitialData();
+  }
+
+  private loadInitialData(): void {
+    this.pageLoadingSubject.next(true);
+    this.hasLoadedProfile = false;
+    this.loadErrors = {
+      profile: false,
+      countries: false,
+      industries: false,
+      consultingFields: false,
+    };
+
     const profile$ = this.getProfileService.getProfile().pipe(
-      tap((profile) => {
-        this.profile = profile;
-        this.roles = profile.roles;
-        console.log('Current roles:', this.roles);
-        // Load consulting fields and industries for all roles
-        this.callConsultingFields();
-        this.callIndustries();
-        this.socialNetworks = profile.social || [];
+      catchError(() => {
+        this.loadErrors.profile = true;
+        return of(null);
       })
     );
+
     const countries$ = this._countryService.getCountries().pipe(
       tap((countries) => {
         this.countries = countries.map((country: any) => ({
@@ -76,39 +164,80 @@ export class PersonalSettingsComponent extends BaseComponent implements OnInit {
           showFlag: true,
         }));
       }),
-      catchError((err) => {
+      catchError(() => {
+        this.loadErrors.countries = true;
+        this.countries = [];
         return of([]);
       })
     );
 
-    forkJoin([profile$, countries$]).subscribe({
-      next: () => {
-        this.updateFormValidators();
-        this.populateForm();
-        this.isLoading$ = of(false);
-      },
-      error: (err) => {
-        this.isLoading$ = of(false);
-      }
-    });
-  }
+    const industries$ = this._industries.getIsicCodesTree(this.lang ? this.lang : "en").pipe(
+      tap((industries: any) => {
+        this.industries = industries || [];
+      }),
+      catchError(() => {
+        this.loadErrors.industries = true;
+        this.industries = [];
+        return of([]);
+      })
+    );
 
-  callIndustries(){
-    const sub = this._industries.getIsicCodesTree(this.lang ? this.lang : 'en').subscribe((industries: any) => {
-      console.log('Industries data received:', industries);
-      this.industries = industries;
-    }, error => {
-      console.error('Error loading industries:', error);
-    });
+    const consultingFields$ = this._consultingFieldService.getConsultingCodesTree(this.lang ? this.lang : "en").pipe(
+      tap((consultingFields: any) => {
+        this.consultingFields = consultingFields || [];
+      }),
+      catchError(() => {
+        this.loadErrors.consultingFields = true;
+        this.consultingFields = [];
+        return of([]);
+      })
+    );
+
+    const sub = forkJoin({
+      profile: profile$,
+      countries: countries$,
+      industries: industries$,
+      consultingFields: consultingFields$,
+    })
+      .pipe(finalize(() => this.pageLoadingSubject.next(false)))
+      .subscribe({
+        next: ({ profile }) => {
+          if (!profile) {
+            const msg =
+              this.lang === "ar"
+                ? "حدثت مشكلة أثناء تحميل بيانات الحساب."
+                : "Failed to load account settings.";
+            this.showError("", msg);
+            return;
+          }
+
+          this.profile = profile;
+          this.hasLoadedProfile = true;
+          this.roles = profile.roles || [];
+          this.socialNetworks = profile.social || [];
+          this.updateRoleFlags();
+          this.updateFormValidators();
+          this.populateForm();
+        },
+        error: () => {
+          // Should not happen due to catchError safeguards, but keep a fallback.
+          const msg =
+            this.lang === "ar"
+              ? "حدثت مشكلة أثناء تحميل بيانات الحساب."
+              : "Failed to load account settings.";
+          this.showError("", msg);
+        },
+      });
     this.unsubscribe.push(sub);
   }
 
-  callConsultingFields(){
-    const sub = this._consultingFieldService.getConsultingCodesTree(this.lang ? this.lang : 'en').subscribe((consultingFields: any) => {
-      this.consultingFields = consultingFields;
-    });
-    this.unsubscribe.push(sub);
+  private updateRoleFlags(): void {
+    const professionalRoles = ["insighter", "company", "company-insighter"];
+    this.isProfessionalUser = this.roles.some((r) => professionalRoles.includes(r));
+    this.supportsSocialNetworks = this.isProfessionalUser;
+    this.isClientOnlyUser = this.isClientOnly();
   }
+
   updateFormValidators() {
     // Only add required validators for industries, consulting_field, and bio if user is not client-only
     if (!this.isClientOnly()) {
@@ -127,26 +256,15 @@ export class PersonalSettingsComponent extends BaseComponent implements OnInit {
   }
 
   populateForm(){
-    let transformedIndustries;
-    let transformedConsultingFields;
-    
-    const transformNodes = (nodes: any[]): any[] => {
-      if (!nodes || !Array.isArray(nodes)) return [];
-      return nodes.map(node => ({
-        key: node.id,
-        label: node.name,
-        data: { 
-          key: node.id,
-          nameEn: node.name,
-          nameAr: node.name,
-        },
-        children: node.children ? transformNodes(node.children) : []
-      }));
-    };
-    
-    // Transform industries and consulting fields for all roles
-    transformedIndustries = transformNodes(this.profile.industries || []);
-    transformedConsultingFields = transformNodes(this.profile.consulting_field || []);
+    const transformedIndustries = this.toTreeNodes(this.profile.industries || []);
+    const transformedConsultingFields = this.toTreeNodes(this.profile.consulting_field || []);
+    const profileAny: any = this.profile as any;
+    const preferredLanguage: "en" | "ar" =
+      profileAny?.language === "ar" || profileAny?.language === "en"
+        ? profileAny.language
+        : profileAny?.preferred_language === "ar" || profileAny?.preferred_language === "en"
+          ? profileAny.preferred_language
+          : (this.lang === "ar" ? "ar" : "en");
     
     this.personalInfoForm.patchValue({
       first_name: this.profile.first_name,
@@ -154,6 +272,11 @@ export class PersonalSettingsComponent extends BaseComponent implements OnInit {
       country: this.countries.find((country: any) => country.id === this.profile.country_id),
       phoneCountryCode: this.profile.phone_code || '',
       phoneNumber: this.profile.phone || '',
+      whatsapp_country_code: profileAny?.whatsapp_country_code || "",
+      whatsapp_number: profileAny?.whatsapp_number || "",
+      sms_country_code: profileAny?.sms_country_code || "",
+      sms_number: profileAny?.sms_number || "",
+      language: preferredLanguage,
       bio: this.profile.bio || '',
       industries: transformedIndustries,
       consulting_field: transformedConsultingFields,
@@ -166,21 +289,31 @@ export class PersonalSettingsComponent extends BaseComponent implements OnInit {
     }); 
   }
 
+  private toTreeNodes(nodes: any[]): any[] {
+    if (!nodes || !Array.isArray(nodes)) return [];
+    return nodes.map((node) => ({
+      key: node.id,
+      label: node.name,
+      data: {
+        key: node.id,
+        nameEn: node.name,
+        nameAr: node.name,
+      },
+      children: node.children ? this.toTreeNodes(node.children) : [],
+    }));
+  }
+
   onConsultingNodesSelected(selectedNodes: any) {
-    const filteredNodes = selectedNodes && selectedNodes.length > 0 
-      ? selectedNodes.filter((node: any) => node.data.key !== 'selectAll')
-      : [];
-    this.allConsultingFieldsSelected = filteredNodes;
-    this.personalInfoForm.get('consulting_field')?.setValue(filteredNodes);
+    this.personalInfoForm.get("consulting_field")?.setValue(this.filterSelectedNodes(selectedNodes));
   }
 
   onIndustrySelected(selectedNodes: any) {
-    const filteredNodes = selectedNodes && selectedNodes.length > 0 
-      ? selectedNodes.filter((node: any) => node.data.key !== 'selectAll')
-      : [];
-    this.allIndustriesSelected = filteredNodes;
-    this.personalInfoForm.get('industries')?.setValue(filteredNodes);
-    console.log('Selected Industries:', filteredNodes);
+    this.personalInfoForm.get("industries")?.setValue(this.filterSelectedNodes(selectedNodes));
+  }
+
+  private filterSelectedNodes(selectedNodes: any): any[] {
+    const nodes = Array.isArray(selectedNodes) ? selectedNodes : [];
+    return nodes.filter((node: any) => node?.data?.key !== "selectAll");
   }
 
   initForm() {
@@ -190,19 +323,31 @@ export class PersonalSettingsComponent extends BaseComponent implements OnInit {
       country: ["", Validators.required],
       phoneCountryCode: [""],
       phoneNumber: [""],
+      whatsapp_country_code: [""],
+      whatsapp_number: [""],
+      sms_country_code: [""],
+      sms_number: [""],
+      language: [this.lang === "ar" ? "ar" : "en", Validators.required],
       bio: [""],
       industries: [[]],
       consulting_field: [[]],
-      linkedIn: [''],
-      facebook: [''],
-      twitter: [''],
-      instagram: [''],
-      youtube: [''],
-      tiktok: ['']
+      linkedIn: ["", [this.optionalUrlValidator()]],
+      facebook: ["", [this.optionalUrlValidator()]],
+      twitter: ["", [this.optionalUrlValidator()]],
+      instagram: ["", [this.optionalUrlValidator()]],
+      youtube: ["", [this.optionalUrlValidator()]],
+      tiktok: ["", [this.optionalUrlValidator()]],
     });
+  }
 
-    // Add required validators for non-client users after form initialization
-    this.updateFormValidators();
+  private optionalUrlValidator() {
+    const urlRegex =
+      /^(https?:\/\/)?([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}([/?#].*)?$/;
+    return (control: any) => {
+      const value = (control?.value ?? "").toString().trim();
+      if (!value) return null;
+      return urlRegex.test(value) ? null : { pattern: true };
+    };
   }
 
   initInvitationForm() {
@@ -227,40 +372,30 @@ export class PersonalSettingsComponent extends BaseComponent implements OnInit {
       return;
     }
 
+    if (this.savingSubject.value) return;
+    this.savingSubject.next(true);
+
     const formData = this.createFormData();
     
-    if (this.hasRole(['insighter']) || this.hasRole(['company-insighter']) || this.hasRole(['company'])) {
-      // Call both profile and social networks update for insighters
-      forkJoin([
-        this._profilePost.postProfile(formData),
-        this.submitSocialNetworks()
-      ]).subscribe({
-        next: ([profileRes, socialRes]) => {
-          const message = this.lang === "ar" 
-            ? "تم تعديل البروفايل"
-            : "Profile Updated Successfully";
-          this.showSuccess("", message);
-          this.refreshProfileAndForm();
-        },
-        error: (error) => {
-          this.handleServerErrors(error);
-        }
-      });
-    } else {
-      // Only call profile update for non-insighters
-      this._profilePost.postProfile(formData).subscribe({
-        next: (profileRes) => {
-          const message = this.lang === "ar" 
-            ? "تم تعديل البروفايل"
-            : "Profile Updated Successfully";
-          this.showSuccess("", message);
-          this.refreshProfileAndForm();
-        },
-        error: (error) => {
-          this.handleServerErrors(error);
-        }
-      });
+    const requests: Observable<any>[] = [this._profilePost.postProfile(formData)];
+    if (this.supportsSocialNetworks) {
+      requests.push(this.submitSocialNetworks());
     }
+
+    const sub = forkJoin(requests)
+      .pipe(finalize(() => this.savingSubject.next(false)))
+      .subscribe({
+        next: () => {
+          const message =
+            this.lang === "ar" ? "تم تعديل البروفايل" : "Profile Updated Successfully";
+          this.showSuccess("", message);
+          this.refreshProfileAndForm();
+        },
+        error: (error) => {
+          this.handleServerErrors(error);
+        },
+      });
+    this.unsubscribe.push(sub);
   }
 
   onSubmitInvitation() {
@@ -273,20 +408,27 @@ export class PersonalSettingsComponent extends BaseComponent implements OnInit {
 
     const code = this.invitationForm.get('invitationCode')?.value;
 
-    this._invitationService.acceptInsighterInvitation(code).subscribe({
-      next: (response) => {
-        const message = this.lang === "ar" 
-          ? "تم قبول الدعوة بنجاح"
-          : "Invitation accepted successfully";
-        this.showSuccess("", message);
-        this.invitationForm.reset();
-        // Refresh profile locally to reflect new roles/permissions
-        this.refreshProfileAndForm();
-      },
-      error: (error) => {
-        this.handleServerErrors(error);
-      }
-    });
+    if (this.acceptingInvitationSubject.value) return;
+    this.acceptingInvitationSubject.next(true);
+
+    const sub = this._invitationService
+      .acceptInsighterInvitation(code)
+      .pipe(finalize(() => this.acceptingInvitationSubject.next(false)))
+      .subscribe({
+        next: () => {
+          const message =
+            this.lang === "ar"
+              ? "تم قبول الدعوة بنجاح"
+              : "Invitation accepted successfully";
+          this.showSuccess("", message);
+          this.invitationForm.reset();
+          this.refreshProfileAndForm();
+        },
+        error: (error) => {
+          this.handleServerErrors(error);
+        },
+      });
+    this.unsubscribe.push(sub);
   }
 
   /**
@@ -299,6 +441,7 @@ export class PersonalSettingsComponent extends BaseComponent implements OnInit {
         this.profile = profile;
         this.roles = profile.roles || [];
         this.socialNetworks = profile.social || [];
+        this.updateRoleFlags();
         this.updateFormValidators();
         this.populateForm();
         this.personalInfoForm.markAsPristine();
@@ -320,8 +463,13 @@ export class PersonalSettingsComponent extends BaseComponent implements OnInit {
     const form = this.personalInfoForm;
 
     // Add basic info
-    formData.append("first_name", form.get("first_name")?.value);
-    formData.append("last_name", form.get("last_name")?.value);
+    formData.append("first_name", String(form.get("first_name")?.value ?? ""));
+    formData.append("last_name", String(form.get("last_name")?.value ?? ""));
+
+    const preferredLanguage = form.get("language")?.value;
+    if (preferredLanguage) {
+      formData.append("language", String(preferredLanguage));
+    }
 
     // Add phone if provided
     if (form.get("phoneNumber")?.value) {
@@ -331,6 +479,24 @@ export class PersonalSettingsComponent extends BaseComponent implements OnInit {
     // Add phone code if provided
     if (form.get("phoneCountryCode")?.value) {
       formData.append("phone_code", form.get("phoneCountryCode")?.value);
+    }
+
+    const whatsappNumber = form.get("whatsapp_number")?.value;
+    const whatsappCode = form.get("whatsapp_country_code")?.value;
+    if (whatsappNumber) {
+      formData.append("whatsapp_number", whatsappNumber);
+    }
+    if (whatsappCode) {
+      formData.append("whatsapp_country_code", whatsappCode);
+    }
+
+    const smsNumber = form.get("sms_number")?.value;
+    const smsCode = form.get("sms_country_code")?.value;
+    if (smsNumber) {
+      formData.append("sms_number", smsNumber);
+    }
+    if (smsCode) {
+      formData.append("sms_country_code", smsCode);
     }
 
     // Add country if selected
@@ -454,9 +620,10 @@ export class PersonalSettingsComponent extends BaseComponent implements OnInit {
     }
 
     // Always send socials for roles that support them, even if empty
-    if (this.hasRole(['insighter']) || this.hasRole(['company-insighter']) || this.hasRole(['company'])) {
+    if (this.hasRole(['insighter', 'company-insighter'])) {
       return this._profilePost.addInsighterSocial(this.socialNetworks);
-    } else if (this.hasRole(['company'])) {
+    }
+    if (this.hasRole(['company'])) {
       return this._profilePost.addCompanySocial(this.socialNetworks);
     }
     return of(null);
@@ -577,6 +744,30 @@ export class PersonalSettingsComponent extends BaseComponent implements OnInit {
   }
 
   onFormattedPhoneNumberChange(formattedPhone: string): void {
+    // Handle formatted phone number if needed
+  }
+
+  onWhatsAppCountryCodeChange(countryCode: string): void {
+    this.personalInfoForm.get("whatsapp_country_code")?.setValue(countryCode);
+  }
+
+  onWhatsAppNumberChange(phoneNumber: string): void {
+    this.personalInfoForm.get("whatsapp_number")?.setValue(phoneNumber);
+  }
+
+  onWhatsAppFormattedPhoneNumberChange(formattedPhone: string): void {
+    // Handle formatted phone number if needed
+  }
+
+  onSmsCountryCodeChange(countryCode: string): void {
+    this.personalInfoForm.get("sms_country_code")?.setValue(countryCode);
+  }
+
+  onSmsNumberChange(phoneNumber: string): void {
+    this.personalInfoForm.get("sms_number")?.setValue(phoneNumber);
+  }
+
+  onSmsFormattedPhoneNumberChange(formattedPhone: string): void {
     // Handle formatted phone number if needed
   }
 }
