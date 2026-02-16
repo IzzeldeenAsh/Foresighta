@@ -30,7 +30,7 @@ export class PhoneNumberInputComponent implements ControlValueAccessor, OnInit, 
   @Input() phoneNumberError: string = '';
   @Input() initialCountryCode: string = '';
   @Input() initialPhoneNumber: string = '';
-
+  @Input() maxWidth: string = '100%';
   @Output() countryCodeChange = new EventEmitter<string>();
   @Output() phoneNumberChange = new EventEmitter<string>();
   @Output() formattedPhoneNumberChange = new EventEmitter<string>();

@@ -36,7 +36,7 @@
                             </div>
                         </div>
                         
-                        <div class="d-flex gap-1 align-items-center flex-nowrap" >
+                        <div class="d-flex gap-2 align-items-center flex-nowrap" >
                             <div >
                                 <span class="badge me-2 px-2 py-1" 
                                 [ngClass]="{
@@ -50,6 +50,19 @@
                                 
                              
                             </div>
+                            <button
+                              type="button"
+                              class="btn btn-sm btn-outline btn-active-light-primary d-flex align-items-center gap-2"
+                              (click)="viewDocument(doc, $event)"
+                              [ngbTooltip]="lang === 'ar' ? 'عرض' : 'View'"
+                              placement="top">
+                              <i class="ki-duotone ki-eye fs-4 text-gray-800">
+                                <span class="path1"></span>
+                                <span class="path2"></span>
+                                <span class="path3"></span>
+                              </i>
+                              <span class="fw-semibold">{{ lang === 'ar' ? 'عرض' : 'View' }}</span>
+                            </button>
                                <!-- Expand/Collapse Arrow -->
                                <button
                                class="btn btn-sm btn-link p-0"

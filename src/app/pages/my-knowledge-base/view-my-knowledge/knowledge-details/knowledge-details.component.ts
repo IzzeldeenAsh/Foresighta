@@ -140,6 +140,15 @@ export class KnowledgeDetailsComponent extends BaseComponent implements OnInit {
 
   docActions: MenuItem[] = [
     {
+      label: this.lang === 'ar' ? 'عرض' : 'View',
+      icon: 'ki-duotone ki-eye',
+      command: (event) => {
+        if (event.item?.data) {
+          this.viewDocument(event.item.data, new Event('click'));
+        }
+      }
+    },
+    {
       label:this.lang === 'ar' ? 'تعديل' : 'Edit',
       icon: 'ki-duotone ki-pencil',
       command: (event) => {
@@ -163,6 +172,37 @@ export class KnowledgeDetailsComponent extends BaseComponent implements OnInit {
   setMenuData(doc: DocumentInfo): void {
     this.docActions.forEach(item => {
       item.data = doc;
+    });
+  }
+
+  viewDocument(doc: DocumentInfo, event: Event): void {
+    event.stopPropagation();
+
+    const newTab = window.open('', '_blank');
+    this.addInsightStepsService.getDocumentUrl(doc.id).subscribe({
+      next: (response) => {
+        if (newTab) {
+          newTab.location.href = response.data.url;
+        } else {
+          window.open(response.data.url, '_blank');
+        }
+      },
+      error: (error) => {
+        console.error('Error getting document URL:', error);
+        if (newTab) newTab.close();
+        Swal.fire({
+          title: this.lang === 'ar' ? 'خطأ!' : 'Error!',
+          text: this.lang === 'ar' ? 'فشل فتح المستند' : 'Failed to open document',
+          icon: 'error',
+          confirmButtonText: this.lang === 'ar' ? 'حسناً' : 'OK',
+          customClass: {
+            popup: 'text-center',
+            title: 'text-center',
+            htmlContainer: 'text-center',
+            confirmButton: 'text-center'
+          }
+        });
+      }
     });
   }
 

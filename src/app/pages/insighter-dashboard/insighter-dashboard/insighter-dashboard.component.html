@@ -224,6 +224,7 @@
         <app-wallet-statistics *ngIf="isRouteActive('wallet') && !((isCompanyInsighter$ | async))"></app-wallet-statistics>
         <app-sales-statistics *ngIf="isRouteActive('sales')"></app-sales-statistics>
         <app-company-statistics *ngIf="isRouteActive('my-company-settings') && (hasCompanyRole$ | async)"></app-company-statistics>
+        <app-read-later-statistics *ngIf="isRouteActive('notification-settings')"></app-read-later-statistics>
       </div>
     </div>
   </div>
@@ -674,6 +675,17 @@
                           {{ 'INSIGHTER.DASHBOARD.NAV.ACCOUNT_SETTINGS' | translate }}
                         </div>
                       </div>
+                      <div class="sub-nav-item" [routerLink]="['account-settings/notification-settings']" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"
+                      pTooltip="{{ isNavCollapsed ? (lang === 'ar' ? 'إعدادات الإشعارات' : 'Notification Settings') : '' }}"
+                      tooltipPosition="right"
+                      appendTo="body">
+                        <div class="sub-item-icon">
+                          <i class="ki-outline ki-notification-bing"></i>
+                        </div>
+                        <div class="sub-item-label">
+                          {{ lang === 'ar' ? 'إعدادات الإشعارات' : 'Notification Settings' }}
+                        </div>
+                      </div>
                       <div *ngIf="(isInsighter$ | async) || (isCompany$ | async)" class="sub-nav-item" [routerLink]="['account-settings/payment-settings']" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"
                       pTooltip="{{ isNavCollapsed ? ('INSIGHTER.DASHBOARD.NAV.PAYMENT_SETTINGS' | translate) : '' }}"
                       tooltipPosition="right"
@@ -730,6 +742,15 @@
                          appendTo="body">
                       <div class="item-icon">
                         <i class="ki-outline ki-user-edit"></i>
+                      </div>
+                    </div>
+                    <div class="nav-item" [routerLink]="['account-settings/notification-settings']" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"
+                        [attr.title]="lang === 'ar' ? 'إعدادات الإشعارات' : 'Notification Settings'"
+                         pTooltip="{{ isNavCollapsed ? (lang === 'ar' ? 'إعدادات الإشعارات' : 'Notification Settings') : '' }}"
+                         tooltipPosition="right"
+                         appendTo="body">
+                      <div class="item-icon">
+                        <i class="ki-outline ki-notification-bing"></i>
                       </div>
                     </div>
                     <div class="nav-item" [routerLink]="['/app/insighter-dashboard/account-settings/consulting-schedule']" routerLinkActive="active"

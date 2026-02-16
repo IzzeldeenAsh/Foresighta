@@ -20,7 +20,7 @@ export class InsighterMyDashboardComponent extends BaseComponent {
   showNotificationPreferencesBanner = false;
   readonly notificationBannerImageUrl =
     "https://res.cloudinary.com/dsiku9ipv/image/upload/v1771139272/whatsappsms_l4scor.png";
-  readonly notificationPreferencesRoute = "/app/profile/settings/personal-info";
+  readonly notificationPreferencesRoute = "/app/insighter-dashboard/account-settings/notification-settings";
   constructor(
     injector: Injector,
     private profileService: ProfileService,

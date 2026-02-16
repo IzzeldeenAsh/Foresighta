@@ -21,6 +21,13 @@
         {{ 'INSIGHTER.DASHBOARD.NAV.ACCOUNT_SETTINGS' | translate }}
       </a>
     </li>
+    <li class="nav-item">
+      <a class="nav-link text-active-primary pb-4"
+        [class.active]="activeTab === 'notification-settings'"
+        (click)="switchTab('notification-settings')">
+        {{ lang === 'ar' ? 'إعدادات الإشعارات' : 'Notification Settings' }}
+      </a>
+    </li>
     <li class="nav-item" *ngIf="(isInsighter$ | async) || (isCompany$ | async)">
       <a class="nav-link text-active-primary pb-4"
         [class.active]="activeTab === 'payment-settings'"
@@ -40,7 +47,7 @@
 
 <div class="py-1 bg-white rounded-2">
   <!-- Tab Content -->
-  <div class="tab-content">
+  <div class="tab-content ">
     <router-outlet></router-outlet>
   </div>
 </div>

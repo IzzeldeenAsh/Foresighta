@@ -378,9 +378,23 @@ export class KnowledgeService {
 
     this.setLoading(true);
     return this.http
-      .get<DocumentUrlResponse>(`${this.apiUrl}/document/download/${documentId}`, {
-        headers,
-      })
+      .post<DocumentUrlResponse>(`${this.apiUrl}/document/download/${documentId}`, {}, { headers })
+      .pipe(
+        map((res) => res),
+        catchError((error) => this.handleError(error)),
+        finalize(() => this.setLoading(false))
+      );
+  }
+
+  getCompanyInsighterDocumentUrl(documentId: number): Observable<DocumentUrlResponse> {
+    const headers = new HttpHeaders({
+      Accept: "application/json",
+      "Accept-Language": this.currentLang,
+    });
+
+    this.setLoading(true);
+    return this.http
+      .post<DocumentUrlResponse>(`${this.baseUrl}/api/company/insighter/knowledge/document/download/${documentId}`, {}, { headers })
       .pipe(
         map((res) => res),
         catchError((error) => this.handleError(error)),

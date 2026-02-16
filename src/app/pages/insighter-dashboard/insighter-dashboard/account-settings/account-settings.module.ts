@@ -34,6 +34,8 @@ import { ConsultingScheduleComponent } from './consulting-schedule.component';
 import { InsighterDashboardSharedModule } from '../shared/shared.module';
 import { PendingChangesGuard } from 'src/app/guards/pending-changes.guard';
 import { AgreementModalComponent } from 'src/app/reusable-components/agreement-modal/agreement-modal.component';
+import { NotificationSettingsComponent } from './notification-settings/notification-settings.component';
+import { PhoneNumberInputModule } from 'src/app/reusable-components/phone-number-input/phone-number-input.module';
 
 const routes: Routes = [
   {
@@ -63,6 +65,10 @@ const routes: Routes = [
         path: 'consulting-schedule',
         component: ConsultingScheduleComponent,
         canDeactivate: [PendingChangesGuard]
+      },
+      {
+        path: 'notification-settings',
+        component: NotificationSettingsComponent
       }
     ]
   }
@@ -77,6 +83,7 @@ const routes: Routes = [
     ReactivateDialogComponent,
     PaymentSettingsComponent,
     ConsultingScheduleComponent,
+    NotificationSettingsComponent,
     TransferDialogComponent,
     DeactivateDialogComponent,
     DeleteDialogComponent,
@@ -104,7 +111,8 @@ const routes: Routes = [
     DropdownModule,
     CountryDropdownComponent,
     InsighterDashboardSharedModule,
-    AgreementModalComponent
+    AgreementModalComponent,
+    PhoneNumberInputModule
   ],
   schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })

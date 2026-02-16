@@ -327,56 +327,6 @@
             </div>
 
             <div class="card-body" *ngIf="sectionExpanded.preferences">
-              <div class="row">
-                <div class="col-lg-6 mb-6 fv-row">
-                  <label class="form-label">
-                    <i class="bi bi-whatsapp me-2"></i>
-                    {{ lang === "ar" ? "رقم واتساب" : "WhatsApp number" }}
-                  </label>
-                  <app-phone-number-input
-                    #whatsAppInput
-                    [countries]="countries"
-                    [placeholder]="lang === 'ar' ? 'رقم واتساب' : 'WhatsApp number'"
-                    [searchPlaceholder]="lang === 'ar' ? 'رمز البلد' : 'Country code'"
-                    [lang]="lang"
-                    [isRequired]="false"
-                    [showValidationErrors]="false"
-                    [countryCodeError]="''"
-                    [phoneNumberError]="''"
-                    [initialCountryCode]="personalInfoForm.get('whatsapp_country_code')?.value"
-                    [initialPhoneNumber]="personalInfoForm.get('whatsapp_number')?.value"
-                    (countryCodeChange)="onWhatsAppCountryCodeChange($event)"
-                    (phoneNumberChange)="onWhatsAppNumberChange($event)"
-                    (formattedPhoneNumberChange)="onWhatsAppFormattedPhoneNumberChange($event)"
-                    (flagError)="onFlagError($event)"
-                  ></app-phone-number-input>
-                </div>
-
-                <div class="col-lg-6 mb-6 fv-row">
-                  <label class="form-label">
-                    <i class="bi bi-chat-left-dots me-2"></i>
-                    {{ lang === "ar" ? "رقم الرسائل النصية" : "SMS number" }}
-                  </label>
-                  <app-phone-number-input
-                    #smsInput
-                    [countries]="countries"
-                    [placeholder]="lang === 'ar' ? 'رقم الرسائل النصية' : 'SMS number'"
-                    [searchPlaceholder]="lang === 'ar' ? 'رمز البلد' : 'Country code'"
-                    [lang]="lang"
-                    [isRequired]="false"
-                    [showValidationErrors]="false"
-                    [countryCodeError]="''"
-                    [phoneNumberError]="''"
-                    [initialCountryCode]="personalInfoForm.get('sms_country_code')?.value"
-                    [initialPhoneNumber]="personalInfoForm.get('sms_number')?.value"
-                    (countryCodeChange)="onSmsCountryCodeChange($event)"
-                    (phoneNumberChange)="onSmsNumberChange($event)"
-                    (formattedPhoneNumberChange)="onSmsFormattedPhoneNumberChange($event)"
-                    (flagError)="onFlagError($event)"
-                  ></app-phone-number-input>
-                </div>
-              </div>
-
               <div class="mt-2">
                 <label class="form-label">
                   <i class="bi bi-translate me-2"></i>

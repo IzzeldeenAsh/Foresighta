@@ -463,9 +463,7 @@ export class AddInsightStepsService {
 
     this.setLoading(true);
     return this.http
-      .get<DocumentUrlResponse>(`${this.apiUrl}/document/download/${documentId}`, {
-        headers,
-      })
+      .post<DocumentUrlResponse>(`${this.apiUrl}/document/download/${documentId}`, {}, { headers })
       .pipe(
         map((res) => res),
         catchError((error) => this.handleError(error)),

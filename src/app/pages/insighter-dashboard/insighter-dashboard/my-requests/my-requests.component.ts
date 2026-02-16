@@ -200,6 +200,14 @@ export class MyRequestsComponent extends BaseComponent implements OnInit {
 
   openInsighterRequestDialog(request: ExtendedUserRequest) {
     const latestRequest = this.getLatestChild(request);
+
+    if (latestRequest.final_status === 'rejected') {
+      this.showError(
+        this.lang === 'ar' ? 'مرفوض' : 'Rejected',
+        this.lang === 'ar' ? 'تم رفض هذا الطلب' : 'This request has been rejected'
+      );
+      return;
+    }
     
     // If it's an accept_knowledge request with a knowledge_id, navigate directly
     if (latestRequest.type?.key === 'accept_knowledge' && latestRequest.identity) {
@@ -490,6 +498,13 @@ export class MyRequestsComponent extends BaseComponent implements OnInit {
   // Navigate to review page for knowledge
   navigateToReview(): void {
     if (this.selectedRequest?.identity) {
+      if (this.selectedRequest.final_status === 'rejected') {
+        this.showError(
+          this.lang === 'ar' ? 'مرفوض' : 'Rejected',
+          this.lang === 'ar' ? 'تم رفض هذا الطلب' : 'This request has been rejected'
+        );
+        return;
+      }
       this.router.navigate(['/app/review-insighter-knowledge/review', this.selectedRequest.identity], {
         queryParams: { requestId: this.selectedRequest.id }
       });
@@ -502,6 +517,13 @@ export class MyRequestsComponent extends BaseComponent implements OnInit {
    */
   viewKnowledge(): void {
     if (this.selectedRequest?.identity) {
+      if (this.selectedRequest.final_status === 'rejected') {
+        this.showError(
+          this.lang === 'ar' ? 'مرفوض' : 'Rejected',
+          this.lang === 'ar' ? 'تم رفض هذا الطلب' : 'This request has been rejected'
+        );
+        return;
+      }
       this.router.navigate(['/app/my-knowledge-base/view-my-knowledge/', parseInt(this.selectedRequest.identity), 'details']);
       this.displayRequestDialog = false;
     }

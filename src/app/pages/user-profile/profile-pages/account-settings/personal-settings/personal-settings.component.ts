@@ -272,10 +272,6 @@ export class PersonalSettingsComponent extends BaseComponent implements OnInit {
       country: this.countries.find((country: any) => country.id === this.profile.country_id),
       phoneCountryCode: this.profile.phone_code || '',
       phoneNumber: this.profile.phone || '',
-      whatsapp_country_code: profileAny?.whatsapp_country_code || "",
-      whatsapp_number: profileAny?.whatsapp_number || "",
-      sms_country_code: profileAny?.sms_country_code || "",
-      sms_number: profileAny?.sms_number || "",
       language: preferredLanguage,
       bio: this.profile.bio || '',
       industries: transformedIndustries,
@@ -323,10 +319,6 @@ export class PersonalSettingsComponent extends BaseComponent implements OnInit {
       country: ["", Validators.required],
       phoneCountryCode: [""],
       phoneNumber: [""],
-      whatsapp_country_code: [""],
-      whatsapp_number: [""],
-      sms_country_code: [""],
-      sms_number: [""],
       language: [this.lang === "ar" ? "ar" : "en", Validators.required],
       bio: [""],
       industries: [[]],
@@ -479,24 +471,6 @@ export class PersonalSettingsComponent extends BaseComponent implements OnInit {
     // Add phone code if provided
     if (form.get("phoneCountryCode")?.value) {
       formData.append("phone_code", form.get("phoneCountryCode")?.value);
-    }
-
-    const whatsappNumber = form.get("whatsapp_number")?.value;
-    const whatsappCode = form.get("whatsapp_country_code")?.value;
-    if (whatsappNumber) {
-      formData.append("whatsapp_number", whatsappNumber);
-    }
-    if (whatsappCode) {
-      formData.append("whatsapp_country_code", whatsappCode);
-    }
-
-    const smsNumber = form.get("sms_number")?.value;
-    const smsCode = form.get("sms_country_code")?.value;
-    if (smsNumber) {
-      formData.append("sms_number", smsNumber);
-    }
-    if (smsCode) {
-      formData.append("sms_country_code", smsCode);
     }
 
     // Add country if selected
@@ -744,30 +718,6 @@ export class PersonalSettingsComponent extends BaseComponent implements OnInit {
   }
 
   onFormattedPhoneNumberChange(formattedPhone: string): void {
-    // Handle formatted phone number if needed
-  }
-
-  onWhatsAppCountryCodeChange(countryCode: string): void {
-    this.personalInfoForm.get("whatsapp_country_code")?.setValue(countryCode);
-  }
-
-  onWhatsAppNumberChange(phoneNumber: string): void {
-    this.personalInfoForm.get("whatsapp_number")?.setValue(phoneNumber);
-  }
-
-  onWhatsAppFormattedPhoneNumberChange(formattedPhone: string): void {
-    // Handle formatted phone number if needed
-  }
-
-  onSmsCountryCodeChange(countryCode: string): void {
-    this.personalInfoForm.get("sms_country_code")?.setValue(countryCode);
-  }
-
-  onSmsNumberChange(phoneNumber: string): void {
-    this.personalInfoForm.get("sms_number")?.setValue(phoneNumber);
-  }
-
-  onSmsFormattedPhoneNumberChange(formattedPhone: string): void {
     // Handle formatted phone number if needed
   }
 }

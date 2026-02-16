@@ -5,6 +5,7 @@ import { KnowledgeService } from 'src/app/_fake/services/knowledge/knowledge.ser
 import { trigger, transition, style, animate } from '@angular/animations';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { BaseComponent } from 'src/app/modules/base.component';
+import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-review-knowledge-details',
@@ -24,6 +25,7 @@ export class ReviewKnowledgeDetailsComponent extends BaseComponent implements On
   documents: any[] = [];
   activeDocumentId: number | null = null;
   knowledge: any;
+  private readonly DOWNLOAD_DOCUMENT_URL = 'https://api.insightabusiness.com/api/company/insighter/knowledge/document/download';
   
   constructor(
     injector:Injector,
@@ -117,4 +119,43 @@ export class ReviewKnowledgeDetailsComponent extends BaseComponent implements On
   shouldShowTableOfContents(doc: any): boolean {
     return doc.type !== 'insight';
   }
-} 
+
+  viewDocument(doc: any, event?: Event): void {
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+
+    const newTab = window.open('', '_blank');
+    const headers = new HttpHeaders({
+      Accept: 'application/json',
+      'Accept-Language': this.lang,
+    });
+
+    this.http.post<{ data: { url: string } }>(`${this.DOWNLOAD_DOCUMENT_URL}/${doc.id}`, {}, { headers }).subscribe({
+      next: (response) => {
+        if (newTab) {
+          newTab.location.href = response.data.url;
+        } else {
+          window.open(response.data.url, '_blank');
+        }
+      },
+      error: (error) => {
+        console.error('Error getting document URL:', error);
+        if (newTab) newTab.close();
+        Swal.fire({
+          title: this.lang === 'ar' ? 'خطأ!' : 'Error!',
+          text: this.lang === 'ar' ? 'فشل فتح المستند' : 'Failed to open document',
+          icon: 'error',
+          confirmButtonText: this.lang === 'ar' ? 'حسناً' : 'OK',
+          customClass: {
+            popup: 'text-center',
+            title: 'text-center',
+            htmlContainer: 'text-center',
+            confirmButton: 'text-center'
+          }
+        });
+      }
+    });
+  }
+}  

@@ -1,0 +1,160 @@
+<p-progressBar
+  *ngIf="(isLoading$ | async) || (isSaving$ | async)"
+  mode="indeterminate"
+  [style]="{ height: '4px'}"
+></p-progressBar>
+
+<div class="p-10 border border-gray-300 rounded-2 bg-white " style="margin-bottom: 50px;"  *ngIf="!(isLoading$ | async);">
+  <div class="d-flex flex-column flex-sm-row align-items-start align-items-sm-center justify-content-between gap-4 mb-6">
+    <div>
+      <div class="fw-bold fs-2">
+        {{ lang === "ar" ? "إعدادات الإشعارات" : "Notification Settings" }}
+      </div>
+      <div class="text-gray-600 fw-semibold">
+        {{
+          lang === "ar"
+            ? "تحكم في إشعارات واتساب والرسائل النصية. ستصلك تنبيهات عن كل جديد: تقارير جديدة تتعلق بك، وتذكير بالاجتماعات المحجوزة، وغير ذلك."
+            : "Control WhatsApp and SMS notifications. You will receive alerts about everything new: new reports related to you, meeting reminders, and more."
+        }}
+      </div>
+    </div>
+  </div>
+
+  <form [formGroup]="form" (ngSubmit)="onSubmit()">
+    <fieldset [disabled]="(isSaving$ | async) === true">
+      <div class="card border border-gray-300 rounded-2 bg-white">
+        <div class="card-body p-0">
+          <!-- WhatsApp -->
+          <div class="d-flex align-items-center justify-content-between p-6 border-bottom">
+            <div class="d-flex align-items-center">
+              <div class="symbol symbol-50px me-5">
+                <div class="symbol-label bg-light-success text-success">
+                  <img src="assets/media/whatsapp_220236.png" alt="WhatsApp" class="fs-2" style="width:32px;height:32px;object-fit:contain;">
+                </div>
+              </div>
+              <div>
+                <div class="fw-bold fs-4 text-gray-900">
+                  {{ lang === "ar" ? "إشعارات واتساب" : "WhatsApp Notifications" }}
+                </div>
+                <div class="text-muted fw-semibold">
+                  {{
+                    lang === "ar"
+                      ? "أضف رقم واتساب لمتابعة كل جديد."
+                      : "Add a WhatsApp number to keep up with updates."
+                  }}
+                </div>
+              </div>
+            </div>
+
+            <div class="form-check form-switch m-0">
+              <input
+              style="max-width: 200px; "
+                class="form-check-input"
+                type="checkbox"
+                [checked]="form.get('whatsapp_enabled')?.value"
+                (change)="toggleWhatsApp($any($event.target).checked)"
+              />
+            </div>
+          </div>
+
+          <div class="p-6 border-bottom bg-light" *ngIf="form.get('whatsapp_enabled')?.value">
+            <label class="form-label fw-semibold">
+              {{ lang === "ar" ? "رقم واتساب" : "WhatsApp number" }}
+            </label>
+            <app-phone-number-input
+              [countries]="countries"
+              [placeholder]="lang === 'ar' ? 'رقم واتساب' : 'WhatsApp number'"
+              [searchPlaceholder]="lang === 'ar' ? 'رمز البلد' : 'Country code'"
+              [lang]="lang"
+              [isRequired]="true"
+              [showValidationErrors]="true"
+              [countryCodeError]="getFieldError('whatsapp_country_code')"
+              [phoneNumberError]="getFieldError('whatsapp_number')"
+              [initialCountryCode]="form.get('whatsapp_country_code')?.value"
+              [initialPhoneNumber]="form.get('whatsapp_number')?.value"
+              (countryCodeChange)="onWhatsAppCountryCodeChange($event)"
+              (phoneNumberChange)="onWhatsAppNumberChange($event)"
+              (formattedPhoneNumberChange)="onWhatsAppFormattedPhoneNumberChange($event)"
+              (flagError)="onFlagError($event)"
+            ></app-phone-number-input>
+            <div *ngIf="isFieldInvalid('whatsapp_country_code') || isFieldInvalid('whatsapp_number')" class="invalid-feedback d-block">
+              {{ lang === "ar" ? "الرجاء إدخال رقم واتساب صحيح." : "Please enter a valid WhatsApp number." }}
+            </div>
+          </div>
+
+          <!-- SMS -->
+          <div class="d-flex align-items-center justify-content-between p-6 border-bottom">
+            <div class="d-flex align-items-center">
+              <div class="symbol symbol-50px me-5">
+                <div class="symbol-label bg-light-warning text-primary">
+                  <img src="assets/media/communication_11685202.png" alt="SMS" class="fs-2" style="width:32px;height:32px;object-fit:contain;">
+                </div>
+              </div>
+              <div>
+                <div class="fw-bold fs-4 text-gray-900">
+                  {{ lang === "ar" ? "إشعارات الرسائل النصية" : "SMS Notifications" }}
+                </div>
+                <div class="text-muted fw-semibold">
+                  {{
+                    lang === "ar"
+                      ? "استلم إشعاراتك عبر الرسائل النصية."
+                      : "Receive notifications via SMS."
+                  }}
+                </div>
+              </div>
+            </div>
+
+            <div class="form-check form-switch m-0" >
+              <input
+            
+                class="form-check-input"
+                type="checkbox"
+                [checked]="form.get('sms_enabled')?.value"
+                (change)="toggleSms($any($event.target).checked)"
+              />
+            </div>
+          </div>
+
+          <div class="p-6 bg-light" *ngIf="form.get('sms_enabled')?.value">
+            <label class="form-label fw-semibold">
+              {{ lang === "ar" ? "رقم الرسائل النصية" : "SMS number" }}
+            </label>
+            <app-phone-number-input
+              [countries]="countries"
+              [placeholder]="lang === 'ar' ? 'رقم الرسائل النصية' : 'SMS number'"
+              [searchPlaceholder]="lang === 'ar' ? 'رمز البلد' : 'Country code'"
+              [lang]="lang"
+              [isRequired]="true"
+              [showValidationErrors]="true"
+              [countryCodeError]="getFieldError('sms_country_code')"
+              [phoneNumberError]="getFieldError('sms_number')"
+              [initialCountryCode]="form.get('sms_country_code')?.value"
+              [initialPhoneNumber]="form.get('sms_number')?.value"
+              (countryCodeChange)="onSmsCountryCodeChange($event)"
+              (phoneNumberChange)="onSmsNumberChange($event)"
+              (formattedPhoneNumberChange)="onSmsFormattedPhoneNumberChange($event)"
+              (flagError)="onFlagError($event)"
+            ></app-phone-number-input>
+            <div *ngIf="isFieldInvalid('sms_country_code') || isFieldInvalid('sms_number')" class="invalid-feedback d-block">
+              {{ lang === "ar" ? "الرجاء إدخال رقم SMS صحيح." : "Please enter a valid SMS number." }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="d-flex justify-content-end mt-6">
+        <button type="submit" class="btn btn-primary" [disabled]="(isSaving$ | async) === true">
+          <ng-container *ngIf="(isSaving$ | async) === false">
+            {{ lang === "ar" ? "حفظ التغييرات" : "Save changes" }}
+          </ng-container>
+          <ng-container *ngIf="isSaving$ | async">
+            {{ lang === "ar" ? "يرجى الانتظار" : "Please wait" }}
+            <span class="spinner-border spinner-border-sm align-middle ms-2"></span>
+          </ng-container>
+        </button>
+      </div>
+    </fieldset>
+  </form>
+</div>
+
+
