@@ -42,7 +42,7 @@ npm run serve:ssr          # Serve SSR build
 
 #### Core Modules
 - **Auth Module** (`src/app/modules/auth/`) - Authentication, login, registration, password reset
-- **Admin Dashboard** (`src/app/modules/admin-dashboard/`) - Admin panel with user management, permissions, staff settings
+
 - **Main Application** (`src/app/_metronic/layout/`) - Primary user interface using Metronic layout system
 
 #### Key Architectural Patterns
@@ -87,7 +87,7 @@ npm run serve:ssr          # Serve SSR build
 
 ### Environment Configuration
 
-Development uses mock services (`isMockEnabled: true`) with local API endpoints. Production connects to `https://api.insightabusiness.com/api`.
+Development uses mock services (`isMockEnabled: true`) with local API endpoints. Production connects to `https://api.foresighta.co/api`.
 
 Cookie configuration supports cross-subdomain authentication with secure settings for production deployment.
 
