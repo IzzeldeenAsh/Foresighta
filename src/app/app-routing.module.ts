@@ -24,12 +24,7 @@ export const routes: Routes = [
     import('./_metronic/layout/layout.module').then((m) => m.LayoutModule),
   canActivate:[authGuard, CountryGuard]
 },
-{
-  path: 'admin-dashboard',
-  loadChildren: () =>
-    import('./modules/admin-dashboard/admin-dashboard.module').then((m) => m.AdminDashboardModule),
-    canActivate: [adminGuard]
-},
+
 {
   path: 'cors-test',
   component: CorsTestComponent

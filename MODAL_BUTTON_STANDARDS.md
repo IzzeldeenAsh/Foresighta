@@ -86,6 +86,4 @@ The following CSS classes have been added to `src/styles.scss` for consistent mo
 
 To maintain consistency, update modal buttons in these files:
 - `src/app/pages/insighter-dashboard/insighter-dashboard/wallet/wallet.component.html`
-- `src/app/modules/admin-dashboard/transactions/transactions.component.html`
-- `src/app/modules/admin-dashboard/orders/orders.component.html`
 - `src/app/pages/setup-payment-info/manual-account/manual-account.component.html`

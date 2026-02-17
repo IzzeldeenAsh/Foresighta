@@ -3,7 +3,7 @@ import { HttpClient, HttpHeaders, HttpParams } from "@angular/common/http";
 import { Observable, throwError } from "rxjs";
 import { map, catchError } from "rxjs/operators";
 import { TranslationService } from "src/app/modules/i18n";
-import { Company } from "src/app/modules/admin-dashboard/services/transactions.service";
+import { Company } from "./transactions.service";
 
 export interface WalletBalanceResponse {
   data: {

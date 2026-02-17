@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { BehaviorSubject, Observable, catchError, finalize, map, throwError } from 'rxjs';
 import { TranslationService } from 'src/app/modules/i18n/translation.service';
-import { RequestResponse } from 'src/app/modules/admin-dashboard/dashbord/dashboard/requests-list/request.interface';
+import { RequestResponse } from './request.interface';
 export interface IVerificationQuestion {
   id: number;
   question: string;
