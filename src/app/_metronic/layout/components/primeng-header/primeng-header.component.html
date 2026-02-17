@@ -272,7 +272,7 @@
           </a>
           
           <!-- Mobile User dropdown menu -->
-          <div class="mobile-user-dropdown-menu" [ngClass]="{'show': isMobileUserDropdownOpen, 'rtl': lang === 'ar'}" #userDropdown>
+          <div class="mobile-user-dropdown-menu" [ngClass]="{'show': isMobileUserDropdownOpen, 'rtl': lang === 'ar'}" #mobileUserDropdownMenu>
             <app-user-inner (closeDropdown)="isMobileUserDropdownOpen = false"></app-user-inner>
           </div>
         </div>

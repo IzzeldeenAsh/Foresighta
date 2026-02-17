@@ -58,8 +58,8 @@ interface IndustriesResponse {
   ]
 })
 export class PrimengHeaderComponent implements OnInit, OnDestroy {
-  @ViewChild('userDropdown') userDropdown: ElementRef;
   @ViewChild('mobileUserDropdown') mobileUserDropdown: ElementRef;
+  @ViewChild('mobileUserDropdownMenu') mobileUserDropdownMenu: ElementRef;
   @ViewChild('userDropdownMenu') userDropdownMenu: ElementRef;
   @ViewChild('userDropdownToggle') userDropdownToggle: ElementRef;
 
@@ -583,26 +583,13 @@ export class PrimengHeaderComponent implements OnInit, OnDestroy {
     this.isUserDropdownOpen = false;
     this.isNotificationsOpen = false;
     
-    // Handle mobile dropdown positioning to prevent off-screen issues
+    // Clear any previous inline positioning (CSS handles responsive layout)
     if (this.isMobileUserDropdownOpen) {
       setTimeout(() => {
         const dropdown = document.querySelector('.mobile-user-dropdown-menu.show') as HTMLElement;
-        if (dropdown) {
-          const rect = dropdown.getBoundingClientRect();
-          const viewportWidth = window.innerWidth;
-          
-          // If dropdown goes off-screen to the right, adjust position
-          if (rect.right > viewportWidth) {
-            dropdown.style.right = '0.5rem';
-            dropdown.style.left = 'auto';
-          }
-          
-          // If dropdown goes off-screen to the left (for RTL)
-          if (rect.left < 0) {
-            dropdown.style.left = '0.5rem';
-            dropdown.style.right = 'auto';
-          }
-        }
+        if (!dropdown) return;
+        dropdown.style.left = '';
+        dropdown.style.right = '';
       }, 10);
     }
   }
@@ -759,7 +746,9 @@ export class PrimengHeaderComponent implements OnInit, OnDestroy {
     // Close mobile user dropdown when clicking outside
     if (this.isMobileUserDropdownOpen && this.mobileUserDropdown) {
       const target = event.target as HTMLElement;
-      if (!this.mobileUserDropdown.nativeElement.contains(target)) {
+      const clickedToggle = this.mobileUserDropdown.nativeElement.contains(target);
+      const clickedMenu = this.mobileUserDropdownMenu?.nativeElement?.contains?.(target) ?? false;
+      if (!clickedToggle && !clickedMenu) {
         this.isMobileUserDropdownOpen = false;
       }
     }

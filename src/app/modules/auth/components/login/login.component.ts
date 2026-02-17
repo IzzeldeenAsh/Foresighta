@@ -203,8 +203,27 @@ export class LoginComponent extends BaseComponent implements OnInit, OnDestroy {
     }
 
     // Check user roles and redirect accordingly
-    if (userData.roles && (userData.roles.includes("admin") || userData.roles.includes("staff"))) {
-      // Admin/staff users stay in the Angular app - set timezone first
+    const roles: string[] = Array.isArray(userData.roles) ? userData.roles : [];
+    const isAdmin = roles.includes("admin");
+    const isStaff = roles.includes("staff");
+
+    if (isAdmin) {
+      // Admin users redirect to Next.js dashboard - set timezone first
+      this.setUserTimezone(token).subscribe({
+        next: () => {
+          this.redirectAdminToDashboard(token);
+        },
+        error: (error: any) => {
+          console.error('Failed to set timezone:', error);
+          // Proceed with redirect even if timezone setting fails
+          this.redirectAdminToDashboard(token);
+        }
+      });
+      return;
+    }
+
+    if (isStaff) {
+      // Staff users stay in the Angular app - set timezone first
       this.setUserTimezone(token).subscribe({
         next: () => {
           this.router.navigate(["/admin-dashboard"]);
@@ -215,10 +234,11 @@ export class LoginComponent extends BaseComponent implements OnInit, OnDestroy {
           this.router.navigate(["/admin-dashboard"]);
         }
       });
-    } else {
-      // Regular users redirect to Next.js app
-      this.redirectToMainApp(token);
+      return;
     }
+
+    // Regular users redirect to Next.js app
+    this.redirectToMainApp(token);
   }
 
   private handleLoginError(error: any): void {
@@ -266,6 +286,14 @@ export class LoginComponent extends BaseComponent implements OnInit, OnDestroy {
     
     // Redirect immediately; Next.js callback will show its own loader
     window.location.href = redirectUrl;
+  }
+
+  private redirectAdminToDashboard(token: string): void {
+    // Ensure Next.js can read the token (cookie-based handoff across ports on localhost)
+    this.cookieService.setAuthCookie('token', token);
+    this.cookieService.setPreferredLanguage('en');
+
+    window.location.href = 'https://insightabusiness.com/en/dashboard';
   }
 
   private setReturnUrlCookie(url: string): void {

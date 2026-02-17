@@ -204,6 +204,10 @@ html[dir="rtl"] .home-countries-dropdown .p-dropdown-panel {
 }
 
 /* Toast Messages */
+.p-toast {
+  z-index: 10000 !important;
+}
+
 .p-toast .p-toast-message.p-toast-message-success {
   background: rgba(228, 248, 240, 1) !important;
 }
@@ -533,4 +537,3 @@ z-index: 99999 !important;
     margin-left: 0.5rem !important;
     margin-right: 0.5rem !important;
   }
-
