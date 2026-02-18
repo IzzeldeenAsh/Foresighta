@@ -62,12 +62,54 @@
   width: 100%;
 }
 
+.rtl-layout {
+  flex-direction: row-reverse;
+}
+
+.country-select {
+  flex: 0 0 140px;
+}
+
+.input-group .form-control {
+  margin: 0 4px;
+}
+
 .input-group .form-control {
   position: relative;
   flex: 1 1 auto;
   width: 1%;
   min-width: 0;
   margin-bottom: 0;
+}
+
+@media (max-width: 575.98px) {
+  .input-group {
+    flex-direction: column !important;
+    gap: 0.5rem;
+  }
+
+  .country-select {
+    flex: 1 1 auto;
+    width: 100%;
+  }
+
+  .input-group .form-control {
+    width: 100%;
+    margin: 0;
+    font-size: 0.9rem;
+    padding: 0.55rem 0.75rem;
+  }
+}
+
+@media (max-width: 575.98px) {
+  :host ::ng-deep .p-dropdown .p-inputtext {
+    font-size: 0.9rem;
+    padding: 0.55rem 0.75rem;
+  }
+
+  :host ::ng-deep .p-dropdown .p-dropdown-trigger {
+    width: 2.5rem;
+  }
 }
 
 .invalid-feedback {
@@ -139,4 +181,8 @@
 [dir="rtl"] :host ::ng-deep .p-dropdown-panel .p-dropdown-filter-container .p-dropdown-filter-icon {
   right: auto;
   left: 0.75rem;
+}
+
+:host ::ng-deep .p-dropdown {
+  width: 100%;
 }

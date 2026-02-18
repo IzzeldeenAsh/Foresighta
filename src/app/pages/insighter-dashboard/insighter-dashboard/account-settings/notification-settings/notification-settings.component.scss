@@ -2,3 +2,99 @@
   display: block;
 }
 
+.notification-icon-sms {
+  width: 32px;
+  height: 32px;
+}
+
+.notification-icon-whatsapp {
+  width: 24px;
+  height: 24px;
+}
+
+.notification-icon-whatsapp-channel {
+  width: 32px;
+  height: 32px;
+}
+
+.notification-benefits-card {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+}
+
+.notification-benefits-panel {
+  background: linear-gradient(135deg, #f8fafc 0%, #f0fdf4 100%);
+}
+
+.notification-benefits-icon {
+  font-size: 1rem;
+  line-height: 1.5rem;
+  margin-top: 2px;
+}
+
+.notification-benefits-list li {
+  padding: 2px 0;
+}
+
+@media (max-width: 575.98px) {
+  .notification-settings-container {
+    padding: 1rem !important;
+  }
+
+  .notification-settings-container .p-6 {
+    padding: 1rem !important;
+  }
+
+  .notification-settings-container .p-5 {
+    padding: 0.875rem !important;
+  }
+
+  .notification-settings-container .fs-2 {
+    font-size: 1.5rem !important;
+  }
+
+  .notification-settings-container .fs-4 {
+    font-size: 0.95rem !important;
+  }
+
+  .notification-settings-container .fs-5 {
+    font-size: 0.75rem !important;
+  }
+
+  .notification-settings-container .symbol.symbol-50px {
+    width: auto !important;
+    height: auto !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+  }
+
+  .notification-settings-container .symbol.symbol-40px {
+    width: auto !important;
+    height: auto !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+  }
+
+  .notification-settings-container .symbol-label.bg-light-warning,
+  .notification-settings-container .symbol-label.bg-light-success {
+    background: transparent !important;
+  }
+
+  .notification-settings-container .notification-benefits-icon {
+    font-size: 0.95rem;
+  }
+
+  .notification-settings-container .notification-icon-sms {
+    width: 20px !important;
+    height: 20px !important;
+  }
+
+  .notification-settings-container .notification-icon-whatsapp {
+    width: 18px !important;
+    height: 18px !important;
+  }
+
+  .notification-settings-container .notification-icon-whatsapp-channel {
+    width: 20px !important;
+    height: 20px !important;
+  }
+}

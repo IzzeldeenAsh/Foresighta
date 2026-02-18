@@ -60,10 +60,12 @@ export class NotificationSettingsComponent extends BaseComponent implements OnIn
 
   onWhatsAppCountryCodeChange(countryCode: string): void {
     this.form.get("whatsapp_country_code")?.setValue(countryCode);
+    this.updateChannelValidators();
   }
 
   onWhatsAppNumberChange(phoneNumber: string): void {
     this.form.get("whatsapp_number")?.setValue(phoneNumber);
+    this.updateChannelValidators();
   }
 
   onWhatsAppFormattedPhoneNumberChange(_: string): void {
@@ -72,10 +74,12 @@ export class NotificationSettingsComponent extends BaseComponent implements OnIn
 
   onSmsCountryCodeChange(countryCode: string): void {
     this.form.get("sms_country_code")?.setValue(countryCode);
+    this.updateChannelValidators();
   }
 
   onSmsNumberChange(phoneNumber: string): void {
     this.form.get("sms_number")?.setValue(phoneNumber);
+    this.updateChannelValidators();
   }
 
   onSmsFormattedPhoneNumberChange(_: string): void {
@@ -246,17 +250,23 @@ export class NotificationSettingsComponent extends BaseComponent implements OnIn
     const smsCode = this.form.get("sms_country_code");
     const smsNumber = this.form.get("sms_number");
 
+    // Numbers are optional. If a channel is enabled and the user starts filling one field,
+    // require the other field to complete the pair (country code + number).
     if (whatsappEnabled) {
-      whatsappCode?.setValidators([Validators.required]);
-      whatsappNumber?.setValidators([Validators.required]);
+      const hasCode = !!String(whatsappCode?.value || "").trim();
+      const hasNumber = !!String(whatsappNumber?.value || "").trim();
+      whatsappCode?.setValidators(hasNumber ? [Validators.required] : []);
+      whatsappNumber?.setValidators(hasCode ? [Validators.required] : []);
     } else {
       whatsappCode?.clearValidators();
       whatsappNumber?.clearValidators();
     }
 
     if (smsEnabled) {
-      smsCode?.setValidators([Validators.required]);
-      smsNumber?.setValidators([Validators.required]);
+      const hasCode = !!String(smsCode?.value || "").trim();
+      const hasNumber = !!String(smsNumber?.value || "").trim();
+      smsCode?.setValidators(hasNumber ? [Validators.required] : []);
+      smsNumber?.setValidators(hasCode ? [Validators.required] : []);
     } else {
       smsCode?.clearValidators();
       smsNumber?.clearValidators();
@@ -268,4 +278,3 @@ export class NotificationSettingsComponent extends BaseComponent implements OnIn
     smsNumber?.updateValueAndValidity({ emitEvent: false });
   }
 }
-

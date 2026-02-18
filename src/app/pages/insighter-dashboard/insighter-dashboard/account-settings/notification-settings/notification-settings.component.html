@@ -4,7 +4,7 @@
   [style]="{ height: '4px'}"
 ></p-progressBar>
 
-<div class="p-10 border border-gray-300 rounded-2 bg-white " style="margin-bottom: 50px;"  *ngIf="!(isLoading$ | async);">
+<div class="p-10 border border-gray-300 rounded-2 bg-white notification-settings-container" style="margin-bottom: 50px;"  *ngIf="!(isLoading$ | async);">
   <div class="d-flex flex-column flex-sm-row align-items-start align-items-sm-center justify-content-between gap-4 mb-6">
     <div>
       <div class="fw-bold fs-2">
@@ -22,121 +22,258 @@
 
   <form [formGroup]="form" (ngSubmit)="onSubmit()">
     <fieldset [disabled]="(isSaving$ | async) === true">
-      <div class="card border border-gray-300 rounded-2 bg-white">
-        <div class="card-body p-0">
-          <!-- WhatsApp -->
-          <div class="d-flex align-items-center justify-content-between p-6 border-bottom">
-            <div class="d-flex align-items-center">
-              <div class="symbol symbol-50px me-5">
-                <div class="symbol-label bg-light-success text-success">
-                  <img src="assets/media/whatsapp_220236.png" alt="WhatsApp" class="fs-2" style="width:32px;height:32px;object-fit:contain;">
+      <div class="row g-6 align-items-stretch">
+        <!-- Settings -->
+        <div class="col-12 col-lg-6 order-1 order-lg-1">
+          <div class="card border border-gray-300 rounded-2 bg-white h-100">
+            <div class="card-body p-0">
+              <!-- WhatsApp -->
+              <div class="d-flex align-items-center justify-content-between p-6 border-bottom">
+                <div class="d-flex align-items-center">
+                  <div class="symbol symbol-50px me-5">
+                    <div class="symbol-label bg-light-success text-success">
+                      <img src="assets/media/whatsapp_220236.png" alt="WhatsApp" class="fs-2 notification-icon-whatsapp-channel" style="object-fit:contain;">
+                    </div>
+                  </div>
+                  <div>
+                    <div class="fw-bold fs-4 text-gray-900">
+                      {{ lang === "ar" ? "إشعارات واتساب" : "WhatsApp Notifications" }}
+                    </div>
+                    <div class="text-muted fw-semibold fs-5">
+                      {{
+                        lang === "ar"
+                          ? "أضف رقم واتساب لمتابعة كل جديد."
+                          : "Add a WhatsApp number to keep up with updates."
+                      }}
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <div>
-                <div class="fw-bold fs-4 text-gray-900">
-                  {{ lang === "ar" ? "إشعارات واتساب" : "WhatsApp Notifications" }}
-                </div>
-                <div class="text-muted fw-semibold">
-                  {{
-                    lang === "ar"
-                      ? "أضف رقم واتساب لمتابعة كل جديد."
-                      : "Add a WhatsApp number to keep up with updates."
-                  }}
-                </div>
-              </div>
-            </div>
 
-            <div class="form-check form-switch m-0">
-              <input
-              style="max-width: 200px; "
-                class="form-check-input"
-                type="checkbox"
-                [checked]="form.get('whatsapp_enabled')?.value"
-                (change)="toggleWhatsApp($any($event.target).checked)"
-              />
+                <div class="form-check form-switch m-0">
+                  <input
+                    style="max-width: 200px;"
+                    class="form-check-input"
+                    type="checkbox"
+                    [checked]="form.get('whatsapp_enabled')?.value"
+                    (change)="toggleWhatsApp($any($event.target).checked)"
+                  />
+                </div>
+              </div>
+
+              <div class="p-6 border-bottom bg-light" *ngIf="form.get('whatsapp_enabled')?.value">
+                <label class="form-label fw-semibold">
+                  {{ lang === "ar" ? "رقم واتساب" : "WhatsApp number" }}
+                </label>
+                <app-phone-number-input
+                  [countries]="countries"
+                  [placeholder]="lang === 'ar' ? 'رقم واتساب' : 'WhatsApp number'"
+                  [searchPlaceholder]="lang === 'ar' ? 'رمز البلد' : 'Country code'"
+                  [lang]="lang"
+                  [isRequired]="false"
+                  [showValidationErrors]="true"
+                  [countryCodeError]="getFieldError('whatsapp_country_code')"
+                  [phoneNumberError]="getFieldError('whatsapp_number')"
+                  [initialCountryCode]="form.get('whatsapp_country_code')?.value"
+                  [initialPhoneNumber]="form.get('whatsapp_number')?.value"
+                  (countryCodeChange)="onWhatsAppCountryCodeChange($event)"
+                  (phoneNumberChange)="onWhatsAppNumberChange($event)"
+                  (formattedPhoneNumberChange)="onWhatsAppFormattedPhoneNumberChange($event)"
+                  (flagError)="onFlagError($event)"
+                ></app-phone-number-input>
+                <div
+                  *ngIf="isFieldInvalid('whatsapp_country_code') || isFieldInvalid('whatsapp_number')"
+                  class="invalid-feedback d-block"
+                >
+                  {{ lang === "ar" ? "الرجاء إكمال رقم واتساب بشكل صحيح." : "Please complete a valid WhatsApp number." }}
+                </div>
+              </div>
+
+              <!-- SMS -->
+              <div class="d-flex align-items-center justify-content-between p-6 border-bottom">
+                <div class="d-flex align-items-center">
+                  <div class="symbol symbol-50px me-5">
+                    <div class="symbol-label bg-light-warning text-primary">
+                      <img src="assets/media/communication_11685202.png" alt="SMS" class="fs-2 notification-icon-sms" style="object-fit:contain;">
+                    </div>
+                  </div>
+                  <div>
+                    <div class="fw-bold fs-4 text-gray-900">
+                      {{ lang === "ar" ? "إشعارات الرسائل النصية" : "SMS Notifications" }}
+                    </div>
+                    <div class="text-muted fw-semibold fs-5">
+                      {{
+                        lang === "ar"
+                          ? "استلم إشعاراتك عبر الرسائل النصية."
+                          : "Receive notifications via SMS."
+                      }}
+                    </div>
+                  </div>
+                </div>
+
+                <div class="form-check form-switch m-0">
+                  <input
+                    class="form-check-input"
+                    type="checkbox"
+                    [checked]="form.get('sms_enabled')?.value"
+                    (change)="toggleSms($any($event.target).checked)"
+                  />
+                </div>
+              </div>
+
+              <div class="p-6 bg-light" *ngIf="form.get('sms_enabled')?.value">
+                <label class="form-label fw-semibold">
+                  {{ lang === "ar" ? "رقم الرسائل النصية" : "SMS number" }}
+                </label>
+                <app-phone-number-input
+                  [countries]="countries"
+                  [placeholder]="lang === 'ar' ? 'رقم الرسائل النصية' : 'SMS number'"
+                  [searchPlaceholder]="lang === 'ar' ? 'رمز البلد' : 'Country code'"
+                  [lang]="lang"
+                  [isRequired]="false"
+                  [showValidationErrors]="true"
+                  [countryCodeError]="getFieldError('sms_country_code')"
+                  [phoneNumberError]="getFieldError('sms_number')"
+                  [initialCountryCode]="form.get('sms_country_code')?.value"
+                  [initialPhoneNumber]="form.get('sms_number')?.value"
+                  (countryCodeChange)="onSmsCountryCodeChange($event)"
+                  (phoneNumberChange)="onSmsNumberChange($event)"
+                  (formattedPhoneNumberChange)="onSmsFormattedPhoneNumberChange($event)"
+                  (flagError)="onFlagError($event)"
+                ></app-phone-number-input>
+                <div *ngIf="isFieldInvalid('sms_country_code') || isFieldInvalid('sms_number')" class="invalid-feedback d-block">
+                  {{ lang === "ar" ? "الرجاء إكمال رقم SMS بشكل صحيح." : "Please complete a valid SMS number." }}
+                </div>
+              </div>
             </div>
           </div>
+        </div>
 
-          <div class="p-6 border-bottom bg-light" *ngIf="form.get('whatsapp_enabled')?.value">
-            <label class="form-label fw-semibold">
-              {{ lang === "ar" ? "رقم واتساب" : "WhatsApp number" }}
-            </label>
-            <app-phone-number-input
-              [countries]="countries"
-              [placeholder]="lang === 'ar' ? 'رقم واتساب' : 'WhatsApp number'"
-              [searchPlaceholder]="lang === 'ar' ? 'رمز البلد' : 'Country code'"
-              [lang]="lang"
-              [isRequired]="true"
-              [showValidationErrors]="true"
-              [countryCodeError]="getFieldError('whatsapp_country_code')"
-              [phoneNumberError]="getFieldError('whatsapp_number')"
-              [initialCountryCode]="form.get('whatsapp_country_code')?.value"
-              [initialPhoneNumber]="form.get('whatsapp_number')?.value"
-              (countryCodeChange)="onWhatsAppCountryCodeChange($event)"
-              (phoneNumberChange)="onWhatsAppNumberChange($event)"
-              (formattedPhoneNumberChange)="onWhatsAppFormattedPhoneNumberChange($event)"
-              (flagError)="onFlagError($event)"
-            ></app-phone-number-input>
-            <div *ngIf="isFieldInvalid('whatsapp_country_code') || isFieldInvalid('whatsapp_number')" class="invalid-feedback d-block">
-              {{ lang === "ar" ? "الرجاء إدخال رقم واتساب صحيح." : "Please enter a valid WhatsApp number." }}
-            </div>
-          </div>
+        <!-- Benefits (last on small screens) -->
+        <div class="col-12 col-lg-6 order-2 order-lg-2">
+          <div class="card border border-gray-300 rounded-2 h-100 notification-benefits-card">
+            <div class="card-body p-6">
+              <div class="fw-bold fs-4 text-gray-900 mb-2">
+                {{ lang === "ar" ? "فوائد إضافة رقم واتساب وSMS" : "Benefits of adding WhatsApp & SMS" }}
+              </div>
+              <div class="text-muted fw-semibold mb-5">
+                {{
+                  lang === "ar"
+                    ? "ستصلك التنبيهات المهمة في الوقت المناسب عبر القناة التي تفضلها."
+                    : "Receive important alerts on the channel you prefer, right on time."
+                }}
+              </div>
 
-          <!-- SMS -->
-          <div class="d-flex align-items-center justify-content-between p-6 border-bottom">
-            <div class="d-flex align-items-center">
-              <div class="symbol symbol-50px me-5">
-                <div class="symbol-label bg-light-warning text-primary">
-                  <img src="assets/media/communication_11685202.png" alt="SMS" class="fs-2" style="width:32px;height:32px;object-fit:contain;">
+              <div class="notification-benefits-panel rounded-3 p-5">
+                <div class="d-flex align-items-center mb-4">
+                  <div class="symbol symbol-40px me-4">
+                    <div class=" text-success">
+                      <img src="assets/media/whatsapp_220236.png" alt="WhatsApp" class="notification-icon-whatsapp" style="object-fit:contain;">
+                    </div>
+                  </div>
+                  <div class="fw-bold fs-5 text-gray-900">
+                    {{ lang === "ar" ? "واتساب" : "WhatsApp" }}
+                  </div>
+                </div>
+
+                <ul class="list-unstyled m-0 notification-benefits-list mb-6">
+                  <li class="d-flex align-items-start mb-3">
+                    <i class="pi pi-check text-success me-3 notification-benefits-icon"></i>
+                    <span class="text-gray-700">
+                      {{
+                        lang === "ar"
+                          ? "استلم رؤى وتقارير ذات صلة باهتماماتك."
+                          : "Receive related insights tailored to your interests."
+                      }}
+                    </span>
+                  </li>
+                  <li class="d-flex align-items-start mb-3">
+                    <i class="pi pi-check text-success me-3 notification-benefits-icon"></i>
+                    <span class="text-gray-700">
+                      {{
+                        lang === "ar"
+                          ? "تأكيدات فورية لحجز الجلسات وتفاصيلها."
+                          : "Instant session booking confirmations and details."
+                      }}
+                    </span>
+                  </li>
+                  <li class="d-flex align-items-start mb-3">
+                    <i class="pi pi-check text-success me-3 notification-benefits-icon"></i>
+                    <span class="text-gray-700">
+                      {{
+                        lang === "ar"
+                          ? "تذكيرات قبل موعد الجلسة حتى لا تفوّت أي لقاء."
+                          : "Session reminders so you never miss a meeting."
+                      }}
+                    </span>
+                  </li>
+                  <li class="d-flex align-items-start mb-3">
+                    <i class="pi pi-check text-success me-3 notification-benefits-icon"></i>
+                    <span class="text-gray-700">
+                      {{
+                        lang === "ar"
+                          ? "تحديثات على طلبات الخدمة وحالتها خطوة بخطوة."
+                          : "Service request updates with clear status tracking."
+                      }}
+                    </span>
+                  </li>
+                  <li class="d-flex align-items-start">
+                    <i class="pi pi-check text-success me-3 notification-benefits-icon"></i>
+                    <span class="text-gray-700">
+                      {{
+                        lang === "ar"
+                          ? "تنبيهات أخرى مهمة حسب استخدامك."
+                          : "Other important updates based on your activity."
+                      }}
+                    </span>
+                  </li>
+                </ul>
+
+                <div class="pt-5 border-top">
+                  <div class="d-flex align-items-center mb-4">
+                    <div class="symbol symbol-40px me-4">
+                      <div class=" text-primary">
+                        <img src="assets/media/communication_11685202.png" alt="SMS" style="width:24px;height:24px;object-fit:contain;">
+                      </div>
+                    </div>
+                    <div class="fw-bold fs-5 text-gray-900">
+                      {{ lang === "ar" ? "الرسائل النصية" : "SMS" }}
+                    </div>
+                  </div>
+
+                  <ul class="list-unstyled m-0 notification-benefits-list">
+                    <li class="d-flex align-items-start mb-3">
+                      <i class="pi pi-check text-success me-3 notification-benefits-icon"></i>
+                      <span class="text-gray-700">
+                        {{
+                          lang === "ar"
+                            ? "رسائل التحقق (OTP) لتسجيل الدخول وتأمين حسابك."
+                            : "Authentication (OTP) messages to secure your account."
+                        }}
+                      </span>
+                    </li>
+                    <li class="d-flex align-items-start mb-3">
+                      <i class="pi pi-check text-success me-3 notification-benefits-icon"></i>
+                      <span class="text-gray-700">
+                        {{
+                          lang === "ar"
+                            ? "إشعارات المعاملات المالية والتحديثات المرتبطة بالدفع."
+                            : "Financial transaction alerts and payment-related updates."
+                        }}
+                      </span>
+                    </li>
+                    <li class="d-flex align-items-start">
+                      <i class="pi pi-check text-success me-3 notification-benefits-icon"></i>
+                      <span class="text-gray-700">
+                        {{
+                          lang === "ar"
+                            ? "تنبيهات حرجة أخرى عند الحاجة."
+                            : "Other critical notifications when needed."
+                        }}
+                      </span>
+                    </li>
+                  </ul>
                 </div>
               </div>
-              <div>
-                <div class="fw-bold fs-4 text-gray-900">
-                  {{ lang === "ar" ? "إشعارات الرسائل النصية" : "SMS Notifications" }}
-                </div>
-                <div class="text-muted fw-semibold">
-                  {{
-                    lang === "ar"
-                      ? "استلم إشعاراتك عبر الرسائل النصية."
-                      : "Receive notifications via SMS."
-                  }}
-                </div>
-              </div>
-            </div>
-
-            <div class="form-check form-switch m-0" >
-              <input
-            
-                class="form-check-input"
-                type="checkbox"
-                [checked]="form.get('sms_enabled')?.value"
-                (change)="toggleSms($any($event.target).checked)"
-              />
-            </div>
-          </div>
-
-          <div class="p-6 bg-light" *ngIf="form.get('sms_enabled')?.value">
-            <label class="form-label fw-semibold">
-              {{ lang === "ar" ? "رقم الرسائل النصية" : "SMS number" }}
-            </label>
-            <app-phone-number-input
-              [countries]="countries"
-              [placeholder]="lang === 'ar' ? 'رقم الرسائل النصية' : 'SMS number'"
-              [searchPlaceholder]="lang === 'ar' ? 'رمز البلد' : 'Country code'"
-              [lang]="lang"
-              [isRequired]="true"
-              [showValidationErrors]="true"
-              [countryCodeError]="getFieldError('sms_country_code')"
-              [phoneNumberError]="getFieldError('sms_number')"
-              [initialCountryCode]="form.get('sms_country_code')?.value"
-              [initialPhoneNumber]="form.get('sms_number')?.value"
-              (countryCodeChange)="onSmsCountryCodeChange($event)"
-              (phoneNumberChange)="onSmsNumberChange($event)"
-              (formattedPhoneNumberChange)="onSmsFormattedPhoneNumberChange($event)"
-              (flagError)="onFlagError($event)"
-            ></app-phone-number-input>
-            <div *ngIf="isFieldInvalid('sms_country_code') || isFieldInvalid('sms_number')" class="invalid-feedback d-block">
-              {{ lang === "ar" ? "الرجاء إدخال رقم SMS صحيح." : "Please enter a valid SMS number." }}
             </div>
           </div>
         </div>
@@ -156,5 +293,3 @@
     </fieldset>
   </form>
 </div>
-
-

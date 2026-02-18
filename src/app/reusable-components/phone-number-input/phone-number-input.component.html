@@ -1,6 +1,6 @@
-<div class="input-group" [style.flex-direction]="lang === 'ar' ? 'row-reverse' : 'row'">
+<div class="input-group" [class.rtl-layout]="lang === 'ar'">
   <!-- Country Code Dropdown -->
-  <div style="flex: 0 0 140px;">
+  <div class="country-select">
     <p-dropdown
       [options]="countries"
       [ngModel]="countryCode"
@@ -61,7 +61,7 @@
   <input
     type="text"
     class="form-control"
-    style="flex: 1; border-radius: 6px; margin: 0 4px;"
+    style="flex: 1; border-radius: 6px;"
     [style.max-width]="maxWidth"
     [placeholder]="currentPlaceholder"
     [disabled]="disabled"

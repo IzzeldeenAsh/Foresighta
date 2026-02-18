@@ -64,7 +64,7 @@
       <a [routerLink]="'/app/insighter-dashboard/my-knowledge/general'" class="menu-link px-5 d-flex" (click)="closeDropdown.emit()">
         <span>{{ 'INSIGHTER.DASHBOARD.NAV.MY_KNOWLEDGE' | translate }}</span>
         <ng-container *ngIf="unpublishedDraftCount$ | async as draftCount">
-          <span *ngIf="draftCount > 0" class="badge badge-light-danger fw-bolder fs-8 px-2 py-1 ms-2" style="color: #ff6f55 !important;">
+          <span *ngIf="draftCount > 0" class="badge badge-light-warning fw-bolder fs-8 px-2 py-1 ms-2" style="color: #e8af13 !important;">
             <span >{{ draftCount }} {{lang==='ar'? 'محفوظ': 'Draft'}} - {{lang==='ar'?  '  أكمل الان!': 'Complete Now!'}}</span> 
             
 
