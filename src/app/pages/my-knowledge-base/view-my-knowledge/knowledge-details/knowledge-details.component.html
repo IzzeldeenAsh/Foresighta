@@ -30,17 +30,24 @@
        
            <!-- Main Info -->
            <div class="flex-grow-1">
-              <div class="d-flex flex-column flex-sm-row justify-content-between align-items-center  gap-6">
-               <div class="d-flex align-items-center">
-                 <div>
-                   <h5 class="mb-1" [ngClass]="{'text-info fw-bold': activeDocumentId === doc.id}">{{ doc.file_name || 'N/A' }}</h5>
+              <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-6">
+               <div class="d-flex align-items-center doc-left">
+                 <div class="doc-meta">
+                   <h5
+                     class="mb-1 doc-name text-truncate"
+                     [ngClass]="{'text-info fw-bold': activeDocumentId === doc.id}"
+                     [ngbTooltip]="doc.file_name || ''"
+                     [disableTooltip]="!shouldShowDocNameTooltip(doc.file_name)"
+                     container="body"
+                     placement="top"
+                   >{{ doc.file_name || 'N/A' }}</h5>
                    <small class="text-muted">{{ doc.file_size ? (doc.file_size | fileSize) + ' bytes' : 'N/A' }}</small>
                  </div>
                  
                  <!-- Action Buttons moved here -->
                 
                </div>
-               <div class="d-flex gap-1 align-items-center mt-2 mt-sm-0 flex-nowarp" >
+               <div class="d-flex gap-1 align-items-center mt-2 mt-sm-0 doc-actions" >
               <div >
                 <span class="badge me-2 px-2 py-1" 
                 [ngClass]="{
@@ -54,16 +61,81 @@
               
           
             </div>
-              <div class="ms-3">
-                <p-menu #menu [popup]="true" [model]="docActions" [appendTo]="'body'"></p-menu>
-                <button class="btn btn-icon btn-sm btn-outline btn-active-light-primary"
-                        (click)="$event.stopPropagation(); menu.toggle($event); setMenuData(doc)"
-                        placement="top">
-                  <i class="ki-duotone ki-gear text-gray-800">
-                      <span class="path1"></span>
-                      <span class="path2"></span>
-                  </i>
+              <div class="ms-3 d-flex gap-1 doc-action-buttons">
+                <button
+                  type="button"
+                  class="btn btn-icon btn-sm btn-outline btn-light-info group"
+                  (click)="viewDocument(doc, $event)"
+                  [ngbTooltip]="lang === 'ar' ? 'عرض' : 'View'"
+                  container="body"
+                  placement="top"
+                  aria-label="View document"
+                  style="--icon-color: #299AF8; --icon-hover-color: #fff"
+                >
+                  <i 
+                    class="pi pi-eye fs-5 text-info text-active-white"
+                    [ngStyle]="{
+                      color: undefined
+                    }"
+                    style="transition: color 0.2s;"
+                  ></i>
                 </button>
+                <style>
+                  /* Minimal style block for the icon hover, scoping to this component's context. */
+                  button.btn.btn-light-info.group:hover .pi-eye {
+                    color: #ffffff !important;
+                  }
+                </style>
+
+                <button
+                  type="button"
+                  class="btn btn-icon btn-sm btn-outline btn-light-warning"
+                  (click)="editDocument(doc, $event)"
+                  [ngbTooltip]="lang === 'ar' ? 'تعديل' : 'Edit'"
+                  container="body"
+                  placement="top"
+                  aria-label="Edit document"
+                  style="--icon-color: #FFC107; --icon-hover-color: #fff"
+                >
+                  <i 
+                    class="pi pi-pencil fs-5 text-warning text-active-white"
+                    [ngStyle]="{
+                      color: undefined
+                    }"
+                    style="transition: color 0.2s;"
+                  ></i>
+                </button>
+                <style>
+                  /* Minimal style block for the icon hover, scoping to this component's context. */
+                  button.btn.btn-light-warning:hover .pi-pencil {
+                    color: #ffffff !important;
+                  }
+                </style>
+
+                <button
+                  type="button"
+                  class="btn btn-icon btn-sm btn-outline btn-light-danger"
+                  (click)="deleteDocument(doc, $event)"
+                  [ngbTooltip]="lang === 'ar' ? 'حذف' : 'Delete'"
+                  container="body"
+                  placement="top"
+                  aria-label="Delete document"
+                  style="--icon-color: #F1416C; --icon-hover-color: #fff"
+                >
+                  <i 
+                    class="pi pi-trash fs-5 text-danger text-active-white"
+                    [ngStyle]="{
+                      color: undefined
+                    }"
+                    style="transition: color 0.2s;"
+                  ></i>
+                </button>
+                <style>
+                  /* Minimal style block for the icon hover, scoping to this component's context. */
+                  button.btn.btn-light-danger:hover .pi-trash {
+                    color: #ffffff !important;
+                  }
+                </style>
               </div>
                <!-- Expand/Collapse Arrow -->
                <button

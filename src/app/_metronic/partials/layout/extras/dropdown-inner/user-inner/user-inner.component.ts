@@ -1,5 +1,5 @@
 import { Component, HostBinding, Injector, OnInit, AfterViewInit, ElementRef, Renderer2, Output, EventEmitter } from '@angular/core';
-import { Observable, Subscription, first, of } from 'rxjs';
+import { Observable, first, of } from 'rxjs';
 import { TranslationService } from '../../../../../../modules/i18n';
 import { AuthService, UserType } from '../../../../../../modules/auth';
 import { IKnoldgProfile } from 'src/app/_fake/models/profile.interface';
@@ -8,7 +8,7 @@ import { ProfileService } from 'src/app/_fake/services/get-profile/get-profile.s
 import { BaseComponent } from 'src/app/modules/base.component';
 import { environment } from 'src/environments/environment';
 import { KnowledgeService } from 'src/app/_fake/services/knowledge/knowledge.service';
-import { catchError, map, shareReplay, switchMap } from 'rxjs/operators';
+import { catchError, map, shareReplay, startWith, switchMap } from 'rxjs/operators';
 
 @Component({
   selector: 'app-user-inner',
@@ -124,9 +124,14 @@ export class UserInnerComponent extends BaseComponent implements OnInit, AfterVi
 
         if (!canHaveDrafts) return of(0);
 
-        return this.knowledgeService.getKnowledgeStatusStatistics().pipe(
-          map((res) => res?.data?.find((s) => s.status === 'unpublished')?.count ?? 0),
-          catchError(() => of(0))
+        return this.knowledgeService.knowledgeStatusStatisticsChanged$.pipe(
+          startWith(undefined),
+          switchMap(() =>
+            this.knowledgeService.getKnowledgeStatusStatistics().pipe(
+              map((res) => res?.data?.find((s) => s.status === 'unpublished')?.count ?? 0),
+              catchError(() => of(0))
+            )
+          )
         );
       }),
       shareReplay({ bufferSize: 1, refCount: true })

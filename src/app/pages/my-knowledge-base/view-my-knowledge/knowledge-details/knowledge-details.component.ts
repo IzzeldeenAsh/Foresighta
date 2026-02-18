@@ -11,8 +11,6 @@ import { trigger, transition, style, animate } from '@angular/animations';
 import { DialogModule } from 'primeng/dialog';
 import { CommonModule } from '@angular/common';
 import { TranslateModule } from '@ngx-translate/core';
-import { MenuItem } from 'primeng/api';
-import { MenuModule } from 'primeng/menu';
 
 interface ChapterItem {
   title: string;
@@ -138,43 +136,6 @@ export class KnowledgeDetailsComponent extends BaseComponent implements OnInit {
     },
   ];
 
-  docActions: MenuItem[] = [
-    {
-      label: this.lang === 'ar' ? 'عرض' : 'View',
-      icon: 'ki-duotone ki-eye',
-      command: (event) => {
-        if (event.item?.data) {
-          this.viewDocument(event.item.data, new Event('click'));
-        }
-      }
-    },
-    {
-      label:this.lang === 'ar' ? 'تعديل' : 'Edit',
-      icon: 'ki-duotone ki-pencil',
-      command: (event) => {
-        if (event.item?.data) {
-          this.editDocument(event.item.data, new Event('click'));
-        }
-      }
-    },
-    {
-      label:this.lang === 'ar' ? 'حذف' : 'Delete',
-      icon: 'ki-duotone ki-trash',
-      command: (event) => {
-        if (event.item?.data) {
-          this.deleteDocument(event.item.data, new Event('click'));
-        }
-      }
-    }
-    
-  ];
-
-  setMenuData(doc: DocumentInfo): void {
-    this.docActions.forEach(item => {
-      item.data = doc;
-    });
-  }
-
   viewDocument(doc: DocumentInfo, event: Event): void {
     event.stopPropagation();
 
@@ -204,6 +165,10 @@ export class KnowledgeDetailsComponent extends BaseComponent implements OnInit {
         });
       }
     });
+  }
+
+  shouldShowDocNameTooltip(fileName: string | null | undefined): boolean {
+    return !!fileName && fileName.length > 32;
   }
 
   constructor(
@@ -336,11 +301,6 @@ export class KnowledgeDetailsComponent extends BaseComponent implements OnInit {
   // Enhanced toggle collapse with animation
   toggleCollapse(docId: number, event: Event): void {
     event.stopPropagation();
-    // Set the document data for menu items
-    const doc = this.documents.find(d => d.id === docId);
-    if (doc) {
-      this.setMenuData(doc);
-    }
     
     if (this.activeDocumentId === docId) {
       // If clicking the active document, deactivate it
@@ -387,6 +347,7 @@ export class KnowledgeDetailsComponent extends BaseComponent implements OnInit {
   }
 
   editDocument(doc: DocumentInfo, event: Event): void {
+    event.stopPropagation();
     this.editingDocumentForModal = doc;
     this.showDocumentModal = true;
   }

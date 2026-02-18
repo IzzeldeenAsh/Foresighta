@@ -1,8 +1,9 @@
 import { Injectable } from "@angular/core";
 import { HttpClient, HttpHeaders, HttpEventType, HttpEvent } from "@angular/common/http";
 import { BehaviorSubject, Observable, throwError } from "rxjs";
-import { catchError, finalize, map } from "rxjs/operators";
+import { catchError, finalize, map, tap } from "rxjs/operators";
 import { TranslationService } from "src/app/modules/i18n";
+import { KnowledgeService } from "../knowledge/knowledge.service";
 
 export interface CreateKnowledgeRequest {
   type: string;
@@ -164,7 +165,8 @@ export class AddInsightStepsService {
 
   constructor(
     private http: HttpClient,
-    private translationService: TranslationService
+    private translationService: TranslationService,
+    private knowledgeService: KnowledgeService
   ) {
     this.currentLang = this.translationService.getSelectedLanguage();
     this.translationService.onLanguageChange().subscribe((lang) => {
@@ -192,6 +194,7 @@ export class AddInsightStepsService {
       .post<CreateKnowledgeResponse>(`${this.apiUrl}/type`, { type }, { headers })
       .pipe(
         map((res) => res),
+        tap(() => this.knowledgeService.notifyKnowledgeStatusStatisticsChanged()),
         catchError((error) => this.handleError(error)),
         finalize(() => this.setLoading(false))
       );
@@ -226,6 +229,7 @@ export class AddInsightStepsService {
       .post<CreateKnowledgeResponse>(this.apiUrl, request, { headers })
       .pipe(
         map((res) => res),
+        tap(() => this.knowledgeService.notifyKnowledgeStatusStatisticsChanged()),
         catchError((error) => this.handleError(error)),
         finalize(() => this.setLoading(false))
       );
@@ -574,6 +578,7 @@ export class AddInsightStepsService {
       })
       .pipe(
         map((res) => res),
+        tap(() => this.knowledgeService.notifyKnowledgeStatusStatisticsChanged()),
         catchError((error) => this.handleError(error)),
         finalize(() => this.setLoading(false))
       );

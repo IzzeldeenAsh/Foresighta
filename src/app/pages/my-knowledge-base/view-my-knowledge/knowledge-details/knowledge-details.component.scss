@@ -2,6 +2,43 @@
 .documents-container {
     perspective: 1000px;
   }
+
+  .doc-left {
+    flex: 1 1 auto;
+    min-width: 0;
+    width: 100%;
+  }
+
+  .doc-meta {
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+
+  .doc-name {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .doc-actions {
+    flex: 0 0 auto;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    width: 100%;
+  }
+
+  .doc-action-buttons {
+    flex: 0 0 auto;
+  }
+
+  @media (min-width: 576px) {
+    .doc-left {
+      width: auto;
+    }
+
+    .doc-actions {
+      width: auto;
+    }
+  }
   .star{
       
       margin: 10px 0;

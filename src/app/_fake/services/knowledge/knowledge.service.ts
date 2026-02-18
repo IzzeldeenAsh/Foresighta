@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpErrorResponse } from '@angular/common/http';
-import { BehaviorSubject, Observable, throwError } from 'rxjs';
-import { catchError, finalize, map } from 'rxjs/operators';
+import { BehaviorSubject, Observable, Subject, throwError } from 'rxjs';
+import { catchError, finalize, map, tap } from 'rxjs/operators';
 import { TranslationService } from 'src/app/modules/i18n';
 import { DocumentListResponse, DocumentUrlResponse, RawDocumentListResponse, Chapter } from '../add-insight-steps/add-insight-steps.service';
 
@@ -125,6 +125,9 @@ export class KnowledgeService {
   public isLoading$: Observable<boolean> = this.isLoadingSubject.asObservable();
   currentLang: string = 'en';
 
+  private knowledgeStatusStatisticsChangedSubject = new Subject<void>();
+  public readonly knowledgeStatusStatisticsChanged$ = this.knowledgeStatusStatisticsChangedSubject.asObservable();
+
   constructor(
     private http: HttpClient,
     private translationService: TranslationService
@@ -141,6 +144,10 @@ export class KnowledgeService {
 
   private handleError(error: any) {
     return throwError(error);
+  }
+
+  notifyKnowledgeStatusStatisticsChanged(): void {
+    this.knowledgeStatusStatisticsChangedSubject.next();
   }
 
   getKnowledgeById(id: number): Observable<KnowledgeResponse> {
@@ -271,6 +278,7 @@ export class KnowledgeService {
       { headers }
     ).pipe(
       map((res) => res),
+      tap(() => this.notifyKnowledgeStatusStatisticsChanged()),
       catchError((error) => this.handleError(error)),
       finalize(() => this.setLoading(false))
     );
@@ -295,6 +303,7 @@ export class KnowledgeService {
       { headers }
     ).pipe(
       map((res) => res),
+      tap(() => this.notifyKnowledgeStatusStatisticsChanged()),
       catchError((error) => this.handleError(error)),
       finalize(() => this.setLoading(false))
     );

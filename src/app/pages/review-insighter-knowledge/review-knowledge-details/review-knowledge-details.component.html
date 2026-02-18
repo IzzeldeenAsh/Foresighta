@@ -50,19 +50,31 @@
                                 
                              
                             </div>
+                            
                             <button
                               type="button"
-                              class="btn btn-sm btn-outline btn-active-light-primary d-flex align-items-center gap-2"
+                              class="btn btn-icon btn-sm btn-outline btn-light-info group"
                               (click)="viewDocument(doc, $event)"
                               [ngbTooltip]="lang === 'ar' ? 'عرض' : 'View'"
-                              placement="top">
-                              <i class="ki-duotone ki-eye fs-4 text-gray-800">
-                                <span class="path1"></span>
-                                <span class="path2"></span>
-                                <span class="path3"></span>
-                              </i>
-                              <span class="fw-semibold">{{ lang === 'ar' ? 'عرض' : 'View' }}</span>
+                              container="body"
+                              placement="top"
+                              aria-label="View document"
+                              style="--icon-color: #299AF8; --icon-hover-color: #fff"
+                            >
+                              <i 
+                                class="pi pi-eye fs-5 text-info text-active-white"
+                                [ngStyle]="{
+                                  color: undefined
+                                }"
+                                style="transition: color 0.2s;"
+                              ></i>
                             </button>
+                            <style>
+                              /* Minimal style block for the icon hover, scoped locally. */
+                              button.btn.btn-light-info.group:hover .pi-eye {
+                                color: #ffffff !important;
+                              }
+                            </style>
                                <!-- Expand/Collapse Arrow -->
                                <button
                                class="btn btn-sm btn-link p-0"
