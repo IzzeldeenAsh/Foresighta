@@ -5,6 +5,7 @@ import { authGuard } from './guards/auth-guard/auth.guard';
 import { CountryGuard } from './guards/country-guard/country.guard';
 import { CorsTestComponent } from './cors-test.component';
 import { CrossDomainAuthHelperComponent } from './shared/cross-domain-auth-helper.component';
+import { adminExternalRedirectChildGuard, adminExternalRedirectGuard } from './guards/admin-external-redirect-guard/admin-external-redirect.guard';
 
 export const routes: Routes = [
 {
@@ -17,21 +18,26 @@ export const routes: Routes = [
   path: 'auth',
   loadChildren: () =>
     import('./modules/auth/auth.module').then((m) => m.AuthModule),
+  canActivate: [adminExternalRedirectGuard],
+  canActivateChild: [adminExternalRedirectChildGuard],
 },
 {
   path: 'app',
   loadChildren: () =>
     import('./_metronic/layout/layout.module').then((m) => m.LayoutModule),
-  canActivate:[authGuard, CountryGuard]
+  canActivate: [adminExternalRedirectGuard, authGuard, CountryGuard],
+  canActivateChild: [adminExternalRedirectChildGuard],
 },
 
 {
   path: 'cors-test',
-  component: CorsTestComponent
+  component: CorsTestComponent,
+  canActivate: [adminExternalRedirectGuard],
 },
 {
   path: 'auth-receiver',
-  component: CrossDomainAuthHelperComponent
+  component: CrossDomainAuthHelperComponent,
+  canActivate: [adminExternalRedirectGuard],
 },
 { path: '**', redirectTo: 'auth' },
 ];

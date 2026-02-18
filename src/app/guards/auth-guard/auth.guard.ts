@@ -52,7 +52,10 @@ export class authGuard  {
     return this.getProfileService.getProfile().pipe(
       map(user => {
         if(user.roles.includes('admin')){
-          return this.router.createUrlTree(['/admin-dashboard']);
+          if (typeof window !== 'undefined') {
+            window.location.replace('https://insightabusiness.com/en/dashboard');
+          }
+          return false;
         }
         if (user && user.verified) {
           // User is authenticated and verified, allow access

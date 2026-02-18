@@ -21,7 +21,7 @@
         {{ 'INSIGHTER.DASHBOARD.NAV.ACCOUNT_SETTINGS' | translate }}
       </a>
     </li>
-    <li class="nav-item">
+    <li class="nav-item"  *ngIf="(isInsighter$ | async) || (isCompany$ | async) || (isCompanyInsighter$ | async)">
       <a class="nav-link text-active-primary pb-4"
         [class.active]="activeTab === 'notification-settings'"
         (click)="switchTab('notification-settings')">
