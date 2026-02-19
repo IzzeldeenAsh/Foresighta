@@ -30,6 +30,28 @@
     flex: 0 0 auto;
   }
 
+  .doc-price-badge {
+    font-size: clamp(0.95rem, 0.6vw + 0.85rem, 1.1rem);
+    font-weight: 600;
+    line-height: 1;
+    border-radius: 0.5rem;
+  }
+
+  .document-card.active .doc-price-badge {
+    font-size: clamp(1rem, 0.8vw + 0.9rem, 1.2rem);
+  }
+
+  .doc-action-btn.btn-icon {
+    width: 28px;
+    height: 28px;
+    padding: 0;
+  }
+
+  .doc-action-btn:hover i,
+  .doc-action-btn:focus-visible i {
+    color: #ffffff !important;
+  }
+
   @media (min-width: 576px) {
     .doc-left {
       width: auto;

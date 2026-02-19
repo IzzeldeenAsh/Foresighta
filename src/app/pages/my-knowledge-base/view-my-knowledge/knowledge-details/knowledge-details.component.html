@@ -47,24 +47,24 @@
                  <!-- Action Buttons moved here -->
                 
                </div>
-               <div class="d-flex gap-1 align-items-center mt-2 mt-sm-0 doc-actions" >
+               <div class="d-flex gap-2 align-items-center mt-2 mt-sm-0 doc-actions" >
               <div >
-                <span class="badge me-2 px-2 py-1" 
+                <span class="badge me-3 px-2 py-1 doc-price-badge" 
                 [ngClass]="{
-                  'bg-info text-white fs-6 fs-sm-4': activeDocumentId === doc.id && doc.price !== '0',
-                  'bg-secondary fs-7 fs-sm-6': activeDocumentId !== doc.id && doc.price !== '0',
-                  'bg-success text-success fs-6 fs-sm-4': activeDocumentId === doc.id && doc.price === '0',
-                  'bg-success text-white fs-7 fs-sm-6': activeDocumentId !== doc.id && doc.price === '0'
+                  'bg-info text-white': activeDocumentId === doc.id && doc.price !== '0',
+                  'bg-secondary': activeDocumentId !== doc.id && doc.price !== '0',
+                  'bg-success text-success': activeDocumentId === doc.id && doc.price === '0',
+                  'bg-success text-white': activeDocumentId !== doc.id && doc.price === '0'
                 }">
                 {{ doc.price === '0' ? (this.lang=="ar"? 'مجاني' : 'Free') : (doc.price | currency) }}
               </span>
               
           
             </div>
-              <div class="ms-3 d-flex gap-1 doc-action-buttons">
+              <div class="ms-4 d-flex gap-2 doc-action-buttons">
                 <button
                   type="button"
-                  class="btn btn-icon btn-sm btn-outline btn-light-info group"
+                  class="btn btn-icon btn-xs btn-outline btn-light-info doc-action-btn"
                   (click)="viewDocument(doc, $event)"
                   [ngbTooltip]="lang === 'ar' ? 'عرض' : 'View'"
                   container="body"
@@ -73,23 +73,17 @@
                   style="--icon-color: #299AF8; --icon-hover-color: #fff"
                 >
                   <i 
-                    class="pi pi-eye fs-5 text-info text-active-white"
+                    class="ki-outline ki-search-list fs-3 text-info text-active-white"
                     [ngStyle]="{
                       color: undefined
                     }"
                     style="transition: color 0.2s;"
                   ></i>
                 </button>
-                <style>
-                  /* Minimal style block for the icon hover, scoping to this component's context. */
-                  button.btn.btn-light-info.group:hover .pi-eye {
-                    color: #ffffff !important;
-                  }
-                </style>
 
                 <button
                   type="button"
-                  class="btn btn-icon btn-sm btn-outline btn-light-warning"
+                  class="btn btn-icon btn-xs btn-outline btn-light-warning doc-action-btn"
                   (click)="editDocument(doc, $event)"
                   [ngbTooltip]="lang === 'ar' ? 'تعديل' : 'Edit'"
                   container="body"
@@ -98,23 +92,17 @@
                   style="--icon-color: #FFC107; --icon-hover-color: #fff"
                 >
                   <i 
-                    class="pi pi-pencil fs-5 text-warning text-active-white"
+                    class="pi pi-pencil fs-6 text-warning text-active-white"
                     [ngStyle]="{
                       color: undefined
                     }"
                     style="transition: color 0.2s;"
                   ></i>
                 </button>
-                <style>
-                  /* Minimal style block for the icon hover, scoping to this component's context. */
-                  button.btn.btn-light-warning:hover .pi-pencil {
-                    color: #ffffff !important;
-                  }
-                </style>
 
                 <button
                   type="button"
-                  class="btn btn-icon btn-sm btn-outline btn-light-danger"
+                  class="btn btn-icon btn-xs btn-outline btn-light-danger doc-action-btn"
                   (click)="deleteDocument(doc, $event)"
                   [ngbTooltip]="lang === 'ar' ? 'حذف' : 'Delete'"
                   container="body"
@@ -123,19 +111,13 @@
                   style="--icon-color: #F1416C; --icon-hover-color: #fff"
                 >
                   <i 
-                    class="pi pi-trash fs-5 text-danger text-active-white"
+                    class="pi pi-trash fs-6 text-danger text-active-white"
                     [ngStyle]="{
                       color: undefined
                     }"
                     style="transition: color 0.2s;"
                   ></i>
                 </button>
-                <style>
-                  /* Minimal style block for the icon hover, scoping to this component's context. */
-                  button.btn.btn-light-danger:hover .pi-trash {
-                    color: #ffffff !important;
-                  }
-                </style>
               </div>
                <!-- Expand/Collapse Arrow -->
                <button
