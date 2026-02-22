@@ -15,7 +15,7 @@ const API_USERS_URL = `test`;
 })
 export class AuthHTTPService {
   constructor(private http: HttpClient) {}
-  private apiUrlLogin = ' https://api.foresighta.co/api/common/user/login'; // Define your API URL
+  private apiUrlLogin = ' https://api.insightabusiness.com/api/common/user/login'; // Define your API URL
   // public methods
   // login(email: string, password: string , lang:string): Observable<AuthModel | Error> {
   //   if (!email || !password) {

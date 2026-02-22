@@ -128,12 +128,12 @@ export class ClientMyDashboardComponent extends BaseComponent implements OnInit,
 
 
   redirectToExperts(): void {
-    window.open(`http://localhost:3000/${this.lang}/home?search_type=insighter&accuracy=any`, '_blank');
+    window.open(`https://insightabusiness.com/${this.lang}/home?search_type=insighter&accuracy=any`, '_blank');
   }
   redirectToKnowledge(type: string): void {
     const currentLang = this.lang; 
     
-    window.open(`http://localhost:3000/${currentLang}/home?search_type=knowledge&type=${type}`, '_blank');
+    window.open(`https://insightabusiness.com/${currentLang}/home?search_type=knowledge&type=${type}`, '_blank');
   }
 
   loadWalletBalance(): void {

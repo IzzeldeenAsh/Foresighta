@@ -56,8 +56,8 @@ export interface Type {
   providedIn: 'root'
 })
 export class UserRequestsService {
-  private apiUrl = 'https://api.foresighta.co/api/account/request';
-  private insighterRequestsUrl = 'https://api.foresighta.co/api/company/insighter/request';
+  private apiUrl = 'https://api.insightabusiness.com/api/account/request';
+  private insighterRequestsUrl = 'https://api.insightabusiness.com/api/company/insighter/request';
   private isLoadingSubject = new BehaviorSubject<boolean>(false);
   public isLoading$: Observable<boolean> = this.isLoadingSubject.asObservable();
   currentLang: string = 'en';
@@ -121,7 +121,7 @@ export class UserRequestsService {
    * @returns Observable of the request response
    */
   sendActivationRequest(comments: string, parentId: string): Observable<any> {
-    const url = 'https://api.foresighta.co/api/company/request/activate';
+    const url = 'https://api.insightabusiness.com/api/company/request/activate';
     const formData = new FormData();
     formData.append('comments', comments);
     formData.append('parent_id', parentId);
@@ -145,7 +145,7 @@ export class UserRequestsService {
    * @returns Observable of the request response
    */
   sendVerificationRequest(comments: string, parentId: string): Observable<any> {
-    const url = 'https://api.foresighta.co/api/company/request/verified';
+    const url = 'https://api.insightabusiness.com/api/company/request/verified';
     const formData = new FormData();
     formData.append('comments', comments);
     formData.append('parent_id', parentId);
@@ -169,7 +169,7 @@ export class UserRequestsService {
    * @returns Observable of the request response
    */
   sendDeactivateAndDeleteRequest(comments: string, parentId: string): Observable<any> {
-    const url = 'https://api.foresighta.co/api/company/request/deactivate-delete';
+    const url = 'https://api.insightabusiness.com/api/company/request/deactivate-delete';
     const formData = new FormData();
     formData.append('comments', comments);
     formData.append('parent_id', parentId);
@@ -193,7 +193,7 @@ export class UserRequestsService {
    * @returns Observable of the request response
    */
   sendDeactivateAndDeleteRequestInsighter(comments: string, parentId: string): Observable<any> {
-    const url = 'https://api.foresighta.co/api/insighter/request/deactivate-delete';
+    const url = 'https://api.insightabusiness.com/api/insighter/request/deactivate-delete';
     const formData = new FormData();
     formData.append('comments', comments);
     formData.append('parent_id', parentId);
@@ -217,7 +217,7 @@ export class UserRequestsService {
    * @returns Observable of the request response
    */
   sendReactivateRequest(type:string): Observable<any> {
-    const url = type === 'company' ? 'https://api.foresighta.co/api/company/activate' : 'https://api.foresighta.co/api/insighter/activate';
+    const url = type === 'company' ? 'https://api.insightabusiness.com/api/company/activate' : 'https://api.insightabusiness.com/api/insighter/activate';
     
     const headers = new HttpHeaders({
       'Accept': 'application/json',
@@ -265,7 +265,7 @@ export class UserRequestsService {
    * @returns Observable of the request response
    */
   sendKnowledgeReviewRequest(comments: string, parentId: string, knowledgeId: string): Observable<any> {
-    const url = 'https://api.foresighta.co/api/insighter/request/knowledge/review';
+    const url = 'https://api.insightabusiness.com/api/insighter/request/knowledge/review';
     
     const formData = new FormData();
     formData.append('comments', comments);

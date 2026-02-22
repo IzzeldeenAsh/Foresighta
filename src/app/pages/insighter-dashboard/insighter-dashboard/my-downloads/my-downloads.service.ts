@@ -72,10 +72,10 @@ export interface LibraryStatistics {
   providedIn: 'root'
 })
 export class MyDownloadsService {
-  private readonly API_URL = 'https://api.foresighta.co/api/account/library/my-knowledge';
-  private readonly STATISTICS_URL = 'https://api.foresighta.co/api/account/library/my-knowledge/statistics';
-  private readonly DOWNLOAD_KNOWLEDGE_URL = 'https://api.foresighta.co/api/account/library/my-knowledge/download';
-  private readonly DOWNLOAD_DOCUMENT_URL = 'https://api.foresighta.co/api/account/library/my-knowledge/document/download';
+  private readonly API_URL = 'https://api.insightabusiness.com/api/account/library/my-knowledge';
+  private readonly STATISTICS_URL = 'https://api.insightabusiness.com/api/account/library/my-knowledge/statistics';
+  private readonly DOWNLOAD_KNOWLEDGE_URL = 'https://api.insightabusiness.com/api/account/library/my-knowledge/download';
+  private readonly DOWNLOAD_DOCUMENT_URL = 'https://api.insightabusiness.com/api/account/library/my-knowledge/document/download';
   
   private isLoadingSubject = new BehaviorSubject<boolean>(false);
   public isLoading$ = this.isLoadingSubject.asObservable();

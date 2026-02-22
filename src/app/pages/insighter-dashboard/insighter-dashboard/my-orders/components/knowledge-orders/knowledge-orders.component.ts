@@ -18,7 +18,7 @@ export class KnowledgeOrdersComponent {
   @Input() totalPages$!: Observable<number>;
   @Input() currentPage = 1;
   @Input() isLoading$!: Observable<boolean>;
-  @Input() clientBaseUrl: string = 'http://localhost:3000';
+  @Input() clientBaseUrl: string = 'https://insightabusiness.com';
 
 
   @Output() pageChange = new EventEmitter<number>();

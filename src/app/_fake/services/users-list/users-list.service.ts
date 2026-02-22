@@ -9,7 +9,7 @@ import { IKnoldgProfile } from 'src/app/_fake/models/profile.interface';
   providedIn: 'root'
 })
 export class UsersListService {
-  private apiUrl = 'https://api.foresighta.co/api/admin/account';
+  private apiUrl = 'https://api.insightabusiness.com/api/admin/account';
 
   private isLoadingSubject = new BehaviorSubject<boolean>(false);
   public isLoading$ = this.isLoadingSubject.asObservable();

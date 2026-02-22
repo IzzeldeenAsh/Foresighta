@@ -7,8 +7,8 @@ import { TranslationService } from 'src/app/modules/i18n';
   providedIn: 'root'
 })
 export class InsighterRegistraionService {
-  private individuial_insighter = 'https://api.foresighta.co/api/account/insighter/individual/register'
-  private company_insighter = 'https://api.foresighta.co/api/account/insighter/company/register'
+  private individuial_insighter = 'https://api.insightabusiness.com/api/account/insighter/individual/register'
+  private company_insighter = 'https://api.insightabusiness.com/api/account/insighter/company/register'
   private isLoadingSubject = new BehaviorSubject<boolean>(false);
   public isLoading$: Observable<boolean> =
     this.isLoadingSubject.asObservable();

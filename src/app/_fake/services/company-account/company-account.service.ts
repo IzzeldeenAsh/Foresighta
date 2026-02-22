@@ -102,7 +102,7 @@ export interface DashboardStatisticsResponse {
   providedIn: 'root'
 })
 export class CompanyAccountService {
-  private insightaHost = 'https://api.foresighta.co';
+  private insightaHost = 'https://api.insightabusiness.com';
   private accountExistApi = `${this.insightaHost}/api/company/account/exist`;
   private inviteInsighterApi = `${this.insightaHost}/api/company/insighter`;
   private companyOrderKnowledgeStatisticsApi = `${this.insightaHost}/api/company/order/knowledge/statistics`;
