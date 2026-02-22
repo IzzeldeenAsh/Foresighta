@@ -103,9 +103,9 @@ export class CallbackComponent extends BaseComponent implements OnInit {
     
     console.log('[callback] Redirecting based on roles:', roles, 'returnUrl:', returnUrl, 'isSocialSignup:', isSocialSignup);
     
-    // Check if user is admin/staff - stay in Angular app
+    // Check if user is admin/staff - redirect to Next.js admin dashboard
     if (roles.includes('admin') || roles.includes('staff')) {
-      const adminUrl = `${window.location.origin}/admin-dashboard`;
+      const adminUrl = `https://insightabusiness.com/${currentLang}/dashboard`;
       console.log('[callback] Redirecting admin/staff to:', adminUrl);
       window.location.href = adminUrl;
       return;

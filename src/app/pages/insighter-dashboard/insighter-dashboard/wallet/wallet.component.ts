@@ -443,6 +443,8 @@ export class WalletComponent extends BaseComponent implements OnInit, OnDestroy,
         return 'badge-light-info';
       case 'admin':
         return 'badge-light-warning';
+      case 'staff':
+        return 'badge-light-warning';
       default:
         return 'badge-light-secondary';
     }
@@ -461,6 +463,8 @@ export class WalletComponent extends BaseComponent implements OnInit, OnDestroy,
           return 'عميل';
         case 'admin':
           return 'مدير';
+        case 'staff':
+          return 'موظف';
         default:
           return role;
       }
