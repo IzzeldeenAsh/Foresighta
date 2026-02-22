@@ -37,7 +37,7 @@ export class FileUploaderComponent {
   @Input() maxFileSize: number = 10; // MB
   @Input() acceptedFiles: string = '';
   @Input() lang: string = 'en';
-  @Input() uploadUrl: string = 'https://insightabusiness.com';
+  @Input() uploadUrl: string = 'http://localhost:3000';
   @Output() onFileUploaded = new EventEmitter<File[]>();
   @Output() onFileRemoved = new EventEmitter<File>();
 

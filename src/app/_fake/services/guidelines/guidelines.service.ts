@@ -58,8 +58,8 @@ export interface GuidelineType {
   providedIn: 'root',
 })
 export class GuidelinesService {
-  private apiUrl = 'https://api.insightabusiness.com/api/common/setting/guideline/list';
-  private createUpdateApi = 'https://api.insightabusiness.com/api/admin/setting/guideline';
+  private apiUrl = 'https://api.foresighta.co/api/common/setting/guideline/list';
+  private createUpdateApi = 'https://api.foresighta.co/api/admin/setting/guideline';
   private isLoadingSubject = new BehaviorSubject<boolean>(false);
   public isLoading$: Observable<boolean> = this.isLoadingSubject.asObservable();
   currentLang: string = 'en';
@@ -123,7 +123,7 @@ export class GuidelinesService {
       'Accept': 'application/json',
       'Accept-Language': this.currentLang
     });
-    const apiUrl = 'https://api.insightabusiness.com/api/common/setting/guideline/type';
+    const apiUrl = 'https://api.foresighta.co/api/common/setting/guideline/type';
     this.setLoading(true);
     return this.http.get<GuidelineType[]>(apiUrl, { headers }).pipe(
       catchError(this.handleError),
@@ -136,7 +136,7 @@ export class GuidelinesService {
       'Accept': 'application/json',
       'Accept-Language': this.currentLang
     });
-    const apiUrl = `https://api.insightabusiness.com/api/common/setting/guideline/type/current/${type}`;
+    const apiUrl = `https://api.foresighta.co/api/common/setting/guideline/type/current/${type}`;
     this.setLoading(true);
     return this.http.get<GuidelineDetailResponse>(apiUrl, { headers }).pipe(
       map((res) => res.data),
@@ -150,7 +150,7 @@ export class GuidelinesService {
       'Accept': 'application/json',
       'Accept-Language': this.currentLang
     });
-    const apiUrl = `https://api.insightabusiness.com/api/common/setting/guideline/type/last/${type}`;
+    const apiUrl = `https://api.foresighta.co/api/common/setting/guideline/type/last/${type}`;
     this.setLoading(true);
     return this.http.get<GuidelineDetailResponse>(apiUrl, { headers }).pipe(
       map((res) => res.data),

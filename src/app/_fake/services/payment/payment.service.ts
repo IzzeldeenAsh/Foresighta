@@ -123,19 +123,19 @@ export interface TermsResponse {
   providedIn: 'root'
 })
 export class PaymentService {
-  private stripeCountriesApiUrl = 'https://api.insightabusiness.com/api/insighter/payment/account/stripe/countries';
-  private setPrimaryApiUrl = 'https://api.insightabusiness.com/api/insighter/payment/account/primary/set';
-  private generateOtpApiUrl = 'https://api.insightabusiness.com/api/insighter/payment/account/otp/generate';
-  private accountDetailsApiUrl = 'https://api.insightabusiness.com/api/insighter/payment/account/details';
-  private setManualAccountApiUrl = 'https://api.insightabusiness.com/api/insighter/payment/account/manual/set';
-  private updateManualAccountApiUrl = 'https://api.insightabusiness.com/api/insighter/payment/account/manual/update';
-  private deleteManualAccountApiUrl = 'https://api.insightabusiness.com/api/insighter/payment/account/manual/delete';
-  private stripeCreateApiUrl = 'https://api.insightabusiness.com/api/insighter/payment/account/stripe/create';
-  private stripeLinkApiUrl = 'https://api.insightabusiness.com/api/insighter/payment/account/stripe/link';
-  private stripeCompleteApiUrl = 'https://api.insightabusiness.com/api/insighter/payment/account/stripe/complete';
-  private deleteStripeApiUrl = 'https://api.insightabusiness.com/api/insighter/payment/account/stripe/delete';
-  private manualTermsApiUrl = 'https://api.insightabusiness.com/api/common/setting/guideline/slug/wallet-payment-terms-and-conditions';
-  private stripeTermsApiUrl = 'https://api.insightabusiness.com/api/common/setting/guideline/slug/stripe-payment-terms-and-conditions';
+  private stripeCountriesApiUrl = 'https://api.foresighta.co/api/insighter/payment/account/stripe/countries';
+  private setPrimaryApiUrl = 'https://api.foresighta.co/api/insighter/payment/account/primary/set';
+  private generateOtpApiUrl = 'https://api.foresighta.co/api/insighter/payment/account/otp/generate';
+  private accountDetailsApiUrl = 'https://api.foresighta.co/api/insighter/payment/account/details';
+  private setManualAccountApiUrl = 'https://api.foresighta.co/api/insighter/payment/account/manual/set';
+  private updateManualAccountApiUrl = 'https://api.foresighta.co/api/insighter/payment/account/manual/update';
+  private deleteManualAccountApiUrl = 'https://api.foresighta.co/api/insighter/payment/account/manual/delete';
+  private stripeCreateApiUrl = 'https://api.foresighta.co/api/insighter/payment/account/stripe/create';
+  private stripeLinkApiUrl = 'https://api.foresighta.co/api/insighter/payment/account/stripe/link';
+  private stripeCompleteApiUrl = 'https://api.foresighta.co/api/insighter/payment/account/stripe/complete';
+  private deleteStripeApiUrl = 'https://api.foresighta.co/api/insighter/payment/account/stripe/delete';
+  private manualTermsApiUrl = 'https://api.foresighta.co/api/common/setting/guideline/slug/wallet-payment-terms-and-conditions';
+  private stripeTermsApiUrl = 'https://api.foresighta.co/api/common/setting/guideline/slug/stripe-payment-terms-and-conditions';
   private isLoadingSubject = new BehaviorSubject<boolean>(false);
   public isLoading$: Observable<boolean> = this.isLoadingSubject.asObservable();
   currentLang: string = 'en';

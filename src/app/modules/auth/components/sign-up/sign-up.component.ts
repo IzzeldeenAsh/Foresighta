@@ -713,7 +713,7 @@ export class SignUpComponent extends BaseComponent implements OnInit {
     const signUpReturnUrl = this.getSignUpReturnUrlFromCookie();
     const token = this.authService.getTokenFromCookie();
     const lang = this.lang || this.selectedLang || "en";
-    const nextBase = environment.mainAppUrl || "https://insightabusiness.com";
+    const nextBase = environment.mainAppUrl || "http://localhost:3000";
 
     if (signUpReturnUrl) {
       this.clearSignUpReturnUrlCookie();
@@ -732,7 +732,8 @@ export class SignUpComponent extends BaseComponent implements OnInit {
 
     // Fallback: redirect to Next.js callback URL with token from cookies
     if (token) {
-      window.location.href = `${nextBase}/${lang}/callback/${encodeURIComponent(token)}`;
+      // Normal signup (no redirect link): show "Add WhatsApp & SMS" encouragement modal on Next.js landing page
+      window.location.href = `${nextBase}/${lang}/callback/${encodeURIComponent(token)}?promptAddChannels=1`;
       return;
     }
 

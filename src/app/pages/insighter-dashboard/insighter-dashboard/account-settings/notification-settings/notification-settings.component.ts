@@ -24,6 +24,9 @@ export class NotificationSettingsComponent extends BaseComponent implements OnIn
   readonly isSaving$ = this.savingSubject.asObservable();
 
   private profileAny: any = null;
+  private isSyncingPhoneFields = false;
+  private smsAutoFilledFrom: "whatsapp" | null = null;
+  private whatsappAutoFilledFrom: "sms" | null = null;
 
   constructor(
     injector: Injector,
@@ -59,12 +62,16 @@ export class NotificationSettingsComponent extends BaseComponent implements OnIn
   }
 
   onWhatsAppCountryCodeChange(countryCode: string): void {
+    this.markPhoneChannelAsUserEdited("whatsapp");
     this.form.get("whatsapp_country_code")?.setValue(countryCode);
+    this.syncOtherChannelIfEmptyOrAutoFilled("whatsapp");
     this.updateChannelValidators();
   }
 
   onWhatsAppNumberChange(phoneNumber: string): void {
+    this.markPhoneChannelAsUserEdited("whatsapp");
     this.form.get("whatsapp_number")?.setValue(phoneNumber);
+    this.syncOtherChannelIfEmptyOrAutoFilled("whatsapp");
     this.updateChannelValidators();
   }
 
@@ -73,12 +80,16 @@ export class NotificationSettingsComponent extends BaseComponent implements OnIn
   }
 
   onSmsCountryCodeChange(countryCode: string): void {
+    this.markPhoneChannelAsUserEdited("sms");
     this.form.get("sms_country_code")?.setValue(countryCode);
+    this.syncOtherChannelIfEmptyOrAutoFilled("sms");
     this.updateChannelValidators();
   }
 
   onSmsNumberChange(phoneNumber: string): void {
+    this.markPhoneChannelAsUserEdited("sms");
     this.form.get("sms_number")?.setValue(phoneNumber);
+    this.syncOtherChannelIfEmptyOrAutoFilled("sms");
     this.updateChannelValidators();
   }
 
@@ -237,8 +248,60 @@ export class NotificationSettingsComponent extends BaseComponent implements OnIn
       sms_number: profile?.sms_number || "",
     });
 
+    // Loaded values should not be treated as "auto-filled" mirrors.
+    this.smsAutoFilledFrom = null;
+    this.whatsappAutoFilledFrom = null;
+
     this.updateChannelValidators();
     this.form.markAsPristine();
+  }
+
+  private markPhoneChannelAsUserEdited(channel: "whatsapp" | "sms"): void {
+    if (this.isSyncingPhoneFields) return;
+    if (channel === "whatsapp") {
+      this.whatsappAutoFilledFrom = null;
+    } else {
+      this.smsAutoFilledFrom = null;
+    }
+  }
+
+  private syncOtherChannelIfEmptyOrAutoFilled(source: "whatsapp" | "sms"): void {
+    if (this.isSyncingPhoneFields) return;
+
+    const srcCodeKey = source === "whatsapp" ? "whatsapp_country_code" : "sms_country_code";
+    const srcNumberKey = source === "whatsapp" ? "whatsapp_number" : "sms_number";
+    const dstCodeKey = source === "whatsapp" ? "sms_country_code" : "whatsapp_country_code";
+    const dstNumberKey = source === "whatsapp" ? "sms_number" : "whatsapp_number";
+
+    const srcCode = this.normalizePhoneField(this.form.get(srcCodeKey)?.value);
+    const srcNumber = this.normalizePhoneField(this.form.get(srcNumberKey)?.value);
+
+    const dstCode = this.normalizePhoneField(this.form.get(dstCodeKey)?.value);
+    const dstNumber = this.normalizePhoneField(this.form.get(dstNumberKey)?.value);
+
+    const srcHasAny = !!srcCode || !!srcNumber;
+    const dstHasAny = !!dstCode || !!dstNumber;
+
+    const dstIsAutoFilled =
+      source === "whatsapp" ? this.smsAutoFilledFrom === "whatsapp" : this.whatsappAutoFilledFrom === "sms";
+
+    // Mirror when the other channel is still empty, or when it was auto-filled from this source.
+    if ((!dstHasAny && srcHasAny) || dstIsAutoFilled) {
+      this.isSyncingPhoneFields = true;
+      this.form.get(dstCodeKey)?.setValue(srcCode, { emitEvent: false });
+      this.form.get(dstNumberKey)?.setValue(srcNumber, { emitEvent: false });
+      this.isSyncingPhoneFields = false;
+
+      if (source === "whatsapp") {
+        this.smsAutoFilledFrom = "whatsapp";
+      } else {
+        this.whatsappAutoFilledFrom = "sms";
+      }
+    }
+  }
+
+  private normalizePhoneField(value: unknown): string {
+    return String(value ?? "").trim();
   }
 
   private updateChannelValidators(): void {

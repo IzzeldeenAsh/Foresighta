@@ -14,14 +14,14 @@
 </i>
   <!-- Tabs slot -->
   <ng-container slot="tabs">
-    <li class="nav-item" *ngIf="!(isClient$ | async)">
+    <li class="nav-item">
       <a class="nav-link text-active-primary pb-4"
         [class.active]="activeTab === 'general-settings'"
         (click)="switchTab('general-settings')">
         {{ 'INSIGHTER.DASHBOARD.NAV.ACCOUNT_SETTINGS' | translate }}
       </a>
     </li>
-    <li class="nav-item"  *ngIf="(isInsighter$ | async) || (isCompany$ | async) || (isCompanyInsighter$ | async)">
+    <li class="nav-item" >
       <a class="nav-link text-active-primary pb-4"
         [class.active]="activeTab === 'notification-settings'"
         (click)="switchTab('notification-settings')">

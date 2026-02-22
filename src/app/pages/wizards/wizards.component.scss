@@ -1,0 +1,8 @@
+.wizards-container {
+  @media screen and (max-width: 768px) {
+    margin-top: 120px !important;
+  }
+  @media screen and (max-width: 464px) {
+    margin-top: 100px !important;
+  }
+}

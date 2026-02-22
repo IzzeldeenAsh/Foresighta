@@ -295,7 +295,7 @@ export class Step5Component extends BaseComponent implements OnInit {
       'Accept-Language': this.lang || 'en'
     });
 
-    const getCodeSub = this.http.post('https://api.insightabusiness.com/api/auth/company/code/send', {
+    const getCodeSub = this.http.post('https://api.foresighta.co/api/auth/company/code/send', {
       verified_email: email,
     }, { headers })
     .subscribe({

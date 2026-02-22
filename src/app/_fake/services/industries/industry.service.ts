@@ -18,8 +18,8 @@ export interface IsicCode {
   providedIn: 'root'
 })
 export class IndustryService {
-  private apiUrl = 'https://api.insightabusiness.com/api/common/setting/industry/tree-list'; 
-  private apiList = 'https://api.insightabusiness.com/api/common/setting/industry/list'
+  private apiUrl = 'https://api.foresighta.co/api/common/setting/industry/tree-list'; 
+  private apiList = 'https://api.foresighta.co/api/common/setting/industry/list'
   private isLoadingSubject = new BehaviorSubject<boolean>(false);
   public isLoading$: Observable<boolean> = this.isLoadingSubject.asObservable();
   currentLang: any = 'en';
@@ -95,7 +95,7 @@ export class IndustryService {
       });
   
       this.setLoading(true);
-      return this.http.get<any>('https://api.insightabusiness.com/api/common/setting/industry/tree/parent', { headers }).pipe(
+      return this.http.get<any>('https://api.foresighta.co/api/common/setting/industry/tree/parent', { headers }).pipe(
         map((res) => this.transformToTreeNodeParent(res)),
         catchError((error) => this.handleError(error)),
         finalize(() => this.setLoading(false))
@@ -127,7 +127,7 @@ export class IndustryService {
       'Accept-Language': lang
     });
     this.setLoading(true);
-    return this.http.post<IsicCode>('https://api.insightabusiness.com/api/admin/setting/industry', isicCode, { headers }).pipe(
+    return this.http.post<IsicCode>('https://api.foresighta.co/api/admin/setting/industry', isicCode, { headers }).pipe(
       catchError(this.handleError),
       finalize(() => this.setLoading(false))
     );
@@ -141,7 +141,7 @@ export class IndustryService {
       'Accept-Language': this.currentLang
     });
     this.setLoading(true);
-    return this.http.put<IsicCode>(`https://api.insightabusiness.com/api/admin/setting/industry/${id}`, isicCode, { headers }).pipe(
+    return this.http.put<IsicCode>(`https://api.foresighta.co/api/admin/setting/industry/${id}`, isicCode, { headers }).pipe(
       catchError(this.handleError),
       finalize(() => this.setLoading(false))
     );
@@ -155,7 +155,7 @@ export class IndustryService {
       'Accept-Language': this.currentLang
     });
     this.setLoading(true);
-    return this.http.delete<any>(`https://api.insightabusiness.com/api/admin/setting/industry/${id}`, { headers }).pipe(
+    return this.http.delete<any>(`https://api.foresighta.co/api/admin/setting/industry/${id}`, { headers }).pipe(
       catchError(this.handleError),
       finalize(() => this.setLoading(false))
     );

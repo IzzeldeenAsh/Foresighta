@@ -7,7 +7,7 @@ import { TranslationService } from 'src/app/modules/i18n/translation.service';
   providedIn: 'root'
 })
 export class DeactivateAccountService {
-  private readonly baseUrl = 'https://api.insightabusiness.com/api';
+  private readonly baseUrl = 'https://api.foresighta.co/api';
   private isLoadingSubject = new BehaviorSubject<boolean>(false);
   public isLoading$: Observable<boolean> = this.isLoadingSubject.asObservable();
   currentLang: string = "en";

@@ -53,7 +53,7 @@ export class authGuard  {
       map(user => {
         if(user.roles.includes('admin')){
           if (typeof window !== 'undefined') {
-            window.location.replace('https://insightabusiness.com/en/dashboard');
+            window.location.replace('http://localhost:3000/en/dashboard');
           }
           return false;
         }

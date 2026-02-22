@@ -42,7 +42,7 @@ export class IsicService {
       'Accept-Language': 'en'
     });
   
-    return this.http.get<any>( 'https://api.insightabusiness.com/api/common/setting/department/list', { headers }).pipe(
+    return this.http.get<any>( 'https://api.foresighta.co/api/common/setting/department/list', { headers }).pipe(
       map(res => res),  // Ensure that the response is always an array or fallback to an empty array
       catchError(this.handleError),
       finalize(() => this.setLoading(false))
