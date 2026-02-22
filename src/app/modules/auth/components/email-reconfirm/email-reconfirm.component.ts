@@ -162,7 +162,8 @@ export class EmailReconfirmComponent extends BaseComponent implements OnInit, On
     setTimeout(() => {
       if (userData.roles && (userData.roles.includes('admin') || userData.roles.includes('staff'))) {
         console.log('Redirecting admin/staff to dashboard');
-        this.router.navigate(['/admin-dashboard']);
+        const effectiveLang = this.lang || 'en';
+        window.location.href = `https://insightabusiness.com/${effectiveLang}/dashboard`;
       } else {
         console.log('Redirecting regular user to main app');
         this.redirectToMainApp();

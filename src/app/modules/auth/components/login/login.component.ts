@@ -207,8 +207,8 @@ export class LoginComponent extends BaseComponent implements OnInit, OnDestroy {
     const isAdmin = roles.includes("admin");
     const isStaff = roles.includes("staff");
 
-    if (isAdmin) {
-      // Admin users redirect to Next.js dashboard - set timezone first
+    if (isAdmin || isStaff) {
+      // Admin/Staff users redirect to Next.js dashboard - set timezone first
       this.setUserTimezone(token).subscribe({
         next: () => {
           this.redirectAdminToDashboard(token);
@@ -217,21 +217,6 @@ export class LoginComponent extends BaseComponent implements OnInit, OnDestroy {
           console.error('Failed to set timezone:', error);
           // Proceed with redirect even if timezone setting fails
           this.redirectAdminToDashboard(token);
-        }
-      });
-      return;
-    }
-
-    if (isStaff) {
-      // Staff users stay in the Angular app - set timezone first
-      this.setUserTimezone(token).subscribe({
-        next: () => {
-          this.router.navigate(["/admin-dashboard"]);
-        },
-        error: (error: any) => {
-          console.error('Failed to set timezone:', error);
-          // Proceed with navigation even if timezone setting fails
-          this.router.navigate(["/admin-dashboard"]);
         }
       });
       return;
@@ -291,9 +276,10 @@ export class LoginComponent extends BaseComponent implements OnInit, OnDestroy {
   private redirectAdminToDashboard(token: string): void {
     // Ensure Next.js can read the token (cookie-based handoff across ports on localhost)
     this.cookieService.setAuthCookie('token', token);
-    this.cookieService.setPreferredLanguage('en');
+    const effectiveLang = this.selectedLang || 'en';
+    this.cookieService.setPreferredLanguage(effectiveLang);
 
-    window.location.href = 'https://insightabusiness.com/en/dashboard';
+    window.location.href = `https://insightabusiness.com/${effectiveLang}/dashboard`;
   }
 
   private setReturnUrlCookie(url: string): void {
