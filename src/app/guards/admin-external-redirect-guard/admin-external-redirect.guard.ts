@@ -34,11 +34,14 @@ function checkAdminAndMaybeRedirect(): boolean | Observable<boolean> {
   if (!token || isTokenExpired(token)) return true;
 
   const cachedUser = profileService.getCurrentUser();
-  if (cachedUser?.roles?.includes('admin')) return redirectToAdminDashboard();
+  if (cachedUser?.roles?.includes('admin') || cachedUser?.roles?.includes('staff')) return redirectToAdminDashboard();
 
   return profileService.getProfile().pipe(
     first(),
-    map((user) => ((user?.roles || []) as string[]).includes('admin') ? redirectToAdminDashboard() : true),
+    map((user) => {
+      const roles = (user?.roles || []) as string[];
+      return (roles.includes('admin') || roles.includes('staff')) ? redirectToAdminDashboard() : true;
+    }),
     catchError(() => of(true))
   );
 }
