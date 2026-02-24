@@ -126,6 +126,26 @@
     </div>
   </ng-container>
 
+  <!-- Promo Card: show only if WhatsApp number is missing -->
+  <ng-container *ngIf="isWhatsAppNumberMissing(_user)">
+    <div class="separator my-2"></div>
+    <div class="px-5">
+      <a
+        [routerLink]="'/app/insighter-dashboard/account-settings/notification-settings'"
+        class="d-flex justify-content-center align-items-center"
+        (click)="closeDropdown.emit()"
+      >
+        <img
+          [src]="promoCardImageUrl"
+          [alt]="promoCardAlt"
+          class=" rounded-2"
+          style="height: auto; width: 250px;"
+          loading="lazy"
+        />
+      </a>
+    </div>
+  </ng-container>
+
   <!-- Sign Out Section -->
   <div class="separator my-2"></div>
 

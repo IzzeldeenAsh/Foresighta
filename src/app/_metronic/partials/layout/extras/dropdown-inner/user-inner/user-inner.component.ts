@@ -81,6 +81,11 @@ export class UserInnerComponent extends BaseComponent implements OnInit, AfterVi
   @HostBinding('attr.data-kt-menu') dataKtMenu = 'true';
   @Output() closeDropdown = new EventEmitter<void>();
 
+  private readonly PROMO_CARD_IMAGE_URL_AR =
+    'https://res.cloudinary.com/dsiku9ipv/image/upload/v1771682845/promo-ar-card_nwfawc.png';
+  private readonly PROMO_CARD_IMAGE_URL_EN =
+    'https://res.cloudinary.com/dsiku9ipv/image/upload/v1771682838/promo-en-card_cgilcv.png';
+
   language: LanguageFlag;
   user$: Observable<IKnoldgProfile>;
   unpublishedDraftCount$: Observable<number>;
@@ -97,6 +102,14 @@ export class UserInnerComponent extends BaseComponent implements OnInit, AfterVi
   private static readonly DRAFT_TOAST_FLAG_KEY = 'knoldg:draft_saved_toast';
   private static readonly NEXT_TOAST_QUERY_KEY = 'toast';
   private static readonly NEXT_TOAST_QUERY_VALUE = 'draft_saved';
+
+  get promoCardImageUrl(): string {
+    return this.lang === 'ar' ? this.PROMO_CARD_IMAGE_URL_AR : this.PROMO_CARD_IMAGE_URL_EN;
+  }
+
+  get promoCardAlt(): string {
+    return this.lang === 'ar' ? 'أضف رقم واتساب' : 'Add WhatsApp number';
+  }
 
   constructor(
     private auth: AuthService,
@@ -219,6 +232,11 @@ export class UserInnerComponent extends BaseComponent implements OnInit, AfterVi
 
   refreshComponentData(){
     this.initUserStreams();
+  }
+
+  isWhatsAppNumberMissing(user: Partial<IKnoldgProfile> | null | undefined): boolean {
+    const whatsappNumber = (user as any)?.whatsapp_number;
+    return String(whatsappNumber ?? '').trim().length === 0;
   }
 
   logout() {

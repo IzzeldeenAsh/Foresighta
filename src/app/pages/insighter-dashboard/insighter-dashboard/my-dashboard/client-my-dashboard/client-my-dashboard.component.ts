@@ -1,7 +1,9 @@
 import { Component, Injector, OnInit, OnDestroy } from '@angular/core';
+import { Router } from '@angular/router';
 import { BaseComponent } from 'src/app/modules/base.component';
 import { SentMeetingsService, SentMeeting, SentMeetingResponse } from 'src/app/_fake/services/meetings/sent-meetings.service';
 import { WalletService } from 'src/app/_fake/services/wallet/wallet.service';
+import { ProfileService } from 'src/app/_fake/services/get-profile/get-profile.service';
 import { Subject, takeUntil } from 'rxjs';
 import { TranslateService } from '@ngx-translate/core';
 
@@ -31,6 +33,10 @@ export class ClientMyDashboardComponent extends BaseComponent implements OnInit,
   ];
   walletBalance: number = 0;
   isLoadingBalance: boolean = true;
+  showNotificationPreferencesBanner = false;
+  readonly notificationBannerImageUrl =
+    "https://res.cloudinary.com/dsiku9ipv/image/upload/v1771139272/whatsappsms_l4scor.png";
+  readonly notificationPreferencesRoute = "/app/insighter-dashboard/account-settings/notification-settings";
   private destroy$ = new Subject<void>();
   private readonly knowledgeTranslations = {
     en: {
@@ -69,7 +75,9 @@ export class ClientMyDashboardComponent extends BaseComponent implements OnInit,
     injector: Injector,
     private sentMeetingsService: SentMeetingsService,
     private walletService: WalletService,
-    private translateService: TranslateService
+    private translateService: TranslateService,
+    private profileService: ProfileService,
+    private router: Router
   ) {
     super(injector)
   }
@@ -78,6 +86,21 @@ export class ClientMyDashboardComponent extends BaseComponent implements OnInit,
     this.registerKnowledgeTranslations();
     this.loadTodayMeetings();
     this.loadWalletBalance();
+    this.profileService.getProfile()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((profile) => {
+        this.computeNotificationBannerVisibility(profile as any);
+      });
+  }
+
+  goToNotificationPreferences(): void {
+    this.router.navigateByUrl(this.notificationPreferencesRoute);
+  }
+
+  private computeNotificationBannerVisibility(profile: any): void {
+    const whatsappNumber = String(profile?.whatsapp_number ?? "").trim();
+    const smsNumber = String(profile?.sms_number ?? "").trim();
+    this.showNotificationPreferencesBanner = !(whatsappNumber || smsNumber);
   }
 
   ngOnDestroy(): void {

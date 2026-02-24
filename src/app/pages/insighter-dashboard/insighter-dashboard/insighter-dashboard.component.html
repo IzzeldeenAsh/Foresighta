@@ -163,11 +163,20 @@
 
     <!-- Account Settings -->
     <div class="nav-item" [routerLink]="['account-settings/general-settings']" routerLinkActive="active"
-         *ngIf="!(isClient$ | async)" (click)="closeMobileSidebar()">
+         (click)="closeMobileSidebar()">
       <div class="item-icon">
         <i class="ki-outline ki-user-edit"></i>
       </div>
       <span>{{ 'INSIGHTER.DASHBOARD.NAV.ACCOUNT_SETTINGS' | translate }}</span>
+    </div>
+
+    <!-- Notification Settings -->
+    <div class="nav-item" [routerLink]="['account-settings/notification-settings']" routerLinkActive="active"
+         (click)="closeMobileSidebar()">
+      <div class="item-icon">
+        <i class="ki-outline ki-notification-bing"></i>
+      </div>
+      <span>{{ lang === 'ar' ? 'إعدادات الإشعارات' : 'Notification Settings' }}</span>
     </div>
 
     <!-- Payment Settings -->
@@ -638,13 +647,20 @@
                 </div>
                 <div class="p-card-body">
                   <ng-container *ngIf="(isClient$ | async) && !isNavCollapsed">
-                      <div class="nav-item" [routerLink]="['account-settings/general-settings']" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"
-               (click)="closeMobileSidebar()" *ngIf="(isClient$ | async)">
+                      <div class="nav-item" [routerLink]="['account-settings/general-settings']" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
             <div class="item-icon">
               <i class="ki-outline ki-user-edit"></i>
             </div>
             <div class="item-label">
               {{ 'INSIGHTER.DASHBOARD.NAV.ACCOUNT_SETTINGS' | translate }}
+            </div>
+          </div>
+                      <div class="nav-item" [routerLink]="['account-settings/notification-settings']" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
+            <div class="item-icon">
+              <i class="ki-outline ki-notification-bing"></i>
+            </div>
+            <div class="item-label">
+              {{ lang === 'ar' ? 'إعدادات الإشعارات' : 'Notification Settings' }}
             </div>
           </div>
                   </ng-container>

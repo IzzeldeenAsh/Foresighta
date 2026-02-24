@@ -19,8 +19,17 @@ import { Step5Component } from "../steps/step5/step5.component";
 @Component({
   selector: "app-vertical",
   templateUrl: "./vertical.component.html",
+  styleUrls: ["./vertical.component.scss"],
 })
 export class VerticalComponent extends BaseComponent implements OnInit {
+  private static readonly ADD_CHANNELS_PROMPT_DISMISS_KEY = "postSignupPrompt:addChannels:dismissed";
+  private static readonly PROMPT_IMAGE_URL_EN =
+    "https://res.cloudinary.com/dsiku9ipv/image/upload/v1771671938/418842237_70d13ee0-5e30-4521-8a99-057840ea5113_actgrf.png";
+  private static readonly PROMPT_IMAGE_URL_AR =
+    "https://res.cloudinary.com/dsiku9ipv/image/upload/v1771674004/whatsapp_arabic_vqqhuq.png";
+  private static readonly NOTIFICATION_SETTINGS_URL =
+    "/app/insighter-dashboard/account-settings/notification-settings";
+
   @ViewChild(Step1Component) step1Component: Step1Component;
   @ViewChild(Step2Component) step2Component: Step2Component;
   @ViewChild(Step3Component) step3Component: Step3Component;
@@ -29,6 +38,8 @@ export class VerticalComponent extends BaseComponent implements OnInit {
   formsCount$ = new BehaviorSubject<number>(3); // Default to 3 steps (for personal)
   onSuccessMessage: boolean = false;
   onPendingMessage: boolean = false;
+  showAddChannelsPrompt: boolean = false;
+  private addChannelsPromptWasOpened: boolean = false;
   user: IKnoldgProfile;
   userRoles: string[] = [];
   messages: Message[] = [];
@@ -56,6 +67,9 @@ export class VerticalComponent extends BaseComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.lang = this.translateService.getSelectedLanguage()
+      ? this.translateService.getSelectedLanguage()
+      : "en";
     this.translateService.onLanguageChange().subscribe((lang) => {
       this.lang = lang;
     });
@@ -388,11 +402,13 @@ export class VerticalComponent extends BaseComponent implements OnInit {
           .subscribe({
             next: (response) => {
               this.onSuccessMessage = true;
+              this.clearAddChannelsPromptDismissed();
               // Refresh profile to get updated roles
               const profileSub = this.getProfileService.refreshProfile().subscribe({
                 next: (profile) => {
                   // Update userRoles with the new roles 
                   this.userRoles = profile.roles || [];
+                  this.maybeOpenAddChannelsPrompt(profile);
                 }
               });
               this.unsubscribe.push(profileSub);
@@ -419,11 +435,13 @@ export class VerticalComponent extends BaseComponent implements OnInit {
                 this.unsubscribe.push(profileSub);
               }else{
                 this.onSuccessMessage=true;
+                this.clearAddChannelsPromptDismissed();
                 // Refresh profile to get updated roles
                 const profileSub = this.getProfileService.refreshProfile().subscribe({
                   next: (profile) => {
                     // Update userRoles with the new roles 
                     this.userRoles = profile.roles || [];
+                    this.maybeOpenAddChannelsPrompt(profile);
                   }
                 });
                 this.unsubscribe.push(profileSub);
@@ -437,6 +455,94 @@ export class VerticalComponent extends BaseComponent implements OnInit {
         this.unsubscribe.push(insigheterSub);
       }
     });
+  }
+
+  get addChannelsPromptImageUrl(): string {
+    return this.lang === "ar" ? VerticalComponent.PROMPT_IMAGE_URL_AR : VerticalComponent.PROMPT_IMAGE_URL_EN;
+  }
+
+  get addChannelsPromptCopy(): { close: string; later: string; add: string } {
+    if (this.lang === "ar") {
+      return { close: "إغلاق", later: "لاحقاً", add: "إضافة الآن" };
+    }
+    return { close: "Close", later: "Maybe later", add: "Add" };
+  }
+
+  onAddChannelsPromptShow(): void {
+    this.addChannelsPromptWasOpened = true;
+  }
+
+  onAddChannelsPromptHide(): void {
+    // Guard against any odd initialization/hide behavior: only treat as dismissed if we actually saw it open.
+    if (this.addChannelsPromptWasOpened) {
+      this.setAddChannelsPromptDismissed();
+    }
+    this.showAddChannelsPrompt = false;
+    this.addChannelsPromptWasOpened = false;
+  }
+
+  dismissAddChannelsPrompt(): void {
+    this.setAddChannelsPromptDismissed();
+    this.showAddChannelsPrompt = false;
+  }
+
+  onAddChannelsNow(): void {
+    this.setAddChannelsPromptDismissed();
+    this.showAddChannelsPrompt = false;
+    this.router.navigate([VerticalComponent.NOTIFICATION_SETTINGS_URL]);
+  }
+
+  private maybeOpenAddChannelsPrompt(profile: any): void {
+    if (!this.onSuccessMessage) return;
+    if (this.isAddChannelsPromptDismissed()) return;
+
+    const whatsappNumber = profile?.whatsapp_number;
+    const smsNumber = profile?.sms_number;
+
+    const hasWhatsApp =
+      whatsappNumber !== null &&
+      whatsappNumber !== undefined &&
+      String(whatsappNumber).trim().length > 0;
+
+    const hasSms =
+      smsNumber !== null &&
+      smsNumber !== undefined &&
+      String(smsNumber).trim().length > 0;
+
+    // Prompt if the user is missing either WhatsApp or SMS.
+    if (!hasWhatsApp || !hasSms) {
+      this.addChannelsPromptWasOpened = false;
+      setTimeout(() => {
+        // Only open if still on the success screen and not dismissed in the meantime.
+        if (!this.onSuccessMessage) return;
+        if (this.isAddChannelsPromptDismissed()) return;
+        this.showAddChannelsPrompt = true;
+      }, 0);
+    }
+  }
+
+  private isAddChannelsPromptDismissed(): boolean {
+    try {
+      return sessionStorage.getItem(VerticalComponent.ADD_CHANNELS_PROMPT_DISMISS_KEY) === "1";
+    } catch {
+      return false;
+    }
+  }
+
+  private setAddChannelsPromptDismissed(): void {
+    try {
+      sessionStorage.setItem(VerticalComponent.ADD_CHANNELS_PROMPT_DISMISS_KEY, "1");
+    } catch {
+      // ignore
+    }
+  }
+
+  private clearAddChannelsPromptDismissed(): void {
+    try {
+      sessionStorage.removeItem(VerticalComponent.ADD_CHANNELS_PROMPT_DISMISS_KEY);
+    } catch {
+      // ignore
+    }
   }
 
   private handleServerErrors(error: any) {

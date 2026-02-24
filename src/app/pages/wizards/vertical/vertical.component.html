@@ -289,6 +289,67 @@ margin-bottom: 10px;
   </div>
 </div>
 
+<p-dialog
+  *ngIf="onSuccessMessage"
+  [(visible)]="showAddChannelsPrompt"
+  appendTo="body"
+  [modal]="true"
+  [dismissableMask]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [closable]="false"
+  [showHeader]="false"
+  [style]="{ width: '520px', maxWidth: 'calc(100vw - 24px)' }"
+  [breakpoints]="{ '768px': 'calc(100vw - 24px)' }"
+  styleClass="knoldg-add-channels-dialog"
+  maskStyleClass="knoldg-add-channels-mask"
+  (onShow)="onAddChannelsPromptShow()"
+  (onHide)="onAddChannelsPromptHide()"
+>
+  <div
+    class="knoldg-add-channels"
+    [class.is-rtl]="lang === 'ar'"
+    [attr.dir]="lang === 'ar' ? 'rtl' : 'ltr'"
+  >
+    <img
+      class="knoldg-add-channels__img"
+      [src]="addChannelsPromptImageUrl"
+      alt="Join our WhatsApp & SMS services"
+      loading="eager"
+    />
+
+    <button
+      type="button"
+      class="knoldg-add-channels__close"
+      (click)="dismissAddChannelsPrompt()"
+      [attr.aria-label]="addChannelsPromptCopy.close"
+    >
+      <i class="ki-duotone ki-cross fs-2" aria-hidden="true">
+        <span class="path1"></span><span class="path2"></span>
+      </i>
+    </button>
+
+    <div class="knoldg-add-channels__actions">
+      <div class="d-flex gap-3">
+        <button
+          type="button"
+          class="btn knoldg-add-channels__btn knoldg-add-channels__btn-later"
+          (click)="dismissAddChannelsPrompt()"
+        >
+          {{ addChannelsPromptCopy.later }}
+        </button>
+        <button
+          type="button"
+          class="btn knoldg-add-channels__btn knoldg-add-channels__btn-add"
+          (click)="onAddChannelsNow()"
+        >
+          {{ addChannelsPromptCopy.add }}
+        </button>
+      </div>
+    </div>
+  </div>
+</p-dialog>
+
 <div class="w-400px w-xl-800px m-auto" *ngIf="onPendingMessage">
   <div class="card">
     <div class="card-body p-9">
