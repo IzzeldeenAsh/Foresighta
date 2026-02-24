@@ -1,6 +1,7 @@
-import { Component, Injector, OnInit } from "@angular/core";
+import { Component, HostListener, Injector, OnInit } from "@angular/core";
 import { FormBuilder, FormGroup, Validators } from "@angular/forms";
-import { BehaviorSubject, catchError, finalize, forkJoin, of, tap } from "rxjs";
+import { ConfirmationService } from "primeng/api";
+import { BehaviorSubject, Observable, Observer, catchError, finalize, forkJoin, map, of, switchMap, tap } from "rxjs";
 import { CountriesService } from "src/app/_fake/services/countries/countries.service";
 import { ProfileService } from "src/app/_fake/services/get-profile/get-profile.service";
 import { UpdateProfileService } from "src/app/_fake/services/profile/profile.service";
@@ -12,10 +13,13 @@ type ChannelStatus = "active" | "inactive";
   selector: "app-notification-settings",
   templateUrl: "./notification-settings.component.html",
   styleUrls: ["./notification-settings.component.scss"],
+  providers: [ConfirmationService],
 })
 export class NotificationSettingsComponent extends BaseComponent implements OnInit {
   form!: FormGroup;
   countries: any[] = [];
+
+  private initialFormSnapshot: string | null = null;
 
   private readonly loadingSubject = new BehaviorSubject<boolean>(true);
   readonly isLoading$ = this.loadingSubject.asObservable();
@@ -27,19 +31,23 @@ export class NotificationSettingsComponent extends BaseComponent implements OnIn
   private isSyncingPhoneFields = false;
   private smsAutoFilledFrom: "whatsapp" | null = null;
   private whatsappAutoFilledFrom: "sms" | null = null;
+  private pendingNavigationObserver: Observer<boolean> | null = null;
+  private suppressConfirmHide = false;
 
   constructor(
     injector: Injector,
     private readonly fb: FormBuilder,
     private readonly countriesService: CountriesService,
     private readonly profileService: ProfileService,
-    private readonly updateProfileService: UpdateProfileService
+    private readonly updateProfileService: UpdateProfileService,
+    private readonly confirmationService: ConfirmationService
   ) {
     super(injector);
   }
 
   ngOnInit(): void {
     this.initForm();
+    this.initialFormSnapshot = this.serializeNormalizedFormValue();
     this.loadData();
   }
 
@@ -48,11 +56,15 @@ export class NotificationSettingsComponent extends BaseComponent implements OnIn
   }
 
   toggleWhatsApp(enabled: boolean): void {
+    const current = !!this.form.get("whatsapp_enabled")?.value;
+    if (enabled === current) return;
     this.form.get("whatsapp_enabled")?.setValue(enabled);
     this.updateChannelValidators();
   }
 
   toggleSms(enabled: boolean): void {
+    const current = !!this.form.get("sms_enabled")?.value;
+    if (enabled === current) return;
     this.form.get("sms_enabled")?.setValue(enabled);
     this.updateChannelValidators();
   }
@@ -62,6 +74,9 @@ export class NotificationSettingsComponent extends BaseComponent implements OnIn
   }
 
   onWhatsAppCountryCodeChange(countryCode: string): void {
+    const current = this.normalizeCountryCode(this.form.get("whatsapp_country_code")?.value);
+    const next = this.normalizeCountryCode(countryCode);
+    if (current === next) return;
     this.markPhoneChannelAsUserEdited("whatsapp");
     this.form.get("whatsapp_country_code")?.setValue(countryCode);
     this.syncOtherChannelIfEmptyOrAutoFilled("whatsapp");
@@ -69,6 +84,9 @@ export class NotificationSettingsComponent extends BaseComponent implements OnIn
   }
 
   onWhatsAppNumberChange(phoneNumber: string): void {
+    const current = this.normalizePhoneNumber(this.form.get("whatsapp_number")?.value);
+    const next = this.normalizePhoneNumber(phoneNumber);
+    if (current === next) return;
     this.markPhoneChannelAsUserEdited("whatsapp");
     this.form.get("whatsapp_number")?.setValue(phoneNumber);
     this.syncOtherChannelIfEmptyOrAutoFilled("whatsapp");
@@ -80,6 +98,9 @@ export class NotificationSettingsComponent extends BaseComponent implements OnIn
   }
 
   onSmsCountryCodeChange(countryCode: string): void {
+    const current = this.normalizeCountryCode(this.form.get("sms_country_code")?.value);
+    const next = this.normalizeCountryCode(countryCode);
+    if (current === next) return;
     this.markPhoneChannelAsUserEdited("sms");
     this.form.get("sms_country_code")?.setValue(countryCode);
     this.syncOtherChannelIfEmptyOrAutoFilled("sms");
@@ -87,6 +108,9 @@ export class NotificationSettingsComponent extends BaseComponent implements OnIn
   }
 
   onSmsNumberChange(phoneNumber: string): void {
+    const current = this.normalizePhoneNumber(this.form.get("sms_number")?.value);
+    const next = this.normalizePhoneNumber(phoneNumber);
+    if (current === next) return;
     this.markPhoneChannelAsUserEdited("sms");
     this.form.get("sms_number")?.setValue(phoneNumber);
     this.syncOtherChannelIfEmptyOrAutoFilled("sms");
@@ -112,64 +136,7 @@ export class NotificationSettingsComponent extends BaseComponent implements OnIn
   }
 
   onSubmit(): void {
-    this.form.markAllAsTouched();
-    this.updateChannelValidators();
-
-    if (this.form.invalid) return;
-    if (this.savingSubject.value) return;
-
-    this.savingSubject.next(true);
-
-    const whatsappEnabled = !!this.form.get("whatsapp_enabled")?.value;
-    const smsEnabled = !!this.form.get("sms_enabled")?.value;
-
-    const whatsappStatus: ChannelStatus = whatsappEnabled ? "active" : "inactive";
-    const smsStatus: ChannelStatus = smsEnabled ? "active" : "inactive";
-
-    const payload: any = {
-      whatsapp_status: whatsappStatus,
-      whatsapp_country_code: whatsappEnabled ? (this.form.get("whatsapp_country_code")?.value || "") : "",
-      whatsapp_number: whatsappEnabled ? (this.form.get("whatsapp_number")?.value || "") : "",
-      sms_status: smsStatus,
-      sms_whatsapp: smsStatus, // backend key seen in API screenshot (kept for compatibility)
-      sms_country_code: smsEnabled ? (this.form.get("sms_country_code")?.value || "") : "",
-      sms_number: smsEnabled ? (this.form.get("sms_number")?.value || "") : "",
-    };
-
-    const sub = this.updateProfileService
-      .updateNotificationChannel(payload)
-      .pipe(
-        tap(() => {
-          const msg =
-            this.lang === "ar"
-              ? "تم تحديث إعدادات الإشعارات"
-              : "Notification settings updated";
-          this.showSuccess("", msg);
-        }),
-        finalize(() => this.savingSubject.next(false))
-      )
-      .subscribe({
-        next: () => {
-          // Must refresh profile after successful post
-          const refreshSub = this.profileService.refreshProfile().subscribe({
-            next: (profile) => {
-              this.applyProfile(profile);
-            },
-          });
-          this.unsubscribe.push(refreshSub);
-        },
-        error: (error) => {
-          const err = error?.error ?? error;
-          const message =
-            typeof err?.message === "string" && err.message
-              ? err.message
-              : this.lang === "ar"
-                ? "حدث خطأ أثناء الحفظ."
-                : "Failed to save.";
-          this.showError("", message);
-        },
-      });
-
+    const sub = this.saveChanges().subscribe();
     this.unsubscribe.push(sub);
   }
 
@@ -182,6 +149,61 @@ export class NotificationSettingsComponent extends BaseComponent implements OnIn
       sms_country_code: [""],
       sms_number: [""],
     });
+  }
+
+  canDeactivate(): boolean | Observable<boolean> {
+    if (this.hasUnsavedChanges() && !this.savingSubject.value) {
+      return new Observable<boolean>((observer) => {
+        this.pendingNavigationObserver = observer;
+        this.confirmationService.confirm({
+          header: this.lang === "ar" ? "تغييرات غير محفوظة" : "Unsaved Changes",
+          message:
+            this.lang === "ar"
+              ? "لديك تغييرات غير محفوظة. هل تريد حفظ التغييرات أم المتابعة بدون حفظ؟"
+              : "You have unsaved changes. Do you want to save the changes or continue without saving?",
+          icon: "pi pi-exclamation-triangle",
+          acceptLabel: this.lang === "ar" ? "حفظ التغييرات" : "Save Changes",
+          rejectLabel: this.lang === "ar" ? "المتابعة بدون حفظ" : "Continue Redirecting",
+          accept: () => {
+            this.suppressConfirmHide = true;
+            this.saveChanges().subscribe((ok) => {
+              observer.next(ok);
+              observer.complete();
+              this.pendingNavigationObserver = null;
+            });
+          },
+          reject: () => {
+            this.suppressConfirmHide = true;
+            observer.next(true);
+            observer.complete();
+            this.pendingNavigationObserver = null;
+          },
+        });
+      });
+    }
+
+    return true;
+  }
+
+  onConfirmDialogHide(): void {
+    if (this.suppressConfirmHide) {
+      this.suppressConfirmHide = false;
+      return;
+    }
+
+    if (this.pendingNavigationObserver) {
+      this.pendingNavigationObserver.next(false);
+      this.pendingNavigationObserver.complete();
+      this.pendingNavigationObserver = null;
+    }
+  }
+
+  @HostListener("window:beforeunload", ["$event"])
+  onBeforeUnload(event: BeforeUnloadEvent): void {
+    if (this.hasUnsavedChanges() && !this.savingSubject.value) {
+      event.preventDefault();
+      event.returnValue = "";
+    }
   }
 
   private loadData(): void {
@@ -231,6 +253,68 @@ export class NotificationSettingsComponent extends BaseComponent implements OnIn
     this.unsubscribe.push(sub);
   }
 
+  private saveChanges(): Observable<boolean> {
+    if (this.savingSubject.value) return of(false);
+
+    this.form.markAllAsTouched();
+    this.updateChannelValidators();
+    if (this.form.invalid) return of(false);
+
+    this.savingSubject.next(true);
+
+    const whatsappEnabled = !!this.form.get("whatsapp_enabled")?.value;
+    const smsEnabled = !!this.form.get("sms_enabled")?.value;
+
+    const whatsappStatus: ChannelStatus = whatsappEnabled ? "active" : "inactive";
+    const smsStatus: ChannelStatus = smsEnabled ? "active" : "inactive";
+
+    const payload: any = {
+      whatsapp_status: whatsappStatus,
+      whatsapp_country_code: whatsappEnabled ? (this.form.get("whatsapp_country_code")?.value || "") : "",
+      whatsapp_number: whatsappEnabled ? (this.form.get("whatsapp_number")?.value || "") : "",
+      sms_status: smsStatus,
+      sms_whatsapp: smsStatus, // backend key seen in API screenshot (kept for compatibility)
+      sms_country_code: smsEnabled ? (this.form.get("sms_country_code")?.value || "") : "",
+      sms_number: smsEnabled ? (this.form.get("sms_number")?.value || "") : "",
+    };
+
+    return this.updateProfileService.updateNotificationChannel(payload).pipe(
+      tap(() => {
+        const msg =
+          this.lang === "ar"
+            ? "تم تحديث إعدادات الإشعارات"
+            : "Notification settings updated";
+        this.showSuccess("", msg);
+      }),
+      switchMap(() =>
+        this.profileService.refreshProfile().pipe(
+          tap((profile) => {
+            this.applyProfile(profile);
+          }),
+          map(() => true),
+          catchError(() => {
+            // Save succeeded; profile refresh failed. Still clear the dirty state.
+            this.form.markAsPristine();
+            this.initialFormSnapshot = this.serializeNormalizedFormValue();
+            return of(true);
+          })
+        )
+      ),
+      catchError((error) => {
+        const err = error?.error ?? error;
+        const message =
+          typeof err?.message === "string" && err.message
+            ? err.message
+            : this.lang === "ar"
+              ? "حدث خطأ أثناء الحفظ."
+              : "Failed to save.";
+        this.showError("", message);
+        return of(false);
+      }),
+      finalize(() => this.savingSubject.next(false))
+    );
+  }
+
   private applyProfile(profile: any): void {
     this.profileAny = profile;
     const whatsappStatus = String(profile?.whatsapp_status ?? "inactive");
@@ -239,14 +323,17 @@ export class NotificationSettingsComponent extends BaseComponent implements OnIn
     const whatsappEnabled = whatsappStatus === "active";
     const smsEnabled = smsStatus === "active";
 
-    this.form.patchValue({
-      whatsapp_enabled: whatsappEnabled,
-      whatsapp_country_code: profile?.whatsapp_country_code || "",
-      whatsapp_number: profile?.whatsapp_number || "",
-      sms_enabled: smsEnabled,
-      sms_country_code: profile?.sms_country_code || "",
-      sms_number: profile?.sms_number || "",
-    });
+    this.form.patchValue(
+      {
+        whatsapp_enabled: whatsappEnabled,
+        whatsapp_country_code: profile?.whatsapp_country_code || "",
+        whatsapp_number: profile?.whatsapp_number || "",
+        sms_enabled: smsEnabled,
+        sms_country_code: profile?.sms_country_code || "",
+        sms_number: profile?.sms_number || "",
+      },
+      { emitEvent: false }
+    );
 
     // Loaded values should not be treated as "auto-filled" mirrors.
     this.smsAutoFilledFrom = null;
@@ -254,6 +341,7 @@ export class NotificationSettingsComponent extends BaseComponent implements OnIn
 
     this.updateChannelValidators();
     this.form.markAsPristine();
+    this.initialFormSnapshot = this.serializeNormalizedFormValue();
   }
 
   private markPhoneChannelAsUserEdited(channel: "whatsapp" | "sms"): void {
@@ -263,6 +351,35 @@ export class NotificationSettingsComponent extends BaseComponent implements OnIn
     } else {
       this.smsAutoFilledFrom = null;
     }
+  }
+
+  private hasUnsavedChanges(): boolean {
+    if (!this.form) return false;
+    if (!this.initialFormSnapshot) return false;
+    return this.serializeNormalizedFormValue() !== this.initialFormSnapshot;
+  }
+
+  private serializeNormalizedFormValue(): string {
+    const raw = this.form.getRawValue() as any;
+    const whatsappEnabled = !!raw?.whatsapp_enabled;
+    const smsEnabled = !!raw?.sms_enabled;
+    const normalized = {
+      whatsapp_enabled: whatsappEnabled,
+      whatsapp_country_code: whatsappEnabled ? this.normalizeCountryCode(raw?.whatsapp_country_code) : "",
+      whatsapp_number: whatsappEnabled ? this.normalizePhoneNumber(raw?.whatsapp_number) : "",
+      sms_enabled: smsEnabled,
+      sms_country_code: smsEnabled ? this.normalizeCountryCode(raw?.sms_country_code) : "",
+      sms_number: smsEnabled ? this.normalizePhoneNumber(raw?.sms_number) : "",
+    };
+    return JSON.stringify(normalized);
+  }
+
+  private normalizeCountryCode(value: unknown): string {
+    return this.normalizePhoneField(value).replace(/^\+/, "");
+  }
+
+  private normalizePhoneNumber(value: unknown): string {
+    return this.normalizePhoneField(value).replace(/\D/g, "");
   }
 
   private syncOtherChannelIfEmptyOrAutoFilled(source: "whatsapp" | "sms"): void {

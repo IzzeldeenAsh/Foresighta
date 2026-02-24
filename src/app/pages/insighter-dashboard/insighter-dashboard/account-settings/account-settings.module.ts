@@ -68,7 +68,8 @@ const routes: Routes = [
       },
       {
         path: 'notification-settings',
-        component: NotificationSettingsComponent
+        component: NotificationSettingsComponent,
+        canDeactivate: [PendingChangesGuard]
       }
     ]
   }
