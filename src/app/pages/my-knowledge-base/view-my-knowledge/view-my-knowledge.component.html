@@ -60,7 +60,7 @@
             class="breadcrumb-item text-gray-800 lh-1 d-flex align-items-center gap-2"
           >
           <!-- Only show delete button if not in review -->
-          <button class="btn btn-xs btn-danger d-flex align-items-center" (click)="confirmDelete()" *ngIf="knowledge.status !== 'in_review'">
+          <button class="btn btn-xs btn-danger d-flex align-items-center" (click)="confirmDelete()" *ngIf="canDeleteKnowledge()">
             <i class="ki-duotone ki-trash fs-6 mx-1">
               <span class="path1"></span>
               <span class="path2"></span>
@@ -73,7 +73,7 @@
             <!-- Only show edit button if not in review -->
             <button class="btn btn-xs btn-success d-flex align-items-center" 
             (click)="navigateToIncompleteStep()"
-            *ngIf="knowledge.status !== 'in_review' && 
+            *ngIf="!isPendingManagerReview() && 
               !(
               (knowledge.status === 'scheduled') && 
               knowledge.publish_as !== 'package' && 

@@ -33,7 +33,7 @@ export interface Type {
   }
   
   // models/data-item.model.ts
-  export interface UserRequest {
+export interface UserRequest {
     id: number;
     type: Type;
     requestable_type: string;
@@ -48,8 +48,23 @@ export interface Type {
     final_status_label:string;
     status_label:string;
     identity?:string;
+    identity_object?: any;
   }
   
+export interface RequestsMeta {
+  current_page: number;
+  last_page: number;
+  per_page: number;
+  total: number;
+  from?: number;
+  to?: number;
+}
+
+export interface RequestsPageResponse {
+  data: UserRequest[];
+  meta: RequestsMeta;
+}
+
 
 
 @Injectable({
@@ -76,6 +91,102 @@ export class UserRequestsService {
     return throwError(() => error);
   }
 
+  private normalizeRequestsResponse(response: any): UserRequest[] {
+    const data = response?.data ?? response;
+    if (Array.isArray(data)) return data as UserRequest[];
+    if (data && typeof data === 'object') return Object.values(data) as UserRequest[];
+    return [];
+  }
+
+  private normalizeRequestsMeta(response: any, page: number, perPage: number, dataLength: number): RequestsMeta {
+    const meta = response?.meta;
+    if (meta && typeof meta === 'object') {
+      return {
+        current_page: Number(meta.current_page) || page,
+        last_page: Number(meta.last_page) || page,
+        per_page: Number(meta.per_page) || perPage,
+        total: Number(meta.total) || dataLength,
+        from: meta.from != null ? Number(meta.from) : undefined,
+        to: meta.to != null ? Number(meta.to) : undefined,
+      };
+    }
+
+    return {
+      current_page: page,
+      last_page: page,
+      per_page: perPage,
+      total: dataLength,
+      from: dataLength ? 1 : 0,
+      to: dataLength,
+    };
+  }
+
+  /**
+   * Fetch user requests by page (backend pagination).
+   */
+  getAllUserRequestsPage(
+    lang: string,
+    page: number,
+    perPage: number,
+    filters?: { type?: string; final_status?: string }
+  ): Observable<RequestsPageResponse> {
+    const headers = new HttpHeaders({
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+      'Accept-Language': lang
+    });
+
+    const params: Record<string, string> = {
+      page: String(page),
+      per_page: String(perPage),
+    };
+    if (filters?.type) params.type = filters.type;
+    if (filters?.final_status) params.final_status = filters.final_status;
+
+    this.setLoading(true);
+    return this.http.get<any>(this.apiUrl, { headers, params }).pipe(
+      map((response) => {
+        const data = this.normalizeRequestsResponse(response);
+        return { data, meta: this.normalizeRequestsMeta(response, page, perPage, data.length) };
+      }),
+      catchError(error => this.handleError(error)),
+      finalize(() => this.setLoading(false))
+    );
+  }
+
+  /**
+   * Fetch insighter requests by page (backend pagination).
+   */
+  getInsighterRequestsPage(
+    lang: string,
+    page: number,
+    perPage: number,
+    filters?: { type?: string; final_status?: string }
+  ): Observable<RequestsPageResponse> {
+    const headers = new HttpHeaders({
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+      'Accept-Language': lang
+    });
+
+    const params: Record<string, string> = {
+      page: String(page),
+      per_page: String(perPage),
+    };
+    if (filters?.type) params.type = filters.type;
+    if (filters?.final_status) params.final_status = filters.final_status;
+
+    this.setLoading(true);
+    return this.http.get<any>(this.insighterRequestsUrl, { headers, params }).pipe(
+      map((response) => {
+        const data = this.normalizeRequestsResponse(response);
+        return { data, meta: this.normalizeRequestsMeta(response, page, perPage, data.length) };
+      }),
+      catchError(error => this.handleError(error)),
+      finalize(() => this.setLoading(false))
+    );
+  }
+
   /**
    * Fetch all user requests.
    * @returns Observable of UserRequest array
@@ -89,7 +200,7 @@ export class UserRequestsService {
 
     this.setLoading(true);
     return this.http.get<any>(this.apiUrl, { headers }).pipe(
-      map(response => response.data),
+      map((response) => this.normalizeRequestsResponse(response)),
       catchError(error => this.handleError(error)),
       finalize(() => this.setLoading(false))
     );
@@ -108,7 +219,7 @@ export class UserRequestsService {
 
     this.setLoading(true);
     return this.http.get<any>(this.insighterRequestsUrl, { headers }).pipe(
-      map(response => response.data),
+      map((response) => this.normalizeRequestsResponse(response)),
       catchError(error => this.handleError(error)),
       finalize(() => this.setLoading(false))
     );

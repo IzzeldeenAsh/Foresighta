@@ -234,6 +234,24 @@ export class ViewMyKnowledgeComponent extends BaseComponent implements OnInit, C
            this.knowledge.account_manager_process.request_status === 'pending';
   }
 
+  isPendingManagerReview(): boolean {
+    return (this.knowledge?.status === 'in_review' && !this.hasReviewRequest()) || this.isPendingResendReview();
+  }
+
+  canDeleteKnowledge(): boolean {
+    if (!this.knowledge) return false;
+    if (this.isPendingManagerReview()) return false;
+
+    const requestStatus = this.knowledge.account_manager_process?.request_status;
+    if (requestStatus === 'declined') return false;
+
+    if (this.isCompanyInsighter()) {
+      return requestStatus === 'rejected';
+    }
+
+    return true;
+  }
+
   isRejectedRequest(): boolean {
     return this.knowledge?.account_manager_process?.request_status === 'rejected';
   }

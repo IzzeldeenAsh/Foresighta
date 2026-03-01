@@ -6,6 +6,7 @@ import { TranslationModule } from 'src/app/modules/i18n';
 import { FormsModule } from '@angular/forms';
 import {  DialogModule } from 'primeng/dialog';
 import { ProgressBarModule } from 'primeng/progressbar';
+import { PaginatorModule } from 'primeng/paginator';
 import { InsighterDashboardSharedModule } from '../shared/shared.module';
 
 const routes: Routes = [
@@ -26,6 +27,7 @@ const routes: Routes = [
     DialogModule,
     FormsModule,
     ProgressBarModule,
+    PaginatorModule,
     InsighterDashboardSharedModule,
   ]
 })

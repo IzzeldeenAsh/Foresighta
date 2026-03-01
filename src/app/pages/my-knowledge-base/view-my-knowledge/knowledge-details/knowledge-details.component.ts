@@ -171,6 +171,25 @@ export class KnowledgeDetailsComponent extends BaseComponent implements OnInit {
     return !!fileName && fileName.length > 32;
   }
 
+  hasReviewRequest(): boolean {
+    return (
+      this.knowledge?.account_manager_process?.need_to_review === true &&
+      this.knowledge?.account_manager_process?.action === 'review'
+    );
+  }
+
+  isPendingResendReview(): boolean {
+    return (
+      this.knowledge?.account_manager_process?.need_to_review === true &&
+      this.knowledge?.account_manager_process?.action === 'resend_review' &&
+      this.knowledge?.account_manager_process?.request_status === 'pending'
+    );
+  }
+
+  isPendingManagerReview(): boolean {
+    return (this.knowledge?.status === 'in_review' && !this.hasReviewRequest()) || this.isPendingResendReview();
+  }
+
   constructor(
     injector: Injector,
     private route: ActivatedRoute,

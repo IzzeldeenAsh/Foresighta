@@ -110,6 +110,10 @@ export class GeneralComponent extends BaseComponent implements OnInit, OnDestroy
     super(injector);
   }
 
+  canShowDeleteButton(knowledge: Knowledge): boolean {
+    return knowledge?.account_manager_process?.request_status !== 'declined';
+  }
+
   @HostListener('window:resize', ['$event'])
   onResize(event: any) {
     this.checkScreenSize();

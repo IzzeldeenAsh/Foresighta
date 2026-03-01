@@ -17,6 +17,12 @@
   .doc-name {
     min-width: 0;
     max-width: 100%;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: unset;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    line-break: anywhere;
   }
 
   .doc-actions {

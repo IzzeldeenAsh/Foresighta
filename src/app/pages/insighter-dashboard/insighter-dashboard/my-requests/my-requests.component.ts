@@ -4,13 +4,14 @@ import { BehaviorSubject, first, Observable } from 'rxjs';
 import { IKnoldgProfile } from 'src/app/_fake/models/profile.interface';
 import { ProfileService } from 'src/app/_fake/services/get-profile/get-profile.service';
 import { UserRequestsService } from 'src/app/_fake/services/user-requests/user-requests.service';
-import { UserRequest } from 'src/app/_fake/services/user-requests/user-requests.service';
+import { RequestsMeta, UserRequest } from 'src/app/_fake/services/user-requests/user-requests.service';
 import { BaseComponent } from 'src/app/modules/base.component';
 
 // Extend the UserRequest interface to include knowledge_id
 interface ExtendedUserRequest extends UserRequest {
   knowledge_id?: number;
   parent_id?: number;
+  identity_object?: any;
   insighter?: {
     uuid: string;
     name: string;
@@ -50,6 +51,14 @@ export class MyRequestsComponent extends BaseComponent implements OnInit {
   isApproving: boolean = false;
   isDeclining: boolean = false;
   staffNotes: string = '';
+
+  // Pagination (backend)
+  userFirst = 0;
+  userRows = 10;
+  userMeta: RequestsMeta = { current_page: 1, last_page: 1, per_page: 10, total: 0 };
+  insighterFirst = 0;
+  insighterRows = 10;
+  insighterMeta: RequestsMeta = { current_page: 1, last_page: 1, per_page: 10, total: 0 };
   
   constructor(
     injector: Injector,
@@ -91,37 +100,11 @@ export class MyRequestsComponent extends BaseComponent implements OnInit {
   }
 
   loadData() {
-    this.userRequestsService.getAllUserRequests(this.lang).subscribe({
-      next: (requests) => {
-        this.userRequests = requests;
-        this.filterRequests();
-        this.userRequestsLoaded = true;
-        this.checkLoadingComplete();
-      },
-      error: (error) => {
-        console.error('Error loading user requests:', error);
-        this.userRequestsLoaded = true;
-        this.checkLoadingComplete();
-      }
-    });
+    this.loadUserRequestsPage(1, this.userRows);
   }
 
   loadInsighterRequests() {
-    console.log('Loading insighter requests...');
-    this.userRequestsService.getInsighterRequests(this.lang).subscribe({
-      next: (requests) => {
-        console.log('Insighter requests loaded:', requests);
-        this.insighterRequests = requests;
-        this.filterInsighterRequests();
-        this.insighterRequestsLoaded = true;
-        this.checkLoadingComplete();
-      },
-      error: (error) => {
-        console.error('Error loading insighter requests:', error);
-        this.insighterRequestsLoaded = true;
-        this.checkLoadingComplete();
-      }
-    });
+    this.loadInsighterRequestsPage(1, this.insighterRows);
   }
   
   /**
@@ -134,24 +117,11 @@ export class MyRequestsComponent extends BaseComponent implements OnInit {
   }
 
   filterRequests() {
-    this.filteredUserRequests = this.userRequests.filter((request) => {
-      const matchesType = this.selectedType ? request.type.key === this.selectedType : true;
-      const matchesStatus = this.selectedStatus ? request.final_status === this.selectedStatus : true;
-      return matchesType && matchesStatus;
-    }).sort((a, b) => this.getRequestSortValue(b) - this.getRequestSortValue(a));
+    this.loadUserRequestsPage(1, this.userRows);
   }
 
   filterInsighterRequests() {
-    console.log('Filtering insighter requests. Total count:', this.insighterRequests.length);
-    console.log('Current filters - Type:', this.selectedInsighterType, 'Status:', this.selectedInsighterStatus);
-    
-    this.filteredInsighterRequests = this.insighterRequests.filter((request) => {
-      const matchesType = this.selectedInsighterType ? request.type.key === this.selectedInsighterType : true;
-      const matchesStatus = this.selectedInsighterStatus ? request.final_status === this.selectedInsighterStatus : true;
-      return matchesType && matchesStatus;
-    }).sort((a, b) => this.getRequestSortValue(b) - this.getRequestSortValue(a));
-    
-    console.log('Filtered insighter requests count:', this.filteredInsighterRequests.length);
+    this.loadInsighterRequestsPage(1, this.insighterRows);
   }
   
   // Check if any filters are active (either user or insighter)
@@ -183,8 +153,87 @@ export class MyRequestsComponent extends BaseComponent implements OnInit {
     this.filterInsighterRequests();
   }
 
+  get userCurrentPage(): number {
+    return this.userMeta.current_page || 1;
+  }
+
+  get userTotalPages(): number {
+    return this.userMeta.last_page || Math.max(1, Math.ceil((this.userMeta.total || 0) / this.userRows));
+  }
+
+  get insighterCurrentPage(): number {
+    return this.insighterMeta.current_page || 1;
+  }
+
+  get insighterTotalPages(): number {
+    return this.insighterMeta.last_page || Math.max(1, Math.ceil((this.insighterMeta.total || 0) / this.insighterRows));
+  }
+
+  onUserPageChange(event: any): void {
+    const rows = event.rows ?? this.userRows;
+    const page = typeof event.page === 'number' ? event.page + 1 : Math.floor((event.first ?? 0) / rows) + 1;
+    this.loadUserRequestsPage(page, rows);
+  }
+
+  onInsighterPageChange(event: any): void {
+    const rows = event.rows ?? this.insighterRows;
+    const page = typeof event.page === 'number' ? event.page + 1 : Math.floor((event.first ?? 0) / rows) + 1;
+    this.loadInsighterRequestsPage(page, rows);
+  }
+
+  private loadUserRequestsPage(page: number, perPage: number): void {
+    this.loadingSubject.next(true);
+    this.userRequestsService
+      .getAllUserRequestsPage(this.lang, page, perPage, {
+        type: this.selectedType || undefined,
+        final_status: this.selectedStatus || undefined,
+      })
+      .subscribe({
+        next: (response) => {
+          this.userMeta = response.meta;
+          this.userRows = this.userMeta.per_page || perPage;
+          this.userFirst = (this.userMeta.current_page - 1) * this.userRows;
+          this.userRequests = response.data as ExtendedUserRequest[];
+          this.filteredUserRequests = this.userRequests;
+          this.userRequestsLoaded = true;
+          this.checkLoadingComplete();
+        },
+        error: (error) => {
+          console.error('Error loading user requests:', error);
+          this.userRequestsLoaded = true;
+          this.checkLoadingComplete();
+        }
+      });
+  }
+
+  private loadInsighterRequestsPage(page: number, perPage: number): void {
+    this.loadingSubject.next(true);
+    this.userRequestsService
+      .getInsighterRequestsPage(this.lang, page, perPage, {
+        type: this.selectedInsighterType || undefined,
+        final_status: this.selectedInsighterStatus || undefined,
+      })
+      .subscribe({
+        next: (response) => {
+          this.insighterMeta = response.meta;
+          this.insighterRows = this.insighterMeta.per_page || perPage;
+          this.insighterFirst = (this.insighterMeta.current_page - 1) * this.insighterRows;
+          this.insighterRequests = response.data as ExtendedUserRequest[];
+          this.filteredInsighterRequests = this.insighterRequests;
+          this.insighterRequestsLoaded = true;
+          this.checkLoadingComplete();
+        },
+        error: (error) => {
+          console.error('Error loading insighter requests:', error);
+          this.insighterRequestsLoaded = true;
+          this.checkLoadingComplete();
+        }
+      });
+  }
+
   openRequestDialog(request: ExtendedUserRequest) {
     const latestRequest = this.getLatestChild(request);
+    latestRequest.identity_object = latestRequest.identity_object || request.identity_object;
     this.selectedRequest = latestRequest;
     this.isInsighterRequest = false;
     
@@ -200,6 +249,7 @@ export class MyRequestsComponent extends BaseComponent implements OnInit {
 
   openInsighterRequestDialog(request: ExtendedUserRequest) {
     const latestRequest = this.getLatestChild(request);
+    latestRequest.identity_object = latestRequest.identity_object || request.identity_object;
 
     if (latestRequest.final_status === 'rejected') {
       this.showError(
@@ -347,6 +397,18 @@ export class MyRequestsComponent extends BaseComponent implements OnInit {
     }
 
     return latest;
+  }
+
+  getKnowledgeTitleFromRequest(request: ExtendedUserRequest): string | null {
+    const latest = this.getLatestChild(request);
+    const identityObject = latest.identity_object || request.identity_object;
+    return typeof identityObject?.title === 'string' && identityObject.title.trim() ? identityObject.title : null;
+  }
+
+  getKnowledgeIdentityFromRequest(request: ExtendedUserRequest): string | null {
+    const latest = this.getLatestChild(request);
+    const identity = latest.identity ?? request.identity;
+    return identity ? String(identity) : null;
   }
 
   private getRequestSortValue(request: ExtendedUserRequest): number {
