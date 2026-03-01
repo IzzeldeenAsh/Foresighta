@@ -11,6 +11,7 @@ import { trigger, transition, style, animate } from '@angular/animations';
 import { DialogModule } from 'primeng/dialog';
 import { CommonModule } from '@angular/common';
 import { TranslateModule } from '@ngx-translate/core';
+import { ProfileService } from 'src/app/_fake/services/get-profile/get-profile.service';
 
 interface ChapterItem {
   title: string;
@@ -53,6 +54,15 @@ export class KnowledgeDetailsComponent extends BaseComponent implements OnInit {
   isSaving: boolean = false;
   headerTitle = 'Document Details';
   isUploadAreaHovered = false;
+  private isCompanyInsighterRole = (() => {
+    try {
+      if (typeof window === 'undefined') return false;
+      const user = JSON.parse(localStorage.getItem('user') || 'null');
+      return Array.isArray(user?.roles) && user.roles.includes('company-insighter');
+    } catch {
+      return false;
+    }
+  })();
 
   // Add animation states
   hoveredDocumentId: number | null = null;
@@ -171,6 +181,14 @@ export class KnowledgeDetailsComponent extends BaseComponent implements OnInit {
     return !!fileName && fileName.length > 32;
   }
 
+  isCompanyInsighter(): boolean {
+    return this.isCompanyInsighterRole;
+  }
+
+  canModifyDocuments(): boolean {
+    return !this.isCompanyInsighter() || !this.isPendingManagerReview();
+  }
+
   hasReviewRequest(): boolean {
     return (
       this.knowledge?.account_manager_process?.need_to_review === true &&
@@ -196,7 +214,8 @@ export class KnowledgeDetailsComponent extends BaseComponent implements OnInit {
     private knowledgeService: KnowledgeService,
     private addInsightStepsService: AddInsightStepsService,
     private knowledgeUpdateService: KnowledgeUpdateService,
-    private fb: FormBuilder
+    private fb: FormBuilder,
+    private profileService: ProfileService
   ) {
     super(injector);
     this.initDocForm();
@@ -271,6 +290,16 @@ export class KnowledgeDetailsComponent extends BaseComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    const profileSubscription = this.profileService.getProfile().subscribe({
+      next: (profile) => {
+        this.isCompanyInsighterRole = Array.isArray(profile?.roles) && profile.roles.includes('company-insighter');
+      },
+      error: () => {
+        this.isCompanyInsighterRole = false;
+      }
+    });
+    this.unsubscribe.push(profileSubscription);
+
     // Get the ID from the parent route
     this.route.parent?.params.subscribe(params => {
       this.knowledgeId = params['id'];
@@ -367,6 +396,7 @@ export class KnowledgeDetailsComponent extends BaseComponent implements OnInit {
 
   editDocument(doc: DocumentInfo, event: Event): void {
     event.stopPropagation();
+    if (!this.canModifyDocuments()) return;
     this.editingDocumentForModal = doc;
     this.showDocumentModal = true;
   }
@@ -527,6 +557,7 @@ export class KnowledgeDetailsComponent extends BaseComponent implements OnInit {
 
   deleteDocument(doc: DocumentInfo, event: Event): void {
     event.stopPropagation();
+    if (!this.canModifyDocuments()) return;
     
     Swal.fire({
       title: this.lang === 'ar' ? 'هل أنت متأكد؟' : 'Are you sure?',

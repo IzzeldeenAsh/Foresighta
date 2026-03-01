@@ -90,6 +90,7 @@
                   placement="top"
                   aria-label="Edit document"
                   style="--icon-color: #FFC107; --icon-hover-color: #fff"
+                  *ngIf="canModifyDocuments()"
                 >
                   <i 
                     class="pi pi-pencil fs-6 text-warning text-active-white"
@@ -109,6 +110,7 @@
                   placement="top"
                   aria-label="Delete document"
                   style="--icon-color: #F1416C; --icon-hover-color: #fff"
+                  *ngIf="canModifyDocuments()"
                 >
                   <i 
                     class="pi pi-trash fs-6 text-danger text-active-white"
