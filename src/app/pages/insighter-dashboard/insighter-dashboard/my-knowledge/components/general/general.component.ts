@@ -100,6 +100,15 @@ export class GeneralComponent extends BaseComponent implements OnInit, OnDestroy
   // Add destroy subject for cleanup
   private destroy$ = new Subject<void>();
   private filterSubscription: Subscription | null = null;
+  private readonly isCompanyInsighterRole = (() => {
+    try {
+      if (typeof window === 'undefined') return false;
+      const user = JSON.parse(localStorage.getItem('user') || 'null');
+      return Array.isArray(user?.roles) && user.roles.includes('company-insighter');
+    } catch {
+      return false;
+    }
+  })();
 
   constructor(
     injector: Injector,
@@ -111,7 +120,10 @@ export class GeneralComponent extends BaseComponent implements OnInit, OnDestroy
   }
 
   canShowDeleteButton(knowledge: Knowledge): boolean {
-    return knowledge?.account_manager_process?.request_status !== 'declined';
+    const requestStatus = knowledge?.account_manager_process?.request_status;
+    if (requestStatus === 'declined') return false;
+    if (this.isCompanyInsighterRole && requestStatus === 'pending') return false;
+    return true;
   }
 
   @HostListener('window:resize', ['$event'])

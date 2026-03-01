@@ -582,11 +582,17 @@ export class ViewMyKnowledgeComponent extends BaseComponent implements OnInit, C
   }
 
   openShareDialog(): void {
+    if (this.isCompanyInsighter()) {
+      return;
+    }
     this.isShareDialogVisible = true;
     this.linkCopied = false;
   }
 
   openSocialShareModal(): void {
+    if (this.isCompanyInsighter()) {
+      return;
+    }
     this.isLeavePromptActive = false;
     this.isSocialShareModalVisible = true;
     this.linkCopied = false;
@@ -611,6 +617,11 @@ export class ViewMyKnowledgeComponent extends BaseComponent implements OnInit, C
   canDeactivate(): boolean | Observable<boolean> {
     if (this.pendingNavigationObserver) {
       return false;
+    }
+
+    if (this.isCompanyInsighter()) {
+      this.clearLeavePromptState();
+      return true;
     }
 
     if (!this.shouldPromptShareOnLeave || this.hasShownSharePromptForCurrentAddition) {
@@ -649,6 +660,10 @@ export class ViewMyKnowledgeComponent extends BaseComponent implements OnInit, C
 
   @HostListener('window:beforeunload', ['$event'])
   onBeforeUnload(event: BeforeUnloadEvent): void {
+    if (this.isCompanyInsighter()) {
+      return;
+    }
+
     if (!this.shouldPromptShareOnLeave || this.hasShownSharePromptForCurrentAddition) {
       return;
     }
@@ -666,6 +681,11 @@ export class ViewMyKnowledgeComponent extends BaseComponent implements OnInit, C
   }
 
   private trackDocumentAddition(documentResponse: DocumentListResponse): void {
+    if (this.isCompanyInsighter()) {
+      this.previousDocumentsCount = documentResponse?.data?.length ?? 0;
+      return;
+    }
+
     const currentDocumentsCount = documentResponse?.data?.length ?? 0;
     if (
       this.previousDocumentsCount !== null &&

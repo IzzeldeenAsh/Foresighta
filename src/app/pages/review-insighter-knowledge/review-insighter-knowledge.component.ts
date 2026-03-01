@@ -36,6 +36,7 @@ export class ReviewInsighterKnowledgeComponent extends BaseComponent implements 
   customShareMessage: string = '';
   linkCopied: boolean = false;
   navigateAfterShareClose: boolean = false;
+  private socialShareModalOpenedAtMs: number = 0;
 
   constructor(
     injector: Injector,
@@ -383,7 +384,9 @@ export class ReviewInsighterKnowledgeComponent extends BaseComponent implements 
             if (status === 'approve') {
               this.loadKnowledgeData();
               this.checkRequestStatus();
-              this.openSocialShareModal(true);
+              // Defer opening to the next tick so it doesn't get immediately closed
+              // by the click that dismissed the SweetAlert.
+              setTimeout(() => this.openSocialShareModal(true), 0);
               return;
             }
 
@@ -398,6 +401,7 @@ export class ReviewInsighterKnowledgeComponent extends BaseComponent implements 
   }
 
   openSocialShareModal(navigateAfterClose: boolean = false): void {
+    this.socialShareModalOpenedAtMs = Date.now();
     this.isSocialShareModalVisible = true;
     this.linkCopied = false;
     this.navigateAfterShareClose = navigateAfterClose;
@@ -405,6 +409,16 @@ export class ReviewInsighterKnowledgeComponent extends BaseComponent implements 
     if (!this.customShareMessage) {
       this.customShareMessage = this.getDefaultShareMessage();
     }
+  }
+
+  onSocialShareOverlayClick(event: MouseEvent): void {
+    // Only close on true backdrop clicks (not clicks inside the modal).
+    if (event.target !== event.currentTarget) return;
+
+    // Guard against the click that dismissed the success alert closing the modal immediately.
+    if (Date.now() - this.socialShareModalOpenedAtMs < 250) return;
+
+    this.closeSocialShareModal();
   }
 
   closeSocialShareModal(): void {

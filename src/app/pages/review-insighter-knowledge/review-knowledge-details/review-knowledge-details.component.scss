@@ -17,6 +17,25 @@
   }
 }
 
+.doc-left {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.doc-meta {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.doc-name {
+  min-width: 0;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  line-break: anywhere;
+}
+
 .collapse-content {
   transition: all 0.3s ease;
   

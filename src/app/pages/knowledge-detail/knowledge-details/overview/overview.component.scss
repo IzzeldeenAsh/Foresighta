@@ -2,6 +2,24 @@
 .documents-container {
   perspective: 1000px;
 }
+
+.doc-left {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.doc-meta {
+  min-width: 0;
+}
+
+.doc-name {
+  min-width: 0;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  line-break: anywhere;
+}
 .star{
     
     margin: 10px 0;
@@ -219,4 +237,3 @@ border-top-left-radius: 5px;
     transition: all 0.2s ease;
   
 }
-

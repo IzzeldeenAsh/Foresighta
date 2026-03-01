@@ -441,7 +441,7 @@
 </div> 
 
 <!-- Custom Social Share Modal -->
-<div class="custom-modal-overlay" *ngIf="isSocialShareModalVisible" (click)="closeSocialShareModal()">
+<div class="custom-modal-overlay" *ngIf="isSocialShareModalVisible" (click)="onSocialShareOverlayClick($event)">
   <div class="custom-modal-container" (click)="$event.stopPropagation()">
     <div class="modal-content">
       <!-- Close button -->
