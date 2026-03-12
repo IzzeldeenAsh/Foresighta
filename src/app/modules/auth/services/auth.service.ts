@@ -263,6 +263,30 @@ export class AuthService implements OnDestroy {
               userData: profileResponse.data,
               token: token
             };
+          }),
+          catchError((profileError: any) => {
+            const message = profileError?.error?.message || '';
+            const isEmailNotVerified =
+              profileError?.status === 403 &&
+              (message === "Your email address is not verified." ||
+                message.includes("not verified") ||
+                message.includes("verification") ||
+                message.includes("verified"));
+
+            if (isEmailNotVerified) {
+              // Keep the token cookie (already set) and return a "soft success"
+              // so the UI can route the user to the verification screen.
+              const minimalUser: any = {
+                email,
+                verified: false,
+                roles: [],
+              };
+              this.setUserInLocalStorage(minimalUser);
+              this.currentUserSubject.next(minimalUser);
+              return of({ userData: minimalUser, token });
+            }
+
+            return throwError(() => profileError);
           })
         );
       }),

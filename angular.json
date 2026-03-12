@@ -5,7 +5,7 @@
   "cli": {
     "cache": {
       "enabled": true,
-      "path": ".angular-cache"
+      "path": ".angular-cache-user"
     }
   },
   "projects": {
@@ -23,7 +23,7 @@
         "cache": {
           "enabled": true,
           "environment": "all",
-          "path": ".angular-cache"
+          "path": ".angular-cache-user"
         }
       },
       "root": "",

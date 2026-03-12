@@ -13,6 +13,17 @@ export class authGuard  {
     private authService: AuthService
   ) {}
 
+  private getStoredEmail(): string {
+    try {
+      const raw = localStorage.getItem('currentUser') || localStorage.getItem('user') || '';
+      if (!raw) return '';
+      const parsed = JSON.parse(raw);
+      return (parsed?.email || '').trim();
+    } catch {
+      return '';
+    }
+  }
+
   private isTokenExpired(token: string): boolean {
     if (!token) return true;
     
@@ -57,13 +68,18 @@ export class authGuard  {
           }
           return false;
         }
-        if (user && user.verified) {
+        if (user && user.verified === true) {
           // User is authenticated and verified, allow access
           return true;
-        } else if (user && !user.verified) {
-          // User is authenticated but not verified - redirect to email-reconfirm
-          console.log('Auth Guard - User not verified, redirecting to email-reconfirm');
-          return this.router.createUrlTree(['/auth/email-reconfirm']);
+        } else if (user && user.verified === false) {
+          // User is authenticated but not verified - redirect to code verification page
+          console.log('Auth Guard - User not verified, redirecting to verify-login-email');
+          return this.router.createUrlTree(['/auth/verify-login-email'], {
+            queryParams: {
+              ...(user.email ? { email: user.email } : {}),
+              returnUrl: state.url
+            }
+          });
         } else {
           // No user data - redirect to login
           console.log('Auth Guard - No user data, redirecting to login');
@@ -80,9 +96,15 @@ export class authGuard  {
         if (error.status === 403) {
           const errorMessage = error.error?.message || '';
           if (errorMessage.includes('verified') || errorMessage.includes('verification')) {
-            // Email verification required - redirect to email-reconfirm
-            console.log('Auth Guard - Email verification required, redirecting to email-reconfirm');
-            return of(this.router.createUrlTree(['/auth/email-reconfirm']));
+            // Email verification required - redirect to code verification page
+            console.log('Auth Guard - Email verification required, redirecting to verify-login-email');
+            const email = this.getStoredEmail();
+            return of(this.router.createUrlTree(['/auth/verify-login-email'], {
+              queryParams: {
+                ...(email ? { email } : {}),
+                returnUrl: state.url
+              }
+            }));
           }
         }
 

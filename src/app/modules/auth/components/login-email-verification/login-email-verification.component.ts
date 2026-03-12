@@ -26,6 +26,14 @@ export class LoginEmailVerificationComponent extends BaseComponent implements On
   selectedLang: string = "en";
 
   private langChangeSubscription?: Subscription;
+  private hasAutoResent = false;
+  private readonly AUTO_RESEND_MIN_INTERVAL_MS = 60 * 1000; // 1 minute
+  private readonly AUTO_RESEND_STORAGE_PREFIX = "autoResendEmailVerifyTs:";
+  private popStateHandler?: () => void;
+
+  // Used by CanDeactivate guard
+  public isVerified = false;
+  public isLoggingOut = false;
 
   constructor(
     private fb: FormBuilder,
@@ -58,6 +66,20 @@ export class LoginEmailVerificationComponent extends BaseComponent implements On
       return;
     }
 
+    // Disable browser back navigation from this page:
+    // if the user attempts to go back (or otherwise leave via history),
+    // log them out and force them to login again.
+    try {
+      history.pushState(null, "", window.location.href);
+      this.popStateHandler = () => {
+        if (this.isVerified || this.isLoggingOut) return;
+        this.logout();
+      };
+      window.addEventListener("popstate", this.popStateHandler);
+    } catch {
+      // ignore
+    }
+
     this.route.queryParams.subscribe((params) => {
       this.email = (params["email"] || "").trim();
       this.returnUrl = params["returnUrl"] || "";
@@ -68,6 +90,14 @@ export class LoginEmailVerificationComponent extends BaseComponent implements On
           // keep as-is
         }
       }
+
+      // Auto-trigger resend once when user lands on this screen (rate-limited).
+      // This matches the UX expectation: if a user is blocked due to unverified email,
+      // we proactively send a fresh code without waiting for an extra click.
+      if (!this.hasAutoResent) {
+        this.hasAutoResent = true;
+        this.autoResendVerificationEmailIfAllowed();
+      }
     });
 
     this.langChangeSubscription = this.translationService.onLanguageChange().subscribe((lang) => {
@@ -77,9 +107,18 @@ export class LoginEmailVerificationComponent extends BaseComponent implements On
 
   ngOnDestroy(): void {
     this.langChangeSubscription?.unsubscribe();
+    if (this.popStateHandler) {
+      try {
+        window.removeEventListener("popstate", this.popStateHandler);
+      } catch {
+        // ignore
+      }
+    }
   }
 
   logout(): void {
+    if (this.isLoggingOut) return;
+    this.isLoggingOut = true;
     this.authService.handleLogout().subscribe({
       next: () => this.router.navigateByUrl("/auth/login"),
       error: () => this.router.navigateByUrl("/auth/login"),
@@ -122,6 +161,35 @@ export class LoginEmailVerificationComponent extends BaseComponent implements On
     });
   }
 
+  private autoResendVerificationEmailIfAllowed(): void {
+    const emailForKey = this.getEmailForKey();
+    const storageKey = `${this.AUTO_RESEND_STORAGE_PREFIX}${emailForKey || "unknown"}`;
+    const lastTsRaw = localStorage.getItem(storageKey);
+    const lastTs = lastTsRaw ? Number(lastTsRaw) : 0;
+    const now = Date.now();
+
+    if (Number.isFinite(lastTs) && lastTs > 0 && now - lastTs < this.AUTO_RESEND_MIN_INTERVAL_MS) {
+      return;
+    }
+
+    localStorage.setItem(storageKey, String(now));
+    this.onResendClick();
+  }
+
+  private getEmailForKey(): string {
+    const direct = (this.email || "").trim().toLowerCase();
+    if (direct) return direct;
+
+    try {
+      const raw = localStorage.getItem("currentUser") || localStorage.getItem("user") || "";
+      if (!raw) return "";
+      const parsed = JSON.parse(raw);
+      return String(parsed?.email || "").trim().toLowerCase();
+    } catch {
+      return "";
+    }
+  }
+
   onVerifyCodeSubmit(): void {
     this.verificationCodeForm.markAllAsTouched();
     this.verifyErrorMessage = "";
@@ -144,6 +212,7 @@ export class LoginEmailVerificationComponent extends BaseComponent implements On
     this.http.post(url, { code: Number(codeRaw) }, { headers }).subscribe({
       next: () => {
         this.isLoadingVerify$ = of(false);
+        this.isVerified = true;
         this.messageService.add({
           severity: "success",
           summary: this.lang === "ar" ? "تم" : "Success",
@@ -193,6 +262,12 @@ export class LoginEmailVerificationComponent extends BaseComponent implements On
   }
 
   private redirectAfterVerification(): void {
+    // If the returnUrl is a local Angular route, go there (guards will re-evaluate with verified email).
+    if (this.returnUrl && this.returnUrl.startsWith("/")) {
+      this.router.navigateByUrl(this.returnUrl);
+      return;
+    }
+
     // Mirror ProductionLoginComponent domain validation behavior
     if (this.returnUrl) {
       try {
@@ -242,4 +317,3 @@ export class LoginEmailVerificationComponent extends BaseComponent implements On
     }
   }
 }
-

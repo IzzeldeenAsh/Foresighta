@@ -198,7 +198,13 @@ export class LoginComponent extends BaseComponent implements OnInit, OnDestroy {
     
     // Check if user needs email verification
     if (userData.verified === false) {
-      this.router.navigate(["/auth/email-reconfirm"]);
+      const returnUrl = this.getReturnUrl();
+      this.router.navigate(["/auth/verify-login-email"], {
+        queryParams: {
+          ...(userData?.email ? { email: userData.email } : {}),
+          returnUrl: returnUrl !== "/" ? returnUrl : ""
+        }
+      });
       return;
     }
 
@@ -231,9 +237,31 @@ export class LoginComponent extends BaseComponent implements OnInit, OnDestroy {
     this.messages = [];
 
     if (error.validationMessages) {
+      const maybeNotVerified = (error.validationMessages || []).some((m: any) => {
+        const detail = String(m?.detail || '').toLowerCase();
+        return detail.includes('not verified') || detail.includes('verification');
+      });
+
+      if (maybeNotVerified) {
+        const returnUrl = this.getReturnUrl();
+        this.router.navigate(["/auth/verify-login-email"], {
+          queryParams: {
+            email: (this.f.email?.value || '').trim(),
+            returnUrl: returnUrl !== "/" ? returnUrl : ""
+          }
+        });
+        return;
+      }
+
       this.messages = error.validationMessages;
     } else if (error.error?.message === 'Your email address is not verified.') {
-      this.router.navigate(['/auth/email-reconfirm']);
+      const returnUrl = this.getReturnUrl();
+      this.router.navigate(["/auth/verify-login-email"], {
+        queryParams: {
+          email: (this.f.email?.value || '').trim(),
+          returnUrl: returnUrl !== "/" ? returnUrl : ""
+        }
+      });
     } else {
       this.messages.push({
         severity: "error",

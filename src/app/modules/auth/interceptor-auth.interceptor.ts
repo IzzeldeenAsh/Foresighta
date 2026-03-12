@@ -7,6 +7,9 @@ import { CookieService } from './services/cookie.service';
 
 @Injectable()
 export class AuthInterceptor implements HttpInterceptor {
+  private isHandlingEmailNotVerified = false;
+  private hasShownEmailNotVerifiedToast = false;
+
   constructor(
     private router: Router,
     private toastService: ToastService,
@@ -83,23 +86,66 @@ export class AuthInterceptor implements HttpInterceptor {
 
   private handleForbidden(error: HttpErrorResponse): void {
     // Check for email verification error
-    if (error.error && error.error.message === "Your email address is not verified.") {
+    const errorMessage = error?.error?.message || '';
+    const isEmailNotVerified =
+      error.status === 403 &&
+      (errorMessage === "Your email address is not verified." ||
+        errorMessage.includes("not verified") ||
+        errorMessage.includes("verification") ||
+        errorMessage.includes("verified"));
+
+    if (isEmailNotVerified) {
       const currentUrl = this.router.url;
       
       // Don't redirect if user is already on auth-related routes
-      if (currentUrl.includes('/auth/verify-email') || 
+      if (currentUrl.startsWith('/auth') ||
+          currentUrl.includes('/auth/verify-email') || 
           currentUrl.includes('/auth/email-reconfirm') || 
+          currentUrl.includes('/auth/verify-login-email') ||
           currentUrl.includes('/auth/callback')) {
         console.log('User is on auth route, not redirecting for email verification error');
-        // Just show the error message, don't redirect
-        this.toastService.error(error.error.message, "Account Issue");
+        // Avoid spamming the user with repeated toasts while they are already handling verification
+        if (!this.hasShownEmailNotVerifiedToast) {
+          this.toastService.error(errorMessage || 'Your email address is not verified.', "Account Issue");
+          this.hasShownEmailNotVerifiedToast = true;
+        }
         return;
       }
       
-      this.toastService.error(error.error.message, "Account Issue");
-      
-      // Navigate to email verification page only if not already on auth route
-      this.router.navigate(['/auth/email-reconfirm']);
+      if (!this.hasShownEmailNotVerifiedToast) {
+        this.toastService.error(errorMessage || 'Your email address is not verified.', "Account Issue");
+        this.hasShownEmailNotVerifiedToast = true;
+      }
+
+      if (this.isHandlingEmailNotVerified) {
+        return;
+      }
+
+      this.isHandlingEmailNotVerified = true;
+
+      // Try to read the user's email from storage for a better UX
+      let email = '';
+      try {
+        const currentUserRaw = localStorage.getItem('currentUser') || localStorage.getItem('user') || '';
+        if (currentUserRaw) {
+          const parsed = JSON.parse(currentUserRaw);
+          email = (parsed?.email || '').trim();
+        }
+      } catch {
+        // ignore
+      }
+
+      // Navigate to code-based verification page so the user can verify immediately
+      const returnUrl = currentUrl || '/';
+      this.router.navigate(['/auth/verify-login-email'], {
+        queryParams: {
+          ...(email ? { email } : {}),
+          returnUrl: returnUrl !== '/' ? returnUrl : ''
+        }
+      }).finally(() => {
+        // Allow future handling attempts after navigation settles
+        this.isHandlingEmailNotVerified = false;
+      });
     } else {
       // For other forbidden errors, show generic message
       this.toastService.error('Access denied. You do not have permission to perform this action.', 'Access Denied');

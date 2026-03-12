@@ -11,6 +11,7 @@ import { EmailReconfirmComponent } from './components/email-reconfirm/email-reco
 import { UnAuthGuard } from '../../guards/unauth-guard/un-auth.guard';
 import { ProductionLoginComponent } from './components/production-login/production-login.component';
 import { LoginEmailVerificationComponent } from './components/login-email-verification/login-email-verification.component';
+import { VerifyLoginEmailExitGuard } from 'src/app/guards/verify-login-email-exit-guard/verify-login-email-exit.guard';
 
 const routes: Routes = [
   {
@@ -36,6 +37,7 @@ const routes: Routes = [
       {
         path: 'verify-login-email',
         component: LoginEmailVerificationComponent,
+        canDeactivate: [VerifyLoginEmailExitGuard],
       },
       {
         path: 'email-reconfirm',

@@ -72,9 +72,23 @@ export class ProfileService {
         return response.data;
       }),
       catchError((err) => {
-        this.profileCache$ = null; // Clear cache on error
+        const errorMessage = err?.error?.message || '';
+        const isEmailNotVerified =
+          err?.status === 403 &&
+          (errorMessage === "Your email address is not verified." ||
+            errorMessage.includes("not verified") ||
+            errorMessage.includes("verified") ||
+            errorMessage.includes("verification"));
+
+        // Clear cache on error EXCEPT for the "email not verified" case.
+        // For unverified accounts, many parts of the app may call `getProfile()`
+        // concurrently; keeping the errored observable cached prevents request loops.
+        if (!isEmailNotVerified) {
+          this.profileCache$ = null;
+        }
         
         if (err.status === 401) {
+          this.profileCache$ = null;
           localStorage.removeItem("foresighta-creds");
           localStorage.removeItem("user");
           this.clearProfile();
@@ -89,13 +103,13 @@ export class ProfileService {
           });
         } else if (err.status === 403) {
           // Handle email verification errors
-          const errorMessage = err.error?.message || '';
-          if (errorMessage.includes('verified') || errorMessage.includes('verification')) {
+          if (isEmailNotVerified) {
             console.log('403 error - Email verification required, letting guard handle redirect');
             // Don't redirect here - let the auth guard handle it
-            // Just clear the cache so it doesn't retry indefinitely
+            // Keep cache to prevent retry loops
           } else {
             // Other 403 errors should clear auth and redirect
+            this.profileCache$ = null;
             localStorage.removeItem("foresighta-creds");
             localStorage.removeItem("user");
             this.clearProfile();
