@@ -20,6 +20,7 @@ import { PaymentSettingsHeaderComponent } from './insighter-dashboard/statistics
 import { WalletStatisticsComponent } from './insighter-dashboard/statistics/wallet-statistics/wallet-statistics.component';
 import { SalesStatisticsComponent } from './insighter-dashboard/statistics/sales-statistics/sales-statistics.component';
 import { ConsultingScheduleHeaderComponent } from './insighter-dashboard/statistics/consulting-schedule-header/consulting-schedule-header.component';
+import { ProjectSettingsHeaderComponent } from './insighter-dashboard/statistics/project-settings-header/project-settings-header.component';
 import { SidebarModule } from 'primeng/sidebar';
 import { ButtonModule } from 'primeng/button';
 import { TooltipModule } from 'primeng/tooltip';
@@ -42,6 +43,7 @@ import { DashboardStatisticsComponent } from 'src/app/reusable-components/dashbo
     WalletStatisticsComponent,
     SalesStatisticsComponent,
     ConsultingScheduleHeaderComponent,
+    ProjectSettingsHeaderComponent,
 
   ],
   imports: [

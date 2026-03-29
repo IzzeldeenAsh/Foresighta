@@ -24,9 +24,9 @@ import { Step5Component } from "../steps/step5/step5.component";
 export class VerticalComponent extends BaseComponent implements OnInit {
   private static readonly ADD_CHANNELS_PROMPT_DISMISS_KEY = "postSignupPrompt:addChannels:dismissed";
   private static readonly PROMPT_IMAGE_URL_EN =
-    "https://res.cloudinary.com/dsiku9ipv/image/upload/v1771671938/418842237_70d13ee0-5e30-4521-8a99-057840ea5113_actgrf.png";
+    "https://res.cloudinary.com/dsiku9ipv/image/upload/v1774703126/418842237_70d13ee0-5e30-4521-8a99-057840ea5113_cmhjeq.webp";
   private static readonly PROMPT_IMAGE_URL_AR =
-    "https://res.cloudinary.com/dsiku9ipv/image/upload/v1771674004/whatsapp_arabic_vqqhuq.png";
+    "https://res.cloudinary.com/dsiku9ipv/image/upload/v1774703126/whatsapp_arabic_bbrfku.webp";
   private static readonly NOTIFICATION_SETTINGS_URL =
     "/app/insighter-dashboard/account-settings/notification-settings";
 

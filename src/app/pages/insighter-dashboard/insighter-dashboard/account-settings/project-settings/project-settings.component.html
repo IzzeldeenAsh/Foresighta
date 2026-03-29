@@ -1,0 +1,144 @@
+<p-progressBar
+  *ngIf="isLoading$ | async"
+  mode="indeterminate"
+  [style]="{ height: '4px' }"
+></p-progressBar>
+
+<div class="p-24px">
+  <div class="project-settings-shell border border-gray-300 rounded-4 overflow-hidden">
+    <div class="project-settings-grid">
+      <div class="project-settings-copy">
+        <div class="project-settings-badge">
+          {{ lang === 'ar' ? 'إعداد المشروع' : 'Project Setup' }}
+        </div>
+
+        <h2 class="project-settings-title">
+          {{
+            lang === 'ar'
+              ? 'ابدأ باستقبال فرص المشاريع'
+              : 'Start receiving project offers'
+          }}
+        </h2>
+
+        <p class="project-settings-description">
+          {{
+            lang === 'ar'
+              ? 'أكمل هذه الخطوات السريعة ليصبح حسابك جاهزًا للتعاون وفرص المشاريع الجديدة.'
+              : 'Complete these quick tasks to make your account ready for collaboration and new project opportunities.'
+          }}
+        </p>
+
+       
+
+        <div *ngIf="errorMessage" class="alert alert-warning project-settings-alert">
+          {{ errorMessage }}
+        </div>
+
+        <div class="project-checklist" *ngIf="checklist.length">
+          <div
+            class="project-checklist-item"
+            *ngFor="let item of checklist; let last = last"
+            [class.is-complete]="item.passed"
+          >
+            <div class="project-checklist-marker">
+              <div
+                class="project-checklist-icon d-flex flex-center flex-shrink-0 w-25px h-25px rounded-circle"
+                [ngClass]="
+                  item.passed
+                    ? 'bg-light-success border border-success'
+                    : 'bg-light-primary border border-primary-clarity'
+                "
+              >
+                <div
+                  class="w-8px h-8px rounded-circle"
+                  [ngClass]="item.passed ? 'bg-success' : 'bg-primary'"
+                ></div>
+              </div>
+              <div class="project-checklist-line" *ngIf="!last"></div>
+            </div>
+
+            <div class="project-checklist-content">
+              <div class="project-checklist-text">
+                <div class="project-checklist-title" [class.is-complete]="item.passed">
+                  {{ item.title }}
+                </div>
+
+                <div
+                  *ngIf="item.key === 'publish_insights' && ((item.insightRequirements?.paid || 0) > 0 || (item.insightRequirements?.free || 0) > 0)"
+                  class="project-checklist-description project-checklist-requirement"
+                  [class.is-complete]="item.passed"
+                >
+                  <span *ngIf="lang === 'ar'">المطلوب:</span>
+                  <span *ngIf="lang !== 'ar'">Required:</span>
+
+                  <span
+                    *ngIf="(item.insightRequirements?.paid || 0) > 0"
+                    class="requirement-chip requirement-chip-paid"
+                  >
+                    {{ item.insightRequirements?.paid }} {{ lang === 'ar' ? 'مدفوعة' : 'Paid' }}
+                  </span>
+
+                  <span
+                    *ngIf="(item.insightRequirements?.free || 0) > 0"
+                    class="requirement-chip requirement-chip-free"
+                  >
+                    {{ item.insightRequirements?.free }} {{ lang === 'ar' ? 'مجانية' : 'Free' }}
+                  </span>
+
+                  <span *ngIf="lang === 'ar'">رؤى</span>
+                  <span *ngIf="lang !== 'ar'">insights</span>
+                </div>
+
+                <div
+                  class="project-checklist-description"
+                  [class.is-complete]="item.passed"
+                  [innerHTML]="item.details.join('. ')"
+                ></div>
+              </div>
+
+              <a
+                *ngIf="!item.passed"
+                class="btn btn-light-primary project-checklist-action"
+                [routerLink]="item.route"
+              >
+                {{ lang === 'ar' ? 'ابدأ' : 'Start' }}
+              </a>
+
+              <span *ngIf="item.passed" class="project-checklist-done">
+                {{ lang === 'ar' ? 'مكتمل' : 'Done' }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="project-settings-visual">
+        <div class="project-settings-image-wrap">
+          <img
+            [src]="heroImageUrl"
+            [alt]="lang === 'ar' ? 'صورة إعداد المشروع' : 'Project setup'"
+            class="project-settings-image"
+          />
+          <div class="visual-badge visual-badge-top">
+            <div class="visual-badge-label">
+              {{ lang === 'ar' ? 'جاهزية الحساب' : 'Account readiness' }}
+            </div>
+            <div class="visual-badge-value">
+              {{ completedCount }}/{{ checklist.length || 3 }}
+            </div>
+          </div>
+          <div class="visual-badge visual-badge-bottom">
+            <i class="ki-outline ki-chart-line-up text-success fs-3"></i>
+            <span>
+              {{
+                lang === 'ar'
+                  ? 'أكمل الخطوات لزيادة فرص ظهورك'
+                  : 'Complete the steps to improve your visibility'
+              }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

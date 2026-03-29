@@ -59,6 +59,10 @@ export class SettingsTabsComponent extends BaseComponent implements OnInit, OnDe
         return this.lang === 'ar'
           ? 'إدارة إعدادات إشعارات واتساب والرسائل النصية.'
           : 'Manage WhatsApp and SMS notification settings.';
+      case 'project-settings':
+        return this.lang === 'ar'
+          ? 'إدارة إعدادات وتفضيلات المشروع.'
+          : 'Manage project settings and preferences.';
       case 'payment-settings':
         return this.lang === 'ar' ?
           'تكوين طرق الدفع وإعدادات الفوترة.' :
@@ -79,6 +83,8 @@ export class SettingsTabsComponent extends BaseComponent implements OnInit, OnDe
       this.activeTab = 'general-settings';
     } else if (url.includes('notification-settings')) {
       this.activeTab = 'notification-settings';
+    } else if (url.includes('project-settings')) {
+      this.activeTab = 'project-settings';
     } else if (url.includes('payment-settings')) {
       this.activeTab = 'payment-settings';
     } else if (url.includes('consulting-schedule')) {

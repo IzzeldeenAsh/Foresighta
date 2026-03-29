@@ -36,6 +36,7 @@ import { PendingChangesGuard } from 'src/app/guards/pending-changes.guard';
 import { AgreementModalComponent } from 'src/app/reusable-components/agreement-modal/agreement-modal.component';
 import { NotificationSettingsComponent } from './notification-settings/notification-settings.component';
 import { PhoneNumberInputModule } from 'src/app/reusable-components/phone-number-input/phone-number-input.module';
+import { ProjectSettingsComponent } from './project-settings/project-settings.component';
 
 const routes: Routes = [
   {
@@ -70,6 +71,10 @@ const routes: Routes = [
         path: 'notification-settings',
         component: NotificationSettingsComponent,
         canDeactivate: [PendingChangesGuard]
+      },
+      {
+        path: 'project-settings',
+        component: ProjectSettingsComponent
       }
     ]
   }
@@ -85,6 +90,7 @@ const routes: Routes = [
     PaymentSettingsComponent,
     ConsultingScheduleComponent,
     NotificationSettingsComponent,
+    ProjectSettingsComponent,
     TransferDialogComponent,
     DeactivateDialogComponent,
     DeleteDialogComponent,

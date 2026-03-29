@@ -34,8 +34,8 @@
           <!-- Search Bar -->
           <div class="row mb-10">
             <div class="col-12">
-              <div class="d-flex align-items-center">
-                <div class="flex-grow-1 me-3">
+              <div class="d-flex align-items-center" [class.flex-row-reverse]="lang === 'ar'">
+                <div class="flex-grow-1" [class.me-3]="lang !== 'ar'" [class.ms-3]="lang === 'ar'">
                   <div class="input-group" [class.flex-row-reverse]="lang === 'ar'">
                     <span class="input-group-text bg-light" [class.border-end-0]="lang !== 'ar'" [class.border-start-0]="lang === 'ar'">
                       <i class="ki-duotone ki-magnifier fs-4">
@@ -70,7 +70,9 @@
                 @if (currentUuids().length > 0) {
                   <button 
                     type="button" 
-                    class="btn btn-sm btn-light-primary ms-2" 
+                    class="btn btn-sm btn-light-primary"
+                    [class.ms-2]="lang !== 'ar'"
+                    [class.me-2]="lang === 'ar'"
                     (click)="viewAll()"
                     [attr.title]="'MY_DOWNLOADS.VIEW_ALL' | translate">
                     <i class="ki-duotone ki-eye fs-2">
@@ -78,7 +80,7 @@
                       <span class="path2"></span>
                       <span class="path3"></span>
                     </i>
-                    <span class="ms-1">{{ 'MY_DOWNLOADS.VIEW_ALL' | translate }}</span>
+                    <span [class.ms-1]="lang !== 'ar'" [class.me-1]="lang === 'ar'">{{ 'MY_DOWNLOADS.VIEW_ALL' | translate }}</span>
                   </button>
                 }
               </div>
@@ -88,7 +90,7 @@
           <!-- Archived Toggle Button Row -->
           <div class="row mb-4">
             <div class="col-12">
-              <div class="d-flex justify-content-start">
+              <div class="d-flex" [class.justify-content-start]="lang !== 'ar'" [class.justify-content-end]="lang === 'ar'">
                 <button
                   class="btn btn-sm btn-outline-info d-flex align-items-center toggle-archived-btn"
                   [class.active]="showArchivedDownloads()"
@@ -100,9 +102,13 @@
                   tooltipPosition="top">
                   
                   @if (showArchivedDownloads()) {
-                    <i class="pi pi-arrow-left me-2 text-dark" style="font-size: 1rem;"></i>
+                    <i
+                      [ngClass]="lang === 'ar' ? 'pi pi-arrow-right ms-2 text-dark' : 'pi pi-arrow-left me-2 text-dark'"
+                      style="font-size: 1rem;"></i>
                   } @else {
-                    <i class="pi pi-inbox me-2 text-dark" style="font-size: 1rem;"></i>
+                    <i
+                      [ngClass]="lang === 'ar' ? 'pi pi-inbox ms-2 text-dark' : 'pi pi-inbox me-2 text-dark'"
+                      style="font-size: 1rem;"></i>
                   }
                   
                   <!-- CHANGE 2: Updated Button Text Logic -->
@@ -114,7 +120,7 @@
                   </span>
                   
                   @if (!showArchivedDownloads() && libraryStatistics()?.archived) {
-                    <span class="badge badge-light-info ms-2">{{ libraryStatistics()?.archived }}</span>
+                    <span class="badge badge-light-info" [class.ms-2]="lang !== 'ar'" [class.me-2]="lang === 'ar'">{{ libraryStatistics()?.archived }}</span>
                   }
                 </button>
               </div>
@@ -170,7 +176,7 @@
                             }
                             
                             <!-- Folder Icon -->
-                            <div class="me-3">
+                            <div [class.me-3]="lang !== 'ar'" [class.ms-3]="lang === 'ar'">
                               <i class="ki-duotone ki-folder fs-4 text-info">
                                 <span class="path1"></span>
                                 <span class="path2"></span>
@@ -179,7 +185,13 @@
                             
                             <!-- Knowledge Title -->
                             <div class="flex-grow-1">
-                              <div class=" fs-7 fw-bold">{{ knowledge.title | truncateText: 30 }}</div>
+                              <div
+                                class="fs-7 fw-bold"
+                                [attr.dir]="getTextDirection(knowledge.title)"
+                                [class.text-end]="startsWithArabic(knowledge.title)"
+                                [class.text-start]="!startsWithArabic(knowledge.title)">
+                                {{ knowledge.title | truncateText: 30 }}
+                              </div>
                               <div class="d-flex align-items-center gap-1">
                             
                                 <small class="text-muted fs-8">  @switch (knowledge.type) {
@@ -210,7 +222,7 @@
                             </div>
                             
                             <!-- Action Buttons -->
-                            <div class="ms-2 d-flex gap-1">
+                            <div class="d-flex gap-1" [class.ms-2]="lang !== 'ar'" [class.me-2]="lang === 'ar'">
                               <!-- Download Button -->
                               <button
                                 class="btn btn-xs download-btn"
@@ -312,7 +324,7 @@
                     <div class="d-flex align-items-center mb-4 bg-light-gray p-4 mobile-border">
                       <h5 class="mb-0 fw-bold text-dark">{{ 'MY_DOWNLOADS.DOCUMENTS' | translate }}</h5>
                       @if (selectedKnowledge()) {
-                        <span class="badge badge-light-success ms-2">{{ currentKnowledgeDocuments().length }}</span>
+                        <span class="badge badge-light-success" [class.ms-2]="lang !== 'ar'" [class.me-2]="lang === 'ar'">{{ currentKnowledgeDocuments().length }}</span>
                       }
                     </div>
                     
@@ -341,7 +353,7 @@
                             (click)="selectDocument(document)">
                             
                             <!-- Document Icon -->
-                            <div class="me-3">
+                            <div [class.me-3]="lang !== 'ar'" [class.ms-3]="lang === 'ar'">
                               <img
                                 [src]="getFileIconByExtension(document.file_extension)"
                                 [alt]="document.file_extension + ' file'"
@@ -352,7 +364,13 @@
                             
                             <!-- Document Name -->
                             <div class="flex-grow-1">
-                              <div class=" fs-7 fw-bold">{{ document.file_name | truncateText: 30 }}</div>
+                              <div
+                                class="fs-7 fw-bold"
+                                [attr.dir]="getTextDirection(document.file_name)"
+                                [class.text-end]="startsWithArabic(document.file_name)"
+                                [class.text-start]="!startsWithArabic(document.file_name)">
+                                {{ document.file_name | truncateText: 30 }}
+                              </div>
                               <div class="d-flex align-items-center gap-2">
                                 <small class="text-muted fs-8">{{ document.file_size | fileSize }}</small>
                                 <span class="text-muted">•</span>
@@ -365,7 +383,7 @@
                             </div>
                             
                             <!-- Download Icon -->
-                            <div class="ms-2">
+                            <div [class.ms-2]="lang !== 'ar'" [class.me-2]="lang === 'ar'">
                               <button
                                 class="btn btn-xs download-btn"
                                 [ngClass]="isDocumentDownloaded(document) ? 'btn-info text-white' : 'btn-light-info text-primary'"
@@ -483,7 +501,13 @@
                               </div>
                             </div>
                             <a (click)="viewKnowledge(selectedKnowledge()!); $event.stopPropagation()" class="cursor-pointer">
-                            <h2 class="knowledge-title">{{ (selectedKnowledge()?.title || '') | truncateText:40 }}</h2>
+                            <h2
+                              class="knowledge-title"
+                              [attr.dir]="getTextDirection(selectedKnowledge()?.title)"
+                              [class.text-end]="startsWithArabic(selectedKnowledge()?.title)"
+                              [class.text-start]="!startsWithArabic(selectedKnowledge()?.title)">
+                              {{ (selectedKnowledge()?.title || '') | truncateText:40 }}
+                            </h2>
                           </a>
                           }
                         </div>
@@ -536,8 +560,12 @@
                                         {{ selectedKnowledge()?.company?.legal_name }}
                                       </a>
                                       <span class="text-muted fs-8">
-                                        By <a 
-                                          class="cursor-pointer text-decoration-none" 
+                                        <span class="publisher-inline-meta">
+                                          <i class="pi pi-user publisher-user-icon" aria-hidden="true"></i>
+                                          <span>{{ lang === 'ar' ? 'بواسطة' : 'By' }}</span>
+                                        </span>
+                                        <a 
+                                          class="cursor-pointer text-decoration-none publisher-inline-link" 
                                           [href]="clientBaseUrl + '/' + lang + '/profile/' + selectedKnowledge()?.insighter_uuid + '?entity=insighter'"
                                           target="_blank"
                                           (click)="$event.stopPropagation()">
@@ -547,10 +575,11 @@
                                     </div>
                                   } @else {
                                     <a 
-                                      class="publisher-name fw-bold cursor-pointer text-decoration-none" 
+                                      class="publisher-name fw-bold cursor-pointer text-decoration-none d-inline-flex align-items-center gap-2" 
                                       [href]="clientBaseUrl + '/' + lang + '/profile/' + selectedKnowledge()?.insighter_uuid + '?entity=insighter'"
                                       target="_blank"
                                       (click)="$event.stopPropagation()">
+                                      <i class="pi pi-user publisher-user-icon" aria-hidden="true"></i>
                                       {{ details.publisher }}
                                     </a>
                                   }
@@ -577,3 +606,62 @@
     </div>
     </div>
 }
+
+<p-dialog
+  [(visible)]="showAddChannelsPrompt"
+  appendTo="body"
+  [modal]="true"
+  [dismissableMask]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [closable]="false"
+  [showHeader]="false"
+  [style]="{ width: '520px', maxWidth: 'calc(100vw - 24px)' }"
+  [breakpoints]="{ '768px': 'calc(100vw - 24px)' }"
+  styleClass="knoldg-add-channels-dialog"
+  maskStyleClass="knoldg-add-channels-mask"
+  (onHide)="dismissAddChannelsPrompt()"
+>
+  <div
+    class="knoldg-add-channels"
+    [class.is-rtl]="lang === 'ar'"
+    [attr.dir]="lang === 'ar' ? 'rtl' : 'ltr'"
+  >
+    <img
+      class="knoldg-add-channels__img"
+      [src]="addChannelsPromptImageUrl"
+      alt="Join our WhatsApp & SMS services"
+      loading="eager"
+    />
+
+    <button
+      type="button"
+      class="knoldg-add-channels__close"
+      (click)="dismissAddChannelsPrompt()"
+      [attr.aria-label]="addChannelsPromptCopy.close"
+    >
+      <i class="ki-duotone ki-cross fs-2" aria-hidden="true">
+        <span class="path1"></span><span class="path2"></span>
+      </i>
+    </button>
+
+    <div class="knoldg-add-channels__actions">
+      <div class="d-flex gap-3">
+        <button
+          type="button"
+          class="btn knoldg-add-channels__btn knoldg-add-channels__btn-later"
+          (click)="dismissAddChannelsPrompt()"
+        >
+          {{ addChannelsPromptCopy.later }}
+        </button>
+        <button
+          type="button"
+          class="btn knoldg-add-channels__btn knoldg-add-channels__btn-add"
+          (click)="onAddChannelsNow()"
+        >
+          {{ addChannelsPromptCopy.add }}
+        </button>
+      </div>
+    </div>
+  </div>
+</p-dialog>

@@ -98,6 +98,12 @@
   </div>
 
   <div class="menu-item px-5">
+    <a [routerLink]="'/app/insighter-dashboard/my-downloads'" class="menu-link px-5" (click)="closeDropdown.emit()">
+      {{ 'INSIGHTER.DASHBOARD.NAV.MY_DOWNLOADS' | translate }}
+    </a>
+  </div>
+
+  <div class="menu-item px-5">
     <a [routerLink]="'/app/profile/overview'" class="menu-link px-5" (click)="closeDropdown.emit()">
       {{ 'HOME.MY_PROFILE' | translate }}
     </a>

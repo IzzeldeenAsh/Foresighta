@@ -26,6 +26,8 @@ export interface IKnoldgProfile {
     phone_code?:string;
     whatsapp_country_code?: string | null;
     whatsapp_number?: string | null;
+    sms_country_code?: string | null;
+    sms_number?: string | null;
     social?: SocialNetwork[];
     login_social?:boolean;
     login_social_only?: boolean;

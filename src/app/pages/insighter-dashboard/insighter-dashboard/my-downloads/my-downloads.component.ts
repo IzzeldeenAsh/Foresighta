@@ -1,14 +1,17 @@
 import { Component, OnInit, signal, computed, inject, DestroyRef, Injector, Inject, HostListener, ElementRef, ViewChild, AfterViewInit } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl } from '@angular/forms';
-import { debounceTime, distinctUntilChanged, switchMap } from 'rxjs';
+import { Observable, debounceTime, distinctUntilChanged, of, take } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 
 import { BaseComponent } from 'src/app/modules/base.component';
+import { ComponentCanDeactivate } from 'src/app/guards/pending-changes.guard';
 
 import { Router, ActivatedRoute } from '@angular/router';
 
 import { Document, KnowledgeItem, MyDownloadsService, LibraryStatistics } from './my-downloads.service';
 import { FileSizePipe } from 'src/app/pipes/file-size-pipe/file-size.pipe';
+import { ProfileService } from 'src/app/_fake/services/get-profile/get-profile.service';
 
 
 @Component({
@@ -16,7 +19,16 @@ import { FileSizePipe } from 'src/app/pipes/file-size-pipe/file-size.pipe';
   templateUrl: './my-downloads.component.html',
   styleUrls: ['./my-downloads.component.scss']
 })
-export class MyDownloadsComponent extends BaseComponent implements OnInit, AfterViewInit {
+export class MyDownloadsComponent extends BaseComponent implements OnInit, AfterViewInit, ComponentCanDeactivate {
+  private static readonly PROMPT_IMAGE_URL_EN =
+    'https://res.cloudinary.com/dsiku9ipv/image/upload/v1774703126/418842237_70d13ee0-5e30-4521-8a99-057840ea5113_cmhjeq.webp';
+  private static readonly PROMPT_IMAGE_URL_AR =
+    'https://res.cloudinary.com/dsiku9ipv/image/upload/v1774703126/whatsapp_arabic_bbrfku.webp';
+  private static readonly NOTIFICATION_SETTINGS_URL =
+    '/app/insighter-dashboard/account-settings/notification-settings';
+  private static readonly ARABIC_CHAR_REGEX =
+    /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFC]/;
+  private static readonly LETTER_REGEX = /\p{L}/u;
 
   //Signals
   knowledgeItems = signal<KnowledgeItem[]>([]);
@@ -49,6 +61,9 @@ export class MyDownloadsComponent extends BaseComponent implements OnInit, After
 
   // Library statistics
   libraryStatistics = signal<LibraryStatistics | null>(null);
+  showAddChannelsPrompt = false;
+  private pendingNavigationObserver: { next: (value: boolean) => void; complete: () => void } | null = null;
+  private allowPromptBypass = false;
   // URL-param selection/highlight state
   selectFirstAfterLoad = signal<boolean>(false);
   highlightedKnowledgeUuid = signal<string | null>(null);
@@ -113,6 +128,7 @@ export class MyDownloadsComponent extends BaseComponent implements OnInit, After
   private router = inject(Router);
   private route = inject(ActivatedRoute);
   private elementRef = inject(ElementRef);
+  private profileService = inject(ProfileService);
 
   Math = Math;
 
@@ -122,6 +138,37 @@ export class MyDownloadsComponent extends BaseComponent implements OnInit, After
   ) {
     super(injector)
    }
+
+  canDeactivate(): boolean | Observable<boolean> {
+    if (this.allowPromptBypass) {
+      this.allowPromptBypass = false;
+      return true;
+    }
+
+    if (this.pendingNavigationObserver || this.showAddChannelsPrompt) {
+      return false;
+    }
+
+    return new Observable<boolean>((observer) => {
+      this.profileService
+        .getProfile()
+        .pipe(
+          take(1),
+          catchError(() => of(null))
+        )
+        .subscribe((profile) => {
+          if (!this.shouldPromptForMissingChannels(profile)) {
+            observer.next(true);
+            observer.complete();
+            return;
+          }
+
+          this.pendingNavigationObserver = observer;
+          this.showAddChannelsPrompt = true;
+        });
+    });
+  }
+
   ngOnInit(): void {
     // Load library statistics first
     this.loadLibraryStatistics();
@@ -195,6 +242,20 @@ export class MyDownloadsComponent extends BaseComponent implements OnInit, After
     setTimeout(() => {
       this.checkScrollState();
     }, 100);
+  }
+
+  get addChannelsPromptImageUrl(): string {
+    return this.lang === 'ar'
+      ? MyDownloadsComponent.PROMPT_IMAGE_URL_AR
+      : MyDownloadsComponent.PROMPT_IMAGE_URL_EN;
+  }
+
+  get addChannelsPromptCopy(): { close: string; later: string; add: string } {
+    if (this.lang === 'ar') {
+      return { close: 'إغلاق', later: 'لاحقاً', add: 'إضافة الآن' };
+    }
+
+    return { close: 'Close', later: 'Maybe later', add: 'Add' };
   }
 
   loadMyDownloads(page: number = 1, searchTerm: string = '', uuids: string[] = []): void {
@@ -667,6 +728,21 @@ export class MyDownloadsComponent extends BaseComponent implements OnInit, After
     this.checkScrollState();
   }
 
+  dismissAddChannelsPrompt(): void {
+    this.showAddChannelsPrompt = false;
+    this.resolvePendingNavigation(true);
+  }
+
+  onAddChannelsNow(): void {
+    this.showAddChannelsPrompt = false;
+    this.resolvePendingNavigation(false);
+    this.allowPromptBypass = true;
+
+    setTimeout(() => {
+      this.router.navigateByUrl(MyDownloadsComponent.NOTIFICATION_SETTINGS_URL);
+    });
+  }
+
   // Archive functionality
   archiveKnowledge(knowledge: KnowledgeItem): void {
     // Add knowledge UUID to downloading items to show loading state
@@ -806,6 +882,26 @@ export class MyDownloadsComponent extends BaseComponent implements OnInit, After
     return `${combinedTotal} total downloads`;
   }
 
+  startsWithArabic(text: string | null | undefined): boolean {
+    const normalizedText = (text ?? '').trim();
+
+    for (const char of normalizedText) {
+      if (MyDownloadsComponent.ARABIC_CHAR_REGEX.test(char)) {
+        return true;
+      }
+
+      if (MyDownloadsComponent.LETTER_REGEX.test(char)) {
+        return false;
+      }
+    }
+
+    return false;
+  }
+
+  getTextDirection(text: string | null | undefined): 'rtl' | 'ltr' {
+    return this.startsWithArabic(text) ? 'rtl' : 'ltr';
+  }
+
   /**
    * Whether knowledge (or any of its documents) has been downloaded before
    */
@@ -823,4 +919,25 @@ export class MyDownloadsComponent extends BaseComponent implements OnInit, After
     return !!document?.download_at;
   }
 
-} 
+  private shouldPromptForMissingChannels(profile: any): boolean {
+    if (!profile) {
+      return false;
+    }
+
+    const whatsappNumber = String(profile?.whatsapp_number ?? '').trim();
+    const smsNumber = String(profile?.sms_number ?? '').trim();
+
+    return !(whatsappNumber && smsNumber);
+  }
+
+  private resolvePendingNavigation(allowNavigation: boolean): void {
+    if (!this.pendingNavigationObserver) {
+      return;
+    }
+
+    this.pendingNavigationObserver.next(allowNavigation);
+    this.pendingNavigationObserver.complete();
+    this.pendingNavigationObserver = null;
+  }
+
+}

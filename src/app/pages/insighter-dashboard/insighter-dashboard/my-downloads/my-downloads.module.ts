@@ -10,11 +10,14 @@ import { TruncateTextPipe } from 'src/app/pipes/truncate-pipe/truncate-text.pipe
 import { FileSizePipe } from 'src/app/pipes/file-size-pipe/file-size.pipe';
 import { ProgressBarModule } from 'primeng/progressbar';
 import { TooltipModule } from 'primeng/tooltip';
+import { DialogModule } from 'primeng/dialog';
 import { InsighterDashboardSharedModule } from '../shared/shared.module';
+import { PendingChangesGuard } from 'src/app/guards/pending-changes.guard';
 const routes: Routes = [
   {
     path: '',
-    component: MyDownloadsComponent
+    component: MyDownloadsComponent,
+    canDeactivate: [PendingChangesGuard]
   }
 ];
 
@@ -34,7 +37,8 @@ const routes: Routes = [
     ProgressBarModule,
     FileSizePipe,
     TooltipModule,
+    DialogModule,
     InsighterDashboardSharedModule
   ]
 })
-export class MyDownloadsModule { } 
+export class MyDownloadsModule { }
