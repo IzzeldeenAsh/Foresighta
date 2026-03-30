@@ -3,6 +3,8 @@ import { IKnoldgProfile } from 'src/app/_fake/models/profile.interface';
 import { MessageService } from 'primeng/api';
 import { ProfileService } from 'src/app/_fake/services/profile-picture/profile.service';
 import { BaseComponent } from 'src/app/modules/base.component';
+import { ProfileService as AccountProfileService } from 'src/app/_fake/services/get-profile/get-profile.service';
+import { ProjectProgressCelebrationService } from 'src/app/reusable-components/project-progress-celebration/project-progress-celebration.service';
 
 @Component({
   selector: 'app-profile-header',
@@ -23,7 +25,9 @@ export class ProfileHeaderComponent extends BaseComponent implements OnInit {
   constructor(
     messageService: MessageService,
     private profileService: ProfileService,
-    injector: Injector
+    injector: Injector,
+    private readonly accountProfileService: AccountProfileService,
+    private readonly projectProgressCelebrationService: ProjectProgressCelebrationService
   ) {
     super(injector);
   }
@@ -158,16 +162,18 @@ export class ProfileHeaderComponent extends BaseComponent implements OnInit {
           this.profileService.updateCompanyLogo(file).subscribe(
             (response: any) => {
               // Handle successful upload
-              this.photoupdated.emit();
+              this.syncProfileAfterPhotoUpdate();
               const title = this.lang === 'ar' ? 'تم تحديث صورة الملف الشخصي' : 'Profile Picture Updated';
               const message = this.lang === 'ar' 
                 ? 'تم تحديث صورة ملفك الشخصي بنجاح.' 
                 : 'Your profile picture has been updated successfully.';
             
               this.showSuccess(title, message);
-              window.location.reload();
-              // Optionally, you might not need to reload the page. Consider updating the view accordingly.
-            
+
+              const celebrationSub = this.projectProgressCelebrationService
+                .checkMilestone('profile', this.profile?.roles ?? [])
+                .subscribe();
+              this.unsubscribe.push(celebrationSub);
 
               this.isLoading = false; // Optional: Stop loading
             },
@@ -180,7 +186,7 @@ export class ProfileHeaderComponent extends BaseComponent implements OnInit {
           this.profileService.updateProfilePhoto(file).subscribe(
             (response: any) => {
               // Handle successful upload
-              this.photoupdated.emit();
+              this.syncProfileAfterPhotoUpdate();
               const title = this.lang === 'ar' ? 'تم تحديث صورة الملف الشخصي' : 'Profile Picture Updated';
               const message = this.lang === 'ar' 
                 ? 'تم تحديث صورة ملفك الشخصي بنجاح.' 
@@ -188,8 +194,10 @@ export class ProfileHeaderComponent extends BaseComponent implements OnInit {
 
               this.showSuccess(title, message);
 
-              // Optionally, you might not need to reload the page. Consider updating the view accordingly.
-               document.location.reload();
+              const celebrationSub = this.projectProgressCelebrationService
+                .checkMilestone('profile', this.profile?.roles ?? [])
+                .subscribe();
+              this.unsubscribe.push(celebrationSub);
 
               this.isLoading = false; // Optional: Stop loading
             },
@@ -240,6 +248,19 @@ export class ProfileHeaderComponent extends BaseComponent implements OnInit {
 
   hasRole(rolesRequired: string[]): boolean {
     return rolesRequired.some((role)=>this.profile.roles.includes(role))
+  }
+
+  private syncProfileAfterPhotoUpdate(): void {
+    const sub = this.accountProfileService.refreshProfile().subscribe({
+      next: () => {
+        this.photoupdated.emit();
+      },
+      error: () => {
+        this.photoupdated.emit();
+      },
+    });
+
+    this.unsubscribe.push(sub);
   }
   
 }

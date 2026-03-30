@@ -20,6 +20,7 @@ import { RippleModule } from 'primeng/ripple';
 import Aura from '@primeng/themes/aura';
 import { CoreModule } from './core/core.module';
 import { SharedModule } from './shared/shared.module';
+import { ProjectProgressCelebrationComponent } from './reusable-components/project-progress-celebration/project-progress-celebration.component';
 
 function appInitializer(authService: AuthService) {
   return () => {
@@ -50,6 +51,7 @@ function appInitializer(authService: AuthService) {
     ClipboardModule,
     CoreModule,
     SharedModule,
+    ProjectProgressCelebrationComponent,
     NgbModule,
     InlineSVGModule.forRoot(),
     SweetAlert2Module.forRoot(),

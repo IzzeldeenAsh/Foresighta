@@ -6,6 +6,7 @@ import { CountriesService } from "src/app/_fake/services/countries/countries.ser
 import { ProfileService } from "src/app/_fake/services/get-profile/get-profile.service";
 import { UpdateProfileService } from "src/app/_fake/services/profile/profile.service";
 import { BaseComponent } from "src/app/modules/base.component";
+import { ProjectProgressCelebrationService } from "src/app/reusable-components/project-progress-celebration/project-progress-celebration.service";
 
 type ChannelStatus = "active" | "inactive";
 
@@ -40,7 +41,8 @@ export class NotificationSettingsComponent extends BaseComponent implements OnIn
     private readonly countriesService: CountriesService,
     private readonly profileService: ProfileService,
     private readonly updateProfileService: UpdateProfileService,
-    private readonly confirmationService: ConfirmationService
+    private readonly confirmationService: ConfirmationService,
+    private readonly projectProgressCelebrationService: ProjectProgressCelebrationService
   ) {
     super(injector);
   }
@@ -285,6 +287,11 @@ export class NotificationSettingsComponent extends BaseComponent implements OnIn
             ? "تم تحديث إعدادات الإشعارات"
             : "Notification settings updated";
         this.showSuccess("", msg);
+
+        const celebrationSub = this.projectProgressCelebrationService
+          .checkMilestone("whatsapp", this.profileAny?.roles ?? [])
+          .subscribe();
+        this.unsubscribe.push(celebrationSub);
       }),
       switchMap(() =>
         this.profileService.refreshProfile().pipe(

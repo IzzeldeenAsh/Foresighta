@@ -1,9 +1,4 @@
-.project-settings-shell {
-  background:
-    radial-gradient(circle at top left, rgba(64, 150, 255, 0.12), transparent 34%),
-    linear-gradient(180deg, #ffffff 0%, #f9fbff 100%);
-  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.08);
-}
+
 
 .project-settings-grid {
   display: grid;
@@ -12,10 +7,14 @@
   padding: 2rem;
 }
 
+.project-settings-grid.project-settings-grid-single {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .project-settings-copy {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: 0.75rem;
 }
 
 .project-settings-badge {
@@ -31,12 +30,33 @@
 
 .project-settings-title {
   color: #111827;
-  font-size: clamp(2rem, 3vw, 3.2rem);
+  font-size: clamp(2rem, 3vw, 2.2rem);
   font-weight: 800;
   letter-spacing: -0.03em;
   line-height: 1.06;
   margin: 0;
   max-width: 18ch;
+}
+
+.project-settings-title.is-compact {
+  font-size: clamp(1.5rem, 2vw, 2rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  max-width: none;
+}
+
+.project-settings-header {
+  align-items: flex-start;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.project-settings-header.is-compact {
+  align-items: center;
+  flex-direction: row;
+  gap: 0.75rem;
+  justify-content: space-between;
 }
 
 .project-settings-description {
@@ -45,6 +65,13 @@
   line-height: 1.8;
   margin: 0;
   max-width: 58ch;
+}
+
+.project-settings-description.is-compact {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  margin-top: -0.15rem;
+  max-width: 42ch;
 }
 
 .project-settings-summary {
@@ -199,6 +226,269 @@
   white-space: nowrap;
 }
 
+.project-preferences {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+  margin-top: 0.15rem;
+  max-width: 900px;
+}
+
+.project-preferences-row {
+  display: flex;
+  flex-direction: row;
+  gap: 20px;
+}
+
+.project-preferences-section {
+  border-bottom: 1px solid #edf0f5;
+  padding-bottom: 1.5rem;
+}
+
+.project-preferences-section-rate {
+  align-items: start;
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.project-preferences-section-split {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.project-preferences-section:last-of-type {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.project-preferences-heading {
+  color: #111827;
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.project-preferences-help {
+  color: #5b6473;
+  font-size: 0.92rem;
+  line-height: 1.5;
+  margin: 0.18rem 0 0.7rem;
+}
+
+.project-preferences-copy,
+.project-preferences-field {
+  min-width: 0;
+}
+
+.project-status-toggle {
+  align-items: center;
+  background: #fff;
+  border: 1px solid #d8dee8;
+  border-radius: 0.9rem;
+  cursor: pointer;
+  display: inline-flex;
+  gap: 0.75rem;
+  padding: 0.7rem 0.9rem;
+  transition: all 0.2s ease;
+}
+
+.project-status-toggle-header {
+  align-self: flex-end;
+  gap: 0.6rem;
+  padding: 0.55rem 0.75rem;
+}
+
+.project-status-toggle.is-active {
+  background: #fff;
+  border-color: rgba(13, 110, 253, 0.34);
+}
+
+.project-status-toggle-track {
+  background: #d9e2ef;
+  border-radius: 999px;
+  flex-shrink: 0;
+  height: 24px;
+  padding: 2px;
+  position: relative;
+  transition: background 0.2s ease;
+  width: 44px;
+}
+
+.project-status-toggle.is-active .project-status-toggle-track {
+  background: #0d6efd;
+}
+
+.project-status-toggle-thumb {
+  background: #ffffff;
+  border-radius: 50%;
+  display: block;
+  height: 20px;
+  transform: translateX(0);
+  transition: transform 0.2s ease;
+  width: 20px;
+}
+
+.project-status-toggle.is-active .project-status-toggle-thumb {
+  transform: translateX(20px);
+}
+
+.project-status-toggle-text {
+  color: #111827;
+  font-size: 0.92rem;
+  font-weight: 600;
+  line-height: 1.5;
+  text-align: start;
+}
+
+.project-chip-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.project-chip-group.is-invalid .project-chip {
+  border-color: rgba(220, 53, 69, 0.3);
+}
+
+.project-chip {
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid #d8dee8;
+  border-radius: 999px;
+  color: #1f2937;
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 0.92rem;
+  font-weight: 600;
+  gap: 0.45rem;
+  justify-content: center;
+  min-height: 38px;
+  padding: 0.55rem 0.85rem;
+  transition:
+    border-color 0.2s ease,
+    color 0.2s ease,
+    background 0.2s ease;
+}
+
+.project-chip.selected {
+  background: rgba(13, 110, 253, 0.06);
+  border-color: rgba(13, 110, 253, 0.35);
+  box-shadow: none;
+  color: #0d6efd;
+}
+
+.project-chip.project-chip-arabic {
+  direction: rtl;
+}
+
+.project-chip-icon {
+  font-size: 0.7rem;
+}
+
+.hourly-rate-shell {
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid rgba(17, 24, 39, 0.28);
+  border-radius: 0.85rem;
+  display: flex;
+  gap: 0.45rem;
+  max-width: 420px;
+  min-height: 50px;
+  padding: 0.6rem 0.9rem;
+  transition: border-color 0.2s ease;
+}
+
+.hourly-rate-shell:focus-within {
+  border-color: #0d6efd;
+}
+
+.hourly-rate-shell.is-invalid {
+  border-color: rgba(220, 53, 69, 0.55);
+}
+
+.hourly-rate-prefix,
+.hourly-rate-suffix {
+  color: #111827;
+  flex-shrink: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.hourly-rate-input {
+  background: transparent;
+  border: 0;
+  color: #111827;
+  flex: 1;
+  font-size: 1.1rem;
+  font-weight: 700;
+  line-height: 1;
+  min-width: 0;
+  outline: 0;
+  padding: 0;
+  text-align: end;
+}
+
+.hourly-rate-input::placeholder {
+  color: #9ca3af;
+}
+
+.hourly-rate-input::-webkit-outer-spin-button,
+.hourly-rate-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.hourly-rate-input[type='number'] {
+  -moz-appearance: textfield;
+}
+
+.project-preferences-error {
+  color: #dc3545;
+  font-size: 0.84rem;
+  font-weight: 600;
+  margin-top: 0.45rem;
+}
+
+.project-preferences-loading,
+.project-preferences-empty {
+  color: #6b7280;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.project-preferences-actions {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.project-preferences-save {
+  border-radius: 0.75rem;
+  font-size: 0.88rem;
+  font-weight: 700;
+  min-width: 132px;
+  padding: 0.7rem 1rem;
+}
+
+.project-skeleton-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 0.25rem;
+}
+
+.project-skeleton-row {
+  align-items: flex-start;
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 24px minmax(0, 1fr) 82px;
+}
+
+.project-skeleton-copy {
+  min-width: 0;
+}
+
 .project-settings-visual {
   display: flex;
   justify-content: center;
@@ -234,7 +524,6 @@
   background: rgba(255, 255, 255, 0.9);
   border: 1px solid rgba(255, 255, 255, 0.65);
   border-radius: 1.3rem;
-  box-shadow: 0 22px 45px rgba(15, 23, 42, 0.12);
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
@@ -268,6 +557,13 @@
   letter-spacing: -0.03em;
 }
 
+@media (min-width: 1201px) {
+  .project-preferences-section-rate {
+    gap: 1.5rem;
+    grid-template-columns: minmax(220px, 0.9fr) minmax(320px, 1fr);
+  }
+}
+
 @media (max-width: 1200px) {
   .project-settings-grid {
     grid-template-columns: 1fr;
@@ -281,6 +577,14 @@
   .project-settings-image {
     min-height: 380px;
   }
+
+  .project-preferences-row {
+    flex-direction: column;
+  }
+
+  .project-skeleton-row {
+    grid-template-columns: 24px minmax(0, 1fr);
+  }
 }
 
 @media (max-width: 767px) {
@@ -290,6 +594,15 @@
 
   .project-settings-title {
     font-size: 2rem;
+  }
+
+  .project-settings-header.is-compact {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .project-status-toggle-header {
+    align-self: flex-start;
   }
 
   .project-settings-description {
@@ -305,6 +618,30 @@
   .project-checklist-action,
   .project-checklist-done {
     align-self: flex-start;
+  }
+
+  .project-skeleton-row {
+    gap: 0.75rem;
+  }
+
+  .project-status-toggle {
+    width: 100%;
+  }
+
+  .project-chip {
+    width: 100%;
+  }
+
+  .hourly-rate-shell {
+    max-width: none;
+    min-height: 46px;
+    padding: 0.55rem 0.8rem;
+  }
+
+  .hourly-rate-prefix,
+  .hourly-rate-suffix,
+  .hourly-rate-input {
+    font-size: 0.9rem;
   }
 
   .project-settings-image {

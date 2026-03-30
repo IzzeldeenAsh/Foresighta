@@ -664,14 +664,14 @@
               {{ lang === 'ar' ? 'إعدادات الإشعارات' : 'Notification Settings' }}
             </div>
           </div>
-                      <div class="nav-item" [routerLink]="['account-settings/project-settings']" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
+                      <!-- <div class="nav-item" [routerLink]="['account-settings/project-settings']" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
             <div class="item-icon">
               <i class="ki-outline ki-abstract-26"></i>
             </div>
             <div class="item-label">
               {{ lang === 'ar' ? 'إعدادات المشروع' : 'Project Settings' }}
             </div>
-          </div>
+          </div> -->
                   </ng-container>
                   <!-- Settings Expandable Item -->
                    <ng-container *ngIf="!(isClient$ | async)">
@@ -711,7 +711,7 @@
                           {{ lang === 'ar' ? 'إعدادات الإشعارات' : 'Notification Settings' }}
                         </div>
                       </div>
-                      <div class="sub-nav-item" [routerLink]="['account-settings/project-settings']" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"
+                      <!-- <div class="sub-nav-item" [routerLink]="['account-settings/project-settings']" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"
                       pTooltip="{{ isNavCollapsed ? (lang === 'ar' ? 'إعدادات المشروع' : 'Project Settings') : '' }}"
                       tooltipPosition="right"
                       appendTo="body">
@@ -721,7 +721,7 @@
                         <div class="sub-item-label">
                           {{ lang === 'ar' ? 'إعدادات المشروع' : 'Project Settings' }}
                         </div>
-                      </div>
+                      </div> -->
                       <div *ngIf="(isInsighter$ | async) || (isCompany$ | async)" class="sub-nav-item" [routerLink]="['account-settings/payment-settings']" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"
                       pTooltip="{{ isNavCollapsed ? ('INSIGHTER.DASHBOARD.NAV.PAYMENT_SETTINGS' | translate) : '' }}"
                       tooltipPosition="right"
@@ -789,7 +789,7 @@
                         <i class="ki-outline ki-notification-bing"></i>
                       </div>
                     </div>
-                    <div class="nav-item" [routerLink]="['account-settings/project-settings']" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"
+                    <!-- <div class="nav-item" [routerLink]="['account-settings/project-settings']" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"
                         [attr.title]="lang === 'ar' ? 'إعدادات المشروع' : 'Project Settings'"
                          pTooltip="{{ isNavCollapsed ? (lang === 'ar' ? 'إعدادات المشروع' : 'Project Settings') : '' }}"
                          tooltipPosition="right"
@@ -797,7 +797,7 @@
                       <div class="item-icon">
                         <i class="ki-outline ki-abstract-26"></i>
                       </div>
-                    </div>
+                    </div> -->
                     <div class="nav-item" [routerLink]="['/app/insighter-dashboard/account-settings/consulting-schedule']" routerLinkActive="active"
                          *ngIf="!(isClient$ | async)" [attr.title]="('INSIGHTER.DASHBOARD.NAV.MY_CONSULTING_SCHEDULE' | translate)"
                          pTooltip="{{ isNavCollapsed ? ('INSIGHTER.DASHBOARD.NAV.MY_CONSULTING_SCHEDULE' | translate) : '' }}"

@@ -1,40 +1,60 @@
-<p-progressBar
-  *ngIf="isLoading$ | async"
-  mode="indeterminate"
-  [style]="{ height: '4px' }"
-></p-progressBar>
-
 <div class="p-24px">
   <div class="project-settings-shell border border-gray-300 rounded-4 overflow-hidden">
-    <div class="project-settings-grid">
+    <ng-container *ngIf="!(isLoading$ | async); else projectSettingsSkeleton">
+    <div class="project-settings-grid" [class.project-settings-grid-single]="allChecksPassed">
       <div class="project-settings-copy">
-        <div class="project-settings-badge">
-          {{ lang === 'ar' ? 'إعداد المشروع' : 'Project Setup' }}
+   
+
+        <div class="project-settings-header" [class.is-compact]="allChecksPassed">
+          <h2 class="project-settings-title" [class.is-compact]="allChecksPassed">
+            {{
+              allChecksPassed
+                ? (lang === 'ar'
+                    ? 'إعدادات المشروع'
+                    : 'Project settings')
+                : (lang === 'ar'
+                    ? 'ابدأ باستقبال فرص المشاريع'
+                    : 'Start receiving project offers')
+            }}
+          </h2>
+
+          <button
+            *ngIf="allChecksPassed"
+            type="button"
+            class="project-status-toggle project-status-toggle-header"
+            [class.is-active]="settingsForm.get('project_status')?.value"
+            (click)="toggleProjectStatus()"
+          >
+            <span class="project-status-toggle-text">
+              {{
+                settingsForm.get('project_status')?.value
+                  ? (lang === 'ar' ? ' متاح لاستقبال العروض ' : 'Available for receiving offers')
+                  : (lang === 'ar' ? ' غير متاح لاستقبال العروض ' : 'Unavailable for receiving offers')
+              }}
+            </span>
+            <span class="project-status-toggle-track">
+              <span class="project-status-toggle-thumb"></span>
+            </span>
+          </button>
         </div>
 
-        <h2 class="project-settings-title">
+        <p class="project-settings-description" [class.is-compact]="allChecksPassed">
           {{
-            lang === 'ar'
-              ? 'ابدأ باستقبال فرص المشاريع'
-              : 'Start receiving project offers'
-          }}
-        </h2>
-
-        <p class="project-settings-description">
-          {{
-            lang === 'ar'
-              ? 'أكمل هذه الخطوات السريعة ليصبح حسابك جاهزًا للتعاون وفرص المشاريع الجديدة.'
-              : 'Complete these quick tasks to make your account ready for collaboration and new project opportunities.'
+            allChecksPassed
+              ? (lang === 'ar'
+                  ? ''
+                  : '')
+              : (lang === 'ar'
+                  ? 'أكمل هذه الخطوات السريعة ليصبح حسابك جاهزًا للتعاون وفرص المشاريع الجديدة.'
+                  : 'Complete these quick tasks to make your account ready for collaboration and new project opportunities.')
           }}
         </p>
-
-       
 
         <div *ngIf="errorMessage" class="alert alert-warning project-settings-alert">
           {{ errorMessage }}
         </div>
 
-        <div class="project-checklist" *ngIf="checklist.length">
+        <div *ngIf="!allChecksPassed" class="project-checklist">
           <div
             class="project-checklist-item"
             *ngFor="let item of checklist; let last = last"
@@ -101,7 +121,7 @@
                 class="btn btn-light-primary project-checklist-action"
                 [routerLink]="item.route"
               >
-                {{ lang === 'ar' ? 'ابدأ' : 'Start' }}
+                {{ lang === 'ar' ? 'أضف' : 'Add' }}
               </a>
 
               <span *ngIf="item.passed" class="project-checklist-done">
@@ -110,9 +130,175 @@
             </div>
           </div>
         </div>
+
+        <form
+          *ngIf="allChecksPassed"
+          [formGroup]="settingsForm"
+          class="project-preferences"
+          (ngSubmit)="submitProjectSettings()"
+        >
+          <div *ngIf="servicesErrorMessage" class="alert alert-warning project-settings-alert">
+            {{ servicesErrorMessage }}
+          </div>
+
+          <div *ngIf="settingsForm.get('project_status')?.value" class="project-preferences-section">
+            <div class="project-preferences-heading">
+              {{ lang === 'ar' ? 'اللغة' : 'Language' }}
+            </div>
+            <p class="project-preferences-help">
+              {{
+                lang === 'ar'
+                  ? 'اختر اللغة التي سيتم تقديم مخرجات المشروع بها. إذا كان العرض باللغة العربية، فسيتم تسليم المخرجات بالعربية، وهكذا.'
+                  : 'Choose the language the project deliverables will be provided in. If the offer is in Arabic, the deliverables should be in Arabic, and so on.'
+              }}
+            </p>
+
+            <div
+              class="project-chip-group"
+              [class.is-invalid]="projectLanguagesControl?.invalid && projectLanguagesControl?.touched"
+            >
+              <button
+                *ngFor="let option of projectLanguageOptions"
+                type="button"
+                class="project-chip"
+                [class.selected]="isProjectLanguageSelected(option.key)"
+                (click)="toggleProjectLanguage(option.key)"
+              >
+                <i *ngIf="isProjectLanguageSelected(option.key)" class="fas fa-check project-chip-icon"></i>
+                {{ lang === 'ar' ? option.labelAr : option.labelEn }}
+              </button>
+            </div>
+
+            <div
+              *ngIf="projectLanguagesControl?.invalid && projectLanguagesControl?.touched"
+              class="project-preferences-error"
+            >
+              {{ lang === 'ar' ? 'اختر لغة واحدة على الأقل.' : 'Select at least one language.' }}
+            </div>
+          </div>
+
+          <div *ngIf="settingsForm.get('project_status')?.value" class="project-preferences-section">
+            <div class="project-preferences-heading">
+              {{ lang === 'ar' ? 'الخدمات' : 'Services' }}
+            </div>
+            <p class="project-preferences-help">
+              {{
+                lang === 'ar'
+                  ? 'اختر الخدمات التي تقدمها أو تتخصص فيها، حتى تصلك عروض المشاريع المرتبطة بهذه الخدمات.'
+                  : 'Select the services you provide or specialize in so you can receive project offers related to them.'
+              }}
+            </p>
+
+            <div *ngIf="isServicesLoading$ | async" class="project-preferences-loading">
+              {{ lang === 'ar' ? 'جاري تحميل الخدمات...' : 'Loading services...' }}
+            </div>
+
+            <div
+              *ngIf="!(isServicesLoading$ | async)"
+              class="project-chip-group"
+              [class.is-invalid]="servicesControl?.invalid && servicesControl?.touched"
+            >
+              <button
+                *ngFor="let service of availableServices"
+                type="button"
+                class="project-chip"
+                [class.selected]="isServiceSelected(service.id)"
+                [class.project-chip-arabic]="isFirstWordArabic(service.name)"
+                (click)="toggleService(service.id)"
+              >
+                <i *ngIf="isServiceSelected(service.id)" class="fas fa-check project-chip-icon"></i>
+                {{ service.name }}
+              </button>
+            </div>
+
+            <div
+              *ngIf="!(isServicesLoading$ | async) && !availableServices.length && !servicesErrorMessage"
+              class="project-preferences-empty"
+            >
+              {{ lang === 'ar' ? 'لا توجد خدمات متاحة حالياً.' : 'No services are available right now.' }}
+            </div>
+
+            <div
+              *ngIf="servicesControl?.invalid && servicesControl?.touched"
+              class="project-preferences-error"
+            >
+              {{ lang === 'ar' ? 'اختر خدمة واحدة على الأقل.' : 'Select at least one service.' }}
+            </div>
+          </div>
+
+          <div
+            *ngIf="settingsForm.get('project_status')?.value"
+            class="project-preferences-section project-preferences-section-rate"
+          >
+            <div class="project-preferences-copy">
+              <div class="project-preferences-heading">
+                {{ lang === 'ar' ? 'سعر الساعة' : 'Hourly rate' }}
+              </div>
+              <p class="project-preferences-help">
+                {{
+                  lang === 'ar'
+                    ? 'السعر لكل ساعة.'
+                    : 'Rate per hour.'
+                }}
+              </p>
+            </div>
+
+            <div class="project-preferences-field">
+              <div
+                class="hourly-rate-shell"
+                [class.is-invalid]="hourlyRateControl?.invalid && hourlyRateControl?.touched"
+                dir="ltr"
+              >
+                <span class="hourly-rate-prefix">$</span>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  class="hourly-rate-input"
+                  formControlName="hourly_rate"
+                  [placeholder]="lang === 'ar' ? '20.00' : '20.00'"
+                />
+                <span class="hourly-rate-suffix">{{ lang === 'ar' ? '/ساعة' : '/hr' }}</span>
+              </div>
+
+              <div
+                *ngIf="hourlyRateControl?.invalid && hourlyRateControl?.touched"
+                class="project-preferences-error"
+              >
+                {{
+                  lang === 'ar'
+                    ? 'أدخل سعر ساعة صالحًا أكبر من صفر.'
+                    : 'Enter a valid hourly rate greater than zero.'
+                }}
+              </div>
+            </div>
+          </div>
+
+          <div *ngIf="!settingsForm.get('project_status')?.value" class="project-preferences-empty">
+            {{
+              lang === 'ar'
+                ? 'فعّل الحالة لعرض إعدادات المشروع.'
+                : 'Turn status on to show project settings.'
+            }}
+          </div>
+
+          <div class="project-preferences-actions" *ngIf="settingsForm.get('project_status')?.value">
+            <button
+              type="submit"
+              class="btn btn-primary project-preferences-save"
+              [disabled]="(isSaving$ | async) || (isServicesLoading$ | async) || !availableServices.length"
+            >
+              {{
+                (isSaving$ | async)
+                  ? (lang === 'ar' ? 'جاري الحفظ...' : 'Saving...')
+                  : (lang === 'ar' ? 'حفظ الإعدادات' : 'Save settings')
+              }}
+            </button>
+          </div>
+        </form>
       </div>
 
-      <div class="project-settings-visual">
+      <div *ngIf="!allChecksPassed" class="project-settings-visual">
         <div class="project-settings-image-wrap">
           <img
             [src]="heroImageUrl"
@@ -128,17 +314,58 @@
             </div>
           </div>
           <div class="visual-badge visual-badge-bottom">
-            <i class="ki-outline ki-chart-line-up text-success fs-3"></i>
+            <i
+              class="fs-3"
+              [ngClass]="
+                allChecksPassed
+                  ? 'ki-outline ki-setting-2 text-primary'
+                  : 'ki-outline ki-chart-line-up text-success'
+              "
+            ></i>
             <span>
               {{
-                lang === 'ar'
-                  ? 'أكمل الخطوات لزيادة فرص ظهورك'
-                  : 'Complete the steps to improve your visibility'
+                allChecksPassed
+                  ? (lang === 'ar'
+                      ? 'احفظ هذه التفضيلات لبدء استقبال عروض المشاريع'
+                      : 'Save these preferences to start receiving project offers')
+                  : (lang === 'ar'
+                      ? 'أكمل الخطوات لزيادة فرص ظهورك'
+                      : 'Complete the steps to improve your visibility')
               }}
             </span>
           </div>
         </div>
       </div>
     </div>
+    </ng-container>
   </div>
 </div>
+
+<ng-template #projectSettingsSkeleton>
+  <div class="project-settings-grid">
+    <div class="project-settings-copy">
+      <p-skeleton width="118px" height="34px" borderRadius="999px"></p-skeleton>
+
+      <div class="project-settings-header">
+        <p-skeleton width="260px" height="42px"></p-skeleton>
+      </div>
+
+      <p-skeleton width="360px" height="18px"></p-skeleton>
+
+      <div class="project-skeleton-list">
+        <div class="project-skeleton-row" *ngFor="let _ of [1, 2, 3]">
+          <p-skeleton shape="circle" size="24px"></p-skeleton>
+          <div class="project-skeleton-copy">
+            <p-skeleton width="150px" height="18px" styleClass="mb-2"></p-skeleton>
+            <p-skeleton width="240px" height="14px"></p-skeleton>
+          </div>
+          <p-skeleton width="82px" height="34px" borderRadius="14px"></p-skeleton>
+        </div>
+      </div>
+    </div>
+
+    <div class="project-settings-visual">
+      <p-skeleton width="100%" height="460px" borderRadius="32px"></p-skeleton>
+    </div>
+  </div>
+</ng-template>

@@ -21,7 +21,17 @@ export class ProfileComponent extends BaseComponent implements OnInit {
     super(injector);
   }
   ngOnInit(): void {
+    this.listenToProfileUpdates();
     this.getProfile();
+  }
+
+  private listenToProfileUpdates(): void {
+    const profileStateSub = this.getProfileService.profile$.subscribe((profile) => {
+      if (profile) {
+        this.profile = profile;
+      }
+    });
+    this.unsubscribe.push(profileStateSub);
   }
 
   getProfile() {
@@ -35,6 +45,14 @@ export class ProfileComponent extends BaseComponent implements OnInit {
   }
 
   reloadAPI() {
-    this.getProfile();
+    const sub = this.getProfileService.refreshProfile().subscribe({
+      next: (profile) => {
+        this.profile = profile;
+      },
+      error: () => {
+        this.getProfile();
+      },
+    });
+    this.unsubscribe.push(sub);
   }
 }

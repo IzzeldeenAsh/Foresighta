@@ -6,6 +6,7 @@
 <ng-container *ngIf="profile && (roles.length > 0)">
 
 <form
+class="company-settings-form"
 [formGroup]="corporateInfoForm"
 (ngSubmit)="onSubmit()"
 *ngIf="!(isLoading$ | async) && hasRole(['company'])"
@@ -36,7 +37,7 @@
 
 
 <!-- Consulting Fields -->
-  <div class="row">
+  <div class="row section-row">
      <div class="col-12">
       <shared-tree-selector
       [title]="lang === 'ar' ? 'التخصصات' : 'Expertise'"
@@ -57,7 +58,7 @@
   </div>
 
 <!-- Industry -->
-<div class="row">
+<div class="row section-row">
   <div class="col-12">
     <shared-tree-selector
     [title]="lang === 'ar' ? 'المجالات' : 'Specialties (Industries)'"
@@ -79,7 +80,7 @@
 </div>
 
   <!-- Company Address and Phone -->
-  <div class="row">
+  <div class="row section-row">
     <div class="col-lg-6 mb-6 fv-row">
       <label class="form-label required">{{
         "ACCOUNT_SETTINGS.COMPANY_ADDRESS" | translate
@@ -95,6 +96,27 @@
         {{ getFieldError('companyAddress') }}
       </div>
     </div>
+    <div class="col-lg-6 mb-6 fv-row">
+      <label class="form-label required">
+        {{ 'INSIGHTER_WIZARD.COUNTRY' | translate }}
+      </label>
+      <app-country-dropdown
+        [countries]="countries"
+        formControlName="companyCountry"
+        [placeholder]="'INSIGHTER_WIZARD.COUNTRY_PLACEHOLDER' | translate"
+        [searchPlaceholder]="lang === 'ar' ? 'ابحث عن دولة...' : 'Search countries...'"
+        [enableSearch]="true"
+        [showClear]="true"
+        [lang]="lang"
+        [isInvalid]="isFieldInvalid('companyCountry')"
+      ></app-country-dropdown>
+      <div *ngIf="isFieldInvalid('companyCountry')" class="invalid-feedback d-block">
+        {{ getFieldError('companyCountry') }}
+      </div>
+    </div>
+  </div>
+
+  <div class="row section-row">
     <div class="col-lg-6 mb-6 fv-row">
       <label class="form-label">
         {{ lang === 'ar' ? 'رقم هاتف الشركة' : 'Company Phone Number' }}

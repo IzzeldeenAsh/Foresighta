@@ -19,6 +19,7 @@ interface WhatsAppCheck {
 interface ProfileCheck {
   required?: {
     profile_photo?: string | boolean | null;
+    bio?: boolean | null;
     about_us?: boolean | null;
     country?: boolean | null;
   };
@@ -41,26 +42,61 @@ interface ProjectAccountCheckResponse {
   check_results?: ProjectAccountCheckResults;
 }
 
+export interface ProjectServiceOption {
+  id: number;
+  name: string;
+  slug: string;
+}
+
+interface ProjectServiceListResponse {
+  data?: ProjectServiceOption[];
+}
+
+export interface SyncProjectAccountPropertiesPayload {
+  project_status: 'active' | 'inactive';
+  project_languages: 'english' | 'arabic' | 'both';
+  hourly_rate: string;
+  services: number[];
+}
+
+export interface ProjectAccountProperties {
+  project_status?: 'active' | 'inactive';
+  project_languages?: 'english' | 'arabic' | 'both';
+  hourly_rate?: string | number | null;
+  services?: Array<ProjectServiceOption | number>;
+}
+
+interface ProjectAccountPropertiesResponse {
+  data?: ProjectAccountProperties;
+}
+
 @Injectable({
   providedIn: 'root'
 })
 export class ProjectSettingsService {
-  private readonly apiUrl = `${environment.apiBaseUrl}/insighter/project/account/initiate/check`;
+  private readonly checkApiUrl = `${environment.apiBaseUrl}/insighter/project/account/initiate/check`;
+  private readonly propertiesApiUrl = `${environment.apiBaseUrl}/insighter/project/account/properties`;
+  private readonly syncApiUrl = `${environment.apiBaseUrl}/insighter/project/account/properties/sync`;
+  private readonly servicesApiUrl = `${environment.apiBaseUrl}/common/setting/service`;
 
   constructor(
     private readonly http: HttpClient,
     private readonly translationService: TranslationService
   ) {}
 
-  getProjectAccountCheck(): Observable<ProjectAccountCheckResults> {
-    const headers = new HttpHeaders({
+  private getHeaders(): HttpHeaders {
+    return new HttpHeaders({
       Accept: 'application/json',
       'Content-Type': 'application/json',
       'Accept-Language': this.translationService.getSelectedLanguage() || 'en',
     });
+  }
 
+  getProjectAccountCheck(): Observable<ProjectAccountCheckResults> {
     return this.http
-      .post<ProjectAccountCheckResponse>(this.apiUrl, {}, { headers })
+      .post<ProjectAccountCheckResponse>(this.checkApiUrl, {}, {
+        headers: this.getHeaders(),
+      })
       .pipe(
         map((response) =>
           response?.data?.check_results ??
@@ -69,5 +105,29 @@ export class ProjectSettingsService {
           {}
         )
       );
+  }
+
+  getProjectServices(): Observable<ProjectServiceOption[]> {
+    return this.http
+      .get<ProjectServiceListResponse>(this.servicesApiUrl, {
+        headers: this.getHeaders(),
+      })
+      .pipe(map((response) => response?.data ?? []));
+  }
+
+  getProjectAccountProperties(): Observable<ProjectAccountProperties> {
+    return this.http
+      .get<ProjectAccountPropertiesResponse>(this.propertiesApiUrl, {
+        headers: this.getHeaders(),
+      })
+      .pipe(map((response) => response?.data ?? {}));
+  }
+
+  syncProjectAccountProperties(
+    payload: SyncProjectAccountPropertiesPayload
+  ): Observable<unknown> {
+    return this.http.post(this.syncApiUrl, payload, {
+      headers: this.getHeaders(),
+    });
   }
 }

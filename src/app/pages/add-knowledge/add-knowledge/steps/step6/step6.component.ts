@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { BaseComponent } from 'src/app/modules/base.component';
 import { KnowledgeService, Knowledge } from 'src/app/_fake/services/knowledge/knowledge.service';
 import { TranslateService } from '@ngx-translate/core';
+import { ProjectProgressCelebrationService } from 'src/app/reusable-components/project-progress-celebration/project-progress-celebration.service';
 
 @Component({
   selector: 'app-step6',
@@ -199,7 +200,8 @@ export class Step6Component extends BaseComponent implements OnInit {
     injector: Injector,
     private router: Router,
     private knowledgeService: KnowledgeService,
-    private translateService: TranslateService
+    private translateService: TranslateService,
+    private readonly projectProgressCelebrationService: ProjectProgressCelebrationService
   ) {
     super(injector);
     this.addTranslations();
@@ -246,9 +248,16 @@ export class Step6Component extends BaseComponent implements OnInit {
       this.knowledgeService.getKnowledgeById(this.defaultValues.knowledgeId).subscribe({
         next: (response) => {
           this.publishedKnowledge = response.data;
-          // Auto-open the social share modal once knowledge data is loaded
+
           if (this.defaultValues.publish_status === 'published' && this.publishedKnowledge) {
-            this.openSocialShareModal();
+            const sub = this.projectProgressCelebrationService
+              .checkMilestone('publish_insights')
+              .subscribe((opened) => {
+                if (!opened) {
+                  this.openSocialShareModal();
+                }
+              });
+            this.unsubscribe.push(sub);
           }
         },
         error: (error) => {

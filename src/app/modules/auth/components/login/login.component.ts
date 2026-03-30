@@ -17,6 +17,11 @@ import { HttpClient, HttpHeaders } from "@angular/common/http";
   styleUrls: ["./login.component.scss"],
 })
 export class LoginComponent extends BaseComponent implements OnInit, OnDestroy {
+  private readonly angularRoutePrefixes = [
+    "/app/",
+    "/admin-dashboard/",
+  ];
+
   defaultAuth: any = {
     email: null,
     password: null,
@@ -153,9 +158,18 @@ export class LoginComponent extends BaseComponent implements OnInit, OnDestroy {
   
   private getReturnUrl(): string {
     let returnUrl = this.returnUrl !== "/" ? this.returnUrl : document.referrer;
+
+    if (returnUrl && this.isAngularReturnUrl(returnUrl)) {
+      return this.toAbsoluteAngularReturnUrl(returnUrl);
+    }
     
     // Check if returnUrl is a full URL from allowed domains
-    if (returnUrl && (returnUrl.includes('insightabusiness.com') || returnUrl.includes('localhost'))) {
+    if (returnUrl && (
+      returnUrl.includes('insightabusiness.com') ||
+      returnUrl.includes('foresighta.co') ||
+      returnUrl.includes('localhost') ||
+      returnUrl.includes('127.0.0.1')
+    )) {
       return returnUrl;
     }
     
@@ -343,6 +357,9 @@ export class LoginComponent extends BaseComponent implements OnInit, OnDestroy {
     try {
       // Handle absolute URLs
       const absolute = new URL(url, window.location.origin);
+      if (this.isAngularPath(absolute.pathname)) {
+        return absolute.toString();
+      }
       const isNextHost = absolute.hostname === 'localhost' && absolute.port === '3000';
       const isProdNextHost = absolute.hostname.endsWith('insightabusiness.com') && absolute.hostname !== 'app.insightabusiness.com';
       if (isNextHost || isProdNextHost) {
@@ -355,10 +372,39 @@ export class LoginComponent extends BaseComponent implements OnInit, OnDestroy {
     } catch {
       // Handle relative paths
       if (url.startsWith('/')) {
+        if (this.isAngularPath(url)) {
+          return url;
+        }
         return this.ensureLocalePrefix(url, lang);
       }
       return url;
     }
+  }
+
+  private isAngularReturnUrl(url: string): boolean {
+    try {
+      const absolute = new URL(url, window.location.origin);
+      return this.isAngularPath(absolute.pathname);
+    } catch {
+      return this.isAngularPath(url);
+    }
+  }
+
+  private toAbsoluteAngularReturnUrl(url: string): string {
+    const absolute = new URL(url, window.location.origin);
+    absolute.pathname = this.normalizeAngularPath(absolute.pathname);
+    return absolute.toString();
+  }
+
+  private isAngularPath(pathOrUrl: string): boolean {
+    const normalizedPath = this.normalizeAngularPath(pathOrUrl);
+    return this.angularRoutePrefixes.some(prefix => normalizedPath.startsWith(prefix));
+  }
+
+  private normalizeAngularPath(pathOrUrl: string): string {
+    const pathOnly = pathOrUrl.split("?")[0].split("#")[0];
+    const normalized = pathOnly.replace(/^\/(en|ar)(?=\/|$)/, "") || "/";
+    return normalized.startsWith("/") ? normalized : `/${normalized}`;
   }
 
   private ensureLocalePrefix(pathname: string, lang: string): string {

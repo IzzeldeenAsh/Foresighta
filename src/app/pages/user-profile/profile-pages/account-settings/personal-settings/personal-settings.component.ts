@@ -9,6 +9,7 @@ import { IndustryService } from "src/app/_fake/services/industries/industry.serv
 import { InvitationService } from "src/app/_fake/services/invitation/invitation.service";
 import { UpdateProfileService } from "src/app/_fake/services/profile/profile.service";
 import { BaseComponent } from "src/app/modules/base.component";
+import { ProjectProgressCelebrationService } from "src/app/reusable-components/project-progress-celebration/project-progress-celebration.service";
 
 @Component({
   selector: "app-personal-settings",
@@ -113,6 +114,7 @@ export class PersonalSettingsComponent extends BaseComponent implements OnInit {
     private _consultingFieldService: ConsultingFieldTreeService,
     private _industries: IndustryService,
     private _invitationService: InvitationService,
+    private readonly projectProgressCelebrationService: ProjectProgressCelebrationService,
   ) {
     super(injector);
   }
@@ -381,6 +383,12 @@ export class PersonalSettingsComponent extends BaseComponent implements OnInit {
           const message =
             this.lang === "ar" ? "تم تعديل البروفايل" : "Profile Updated Successfully";
           this.showSuccess("", message);
+
+          const celebrationSub = this.projectProgressCelebrationService
+            .checkMilestone("profile", this.roles)
+            .subscribe();
+          this.unsubscribe.push(celebrationSub);
+
           this.refreshProfileAndForm();
         },
         error: (error) => {

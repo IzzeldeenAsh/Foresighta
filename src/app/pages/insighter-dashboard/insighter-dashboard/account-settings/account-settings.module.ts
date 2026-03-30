@@ -37,6 +37,7 @@ import { AgreementModalComponent } from 'src/app/reusable-components/agreement-m
 import { NotificationSettingsComponent } from './notification-settings/notification-settings.component';
 import { PhoneNumberInputModule } from 'src/app/reusable-components/phone-number-input/phone-number-input.module';
 import { ProjectSettingsComponent } from './project-settings/project-settings.component';
+import { SkeletonModule } from 'primeng/skeleton';
 
 const routes: Routes = [
   {
@@ -119,7 +120,8 @@ const routes: Routes = [
     CountryDropdownComponent,
     InsighterDashboardSharedModule,
     AgreementModalComponent,
-    PhoneNumberInputModule
+    PhoneNumberInputModule,
+    SkeletonModule
   ],
   schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })

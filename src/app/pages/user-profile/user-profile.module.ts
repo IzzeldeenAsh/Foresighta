@@ -39,6 +39,7 @@ import { ResetPasswordComponent } from './profile-pages/account-settings/reset-p
 import { JoinCompanyComponent } from './profile-pages/join-company/join-company.component';
 import { MenuModule } from 'primeng/menu';
 import { InsighterDashboardSharedModule } from '../insighter-dashboard/insighter-dashboard/shared/shared.module';
+import { CountryDropdownComponent } from 'src/app/reusable-components/country-dropdown/country-dropdown.component';
 
   @NgModule({
     declarations: [
@@ -82,6 +83,7 @@ import { InsighterDashboardSharedModule } from '../insighter-dashboard/insighter
       TreeSelectModule,
       MultiSelectModule,
       PhoneNumberInputModule,
+      CountryDropdownComponent,
       TranslationModule,
       DropdownMenusModule,
       MenuModule
