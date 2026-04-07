@@ -38,8 +38,23 @@ import { NotificationSettingsComponent } from './notification-settings/notificat
 import { PhoneNumberInputModule } from 'src/app/reusable-components/phone-number-input/phone-number-input.module';
 import { ProjectSettingsComponent } from './project-settings/project-settings.component';
 import { SkeletonModule } from 'primeng/skeleton';
+import { ProjectSettingsPageComponent } from './project-settings-page/project-settings-page.component';
+import { ConsultingSchedulePageComponent } from './consulting-schedule-page/consulting-schedule-page.component';
 
 const routes: Routes = [
+  {
+    path: 'project-settings',
+    component: ProjectSettingsPageComponent,
+    canActivate: [RolesGuard],
+    data: { roles: ['insighter', 'company'] }
+  },
+  {
+    path: 'consulting-schedule',
+    component: ConsultingSchedulePageComponent,
+    canActivate: [RolesGuard],
+    canDeactivate: [PendingChangesGuard],
+    data: { roles: ['insighter', 'company', 'company-insighter'] }
+  },
   {
     path: '',
     component: SettingsTabsComponent,
@@ -64,18 +79,9 @@ const routes: Routes = [
         component: PaymentSettingsComponent
       },
       {
-        path: 'consulting-schedule',
-        component: ConsultingScheduleComponent,
-        canDeactivate: [PendingChangesGuard]
-      },
-      {
         path: 'notification-settings',
         component: NotificationSettingsComponent,
         canDeactivate: [PendingChangesGuard]
-      },
-      {
-        path: 'project-settings',
-        component: ProjectSettingsComponent
       }
     ]
   }
@@ -90,8 +96,10 @@ const routes: Routes = [
     ReactivateDialogComponent,
     PaymentSettingsComponent,
     ConsultingScheduleComponent,
+    ConsultingSchedulePageComponent,
     NotificationSettingsComponent,
     ProjectSettingsComponent,
+    ProjectSettingsPageComponent,
     TransferDialogComponent,
     DeactivateDialogComponent,
     DeleteDialogComponent,

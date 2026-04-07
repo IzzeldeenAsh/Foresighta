@@ -246,15 +246,23 @@ export class PersonalSettingsComponent extends BaseComponent implements OnInit {
       this.personalInfoForm.get('industries')?.setValidators([Validators.required]);
       this.personalInfoForm.get('consulting_field')?.setValidators([Validators.required]);
       this.personalInfoForm.get('bio')?.setValidators([Validators.required]);
+      this.personalInfoForm.get('experience')?.setValidators([
+        Validators.required,
+        Validators.min(0),
+        Validators.max(40),
+        Validators.pattern(/^\d+$/),
+      ]);
     } else {
       // Remove any existing validators for client-only users
       this.personalInfoForm.get('industries')?.clearValidators();
       this.personalInfoForm.get('consulting_field')?.clearValidators();
       this.personalInfoForm.get('bio')?.clearValidators();
+      this.personalInfoForm.get('experience')?.clearValidators();
     }
     this.personalInfoForm.get('industries')?.updateValueAndValidity();
     this.personalInfoForm.get('consulting_field')?.updateValueAndValidity();
     this.personalInfoForm.get('bio')?.updateValueAndValidity();
+    this.personalInfoForm.get('experience')?.updateValueAndValidity();
   }
 
   populateForm(){
@@ -276,6 +284,7 @@ export class PersonalSettingsComponent extends BaseComponent implements OnInit {
       phoneNumber: this.profile.phone || '',
       language: preferredLanguage,
       bio: this.profile.bio || '',
+      experience: profileAny?.experience ?? '',
       industries: transformedIndustries,
       consulting_field: transformedConsultingFields,
       linkedIn: this.getSocialLink('linkedin'),
@@ -323,6 +332,7 @@ export class PersonalSettingsComponent extends BaseComponent implements OnInit {
       phoneNumber: [""],
       language: [this.lang === "ar" ? "ar" : "en", Validators.required],
       bio: [""],
+      experience: [""],
       industries: [[]],
       consulting_field: [[]],
       linkedIn: ["", [this.optionalUrlValidator()]],
@@ -495,6 +505,11 @@ export class PersonalSettingsComponent extends BaseComponent implements OnInit {
 
   private appendNonClientFields(formData: FormData, form: any): void {
     formData.append("bio", form.get("bio")?.value);
+
+    const experience = form.get("experience")?.value;
+    if (experience !== null && experience !== undefined && experience !== "") {
+      formData.append("experience", String(experience));
+    }
     
     this.appendIndustries(formData, form.get('industries')?.value || []);
     this.appendConsultingFields(formData, form.get('consulting_field')?.value || []);
@@ -685,7 +700,22 @@ export class PersonalSettingsComponent extends BaseComponent implements OnInit {
         return this.lang === 'ar' ? 'هذا الحقل مطلوب' : 'This field is required';
       }
       if (field.errors?.['pattern']) {
+        if (fieldName === 'experience') {
+          return this.lang === 'ar'
+            ? 'يرجى إدخال عدد صحيح من السنوات'
+            : 'Please enter a valid number of years';
+        }
         return this.lang === 'ar' ? 'الرابط غير صحيح' : 'Invalid URL format';
+      }
+      if (field.errors?.['min']) {
+        return this.lang === 'ar'
+          ? 'يرجى إدخال عدد صحيح من السنوات'
+          : 'Please enter a valid number of years';
+      }
+      if (field.errors?.['max'] && fieldName === 'experience') {
+        return this.lang === 'ar'
+          ? 'الحد الأقصى هو 40 سنة'
+          : 'Maximum is 40 years';
       }
     }
     return '';

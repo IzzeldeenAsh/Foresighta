@@ -289,6 +289,29 @@
               </div>
 
               <div class="row">
+                <div class="col-lg-6 mb-6 fv-row">
+                  <label for="experience" class="form-label required">
+                    {{ "ACCOUNT_SETTINGS.YEARS_OF_EXPERIENCE" | translate }}
+                  </label>
+                  <input
+                    pInputText
+                    id="experience"
+                    type="number"
+                    min="0"
+                    max="40"
+                    step="1"
+                    inputmode="numeric"
+                    formControlName="experience"
+                    class="form-control"
+                    [class.is-invalid]="isFieldInvalid('experience')"
+                  />
+                  <div *ngIf="isFieldInvalid('experience')" class="invalid-feedback">
+                    {{ getFieldError("experience") }}
+                  </div>
+                </div>
+              </div>
+
+              <div class="row">
                 <div class="col-12">
                   <label class="form-label required">
                     {{ "ACCOUNT_SETTINGS.BIO" | translate }}

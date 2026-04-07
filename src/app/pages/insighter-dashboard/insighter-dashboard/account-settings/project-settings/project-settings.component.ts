@@ -6,6 +6,7 @@ import { BaseComponent } from 'src/app/modules/base.component';
 import {
   ProjectAccountCheckResults,
   ProjectAccountProperties,
+  ProjectAccountProjectType,
   ProjectServiceOption,
   ProjectSettingsService,
   SyncProjectAccountPropertiesPayload,
@@ -21,6 +22,14 @@ interface ProjectChecklistItem {
     paid: number;
     free: number;
   };
+}
+
+interface ProjectTypeOption {
+  key: ProjectAccountProjectType;
+  labelEn: string;
+  labelAr: string;
+  descriptionEn: string;
+  descriptionAr: string;
 }
 
 @Component({
@@ -43,6 +52,29 @@ export class ProjectSettingsComponent extends BaseComponent implements OnInit {
       labelAr: 'العربية',
     },
   ] as const;
+  readonly projectTypeOptions: ReadonlyArray<ProjectTypeOption> = [
+    {
+      key: 'ad_hoc',
+      labelEn: 'Ad hoc (single request)',
+      labelAr: 'Ad hoc (طلب واحد)',
+      descriptionEn: 'Single request with a clear scope and delivery.',
+      descriptionAr: 'طلب واحد بنطاق واضح ومخرجات محددة.',
+    },
+    {
+      key: 'frame_work_agreement',
+      labelEn: 'Framework (multi-request)',
+      labelAr: 'Framework (طلبات متعددة)',
+      descriptionEn: 'Ongoing collaboration with repeated work orders.',
+      descriptionAr: 'تعاون مستمر مع أوامر عمل متعددة عند الحاجة.',
+    },
+    {
+      key: 'urgent_request',
+      labelEn: 'Within 24 hours',
+      labelAr: 'خلال 24 ساعة',
+      descriptionEn: 'Priority handling for urgent and time-sensitive requests.',
+      descriptionAr: 'أولوية للطلبات العاجلة والحساسة زمنيًا.',
+    },
+  ];
 
   checklist: ProjectChecklistItem[] = [];
   availableServices: ProjectServiceOption[] = [];
@@ -72,6 +104,7 @@ export class ProjectSettingsComponent extends BaseComponent implements OnInit {
       project_languages: [[], Validators.required],
       hourly_rate: [null, [Validators.required, Validators.min(0.1)]],
       services: [[], Validators.required],
+      project_types: [[], Validators.required],
     });
   }
 
@@ -104,12 +137,20 @@ export class ProjectSettingsComponent extends BaseComponent implements OnInit {
     return this.checklist.length > 0 && this.checklist.every((item) => item.passed);
   }
 
+  get isRtl(): boolean {
+    return this.lang === 'ar';
+  }
+
   get projectLanguagesControl() {
     return this.settingsForm.get('project_languages');
   }
 
   get hourlyRateControl() {
     return this.settingsForm.get('hourly_rate');
+  }
+
+  get projectTypesControl() {
+    return this.settingsForm.get('project_types');
   }
 
   get servicesControl() {
@@ -135,6 +176,21 @@ export class ProjectSettingsComponent extends BaseComponent implements OnInit {
 
   isProjectLanguageSelected(language: 'english' | 'arabic'): boolean {
     return this.getSelectedProjectLanguages().includes(language);
+  }
+
+  toggleProjectType(projectType: ProjectAccountProjectType): void {
+    const currentValues = this.getSelectedProjectTypes();
+    const nextValues = currentValues.includes(projectType)
+      ? currentValues.filter((value) => value !== projectType)
+      : [...currentValues, projectType];
+
+    this.projectTypesControl?.setValue(nextValues);
+    this.projectTypesControl?.markAsTouched();
+    this.projectTypesControl?.markAsDirty();
+  }
+
+  isProjectTypeSelected(projectType: ProjectAccountProjectType): boolean {
+    return this.getSelectedProjectTypes().includes(projectType);
   }
 
   toggleService(serviceId: number): void {
@@ -169,6 +225,7 @@ export class ProjectSettingsComponent extends BaseComponent implements OnInit {
       project_languages: this.mapProjectLanguagesForPayload(),
       hourly_rate: String(this.settingsForm.get('hourly_rate')?.value ?? '').trim(),
       services: this.getSelectedServices(),
+      project_types: this.getSelectedProjectTypes(),
     };
 
     this.savingSubject.next(true);
@@ -307,7 +364,11 @@ export class ProjectSettingsComponent extends BaseComponent implements OnInit {
       {
         key: 'publish_insights',
         title: this.lang === 'ar' ? 'نشر الرؤى' : 'Publish Insight',
-        details: this.getPublishInsightDetails(results),
+        details: [
+          this.lang === 'ar'
+            ? 'استوفِ شرط نشر الرؤى.'
+            : 'Meet the insight publishing requirement.',
+        ],
         route: '/app/add-knowledge/stepper',
         passed: !!results.publish_insights?.pass,
         insightRequirements: {
@@ -315,7 +376,7 @@ export class ProjectSettingsComponent extends BaseComponent implements OnInit {
           free: results.publish_insights?.required?.free ?? 0,
         },
       },
-   
+
       {
         key: 'profile',
         title: this.lang === 'ar' ? 'إكمال الملف الشخصي' : 'Complete Profile',
@@ -323,13 +384,13 @@ export class ProjectSettingsComponent extends BaseComponent implements OnInit {
         route: '/app/profile/overview',
         passed: this.isProfileComplete(results),
       },
-         {
+      {
         key: 'whatsapp',
         title: this.lang === 'ar' ? 'تفعيل واتساب' : 'Enable WhatsApp',
         details: [
           this.lang === 'ar'
-            ? 'فعّل إشعارات واتساب'
-            : 'Enable WhatsApp notifications',
+            ? 'أضف رقم واتساب لتصلك الإشعارات بسرعة.'
+            : 'Add your WhatsApp number for faster notifications.',
         ],
         route: '/app/insighter-dashboard/account-settings/notification-settings',
         passed: !!results.whatsapp?.pass,
@@ -337,33 +398,40 @@ export class ProjectSettingsComponent extends BaseComponent implements OnInit {
     ];
   }
 
-  private getPublishInsightDetails(results: ProjectAccountCheckResults): string[] {
-    const required = results.publish_insights?.required;
-    const paid = required?.paid ?? 0;
-    const free = required?.free ?? 0;
-    const passed = !!results.publish_insights?.pass;
+  private isProfileComplete(results: ProjectAccountCheckResults): boolean {
+    const required = results.profile?.required;
 
-    if (paid > 0 || free > 0) {
-      return [
-        this.lang === 'ar'
-          ? 'انشر العدد المطلوب من الرؤى.'
-          : 'Publish the required insight mix.',
-      ];
+    if (required) {
+      return (
+        this.isRequiredFieldComplete(required, 'profile_photo') &&
+        this.isRequiredFieldComplete(required, 'country') &&
+        (this.isCompanyAccount()
+          ? this.isRequiredFieldComplete(required, 'about_us')
+          : this.isRequiredFieldComplete(required, 'bio')) &&
+        this.isExperienceComplete(results)
+      );
     }
 
-    if (!passed) {
-      return [
-        this.lang === 'ar'
-          ? 'انشر الرؤى المطلوبة.'
-          : 'Publish <span class="text-info fs-6"><b>2 Free</b></span> insights and<span class="text-info fs-6 fw-bolder"><b>1 Paid</b></span> Insight.',
-      ];
+    return !!results.profile?.pass && this.isExperienceComplete(results);
+  }
+
+  private isExperienceComplete(results: ProjectAccountCheckResults): boolean {
+    const experiencePass = results.experience?.pass;
+    return experiencePass !== false &&
+      experiencePass !== null &&
+      experiencePass !== undefined &&
+      experiencePass !== '';
+  }
+
+  private isRequiredFieldComplete(
+    required: NonNullable<ProjectAccountCheckResults['profile']>['required'],
+    fieldName: 'profile_photo' | 'bio' | 'about_us' | 'country'
+  ): boolean {
+    if (!required || !Object.prototype.hasOwnProperty.call(required, fieldName)) {
+      return true;
     }
 
-    return [
-      this.lang === 'ar'
-        ? 'تم استيفاء متطلبات نشر الرؤى.'
-        : 'Insight publishing requirement completed.',
-    ];
+    return required[fieldName] === true;
   }
 
   private getProfileDetails(results: ProjectAccountCheckResults): string[] {
@@ -372,20 +440,33 @@ export class ProjectSettingsComponent extends BaseComponent implements OnInit {
     const missingFieldsAr: string[] = [];
 
     if (required) {
-      if (required.profile_photo !== true) {
-        missingFieldsEn.push('Add Profile picture');
+      if (!this.isRequiredFieldComplete(required, 'profile_photo')) {
+        missingFieldsEn.push('Add profile picture');
         missingFieldsAr.push('أضف صورة شخصية');
       }
 
       if (this.isCompanyAccount()) {
-        if (required.about_us !== true) {
-          missingFieldsEn.push('Add Company About Us');
+        if (!this.isRequiredFieldComplete(required, 'about_us')) {
+          missingFieldsEn.push('Add company about us');
           missingFieldsAr.push('أضف نبذة عن الشركة');
         }
-      } else if (required.bio !== true) {
-        missingFieldsEn.push('Add Bio');
+      } else if (!this.isRequiredFieldComplete(required, 'bio')) {
+        missingFieldsEn.push('Add bio');
         missingFieldsAr.push('أضف النبذة الشخصية');
       }
+
+      if (!this.isRequiredFieldComplete(required, 'country')) {
+        missingFieldsEn.push('Add country');
+        missingFieldsAr.push('أضف البلد');
+      }
+
+      if (!this.isExperienceComplete(results)) {
+        missingFieldsEn.push('Add years of experience');
+        missingFieldsAr.push('أضف سنوات الخبرة');
+      }
+    } else if (!this.isExperienceComplete(results)) {
+      missingFieldsEn.push('Add years of experience');
+      missingFieldsAr.push('أضف سنوات الخبرة');
     }
 
     if (missingFieldsAr.length || missingFieldsEn.length) {
@@ -397,21 +478,6 @@ export class ProjectSettingsComponent extends BaseComponent implements OnInit {
         ? 'تم استيفاء متطلبات الملف الشخصي.'
         : 'Profile requirement completed.',
     ];
-  }
-
-  private isProfileComplete(results: ProjectAccountCheckResults): boolean {
-    const required = results.profile?.required;
-
-    if (required) {
-      return (
-        required.profile_photo === true &&
-        (this.isCompanyAccount()
-          ? required.about_us === true
-          : required.bio === true)
-      );
-    }
-
-    return !!results.profile?.pass;
   }
 
   private isCompanyAccount(): boolean {
@@ -431,6 +497,7 @@ export class ProjectSettingsComponent extends BaseComponent implements OnInit {
           ? null
           : Number(properties.hourly_rate),
       services: serviceIds,
+      project_types: this.mapProjectTypesToSelection(properties.project_types),
     });
 
     this.settingsForm.markAsPristine();
@@ -439,6 +506,10 @@ export class ProjectSettingsComponent extends BaseComponent implements OnInit {
 
   private getSelectedProjectLanguages(): Array<'english' | 'arabic'> {
     return (this.projectLanguagesControl?.value || []) as Array<'english' | 'arabic'>;
+  }
+
+  private getSelectedProjectTypes(): ProjectAccountProjectType[] {
+    return (this.projectTypesControl?.value || []) as ProjectAccountProjectType[];
   }
 
   private getSelectedServices(): number[] {
@@ -471,6 +542,36 @@ export class ProjectSettingsComponent extends BaseComponent implements OnInit {
     }
 
     return [];
+  }
+
+  private mapProjectTypesToSelection(
+    projectTypes?: Array<ProjectAccountProjectType | 'framework' | 'urgent'>
+  ): ProjectAccountProjectType[] {
+    const normalizedTypes = (projectTypes || [])
+      .map((projectType) => this.normalizeProjectType(projectType))
+      .filter((projectType): projectType is ProjectAccountProjectType => !!projectType);
+
+    return normalizedTypes.filter(
+      (projectType, index) => normalizedTypes.indexOf(projectType) === index
+    );
+  }
+
+  private normalizeProjectType(
+    projectType?: ProjectAccountProjectType | 'framework' | 'urgent' | null
+  ): ProjectAccountProjectType | null {
+    if (projectType === 'ad_hoc') {
+      return 'ad_hoc';
+    }
+
+    if (projectType === 'frame_work_agreement' || projectType === 'framework') {
+      return 'frame_work_agreement';
+    }
+
+    if (projectType === 'urgent_request' || projectType === 'urgent') {
+      return 'urgent_request';
+    }
+
+    return null;
   }
 
   private extractErrorMessage(error: any, fallback?: string): string {

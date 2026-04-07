@@ -16,6 +16,10 @@ interface WhatsAppCheck {
   pass?: boolean;
 }
 
+interface ExperienceCheck {
+  pass?: boolean | number | string | null;
+}
+
 interface ProfileCheck {
   required?: {
     profile_photo?: string | boolean | null;
@@ -29,6 +33,7 @@ interface ProfileCheck {
 export interface ProjectAccountCheckResults {
   publish_insights?: PublishInsightsCheck;
   whatsapp?: WhatsAppCheck;
+  experience?: ExperienceCheck;
   profile?: ProfileCheck;
 }
 
@@ -48,6 +53,11 @@ export interface ProjectServiceOption {
   slug: string;
 }
 
+export type ProjectAccountProjectType =
+  | 'ad_hoc'
+  | 'frame_work_agreement'
+  | 'urgent_request';
+
 interface ProjectServiceListResponse {
   data?: ProjectServiceOption[];
 }
@@ -57,6 +67,7 @@ export interface SyncProjectAccountPropertiesPayload {
   project_languages: 'english' | 'arabic' | 'both';
   hourly_rate: string;
   services: number[];
+  project_types: ProjectAccountProjectType[];
 }
 
 export interface ProjectAccountProperties {
@@ -64,6 +75,7 @@ export interface ProjectAccountProperties {
   project_languages?: 'english' | 'arabic' | 'both';
   hourly_rate?: string | number | null;
   services?: Array<ProjectServiceOption | number>;
+  project_types?: Array<ProjectAccountProjectType | 'framework' | 'urgent'>;
 }
 
 interface ProjectAccountPropertiesResponse {

@@ -28,25 +28,11 @@
         {{ lang === 'ar' ? 'إعدادات الإشعارات' : 'Notification Settings' }}
       </a>
     </li>
-    <!-- <li class="nav-item">
-      <a class="nav-link text-active-primary pb-4"
-        [class.active]="activeTab === 'project-settings'"
-        (click)="switchTab('project-settings')">
-        {{ lang === 'ar' ? 'إعدادات المشروع' : 'Project Settings' }}
-      </a>
-    </li> -->
     <li class="nav-item" *ngIf="(isInsighter$ | async) || (isCompany$ | async)">
       <a class="nav-link text-active-primary pb-4"
         [class.active]="activeTab === 'payment-settings'"
         (click)="switchTab('payment-settings')">
         {{ 'INSIGHTER.DASHBOARD.NAV.PAYMENT_SETTINGS_HEADER' | translate }}
-      </a>
-    </li>
-    <li class="nav-item" *ngIf="(isInsighter$ | async) || (isCompany$ | async) || (isCompanyInsighter$ | async)">
-      <a class="nav-link text-active-primary pb-4"
-        [class.active]="activeTab === 'consulting-schedule'"
-        (click)="switchTab('consulting-schedule')">
-        {{ 'INSIGHTER.DASHBOARD.NAV.MY_CONSULTING_SCHEDULE' | translate }}
       </a>
     </li>
   </ng-container>

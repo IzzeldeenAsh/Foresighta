@@ -70,8 +70,16 @@ export class ProjectProgressCelebrationService {
     return {
       publish_insights: !!results.publish_insights?.pass,
       whatsapp: !!results.whatsapp?.pass,
-      profile: !!results.profile?.pass,
+      profile: !!results.profile?.pass && this.isExperienceComplete(results),
     };
+  }
+
+  private isExperienceComplete(results: ProjectAccountCheckResults): boolean {
+    const experiencePass = results.experience?.pass;
+    return experiencePass !== false &&
+      experiencePass !== null &&
+      experiencePass !== undefined &&
+      experiencePass !== '';
   }
 
   private readStoredState(): StoredProjectProgressState {

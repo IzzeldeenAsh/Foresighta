@@ -35,7 +35,7 @@ interface ProjectProgressDisplayItem {
       [focusOnShow]="false"
       styleClass="project-progress-dialog"
       maskStyleClass="project-progress-mask"
-      [style]="{ width: 'min(92vw, 760px)' }"
+      [style]="{ width: 'min(92vw, 620px)' }"
       [contentStyle]="{ padding: '0', overflow: 'hidden', background: 'transparent' }"
       (onHide)="close()"
     >
@@ -50,19 +50,14 @@ interface ProjectProgressDisplayItem {
         </button>
 
         <section class="project-progress-hero">
-          <div class="project-progress-badge">
-            {{ lang === 'ar' ? 'إنجاز جديد' : 'Milestone unlocked' }}
+          <div class="project-progress-eyebrow">
+            <span class="project-progress-dot"></span>
+            <span>{{ lang === 'ar' ? 'إنجاز جديد' : 'Milestone unlocked' }}</span>
           </div>
 
-          <div class="project-progress-hero-content">
-            <div class="project-progress-orb">
-              <i class="pi pi-star-fill"></i>
-            </div>
-
-            <div class="project-progress-copy">
-              <h2>{{ headline }}</h2>
-              <p>{{ summary }}</p>
-            </div>
+          <div class="project-progress-copy">
+            <h2>{{ headline }}</h2>
+            <p>{{ summary }}</p>
           </div>
 
           <div class="project-progress-meter">
@@ -91,7 +86,7 @@ interface ProjectProgressDisplayItem {
               [class.is-complete]="item.passed"
               [class.is-pending]="!item.passed"
             >
-              <i [class]="item.passed ? 'pi pi-check' : 'pi pi-times'"></i>
+              <i [class]="item.passed ? 'pi pi-check-circle' : 'pi pi-exclamation-circle'"></i>
             </div>
 
             <div class="project-progress-item-copy">
@@ -99,7 +94,11 @@ interface ProjectProgressDisplayItem {
               <div class="project-progress-item-description">{{ item.description }}</div>
             </div>
 
-            <div class="project-progress-item-status">
+            <div
+              class="project-progress-item-status"
+              [class.is-complete]="item.passed"
+              [class.is-pending]="!item.passed"
+            >
               {{ item.passed ? (lang === 'ar' ? 'مكتمل' : 'Done') : (lang === 'ar' ? 'قيد التقدم' : 'Pending') }}
             </div>
           </button>
@@ -123,8 +122,8 @@ interface ProjectProgressDisplayItem {
   `,
   styles: [`
     :host ::ng-deep .project-progress-mask {
-      background: rgba(9, 16, 32, 0.3) !important;
-      backdrop-filter: blur(12px);
+      background: rgba(15, 23, 42, 0.26) !important;
+      backdrop-filter: blur(10px);
     }
 
     :host ::ng-deep .project-progress-dialog.p-dialog {
@@ -136,7 +135,7 @@ interface ProjectProgressDisplayItem {
     :host ::ng-deep .project-progress-dialog .p-dialog-content {
       border: 0;
       padding: 0 !important;
-      border-radius: 28px;
+      border-radius: 30px;
       overflow: hidden;
       background: transparent;
       box-shadow: none;
@@ -145,131 +144,85 @@ interface ProjectProgressDisplayItem {
     .project-progress-shell {
       position: relative;
       overflow: hidden;
-      border-radius: 28px;
-      border: 1px solid rgba(255, 255, 255, 0.55);
-      background:
-        radial-gradient(circle at top left, rgba(68, 154, 255, 0.22), transparent 38%),
-        radial-gradient(circle at bottom right, rgba(44, 201, 144, 0.18), transparent 34%),
-        linear-gradient(145deg, rgba(255, 255, 255, 0.88), rgba(240, 247, 255, 0.74));
-      backdrop-filter: blur(22px);
-      box-shadow: 0 30px 80px rgba(15, 23, 42, 0.22);
-    }
-
-    .project-progress-shell::before,
-    .project-progress-shell::after {
-      content: '';
-      position: absolute;
-      border-radius: 999px;
-      pointer-events: none;
-      opacity: 0.7;
-    }
-
-    .project-progress-shell::before {
-      width: 210px;
-      height: 210px;
-      top: -88px;
-      right: -76px;
-      background: rgba(255, 255, 255, 0.28);
-    }
-
-    .project-progress-shell::after {
-      width: 180px;
-      height: 180px;
-      left: -90px;
-      bottom: -88px;
-      background: rgba(76, 175, 80, 0.08);
+      border-radius: 30px;
+      border: 1px solid rgba(226, 232, 240, 0.8);
+      background: #fbfcff;
+      box-shadow: 0 26px 70px rgba(27, 37, 59, 0.18);
+      padding: 40px;
     }
 
     .project-progress-close {
       position: absolute;
-      top: 20px;
-      right: 20px;
+      top: 37px;
+      right: 38px;
       z-index: 2;
-      width: 40px;
-      height: 40px;
+      width: 28px;
+      height: 28px;
       border: 0;
-      border-radius: 999px;
-      background: rgba(255, 255, 255, 0.72);
-      color: #17324d;
+      border-radius: 50%;
+      background: transparent;
+      color: #93a3bb;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 10px 25px rgba(15, 23, 42, 0.12);
-      transition: transform 0.18s ease, background 0.18s ease;
+      font-size: 1.15rem;
+      transition: color 0.18s ease, transform 0.18s ease;
     }
 
     .project-progress-close:hover {
       transform: translateY(-1px);
-      background: rgba(255, 255, 255, 0.92);
+      color: #536179;
     }
 
     [dir='rtl'] .project-progress-close {
       right: auto;
-      left: 20px;
+      left: 38px;
     }
 
     .project-progress-hero {
       position: relative;
-      padding: 32px 32px 22px;
-      border-bottom: 1px solid rgba(134, 159, 187, 0.22);
+      padding: 0;
     }
 
-    .project-progress-badge {
-      display: inline-flex;
+    .project-progress-eyebrow {
+      display: flex;
       align-items: center;
-      padding: 0.45rem 0.8rem;
-      border-radius: 999px;
-      background: rgba(17, 111, 220, 0.1);
-      color: #0f5fc9;
-      font-size: 0.82rem;
+      gap: 0.85rem;
+      color: #4776ff;
+      font-size: 0.92rem;
       font-weight: 700;
-      letter-spacing: 0.03em;
+      letter-spacing: 0.08em;
       text-transform: uppercase;
     }
 
-    .project-progress-hero-content {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-      margin-top: 1rem;
-    }
-
-    .project-progress-orb {
-      width: 72px;
-      height: 72px;
-      flex: 0 0 72px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 24px;
-      background: linear-gradient(135deg, rgba(11, 112, 255, 0.2), rgba(35, 191, 122, 0.2));
-      color: #0a66d0;
-      font-size: 1.75rem;
-      box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.9);
-      animation: projectProgressFloat 3.2s ease-in-out infinite;
+    .project-progress-dot {
+      width: 10px;
+      height: 10px;
+      flex: 0 0 10px;
+      border-radius: 50%;
+      background: #8eacff;
     }
 
     .project-progress-copy h2 {
-      margin: 0;
-      color: #0f172a;
-      font-size: 1.8rem;
+      margin: 14px 0 0;
+      padding-inline-end: 34px;
+      color: #121a2f;
+      font-size: 1.75rem;
       font-weight: 800;
-      line-height: 1.15;
+      line-height: 1.18;
     }
 
     .project-progress-copy p {
-      margin: 0.5rem 0 0;
-      color: #4b5563;
+      margin: 18px 0 0;
+      color: #73829a;
       font-size: 1rem;
-      line-height: 1.65;
+      font-weight: 600;
+      line-height: 1.6;
+      max-width: 540px;
     }
 
     .project-progress-meter {
-      margin-top: 1.4rem;
-      padding: 1rem 1rem 0.95rem;
-      border-radius: 22px;
-      background: rgba(255, 255, 255, 0.52);
-      border: 1px solid rgba(255, 255, 255, 0.6);
+      margin-top: 30px;
     }
 
     .project-progress-meter-label {
@@ -277,59 +230,65 @@ interface ProjectProgressDisplayItem {
       align-items: center;
       justify-content: space-between;
       gap: 1rem;
-      margin-bottom: 0.75rem;
-      color: #1f2937;
+      margin-bottom: 14px;
+      color: #4c596e;
+      font-size: 0.95rem;
+      font-weight: 700;
+    }
+
+    .project-progress-meter-label strong {
+      color: #121a2f;
       font-size: 0.95rem;
     }
 
     .project-progress-meter-track {
       width: 100%;
-      height: 12px;
+      height: 10px;
       overflow: hidden;
       border-radius: 999px;
-      background: rgba(148, 163, 184, 0.22);
+      background: #edf1f7;
     }
 
     .project-progress-meter-fill {
       height: 100%;
-      min-width: 10%;
       border-radius: inherit;
-      background: linear-gradient(90deg, #0f69d8, #26c281);
-      box-shadow: 0 8px 18px rgba(38, 194, 129, 0.28);
+      background: linear-gradient(90deg, #4776ff 0%, #45c287 100%);
       transition: width 0.25s ease;
     }
 
     .project-progress-list {
       display: grid;
-      gap: 0.9rem;
-      padding: 1.5rem 2rem 0;
+      gap: 16px;
+      padding: 36px 0 0;
     }
 
     .project-progress-item {
       width: 100%;
-      border: 1px solid rgba(148, 163, 184, 0.18);
-      border-radius: 22px;
-      background: rgba(255, 255, 255, 0.6);
-      padding: 1rem 1.1rem;
+      min-height: 92px;
+      border: 1px solid #eef2f7;
+      border-radius: 20px;
+      background: #ffffff;
+      padding: 20px;
       display: flex;
       align-items: center;
-      gap: 0.9rem;
+      gap: 20px;
       text-align: left;
-      transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+      box-shadow: 0 12px 26px rgba(31, 44, 69, 0.035);
+      transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, background 0.18s ease;
     }
 
     .project-progress-item:hover {
       transform: translateY(-1px);
-      box-shadow: 0 18px 34px rgba(15, 23, 42, 0.09);
+      box-shadow: 0 18px 34px rgba(31, 44, 69, 0.08);
     }
 
     .project-progress-item.is-highlighted {
-      border-color: rgba(15, 105, 216, 0.28);
-      box-shadow: 0 22px 38px rgba(15, 105, 216, 0.1);
+      border-color: rgba(71, 118, 255, 0.2);
     }
 
     .project-progress-item.is-complete {
-      background: rgba(239, 253, 244, 0.78);
+      border-color: #dff7ec;
+      background: #f8fffb;
     }
 
     [dir='rtl'] .project-progress-item {
@@ -344,17 +303,17 @@ interface ProjectProgressDisplayItem {
       align-items: center;
       justify-content: center;
       border-radius: 16px;
-      font-size: 1.1rem;
+      font-size: 1.35rem;
     }
 
     .project-progress-item-icon.is-complete {
-      color: #157347;
-      background: rgba(21, 115, 71, 0.12);
+      color: #2ab77a;
+      background: #ddfaea;
     }
 
     .project-progress-item-icon.is-pending {
-      color: #b42318;
-      background: rgba(180, 35, 24, 0.1);
+      color: #8fa0b7;
+      background: #f5f8fc;
     }
 
     .project-progress-item-copy {
@@ -363,78 +322,140 @@ interface ProjectProgressDisplayItem {
     }
 
     .project-progress-item-title {
-      color: #111827;
-      font-size: 1.03rem;
-      font-weight: 700;
+      color: #1a2338;
+      font-size: 1rem;
+      font-weight: 800;
+      line-height: 1.25;
     }
 
     .project-progress-item-description {
-      margin-top: 0.15rem;
-      color: #6b7280;
-      font-size: 0.92rem;
+      margin-top: 8px;
+      color: #75849e;
+      font-size: 0.93rem;
+      font-weight: 600;
       line-height: 1.45;
     }
 
     .project-progress-item-status {
+      margin-inline-start: auto;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
       white-space: nowrap;
-      color: #1f2937;
+      border-radius: 999px;
+      padding: 0.42rem 0.85rem;
       font-size: 0.85rem;
       font-weight: 700;
+      line-height: 1;
+    }
+
+    .project-progress-item-status.is-complete {
+      color: #2e9b6c;
+      background: #dff9ea;
+    }
+
+    .project-progress-item-status.is-pending {
+      color: #c77808;
+      background: #fff1cc;
     }
 
     .project-progress-footer {
       display: flex;
       align-items: center;
       justify-content: flex-end;
-      gap: 0.75rem;
-      padding: 1.5rem 2rem 2rem;
+      gap: 16px;
+      padding: 38px 0 0;
     }
 
     .project-progress-primary,
     .project-progress-secondary {
-      min-width: 158px;
-      border-radius: 999px;
-      padding-inline: 1.15rem;
+      min-width: 152px;
+      min-height: 48px;
+      border-radius: 14px;
+      padding: 0.75rem 1.35rem;
+      font-weight: 800;
+      font-size: 1rem;
     }
 
-    @keyframes projectProgressFloat {
-      0%, 100% {
-        transform: translateY(0);
-      }
-      50% {
-        transform: translateY(-4px);
-      }
+    .project-progress-primary {
+      border: 0 !important;
+      color: #ffffff !important;
+      background: linear-gradient(180deg, #477bff 0%, #2e63f4 100%) !important;
+      box-shadow: 0 12px 22px rgba(47, 101, 246, 0.3);
+    }
+
+    .project-progress-secondary {
+      border: 0 !important;
+      color: #536179 !important;
+      background: transparent !important;
+      box-shadow: none !important;
     }
 
     @media (max-width: 768px) {
-      .project-progress-hero,
-      .project-progress-list,
-      .project-progress-footer {
-        padding-left: 1.2rem;
-        padding-right: 1.2rem;
+      .project-progress-shell {
+        padding: 32px 24px 28px;
       }
 
-      .project-progress-hero-content,
-      .project-progress-footer {
-        flex-direction: column;
-        align-items: stretch;
+      .project-progress-close {
+        top: 28px;
+        right: 24px;
       }
 
       .project-progress-copy h2 {
-        font-size: 1.45rem;
+        font-size: 1.5rem;
       }
 
       .project-progress-item {
         align-items: flex-start;
+        gap: 14px;
       }
 
       .project-progress-item-status {
-        padding-top: 0.45rem;
+        margin-top: 2px;
+      }
+
+      [dir='rtl'] .project-progress-close {
+        left: 24px;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .project-progress-shell {
+        padding: 28px 18px 22px;
+      }
+
+      .project-progress-close {
+        top: 24px;
+        right: 18px;
+      }
+
+      [dir='rtl'] .project-progress-close {
+        left: 18px;
+      }
+
+      .project-progress-copy h2 {
+        padding-inline-end: 26px;
+      }
+
+      .project-progress-item {
+        flex-wrap: wrap;
+      }
+
+      .project-progress-item-copy {
+        flex: 1 1 calc(100% - 68px);
+      }
+
+      .project-progress-item-status {
+        margin-inline-start: 68px;
       }
 
       .project-progress-primary,
       .project-progress-secondary {
         width: 100%;
+      }
+
+      .project-progress-footer {
+        flex-direction: column-reverse;
       }
     }
   `],
@@ -448,7 +469,7 @@ export class ProjectProgressCelebrationComponent extends BaseComponent implement
     injector: Injector,
     private readonly router: Router,
     private readonly celebrationService: ProjectProgressCelebrationService
-    ) {
+  ) {
     super(injector);
   }
 
@@ -480,10 +501,10 @@ export class ProjectProgressCelebrationComponent extends BaseComponent implement
         title: this.lang === 'ar' ? 'إكمال الملف الشخصي' : 'Complete Profile',
         description:
           this.lang === 'ar'
-            ? 'أكمل الصورة والنبذة والدولة لتقوية حسابك.'
-            : 'Complete the photo, bio, and country essentials.',
+            ? 'أكمل النبذة أو نبذة الشركة والدولة وسنوات الخبرة لتقوية حسابك.'
+            : 'Complete your bio or company about us, country, and years of experience essentials.',
         route: '/app/profile/settings/personal-info',
-        passed: !!results.profile?.pass,
+        passed: !!results.profile?.pass && this.isExperienceComplete(),
       },
       {
         key: 'whatsapp',
@@ -507,35 +528,36 @@ export class ProjectProgressCelebrationComponent extends BaseComponent implement
     return `${(this.completedCount / total) * 100}%`;
   }
 
+  private isExperienceComplete(): boolean {
+    const experiencePass = this.state?.results?.experience?.pass;
+    return experiencePass !== false &&
+      experiencePass !== null &&
+      experiencePass !== undefined &&
+      experiencePass !== '';
+  }
+
   get headline(): string {
     if (this.completedCount === this.items.length && this.items.length > 0) {
       return this.lang === 'ar'
-        ? 'اكتمل تجهيز حساب المشروع'
-        : 'Project setup complete';
+        ? 'اكتمل تجهيز ميزة المشاريع'
+        : 'Project Feature Unlocked!';
     }
 
-    switch (this.state?.trigger) {
-      case 'publish_insights':
-        return this.lang === 'ar' ? 'تم فتح إنجاز نشر الرؤى' : 'Insight milestone unlocked';
-      case 'profile':
-        return this.lang === 'ar' ? 'تم فتح إنجاز الملف الشخصي' : 'Profile milestone unlocked';
-      case 'whatsapp':
-        return this.lang === 'ar' ? 'تم فتح إنجاز واتساب' : 'WhatsApp milestone unlocked';
-      default:
-        return this.lang === 'ar' ? 'تم تحديث تقدمك' : 'Your progress was updated';
-    }
+    return this.lang === 'ar'
+      ? 'اقتربت! افتح ميزة المشاريع'
+      : 'Almost There! Unlock Project Feature!';
   }
 
   get summary(): string {
     if (this.completedCount === this.items.length && this.items.length > 0) {
       return this.lang === 'ar'
         ? 'كل المهام الرئيسية مكتملة الآن. حسابك أصبح جاهزًا أكثر لفرص المشاريع.'
-        : 'All main setup tasks are complete. Your account is now more ready for project opportunities.';
+        : 'All main setup tasks are complete. Your account is ready for project opportunities.';
     }
 
     return this.lang === 'ar'
       ? 'كل خطوة تنجزها ترفع جاهزية حسابك. هذه هي حالتك الحالية الآن.'
-      : 'Each completed task levels up your account readiness. Here is your current progress.';
+      : 'Each completed task builds up your account readiness. Here\'s your current progress!';
   }
 
   close(): void {

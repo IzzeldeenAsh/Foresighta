@@ -4,7 +4,7 @@
   display: grid;
   gap: 2rem;
   grid-template-columns: minmax(0, 1.15fr) minmax(280px, 0.8fr);
-  padding: 2rem;
+  padding: 0;
 }
 
 .project-settings-grid.project-settings-grid-single {
@@ -28,23 +28,6 @@
   padding: 0.55rem 0.9rem;
 }
 
-.project-settings-title {
-  color: #111827;
-  font-size: clamp(2rem, 3vw, 2.2rem);
-  font-weight: 800;
-  letter-spacing: -0.03em;
-  line-height: 1.06;
-  margin: 0;
-  max-width: 18ch;
-}
-
-.project-settings-title.is-compact {
-  font-size: clamp(1.5rem, 2vw, 2rem);
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  max-width: none;
-}
-
 .project-settings-header {
   align-items: flex-start;
   display: flex;
@@ -53,7 +36,7 @@
 }
 
 .project-settings-header.is-compact {
-  align-items: center;
+  align-items: flex-start;
   flex-direction: row;
   gap: 0.75rem;
   justify-content: space-between;
@@ -61,16 +44,15 @@
 
 .project-settings-description {
   color: #5b6473;
-  font-size: 1.125rem;
-  line-height: 1.8;
+  font-size: 1rem;
+  line-height: 1.5;
   margin: 0;
   max-width: 58ch;
 }
 
 .project-settings-description.is-compact {
-  font-size: 0.95rem;
-  line-height: 1.6;
-  margin-top: -0.15rem;
+  font-size: 1rem;
+  line-height: 1.5;
   max-width: 42ch;
 }
 
@@ -106,63 +88,86 @@
 .project-checklist {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  margin-top: 0.25rem;
+  gap: 1rem;
+  margin-top: 0.75rem;
 }
 
 .project-checklist-item {
-  display: grid;
-  gap: 1rem;
-  grid-template-columns: 32px minmax(0, 1fr);
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid #eef2f7;
+  border-radius: 1.25rem;
+  color: inherit;
+  display: flex;
+  gap: 1.25rem;
+  min-height: 92px;
+  padding: 1.25rem;
+  text-decoration: none;
+  width: 100%;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.2s ease;
 }
 
-.project-checklist-marker {
-  align-items: center;
-  display: flex;
-  flex-direction: column;
+.project-checklist-item:hover {
+  color: inherit;
+  transform: translateY(-1px);
+  text-decoration: none;
+}
+
+.project-checklist-item.is-complete {
+  background: #f7fffb;
+  border-color: #d8f8e9;
 }
 
 .project-checklist-icon {
-  margin-top: 0.05rem;
+  align-items: center;
+  border-radius: 1rem;
+  display: inline-flex;
+  flex: 0 0 48px;
+  font-size: 1.25rem;
+  height: 48px;
+  justify-content: center;
+  width: 48px;
 }
 
-.project-checklist-line {
-  background: linear-gradient(180deg, rgba(13, 110, 253, 0.18), rgba(13, 110, 253, 0.04));
-  border-radius: 999px;
-  flex: 1;
-  margin-block: 0.45rem;
-  width: 2px;
+.project-checklist-icon.is-complete {
+  background: #d7fae7;
+  color: #009a71;
+}
+
+.project-checklist-icon.is-pending {
+  background: #f6f9fd;
+  color: #8fa0b7;
 }
 
 .project-checklist-content {
-  align-items: flex-start;
-  border-bottom: 1px solid #edf0f5;
+  align-items: center;
   display: flex;
-  gap: 1rem;
+  flex: 1;
+  gap: 1.25rem;
   justify-content: space-between;
-  padding-bottom: 1.15rem;
-}
-
-.project-checklist-item:last-child .project-checklist-content {
-  border-bottom: 0;
-  padding-bottom: 0;
+  min-width: 0;
 }
 
 .project-checklist-text {
-  max-width: 520px;
+  min-width: 0;
 }
 
 .project-checklist-title {
-  color: #111827;
-  font-size: 1.1rem;
+  color: #111a2f;
+  font-size: 1rem;
   font-weight: 800;
-  line-height: 1.35;
-  margin-bottom: 0.35rem;
+  line-height: 1.25;
+  margin-bottom: 0.45rem;
 }
 
 .project-checklist-description {
-  font-size: 0.98rem;
-  line-height: 1.7;
+  color: #64758f;
+  font-size: 0.93rem;
+  font-weight: 600;
+  line-height: 1.45;
 }
 
 .project-checklist-description + .project-checklist-description {
@@ -179,9 +184,7 @@
 
 .project-checklist-title.is-complete,
 .project-checklist-description.is-complete {
-  color: #8a94a6;
-  text-decoration: line-through;
-  text-decoration-thickness: 1.5px;
+  text-decoration: none;
 }
 
 .requirement-chip {
@@ -203,46 +206,35 @@
   color: #16a34a;
 }
 
-.project-checklist-action {
-  border: 0;
-  border-radius: 0.8rem;
-  box-shadow: none;
-  font-size: 0.9rem;
+.project-checklist-status {
+  align-items: center;
+  border-radius: 999px;
+  display: inline-flex;
+  flex-shrink: 0;
+  font-size: 0.85rem;
   font-weight: 700;
-  min-width: 88px;
-  padding: 0.55rem 0.95rem;
+  justify-content: center;
+  line-height: 1;
+  min-height: 30px;
+  min-width: 64px;
+  padding: 0.42rem 0.85rem;
   white-space: nowrap;
 }
 
-.project-checklist-done {
-  background: rgba(34, 197, 94, 0.12);
-  border: 1px solid rgba(34, 197, 94, 0.2);
-  border-radius: 999px;
-  color: #16a34a;
-  display: inline-flex;
-  font-size: 0.9rem;
-  font-weight: 700;
-  padding: 0.65rem 0.95rem;
-  white-space: nowrap;
+.project-checklist-status.is-complete {
+  background: #d7fae7;
+  color: #009a71;
+}
+
+.project-checklist-status.is-pending {
+  background: #fff1bf;
+  color: #bd5d00;
 }
 
 .project-preferences {
-  display: flex;
-  flex-direction: column;
-  gap: 1.1rem;
-  margin-top: 0.15rem;
-  max-width: 900px;
-}
-
-.project-preferences-row {
-  display: flex;
-  flex-direction: row;
-  gap: 20px;
-}
-
-.project-preferences-section {
-  border-bottom: 1px solid #edf0f5;
-  padding-bottom: 1.5rem;
+  display: block;
+  margin-top: 0.75rem;
+  max-width: 980px;
 }
 
 .project-preferences-section-rate {
@@ -252,28 +244,11 @@
   grid-template-columns: minmax(0, 1fr);
 }
 
-.project-preferences-section-split {
-  border-bottom: 0;
-  padding-bottom: 0;
-}
-
-.project-preferences-section:last-of-type {
-  border-bottom: 0;
-  padding-bottom: 0;
-}
-
-.project-preferences-heading {
-  color: #111827;
-  font-size: 1.05rem;
-  font-weight: 700;
-  line-height: 1.4;
-}
-
 .project-preferences-help {
   color: #5b6473;
-  font-size: 0.92rem;
+  font-size: 1rem;
   line-height: 1.5;
-  margin: 0.18rem 0 0.7rem;
+  margin: 0 0 1.5rem;
 }
 
 .project-preferences-copy,
@@ -289,19 +264,28 @@
   cursor: pointer;
   display: inline-flex;
   gap: 0.75rem;
+  justify-content: space-between;
   padding: 0.7rem 0.9rem;
   transition: all 0.2s ease;
+  width: auto;
 }
 
 .project-status-toggle-header {
-  align-self: flex-end;
-  gap: 0.6rem;
-  padding: 0.55rem 0.75rem;
+  margin-inline-start: auto;
+  max-width: 360px;
 }
 
 .project-status-toggle.is-active {
   background: #fff;
   border-color: rgba(13, 110, 253, 0.34);
+}
+
+.project-status-toggle.is-rtl {
+  direction: rtl;
+}
+
+.project-status-toggle.is-rtl .project-status-toggle-track {
+  order: -1;
 }
 
 .project-status-toggle-track {
@@ -331,6 +315,14 @@
 
 .project-status-toggle.is-active .project-status-toggle-thumb {
   transform: translateX(20px);
+}
+
+.project-status-toggle.is-rtl .project-status-toggle-thumb {
+  transform: translateX(20px);
+}
+
+.project-status-toggle.is-rtl.is-active .project-status-toggle-thumb {
+  transform: translateX(0);
 }
 
 .project-status-toggle-text {
@@ -384,6 +376,105 @@
 
 .project-chip-icon {
   font-size: 0.7rem;
+}
+
+.project-type-grid {
+  align-items: start;
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.project-type-grid.is-invalid .project-type-card {
+  border-color: rgba(220, 53, 69, 0.24);
+}
+
+.project-type-card {
+  align-items: flex-start;
+  background: #ffffff;
+  border: 1px solid #d8dee8;
+  border-radius: 1rem;
+  color: #111827;
+  cursor: pointer;
+  display: flex;
+  gap: 0.75rem;
+  justify-content: space-between;
+  padding: 0.95rem 1rem;
+  text-align: start;
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease,
+    color 0.2s ease;
+  width: 100%;
+}
+
+.project-type-card:hover {
+  border-color: rgba(13, 110, 253, 0.28);
+}
+
+.project-type-card.selected {
+  background: rgba(13, 110, 253, 0.04);
+  border-color: rgba(13, 110, 253, 0.38);
+}
+
+.project-type-card-main {
+  align-items: flex-start;
+  display: flex;
+  gap: 0.85rem;
+  min-width: 0;
+}
+
+.project-type-card-icon {
+  align-items: center;
+  border-radius: 1rem;
+  display: inline-flex;
+  flex-shrink: 0;
+  height: 3rem;
+  justify-content: center;
+  width: 3rem;
+}
+
+.project-type-card-icon svg {
+  display: block;
+}
+
+.project-type-card-icon-ad-hoc {
+  background: rgba(82, 215, 255, 0.12);
+}
+
+.project-type-card-icon-framework {
+  background: rgba(255, 139, 249, 0.12);
+}
+
+.project-type-card-icon-urgent {
+  background: rgba(255, 175, 71, 0.12);
+}
+
+.project-type-card-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.project-type-card-title {
+  color: #111827;
+  font-size: 0.98rem;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.project-type-card-description {
+  color: #5b6473;
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.project-type-card-check {
+  color: #0d6efd;
+  flex-shrink: 0;
+  font-size: 0.9rem;
+  margin-top: 0.1rem;
 }
 
 .hourly-rate-shell {
@@ -461,6 +552,7 @@
 .project-preferences-actions {
   display: flex;
   justify-content: flex-start;
+  margin-top: 0.2rem;
 }
 
 .project-preferences-save {
@@ -569,17 +661,12 @@
     grid-template-columns: 1fr;
   }
 
-  .project-settings-title,
   .project-settings-description {
     max-width: none;
   }
 
   .project-settings-image {
     min-height: 380px;
-  }
-
-  .project-preferences-row {
-    flex-direction: column;
   }
 
   .project-skeleton-row {
@@ -589,35 +676,27 @@
 
 @media (max-width: 767px) {
   .project-settings-grid {
-    padding: 1rem;
-  }
-
-  .project-settings-title {
-    font-size: 2rem;
-  }
-
-  .project-settings-header.is-compact {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .project-status-toggle-header {
-    align-self: flex-start;
+    padding: 0;
   }
 
   .project-settings-description {
     font-size: 1rem;
-    line-height: 1.7;
+    line-height: 1.5;
   }
 
   .project-checklist-content {
-    align-items: stretch;
-    flex-direction: column;
+    align-items: center;
+    flex-direction: row;
   }
 
-  .project-checklist-action,
-  .project-checklist-done {
-    align-self: flex-start;
+  .project-checklist-item {
+    align-items: flex-start;
+    gap: 0.9rem;
+    padding: 1rem;
+  }
+
+  .project-checklist-status {
+    margin-top: 0.1rem;
   }
 
   .project-skeleton-row {
@@ -630,6 +709,14 @@
 
   .project-chip {
     width: 100%;
+  }
+
+  .project-type-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .project-type-card {
+    min-height: auto;
   }
 
   .hourly-rate-shell {

@@ -280,7 +280,7 @@ export class InsighterDashboardComponent implements OnInit, OnDestroy {
   }
 
   checkActivityRoute(url: string): void {
-    const routes = ['my-requests', 'my-knowledge', 'my-downloads', 'read-later', 'my-company-settings'];
+    const routes = ['my-knowledge', 'my-downloads', 'read-later', 'my-company-settings'];
     if (routes.some(route => url.includes(route))) {
       this.isActivityExpanded = true;
     }

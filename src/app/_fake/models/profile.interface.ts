@@ -24,6 +24,7 @@ export interface IKnoldgProfile {
     client_status?:string;
     phone?:string;
     phone_code?:string;
+    experience?: number | string | null;
     whatsapp_country_code?: string | null;
     whatsapp_number?: string | null;
     sms_country_code?: string | null;
@@ -94,6 +95,7 @@ export interface Company {
   primary_activate_at?:string;
   company_phone:string;
   phone_code?:string;
+  experience?: number | string | null;
   verified:boolean;
   social?: SocialNetwork[];
   industries?:any;

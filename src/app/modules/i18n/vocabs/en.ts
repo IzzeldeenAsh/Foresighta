@@ -888,6 +888,7 @@ Your wealth of insight is valued and many are eager to learn from it.
       CONSULTING_FIELDS: 'Expertise and Specialties',
       CONSULTING_FIELDS_REQUIRED: 'Expertise and Specialties are required.',
       BIO: 'Bio',
+      YEARS_OF_EXPERIENCE: 'Years of Experience',
       ABOUT_COMPANY: 'About Company',
       COMPANY_LEGAL_NAME: 'Company Legal Name',
       WEBSITE: 'Website',

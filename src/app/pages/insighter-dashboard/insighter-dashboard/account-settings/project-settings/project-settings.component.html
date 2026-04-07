@@ -1,343 +1,371 @@
 <div class="p-24px">
-  <div class="project-settings-shell border border-gray-300 rounded-4 overflow-hidden">
-    <ng-container *ngIf="!(isLoading$ | async); else projectSettingsSkeleton">
-    <div class="project-settings-grid" [class.project-settings-grid-single]="allChecksPassed">
-      <div class="project-settings-copy">
-   
+  <div class="card mb-8 project-settings-shell">
 
-        <div class="project-settings-header" [class.is-compact]="allChecksPassed">
-          <h2 class="project-settings-title" [class.is-compact]="allChecksPassed">
-            {{
+    <div class="card-body">
+      <ng-container *ngIf="(isLoading$ | async) === false; else projectSettingsSkeleton">
+        <div class="d-flex flex-column flex-sm-row justify-content-between align-items-center py-4">
+          <div class="card-title m-0">
+            <h2 class="m-0">
+              {{
               allChecksPassed
-                ? (lang === 'ar'
-                    ? 'إعدادات المشروع'
-                    : 'Project settings')
-                : (lang === 'ar'
-                    ? 'ابدأ باستقبال فرص المشاريع'
-                    : 'Start receiving project offers')
-            }}
-          </h2>
-
-          <button
-            *ngIf="allChecksPassed"
-            type="button"
-            class="project-status-toggle project-status-toggle-header"
-            [class.is-active]="settingsForm.get('project_status')?.value"
-            (click)="toggleProjectStatus()"
-          >
-            <span class="project-status-toggle-text">
-              {{
-                settingsForm.get('project_status')?.value
-                  ? (lang === 'ar' ? ' متاح لاستقبال العروض ' : 'Available for receiving offers')
-                  : (lang === 'ar' ? ' غير متاح لاستقبال العروض ' : 'Unavailable for receiving offers')
-              }}
-            </span>
-            <span class="project-status-toggle-track">
-              <span class="project-status-toggle-thumb"></span>
-            </span>
-          </button>
-        </div>
-
-        <p class="project-settings-description" [class.is-compact]="allChecksPassed">
-          {{
-            allChecksPassed
               ? (lang === 'ar'
-                  ? ''
-                  : '')
+              ? ''
+              : '')
               : (lang === 'ar'
-                  ? 'أكمل هذه الخطوات السريعة ليصبح حسابك جاهزًا للتعاون وفرص المشاريع الجديدة.'
-                  : 'Complete these quick tasks to make your account ready for collaboration and new project opportunities.')
-          }}
-        </p>
+              ? 'ابدأ باستقبال فرص المشاريع'
+              : 'Start receiving project offers')
+              }}
+            </h2>
+          </div>
 
-        <div *ngIf="errorMessage" class="alert alert-warning project-settings-alert">
-          {{ errorMessage }}
-        </div>
-
-        <div *ngIf="!allChecksPassed" class="project-checklist">
-          <div
-            class="project-checklist-item"
-            *ngFor="let item of checklist; let last = last"
-            [class.is-complete]="item.passed"
-          >
-            <div class="project-checklist-marker">
-              <div
-                class="project-checklist-icon d-flex flex-center flex-shrink-0 w-25px h-25px rounded-circle"
-                [ngClass]="
-                  item.passed
-                    ? 'bg-light-success border border-success'
-                    : 'bg-light-primary border border-primary-clarity'
-                "
-              >
-                <div
-                  class="w-8px h-8px rounded-circle"
-                  [ngClass]="item.passed ? 'bg-success' : 'bg-primary'"
-                ></div>
-              </div>
-              <div class="project-checklist-line" *ngIf="!last"></div>
-            </div>
-
-            <div class="project-checklist-content">
-              <div class="project-checklist-text">
-                <div class="project-checklist-title" [class.is-complete]="item.passed">
-                  {{ item.title }}
-                </div>
-
-                <div
-                  *ngIf="item.key === 'publish_insights' && ((item.insightRequirements?.paid || 0) > 0 || (item.insightRequirements?.free || 0) > 0)"
-                  class="project-checklist-description project-checklist-requirement"
-                  [class.is-complete]="item.passed"
-                >
-                  <span *ngIf="lang === 'ar'">المطلوب:</span>
-                  <span *ngIf="lang !== 'ar'">Required:</span>
-
-                  <span
-                    *ngIf="(item.insightRequirements?.paid || 0) > 0"
-                    class="requirement-chip requirement-chip-paid"
-                  >
-                    {{ item.insightRequirements?.paid }} {{ lang === 'ar' ? 'مدفوعة' : 'Paid' }}
-                  </span>
-
-                  <span
-                    *ngIf="(item.insightRequirements?.free || 0) > 0"
-                    class="requirement-chip requirement-chip-free"
-                  >
-                    {{ item.insightRequirements?.free }} {{ lang === 'ar' ? 'مجانية' : 'Free' }}
-                  </span>
-
-                  <span *ngIf="lang === 'ar'">رؤى</span>
-                  <span *ngIf="lang !== 'ar'">insights</span>
-                </div>
-
-                <div
-                  class="project-checklist-description"
-                  [class.is-complete]="item.passed"
-                  [innerHTML]="item.details.join('. ')"
-                ></div>
-              </div>
-
-              <a
-                *ngIf="!item.passed"
-                class="btn btn-light-primary project-checklist-action"
-                [routerLink]="item.route"
-              >
-                {{ lang === 'ar' ? 'أضف' : 'Add' }}
-              </a>
-
-              <span *ngIf="item.passed" class="project-checklist-done">
-                {{ lang === 'ar' ? 'مكتمل' : 'Done' }}
+          <div *ngIf="allChecksPassed" class="card-toolbar">
+            <button type="button" class="project-status-toggle project-status-toggle-header"
+              [class.is-active]="settingsForm.get('project_status')?.value" [class.is-rtl]="isRtl"
+              [attr.dir]="isRtl ? 'rtl' : 'ltr'" (click)="toggleProjectStatus()">
+              <span class="project-status-toggle-text">
+                {{
+                settingsForm.get('project_status')?.value
+                ? (lang === 'ar' ? 'متاح لاستقبال العروض' : 'Available for receiving offers')
+                : (lang === 'ar' ? 'غير متاح لاستقبال العروض' : 'Unavailable for receiving offers')
+                }}
               </span>
-            </div>
-          </div>
-        </div>
-
-        <form
-          *ngIf="allChecksPassed"
-          [formGroup]="settingsForm"
-          class="project-preferences"
-          (ngSubmit)="submitProjectSettings()"
-        >
-          <div *ngIf="servicesErrorMessage" class="alert alert-warning project-settings-alert">
-            {{ servicesErrorMessage }}
-          </div>
-
-          <div *ngIf="settingsForm.get('project_status')?.value" class="project-preferences-section">
-            <div class="project-preferences-heading">
-              {{ lang === 'ar' ? 'اللغة' : 'Language' }}
-            </div>
-            <p class="project-preferences-help">
-              {{
-                lang === 'ar'
-                  ? 'اختر اللغة التي سيتم تقديم مخرجات المشروع بها. إذا كان العرض باللغة العربية، فسيتم تسليم المخرجات بالعربية، وهكذا.'
-                  : 'Choose the language the project deliverables will be provided in. If the offer is in Arabic, the deliverables should be in Arabic, and so on.'
-              }}
-            </p>
-
-            <div
-              class="project-chip-group"
-              [class.is-invalid]="projectLanguagesControl?.invalid && projectLanguagesControl?.touched"
-            >
-              <button
-                *ngFor="let option of projectLanguageOptions"
-                type="button"
-                class="project-chip"
-                [class.selected]="isProjectLanguageSelected(option.key)"
-                (click)="toggleProjectLanguage(option.key)"
-              >
-                <i *ngIf="isProjectLanguageSelected(option.key)" class="fas fa-check project-chip-icon"></i>
-                {{ lang === 'ar' ? option.labelAr : option.labelEn }}
-              </button>
-            </div>
-
-            <div
-              *ngIf="projectLanguagesControl?.invalid && projectLanguagesControl?.touched"
-              class="project-preferences-error"
-            >
-              {{ lang === 'ar' ? 'اختر لغة واحدة على الأقل.' : 'Select at least one language.' }}
-            </div>
-          </div>
-
-          <div *ngIf="settingsForm.get('project_status')?.value" class="project-preferences-section">
-            <div class="project-preferences-heading">
-              {{ lang === 'ar' ? 'الخدمات' : 'Services' }}
-            </div>
-            <p class="project-preferences-help">
-              {{
-                lang === 'ar'
-                  ? 'اختر الخدمات التي تقدمها أو تتخصص فيها، حتى تصلك عروض المشاريع المرتبطة بهذه الخدمات.'
-                  : 'Select the services you provide or specialize in so you can receive project offers related to them.'
-              }}
-            </p>
-
-            <div *ngIf="isServicesLoading$ | async" class="project-preferences-loading">
-              {{ lang === 'ar' ? 'جاري تحميل الخدمات...' : 'Loading services...' }}
-            </div>
-
-            <div
-              *ngIf="!(isServicesLoading$ | async)"
-              class="project-chip-group"
-              [class.is-invalid]="servicesControl?.invalid && servicesControl?.touched"
-            >
-              <button
-                *ngFor="let service of availableServices"
-                type="button"
-                class="project-chip"
-                [class.selected]="isServiceSelected(service.id)"
-                [class.project-chip-arabic]="isFirstWordArabic(service.name)"
-                (click)="toggleService(service.id)"
-              >
-                <i *ngIf="isServiceSelected(service.id)" class="fas fa-check project-chip-icon"></i>
-                {{ service.name }}
-              </button>
-            </div>
-
-            <div
-              *ngIf="!(isServicesLoading$ | async) && !availableServices.length && !servicesErrorMessage"
-              class="project-preferences-empty"
-            >
-              {{ lang === 'ar' ? 'لا توجد خدمات متاحة حالياً.' : 'No services are available right now.' }}
-            </div>
-
-            <div
-              *ngIf="servicesControl?.invalid && servicesControl?.touched"
-              class="project-preferences-error"
-            >
-              {{ lang === 'ar' ? 'اختر خدمة واحدة على الأقل.' : 'Select at least one service.' }}
-            </div>
-          </div>
-
-          <div
-            *ngIf="settingsForm.get('project_status')?.value"
-            class="project-preferences-section project-preferences-section-rate"
-          >
-            <div class="project-preferences-copy">
-              <div class="project-preferences-heading">
-                {{ lang === 'ar' ? 'سعر الساعة' : 'Hourly rate' }}
-              </div>
-              <p class="project-preferences-help">
-                {{
-                  lang === 'ar'
-                    ? 'السعر لكل ساعة.'
-                    : 'Rate per hour.'
-                }}
-              </p>
-            </div>
-
-            <div class="project-preferences-field">
-              <div
-                class="hourly-rate-shell"
-                [class.is-invalid]="hourlyRateControl?.invalid && hourlyRateControl?.touched"
-                dir="ltr"
-              >
-                <span class="hourly-rate-prefix">$</span>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.1"
-                  class="hourly-rate-input"
-                  formControlName="hourly_rate"
-                  [placeholder]="lang === 'ar' ? '20.00' : '20.00'"
-                />
-                <span class="hourly-rate-suffix">{{ lang === 'ar' ? '/ساعة' : '/hr' }}</span>
-              </div>
-
-              <div
-                *ngIf="hourlyRateControl?.invalid && hourlyRateControl?.touched"
-                class="project-preferences-error"
-              >
-                {{
-                  lang === 'ar'
-                    ? 'أدخل سعر ساعة صالحًا أكبر من صفر.'
-                    : 'Enter a valid hourly rate greater than zero.'
-                }}
-              </div>
-            </div>
-          </div>
-
-          <div *ngIf="!settingsForm.get('project_status')?.value" class="project-preferences-empty">
-            {{
-              lang === 'ar'
-                ? 'فعّل الحالة لعرض إعدادات المشروع.'
-                : 'Turn status on to show project settings.'
-            }}
-          </div>
-
-          <div class="project-preferences-actions" *ngIf="settingsForm.get('project_status')?.value">
-            <button
-              type="submit"
-              class="btn btn-primary project-preferences-save"
-              [disabled]="(isSaving$ | async) || (isServicesLoading$ | async) || !availableServices.length"
-            >
-              {{
-                (isSaving$ | async)
-                  ? (lang === 'ar' ? 'جاري الحفظ...' : 'Saving...')
-                  : (lang === 'ar' ? 'حفظ الإعدادات' : 'Save settings')
-              }}
+              <span class="project-status-toggle-track">
+                <span class="project-status-toggle-thumb"></span>
+              </span>
             </button>
           </div>
-        </form>
-      </div>
+        </div>
+        <div class="project-settings-grid" [class.project-settings-grid-single]="allChecksPassed">
+          <div class="project-settings-copy">
+            <p class="project-settings-description" [class.is-compact]="allChecksPassed">
+              {{
+              allChecksPassed
+              ? (lang === 'ar'
+              ? ''
+              : '')
+              : (lang === 'ar'
+              ? 'أكمل هذه الخطوات السريعة ليصبح حسابك جاهزًا للتعاون وفرص المشاريع الجديدة.'
+              : 'Complete these quick tasks to make your account ready for collaboration and new project
+              opportunities.')
+              }}
+            </p>
 
-      <div *ngIf="!allChecksPassed" class="project-settings-visual">
-        <div class="project-settings-image-wrap">
-          <img
-            [src]="heroImageUrl"
-            [alt]="lang === 'ar' ? 'صورة إعداد المشروع' : 'Project setup'"
-            class="project-settings-image"
-          />
-          <div class="visual-badge visual-badge-top">
-            <div class="visual-badge-label">
-              {{ lang === 'ar' ? 'جاهزية الحساب' : 'Account readiness' }}
+            <div *ngIf="errorMessage" class="alert alert-warning project-settings-alert">
+              {{ errorMessage }}
             </div>
-            <div class="visual-badge-value">
-              {{ completedCount }}/{{ checklist.length || 3 }}
+
+            <div *ngIf="!allChecksPassed" class="project-checklist">
+              <a class="project-checklist-item" *ngFor="let item of checklist" [routerLink]="item.route"
+                [class.is-complete]="item.passed">
+                <div class="project-checklist-icon" [class.is-complete]="item.passed" [class.is-pending]="!item.passed">
+                  <i [class]="item.passed ? 'pi pi-check' : 'pi pi-exclamation-circle'"></i>
+                </div>
+
+                <div class="project-checklist-content">
+                  <div class="project-checklist-text">
+                    <div class="project-checklist-title">
+                      {{ item.title }}
+                    </div>
+
+                    <div class="project-checklist-description" [innerHTML]="item.details.join('. ')"></div>
+                  </div>
+
+                  <span class="project-checklist-status" [class.is-complete]="item.passed"
+                    [class.is-pending]="!item.passed">
+                    {{ item.passed ? (lang === 'ar' ? 'مكتمل' : 'Done') : (lang === 'ar' ? 'أضف' : 'Add') }}
+                  </span>
+                </div>
+              </a>
             </div>
+
+            <form *ngIf="allChecksPassed" [formGroup]="settingsForm" class="project-preferences"
+              (ngSubmit)="submitProjectSettings()">
+              <div class="card mb-8">
+                <div class="card-header py-4">
+                  <div class="card-title m-0">
+                    <h5 class="m-0">
+                      <i class="bi bi-grid-3x3-gap me-2"></i>
+                      {{ lang === 'ar' ? 'الخدمات' : 'Services' }}
+                    </h5>
+                  </div>
+                </div>
+
+                <div class="card-body">
+                  <p class="project-preferences-help">
+                    {{
+                    lang === 'ar'
+                    ? 'اختر الخدمات التي تقدمها أو تتخصص فيها، حتى تصلك عروض المشاريع المرتبطة بهذه الخدمات.'
+                    : 'Select the services you provide or specialize in so you can receive project offers related to
+                    them.'
+                    }}
+                  </p>
+
+                  <div *ngIf="servicesErrorMessage" class="alert alert-warning project-settings-alert">
+                    {{ servicesErrorMessage }}
+                  </div>
+
+                  <div *ngIf="isServicesLoading$ | async" class="project-preferences-loading">
+                    {{ lang === 'ar' ? 'جاري تحميل الخدمات...' : 'Loading services...' }}
+                  </div>
+
+                  <div *ngIf="(isServicesLoading$ | async) === false" class="project-chip-group"
+                    [class.is-invalid]="servicesControl?.invalid && servicesControl?.touched">
+                    <button *ngFor="let service of availableServices" type="button" class="project-chip"
+                      [class.selected]="isServiceSelected(service.id)"
+                      [class.project-chip-arabic]="isFirstWordArabic(service.name)" (click)="toggleService(service.id)">
+                      <i *ngIf="isServiceSelected(service.id)" class="fas fa-check project-chip-icon"></i>
+                      {{ service.name }}
+                    </button>
+                  </div>
+
+                  <div
+                    *ngIf="(isServicesLoading$ | async) === false && !availableServices.length && !servicesErrorMessage"
+                    class="project-preferences-empty">
+                    {{ lang === 'ar' ? 'لا توجد خدمات متاحة حالياً.' : 'No services are available right now.' }}
+                  </div>
+
+                  <div *ngIf="servicesControl?.invalid && servicesControl?.touched" class="project-preferences-error">
+                    {{ lang === 'ar' ? 'اختر خدمة واحدة على الأقل.' : 'Select at least one service.' }}
+                  </div>
+                </div>
+              </div>
+
+              <div class="card mb-8">
+                <div class="card-header py-4">
+                  <div class="card-title m-0">
+                    <h5 class="m-0">
+                      <i class="bi bi-diagram-3 me-2"></i>
+                      {{ lang === 'ar' ? 'نوع المشروع' : 'Project type' }}
+                    </h5>
+                  </div>
+                </div>
+
+                <div class="card-body">
+                  <p class="project-preferences-help">
+                    {{
+                    lang === 'ar'
+                    ? 'اختر نوع أو أنواع المشاريع التي ترغب باستقبالها.'
+                    : 'Choose the project types you want to receive.'
+                    }}
+                  </p>
+
+                  <div class="project-type-grid"
+                    [class.is-invalid]="projectTypesControl?.invalid && projectTypesControl?.touched">
+                    <button *ngFor="let option of projectTypeOptions" type="button" class="project-type-card"
+                      [class.selected]="isProjectTypeSelected(option.key)" (click)="toggleProjectType(option.key)">
+                      <span class="project-type-card-main">
+                        <span class="project-type-card-icon" [ngClass]="{
+                        'project-type-card-icon-ad-hoc': option.key === 'ad_hoc',
+                        'project-type-card-icon-framework': option.key === 'frame_work_agreement',
+                        'project-type-card-icon-urgent': option.key === 'urgent_request'
+                      }">
+                          <ng-container [ngSwitch]="option.key">
+                            <svg *ngSwitchCase="'ad_hoc'" width="30" height="30" viewBox="0 0 30 30" fill="none"
+                              xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                              <circle cx="15" cy="15" r="15" fill="#52D7FF" fill-opacity="0.14" />
+                              <path
+                                d="M21.4514 18.4413L21.3871 19.2642C21.2907 20.2478 21.2135 20.9999 19.4714 20.9999H11.3842C9.64208 20.9999 9.56494 20.2478 9.46851 19.2642L9.21136 16.0499C9.15994 15.5163 9.32708 15.0213 9.62922 14.642C9.63565 14.6356 9.63565 14.6356 9.64208 14.6292C9.99565 14.1985 10.5292 13.9285 11.1271 13.9285H19.7285C20.3264 13.9285 20.8535 14.1985 21.2007 14.6163C21.2071 14.6228 21.2135 14.6292 21.2135 14.6356C21.5285 15.0149 21.7021 15.5099 21.6442 16.0499"
+                                fill="#52D7FF" fill-opacity="0.14" />
+                              <path
+                                d="M21.4514 18.4413L21.3871 19.2642C21.2907 20.2478 21.2135 20.9999 19.4714 20.9999H11.3842C9.64208 20.9999 9.56494 20.2478 9.46851 19.2642L9.21136 16.0499C9.15994 15.5163 9.32708 15.0213 9.62922 14.642C9.63565 14.6356 9.63565 14.6356 9.64208 14.6292C9.99565 14.1985 10.5292 13.9285 11.1271 13.9285H19.7285C20.3264 13.9285 20.8535 14.1985 21.2007 14.6163C21.2071 14.6228 21.2135 14.6292 21.2135 14.6356C21.5285 15.0149 21.7021 15.5099 21.6442 16.0499"
+                                stroke="#0064E1" stroke-width="0.964286" stroke-miterlimit="10" stroke-linecap="round"
+                                stroke-linejoin="round" />
+                              <path
+                                d="M9.96387 14.205V10.8943C9.96387 8.70854 10.5103 8.16211 12.696 8.16211H13.5124C14.3289 8.16211 14.5153 8.4064 14.8239 8.81782L15.6403 9.91068C15.846 10.1807 15.9682 10.3478 16.5146 10.3478H18.1539C20.3396 10.3478 20.886 10.8943 20.886 13.08V14.2307"
+                                fill="#52D7FF" fill-opacity="0.14" />
+                              <path
+                                d="M9.96387 14.205V10.8943C9.96387 8.70854 10.5103 8.16211 12.696 8.16211H13.5124C14.3289 8.16211 14.5153 8.4064 14.8239 8.81782L15.6403 9.91068C15.846 10.1807 15.9682 10.3478 16.5146 10.3478H18.1539C20.3396 10.3478 20.886 10.8943 20.886 13.08V14.2307"
+                                stroke="#0064E1" stroke-width="0.964286" stroke-miterlimit="10" stroke-linecap="round"
+                                stroke-linejoin="round" />
+                              <path d="M13.7769 17.7856H17.0811" stroke="#0064E1" stroke-width="0.964286"
+                                stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
+
+                            <svg *ngSwitchCase="'frame_work_agreement'" width="30" height="30" viewBox="0 0 30 30"
+                              fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                              <circle cx="15" cy="15" r="15" fill="#FF8BF9" fill-opacity="0.13" />
+                              <path
+                                d="M12.0623 12.9583C13.1094 12.9583 13.9582 12.1095 13.9582 11.0625C13.9582 10.0154 13.1094 9.16663 12.0623 9.16663C11.0153 9.16663 10.1665 10.0154 10.1665 11.0625C10.1665 12.1095 11.0153 12.9583 12.0623 12.9583Z"
+                                stroke="#B0009E" stroke-width="0.875" stroke-linecap="round" stroke-linejoin="round" />
+                              <path
+                                d="M11.9165 20.8334C12.883 20.8334 13.6665 20.0499 13.6665 19.0834C13.6665 18.1169 12.883 17.3334 11.9165 17.3334C10.95 17.3334 10.1665 18.1169 10.1665 19.0834C10.1665 20.0499 10.95 20.8334 11.9165 20.8334Z"
+                                stroke="#B0009E" stroke-width="0.875" stroke-linecap="round" stroke-linejoin="round" />
+                              <path
+                                d="M20.0835 20.8334C21.05 20.8334 21.8335 20.0499 21.8335 19.0834C21.8335 18.1169 21.05 17.3334 20.0835 17.3334C19.117 17.3334 18.3335 18.1169 18.3335 19.0834C18.3335 20.0499 19.117 20.8334 20.0835 20.8334Z"
+                                stroke="#B0009E" stroke-width="0.875" stroke-linecap="round" stroke-linejoin="round" />
+                              <g opacity="0.4">
+                                <path d="M11.9165 13.25V17.3333" stroke="#B0009E" stroke-width="0.875"
+                                  stroke-linecap="round" stroke-linejoin="round" />
+                                <path
+                                  d="M11.9922 13.25C12.2547 14.2708 13.188 15.0292 14.2905 15.0233L16.2914 15.0175C17.8197 15.0117 19.1205 15.9917 19.5989 17.3567"
+                                  stroke="#B0009E" stroke-width="0.875" stroke-linecap="round"
+                                  stroke-linejoin="round" />
+                              </g>
+                            </svg>
+
+                            <svg *ngSwitchCase="'urgent_request'" width="30" height="30" viewBox="0 0 30 30" fill="none"
+                              xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                              <circle cx="15" cy="15" r="15" fill="#FFAF47" fill-opacity="0.13" />
+                              <path
+                                d="M20.1043 15.2292C20.1043 18.0467 17.8177 20.3333 15.0002 20.3333C12.1827 20.3333 9.896 18.0467 9.896 15.2292C9.896 12.4117 12.1827 10.125 15.0002 10.125C17.8177 10.125 20.1043 12.4117 20.1043 15.2292Z"
+                                stroke="#E08700" stroke-width="0.875" stroke-linecap="round" stroke-linejoin="round" />
+                              <path opacity="0.8" d="M15 12.1666V15.0833" stroke="#E08700" stroke-width="0.875"
+                                stroke-linecap="round" stroke-linejoin="round" />
+                              <path opacity="0.69" d="M13.25 8.66663H16.75" stroke="#E08700" stroke-width="0.875"
+                                stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
+                          </ng-container>
+                        </span>
+
+                        <span class="project-type-card-copy">
+                          <span class="project-type-card-title">
+                            {{ lang === 'ar' ? option.labelAr : option.labelEn }}
+                          </span>
+                          <span class="project-type-card-description">
+                            {{ lang === 'ar' ? option.descriptionAr : option.descriptionEn }}
+                          </span>
+                        </span>
+                      </span>
+
+                      <i *ngIf="isProjectTypeSelected(option.key)" class="fas fa-check project-type-card-check"></i>
+                    </button>
+                  </div>
+
+                  <div *ngIf="projectTypesControl?.invalid && projectTypesControl?.touched"
+                    class="project-preferences-error">
+                    {{ lang === 'ar' ? 'اختر نوع مشروع واحد على الأقل.' : 'Select at least one project type.' }}
+                  </div>
+                </div>
+              </div>
+
+              <div class="card mb-8">
+                <div class="card-header py-4">
+                  <div class="card-title m-0">
+                    <h5 class="m-0">
+                      <i class="bi bi-currency-dollar me-2"></i>
+                      {{ lang === 'ar' ? 'سعر الساعة' : 'Hourly rate' }}
+                    </h5>
+                  </div>
+                </div>
+
+                <div class="card-body project-preferences-section-rate">
+                  <div class="project-preferences-copy">
+                    <p class="project-preferences-help">
+                      {{
+                      lang === 'ar'
+                      ? 'أدخل السعر المناسب لكل ساعة عمل.'
+                      : 'Enter the rate you charge per working hour.'
+                      }}
+                    </p>
+                  </div>
+
+                  <div class="project-preferences-field">
+                    <div class="hourly-rate-shell"
+                      [class.is-invalid]="hourlyRateControl?.invalid && hourlyRateControl?.touched" dir="ltr">
+                      <span class="hourly-rate-prefix">$</span>
+                      <input type="number" min="0" step="0.1" class="hourly-rate-input" formControlName="hourly_rate"
+                        [placeholder]="lang === 'ar' ? '20.00' : '20.00'" />
+                      <span class="hourly-rate-suffix">{{ lang === 'ar' ? '/ساعة' : '/hr' }}</span>
+                    </div>
+
+                    <div *ngIf="hourlyRateControl?.invalid && hourlyRateControl?.touched"
+                      class="project-preferences-error">
+                      {{
+                      lang === 'ar'
+                      ? 'أدخل سعر ساعة صالحًا أكبر من صفر.'
+                      : 'Enter a valid hourly rate greater than zero.'
+                      }}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="card mb-8">
+                <div class="card-header py-4">
+                  <div class="card-title m-0">
+                    <h5 class="m-0">
+                      <i class="bi bi-translate me-2"></i>
+                      {{ lang === 'ar' ? 'اللغة' : 'Language' }}
+                    </h5>
+                  </div>
+                </div>
+
+                <div class="card-body">
+                  <p class="project-preferences-help">
+                    {{
+                    lang === 'ar'
+                    ? 'اختر اللغة التي سيتم تقديم مخرجات المشروع بها. إذا كان العرض باللغة العربية، فسيتم تسليم المخرجات
+                    بالعربية، وهكذا.'
+                    : 'Choose the language the project deliverables will be provided in. If the offer is in Arabic, the
+                    deliverables should be in Arabic, and so on.'
+                    }}
+                  </p>
+
+                  <div class="project-chip-group"
+                    [class.is-invalid]="projectLanguagesControl?.invalid && projectLanguagesControl?.touched">
+                    <button *ngFor="let option of projectLanguageOptions" type="button" class="project-chip"
+                      [class.selected]="isProjectLanguageSelected(option.key)"
+                      (click)="toggleProjectLanguage(option.key)">
+                      <i *ngIf="isProjectLanguageSelected(option.key)" class="fas fa-check project-chip-icon"></i>
+                      {{ lang === 'ar' ? option.labelAr : option.labelEn }}
+                    </button>
+                  </div>
+
+                  <div *ngIf="projectLanguagesControl?.invalid && projectLanguagesControl?.touched"
+                    class="project-preferences-error">
+                    {{ lang === 'ar' ? 'اختر لغة واحدة على الأقل.' : 'Select at least one language.' }}
+                  </div>
+                </div>
+              </div>
+
+              <div class="project-preferences-actions">
+                <button type="submit" class="btn btn-primary project-preferences-save"
+                  [disabled]="(isSaving$ | async) || (isServicesLoading$ | async) || !availableServices.length">
+                  {{
+                  (isSaving$ | async)
+                  ? (lang === 'ar' ? 'جاري الحفظ...' : 'Saving...')
+                  : (lang === 'ar' ? 'حفظ الإعدادات' : 'Save settings')
+                  }}
+                </button>
+              </div>
+            </form>
           </div>
-          <div class="visual-badge visual-badge-bottom">
-            <i
-              class="fs-3"
-              [ngClass]="
+
+          <div *ngIf="!allChecksPassed" class="project-settings-visual">
+            <div class="project-settings-image-wrap">
+              <img [src]="heroImageUrl" [alt]="lang === 'ar' ? 'صورة إعداد المشروع' : 'Project setup'"
+                class="project-settings-image" />
+              <div class="visual-badge visual-badge-top">
+                <div class="visual-badge-label">
+                  {{ lang === 'ar' ? 'جاهزية الحساب' : 'Account readiness' }}
+                </div>
+                <div class="visual-badge-value">
+                  {{ completedCount }}/{{ checklist.length || 3 }}
+                </div>
+              </div>
+              <div class="visual-badge visual-badge-bottom">
+                <i class="fs-3" [ngClass]="
                 allChecksPassed
                   ? 'ki-outline ki-setting-2 text-primary'
                   : 'ki-outline ki-chart-line-up text-success'
-              "
-            ></i>
-            <span>
-              {{
-                allChecksPassed
+              "></i>
+                <span>
+                  {{
+                  allChecksPassed
                   ? (lang === 'ar'
-                      ? 'احفظ هذه التفضيلات لبدء استقبال عروض المشاريع'
-                      : 'Save these preferences to start receiving project offers')
+                  ? 'احفظ هذه التفضيلات لبدء استقبال عروض المشاريع'
+                  : 'Save these preferences to start receiving project offers')
                   : (lang === 'ar'
-                      ? 'أكمل الخطوات لزيادة فرص ظهورك'
-                      : 'Complete the steps to improve your visibility')
-              }}
-            </span>
+                  ? 'أكمل الخطوات لزيادة فرص ظهورك'
+                  : 'Complete the steps to improve your visibility')
+                  }}
+                </span>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
+      </ng-container>
     </div>
-    </ng-container>
   </div>
 </div>
 

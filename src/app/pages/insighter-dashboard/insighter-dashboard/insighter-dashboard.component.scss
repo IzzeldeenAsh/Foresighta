@@ -459,6 +459,28 @@
   .mobile-nav-content {
     height: 100%;
     padding: 1rem;
+
+    .mobile-section {
+      margin-bottom: 1rem;
+    }
+
+    .mobile-section-title {
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: #6d757d;
+      margin: 0 0 0.5rem;
+      padding: 0 0.25rem;
+    }
+
+    .mobile-group-title {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #6d757d;
+      margin: 0.75rem 0 0.35rem;
+      padding: 0 0.25rem;
+    }
     
     // Flat mobile menu items
     .nav-item {
@@ -672,4 +694,3 @@
     padding-top: 50px;
   }
 }
-

@@ -139,6 +139,25 @@ class="company-settings-form"
         (flagError)="onFlagError($event)"
       ></app-phone-number-input>
     </div>
+    <div class="col-lg-6 mb-6 fv-row">
+      <label for="companyExperience" class="form-label required">
+        {{ "ACCOUNT_SETTINGS.YEARS_OF_EXPERIENCE" | translate }}
+      </label>
+      <input
+        id="companyExperience"
+        type="number"
+        min="0"
+        max="40"
+        step="1"
+        inputmode="numeric"
+        formControlName="companyExperience"
+        class="form-control"
+        [class.is-invalid]="isFieldInvalid('companyExperience')"
+      />
+      <div *ngIf="isFieldInvalid('companyExperience')" class="invalid-feedback">
+        {{ getFieldError('companyExperience') }}
+      </div>
+    </div>
   </div>
 
   <!-- About Us -->

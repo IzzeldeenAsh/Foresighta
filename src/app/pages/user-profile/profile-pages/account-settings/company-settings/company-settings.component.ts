@@ -115,6 +115,12 @@ export class CompanySettingsComponent extends BaseComponent implements OnInit {
         companyWebsite: [null],
         companyRegisterDocument: [null],
         companyAboutUs: ["",Validators.required],
+        companyExperience: ["", [
+          Validators.required,
+          Validators.min(0),
+          Validators.max(40),
+          Validators.pattern(/^\d+$/),
+        ]],
         linkedIn: [''],
         facebook: [''],
         x: [''],
@@ -170,6 +176,8 @@ export class CompanySettingsComponent extends BaseComponent implements OnInit {
 
     const transformedIndustries = transformNodes(this.profile.company?.industries || []);
     const transformedConsultingFields = transformNodes(this.profile.company?.consulting_field || []);
+    const profileAny: any = this.profile as any;
+    const companyAny: any = this.profile.company as any;
 
     
     this.corporateInfoForm.patchValue({
@@ -183,6 +191,7 @@ export class CompanySettingsComponent extends BaseComponent implements OnInit {
       companyCountry: this.profile.country_id || null,
       companyPhoneCountryCode: this.profile.company?.phone_code || '',
       companyPhoneNumber: this.profile.company?.company_phone || '',
+      companyExperience: companyAny?.experience ?? profileAny?.experience ?? '',
     });
 
     // Add social media population
@@ -247,7 +256,22 @@ export class CompanySettingsComponent extends BaseComponent implements OnInit {
         return this.lang === 'ar' ? 'هذا الحقل مطلوب' : 'This field is required';
       }
       if (field.errors?.['pattern']) {
+        if (fieldName === 'companyExperience') {
+          return this.lang === 'ar'
+            ? 'يرجى إدخال عدد صحيح من السنوات'
+            : 'Please enter a valid number of years';
+        }
         return this.lang === 'ar' ? 'الرابط غير صحيح' : 'Invalid URL format';
+      }
+      if (field.errors?.['min']) {
+        return this.lang === 'ar'
+          ? 'يرجى إدخال عدد صحيح من السنوات'
+          : 'Please enter a valid number of years';
+      }
+      if (field.errors?.['max'] && fieldName === 'companyExperience') {
+        return this.lang === 'ar'
+          ? 'الحد الأقصى هو 40 سنة'
+          : 'Maximum is 40 years';
       }
     }
     return '';
@@ -279,6 +303,11 @@ export class CompanySettingsComponent extends BaseComponent implements OnInit {
     formData.append("legal_name", this.corporateInfoForm.get("companyLegalName")?.value);
     formData.append("website", this.corporateInfoForm.get("companyWebsite")?.value);
     formData.append("about_us", this.corporateInfoForm.get("companyAboutUs")?.value);
+
+    const companyExperience = this.corporateInfoForm.get("companyExperience")?.value;
+    if (companyExperience !== null && companyExperience !== undefined && companyExperience !== "") {
+      formData.append("experience", String(companyExperience));
+    }
 
     // Add company phone if provided
     if (this.corporateInfoForm.get("companyPhoneNumber")?.value) {

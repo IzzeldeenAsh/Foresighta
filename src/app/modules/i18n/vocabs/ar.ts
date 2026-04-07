@@ -834,6 +834,7 @@ INSIGHTER_REQUESTS: {
       CONSULTING_FIELDS: 'الخبرات و التخصصات',
       CONSULTING_FIELDS_REQUIRED: 'مجالات الاستشارة مطلوبة.',
       BIO: 'نبذة عنك',
+      YEARS_OF_EXPERIENCE: 'سنوات الخبرة',
       ABOUT_COMPANY: 'حول الشركة',
       COMPANY_LEGAL_NAME: 'الاسم القانوني للشركة',
       
