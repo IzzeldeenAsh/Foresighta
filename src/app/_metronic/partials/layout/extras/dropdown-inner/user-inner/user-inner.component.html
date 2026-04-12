@@ -104,7 +104,7 @@
   </div>
 
   <div class="menu-item px-5">
-    <a [routerLink]="'/app/profile/overview'" class="menu-link px-5" (click)="closeDropdown.emit()">
+    <a [attr.href]="profileSettingsUrl" class="menu-link px-5" (click)="openProfileSettings($event)">
       {{ 'HOME.MY_PROFILE' | translate }}
     </a>
   </div>

@@ -55,7 +55,8 @@
             </div>
 
             <div *ngIf="!allChecksPassed" class="project-checklist">
-              <a class="project-checklist-item" *ngFor="let item of checklist" [routerLink]="item.route"
+              <a class="project-checklist-item" *ngFor="let item of checklist" [attr.href]="item.route"
+                (click)="openChecklistRoute($event, item.route)"
                 [class.is-complete]="item.passed">
                 <div class="project-checklist-icon" [class.is-complete]="item.passed" [class.is-pending]="!item.passed">
                   <i [class]="item.passed ? 'pi pi-check' : 'pi pi-exclamation-circle'"></i>

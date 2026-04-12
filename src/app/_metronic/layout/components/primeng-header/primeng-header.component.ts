@@ -13,6 +13,7 @@ import { filter } from 'rxjs/operators';
 import { PusherClientService } from 'src/app/services/pusher-client.service';
 import type { Channel } from 'pusher-js';
 import { ToastService } from 'src/app/_fake/services/toast-service/toast.service';
+import { environment } from 'src/environments/environment';
 //d
 interface CustomMenuItem extends MenuItem {
   expanded?: boolean;
@@ -286,8 +287,13 @@ export class PrimengHeaderComponent implements OnInit, OnDestroy {
   }
 
   getHomeUrl(): string {
-    const url= 'https://insightabusiness.com/' + this.lang;
+    const url = `${environment.mainAppUrl}/${this.lang}`;
     return url;
+  }
+
+  getProfileSettingsUrl(): string {
+    const locale = this.lang === 'ar' ? 'ar' : 'en';
+    return `${environment.mainAppUrl}/${locale}/profile/settings`;
   }
 
   private static readonly DRAFT_TOAST_FLAG_KEY = 'knoldg:draft_saved_toast';
@@ -519,7 +525,7 @@ export class PrimengHeaderComponent implements OnInit, OnDestroy {
         iconName: 'user',
         iconClass: 'text-primary',
         iconType: 'outline',
-        routerLink: '/app/profile'
+        routerLink: this.getProfileSettingsUrl()
       },
       {
         label: this.translate.instant('HOME.ACCOUNT_SETTINGS'),

@@ -91,7 +91,7 @@
       </div>
     </div>
 
-    <div class="mobile-section" *ngIf="(isInsighter$ | async) || (isCompany$ | async)">
+    <!-- <div class="mobile-section" *ngIf="(isInsighter$ | async) || (isCompany$ | async)">
       <div class="mobile-section-title">{{ lang === 'ar' ? 'المشاريع' : 'Projects' }}</div>
       <div class="nav-item" [routerLink]="['account-settings/project-settings']" routerLinkActive="active" (click)="closeMobileSidebar()">
         <div class="item-icon">
@@ -99,7 +99,7 @@
         </div>
         <span>{{ lang === 'ar' ? 'إعدادات المشروع' : 'Project Settings' }}</span>
       </div>
-    </div>
+    </div> -->
 
     <div class="mobile-section">
       <div class="mobile-section-title">{{ 'INSIGHTER.DASHBOARD.NAV.SETTINGS' | translate }}</div>
@@ -144,7 +144,7 @@
         <app-meetings-statistics *ngIf="isRouteActive('my-meetings')"></app-meetings-statistics>
         <app-consulting-schedule-header *ngIf="isRouteActive('my-consulting-schedule')"></app-consulting-schedule-header>
         <app-account-settings-header *ngIf="isRouteActive('general-settings')"></app-account-settings-header>
-        <app-project-settings-header *ngIf="isRouteActive('project-settings')"></app-project-settings-header>
+        <!-- <app-project-settings-header *ngIf="isRouteActive('project-settings')"></app-project-settings-header> -->
         <app-payment-settings-header *ngIf="isRouteActive('payment-settings')"></app-payment-settings-header>
         <app-consulting-schedule-header *ngIf="isRouteActive('consulting-schedule')"></app-consulting-schedule-header>
         <app-wallet-statistics *ngIf="isRouteActive('wallet') && !((isCompanyInsighter$ | async))"></app-wallet-statistics>
@@ -439,7 +439,7 @@
                 </div>
               </div>
 
-              <div class="p-card navigation-card" *ngIf="(isInsighter$ | async) || (isCompany$ | async)">
+              <!-- <div class="p-card navigation-card" *ngIf="(isInsighter$ | async) || (isCompany$ | async)">
                 <div class="p-card-header" *ngIf="!isNavCollapsed">
                   <h3>{{ lang === 'ar' ? 'المشاريع' : 'Projects' }}</h3>
                 </div>
@@ -460,7 +460,7 @@
                     </div>
                   </div>
                 </div>
-              </div>
+              </div> -->
 
               <div class="p-card navigation-card">
                 <div class="p-card-header" *ngIf="!isNavCollapsed">

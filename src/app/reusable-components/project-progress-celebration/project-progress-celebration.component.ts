@@ -3,6 +3,7 @@ import { Component, Injector, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { DialogModule } from 'primeng/dialog';
 import { BaseComponent } from 'src/app/modules/base.component';
+import { environment } from 'src/environments/environment';
 import {
   ProjectProgressCelebrationService,
   ProjectProgressCelebrationState,
@@ -503,7 +504,7 @@ export class ProjectProgressCelebrationComponent extends BaseComponent implement
           this.lang === 'ar'
             ? 'أكمل النبذة أو نبذة الشركة والدولة وسنوات الخبرة لتقوية حسابك.'
             : 'Complete your bio or company about us, country, and years of experience essentials.',
-        route: '/app/profile/settings/personal-info',
+        route: this.getLocalizedMainAppUrl('/profile/settings'),
         passed: !!results.profile?.pass && this.isExperienceComplete(),
       },
       {
@@ -565,8 +566,20 @@ export class ProjectProgressCelebrationComponent extends BaseComponent implement
     this.celebrationService.dismiss();
   }
 
+  private getLocalizedMainAppUrl(path: string): string {
+    const locale = this.lang === 'ar' ? 'ar' : 'en';
+    const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+    return `${environment.mainAppUrl}/${locale}${normalizedPath}`;
+  }
+
   openRoute(route: string): void {
     this.close();
+
+    if (/^https?:\/\//.test(route)) {
+      window.location.href = route;
+      return;
+    }
+
     void this.router.navigateByUrl(route);
   }
 }

@@ -251,13 +251,13 @@ export class Step6Component extends BaseComponent implements OnInit {
 
           if (this.defaultValues.publish_status === 'published' && this.publishedKnowledge) {
             const sub = this.projectProgressCelebrationService
-              .checkMilestone('publish_insights')
-              .subscribe((opened) => {
-                if (!opened) {
-                  this.openSocialShareModal();
-                }
-              });
-            this.unsubscribe.push(sub);
+            // .checkMilestone('publish_insights')
+            // .subscribe((opened) => {
+            //   if (!opened) {
+            //     this.openSocialShareModal();
+            //   }
+            // });
+            // this.unsubscribe.push(sub);
           }
         },
         error: (error) => {
@@ -353,10 +353,10 @@ export class Step6Component extends BaseComponent implements OnInit {
 
   getSocialShareLinkWithCustomMessage(platform: string): string {
     const shareUrl = this.getShareableLink();
-    const message = this.customShareMessage +' '
+    const message = this.customShareMessage + ' '
     const title = this.getSocialShareTitle();
 
-    switch(platform) {
+    switch (platform) {
       case 'facebook':
         return `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}&quote=${encodeURIComponent(message)}`;
       case 'twitter':

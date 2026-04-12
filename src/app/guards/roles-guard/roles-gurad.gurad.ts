@@ -1,14 +1,24 @@
 // roles.guard.ts
 import { Injectable } from '@angular/core';
 import { CanActivate, ActivatedRouteSnapshot, RouterStateSnapshot, Router, UrlTree } from '@angular/router';
-import { AuthService } from '../../modules/auth/services/auth.service';
 import { Observable, of } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
 import { ProfileService } from 'src/app/_fake/services/get-profile/get-profile.service';
+import { TranslationService } from 'src/app/modules/i18n';
+import { environment } from 'src/environments/environment';
 
 @Injectable({ providedIn: 'root' })
 export class RolesGuard implements CanActivate {
-  constructor(private getProfileService: ProfileService, private router: Router) {}
+  constructor(
+    private getProfileService: ProfileService,
+    private router: Router,
+    private translationService: TranslationService
+  ) {}
+
+  private getProfileSettingsUrl(): string {
+    const lang = this.translationService.getSelectedLanguage() === 'ar' ? 'ar' : 'en';
+    return `${environment.mainAppUrl}/${lang}/profile/settings`;
+  }
 
   canActivate(
     route: ActivatedRouteSnapshot,
@@ -23,7 +33,8 @@ export class RolesGuard implements CanActivate {
           return true;
         }
         // User lacks the required roles, redirect accordingly
-        return this.router.createUrlTree(['/app/profile']);
+        window.location.href = this.getProfileSettingsUrl();
+        return false;
       }),
       catchError(() => {
         // Handle errors, such as unauthenticated users

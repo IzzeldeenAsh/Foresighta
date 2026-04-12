@@ -91,7 +91,7 @@ export class UserInnerComponent extends BaseComponent implements OnInit, AfterVi
   unpublishedDraftCount$: Observable<number>;
   langs = languages;
   isRTL: boolean = false;
-  
+
   // Track submenu states
   submenuStates: { [key: string]: boolean } = {
     'insighterDashboard': false,
@@ -109,6 +109,17 @@ export class UserInnerComponent extends BaseComponent implements OnInit, AfterVi
 
   get promoCardAlt(): string {
     return this.lang === 'ar' ? 'أضف رقم واتساب' : 'Add WhatsApp number';
+  }
+
+  get profileSettingsUrl(): string {
+    const locale = this.lang === 'ar' ? 'ar' : 'en';
+    return `${environment.mainAppUrl}/${locale}/profile/settings`;
+  }
+
+  openProfileSettings(event?: Event): void {
+    event?.preventDefault();
+    this.closeDropdown.emit();
+    window.location.href = this.profileSettingsUrl;
   }
 
   constructor(
@@ -184,22 +195,22 @@ export class UserInnerComponent extends BaseComponent implements OnInit, AfterVi
       this.refreshComponentData();
     });
   }
-  
+
   ngAfterViewInit(): void {
     // Initialize submenu functionality
     this.initializeSubmenus();
   }
-  
+
   initializeSubmenus(): void {
     // Find all submenu triggers
     const submenuTriggers = this.elementRef.nativeElement.querySelectorAll('[data-kt-menu-trigger]');
-    
+
     // Add click event listeners to each trigger
     submenuTriggers.forEach((trigger: HTMLElement) => {
       this.renderer.listen(trigger, 'click', (event) => {
         event.preventDefault();
         event.stopPropagation();
-        
+
         // Find the submenu associated with this trigger
         const submenuId = trigger.getAttribute('data-submenu-id') || '';
         if (submenuId) {
@@ -207,13 +218,13 @@ export class UserInnerComponent extends BaseComponent implements OnInit, AfterVi
         }
       });
     });
-    
+
     // Add click listener to document to close submenus when clicking outside
     this.renderer.listen('document', 'click', (event: Event) => {
       const target = event.target as HTMLElement;
       const isInsideSubmenu = target.closest('.menu-sub-dropdown');
       const isSubmenuTrigger = target.closest('[data-kt-menu-trigger]');
-      
+
       if (!isInsideSubmenu && !isSubmenuTrigger) {
         // Close all submenus
         Object.keys(this.submenuStates).forEach(key => {
@@ -222,7 +233,7 @@ export class UserInnerComponent extends BaseComponent implements OnInit, AfterVi
       }
     });
   }
-  
+
   toggleSubmenu(submenuId: string): void {
     // Close all other submenus
     Object.keys(this.submenuStates).forEach(key => {
@@ -230,7 +241,7 @@ export class UserInnerComponent extends BaseComponent implements OnInit, AfterVi
     });
   }
 
-  refreshComponentData(){
+  refreshComponentData() {
     this.initUserStreams();
   }
 
@@ -242,11 +253,11 @@ export class UserInnerComponent extends BaseComponent implements OnInit, AfterVi
   logout() {
     // Calculate timestamp to prevent caching
     const timestamp = new Date().getTime();
-    
+
     // Create the redirect URI to the main domain
     const lang = this.translationService.getSelectedLanguage();
     const redirectUri = encodeURIComponent(`${environment.mainAppUrl}/${lang}?logged_out=true&t=${timestamp}`);
-    
+
     // Navigate to the logout route with the redirect URI
     window.location.href = `/auth/logout?redirect_uri=${redirectUri}`;
   }

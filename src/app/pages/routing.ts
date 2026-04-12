@@ -14,60 +14,55 @@ const Routing: Routes = [
   {
     path: 'insighter-register',
     loadChildren: () => import('./wizards/wizards.module').then((m) => m.WizardsModule),
-    canActivate: [NonInsightersAuthGuard], 
+    canActivate: [NonInsightersAuthGuard],
   },
-  {
-    path: 'profile',
-    loadChildren: () => import('./user-profile/user-profile.module').then((m) => m.UserProfileModule),
-    canActivate:[authGuard,RolesGuard],
-    data: { roles: [ 'insighter','company','company-insighter','client'] }
-  },
+
   {
     path: 'add-knowledge',
     loadChildren: () => import('./add-knowledge/add-knowledge.module').then((m) => m.AddKnowledgeModule),
-    canActivate:[authGuard,RolesGuard],
-    data: { roles: [ 'insighter','company','company-insighter'] }
+    canActivate: [authGuard, RolesGuard],
+    data: { roles: ['insighter', 'company', 'company-insighter'] }
   },
   {
     path: 'edit-knowledge',
     loadChildren: () => import('./add-knowledge/add-knowledge.module').then((m) => m.AddKnowledgeModule),
-     canActivate:[authGuard,RolesGuard],
-    data: { roles: [ 'insighter','company','company-insighter'] }
+    canActivate: [authGuard, RolesGuard],
+    data: { roles: ['insighter', 'company', 'company-insighter'] }
   },
   {
     path: 'insighter-dashboard',
     loadChildren: () => import('./insighter-dashboard/insighter-dashboard.module').then((m) => m.InsighterDashboardModule),
-    canActivate:[authGuard,RolesGuard],
-    data: { roles: [ 'insighter','company','company-insighter','client'] } 
+    canActivate: [authGuard, RolesGuard],
+    data: { roles: ['insighter', 'company', 'company-insighter', 'client'] }
   },
   {
     path: 'knowledge-detail',
     loadChildren: () => import('./knowledge-detail/knowledge-detail.module').then((m) => m.KnowledgeDetailModule),
-    canActivate:[authGuard,RolesGuard],
-    data: { roles: [ 'insighter','company','company-insighter'] }
+    canActivate: [authGuard, RolesGuard],
+    data: { roles: ['insighter', 'company', 'company-insighter'] }
   },
   {
     path: 'my-knowledge-base',
     loadChildren: () => import('./my-knowledge-base/my-knowledge-base.module').then((m) => m.MyKnowledgeBaseModule),
-    canActivate:[authGuard,RolesGuard],
-    data: { roles: [ 'insighter','company','company-insighter'] } 
+    canActivate: [authGuard, RolesGuard],
+    data: { roles: ['insighter', 'company', 'company-insighter'] }
   },
   {
     path: 'review-insighter-knowledge',
     loadChildren: () => import('./review-insighter-knowledge/review-insighter-knowledge.module').then((m) => m.ReviewInsighterKnowledgeModule),
-    canActivate:[authGuard,RolesGuard],
-    data: { roles: ['company'] } 
+    canActivate: [authGuard, RolesGuard],
+    data: { roles: ['company'] }
   },
   {
     path: 'setup-payment-info',
     loadChildren: () => import('./setup-payment-info/setup-payment-info.module').then((m) => m.SetupPaymentInfoModule),
-     canActivate:[authGuard],
+    canActivate: [authGuard],
   },
   {
     path: 'invoice/:orderNo',
     loadChildren: () => import('./invoice-page/invoice-page.module').then((m) => m.InvoicePageModule),
-    canActivate:[authGuard,RolesGuard],
-    data: { roles: [ 'insighter','company','company-insighter','client'] }
+    canActivate: [authGuard, RolesGuard],
+    data: { roles: ['insighter', 'company', 'company-insighter', 'client'] }
   },
   {
     path: '**',

@@ -288,10 +288,10 @@ export class NotificationSettingsComponent extends BaseComponent implements OnIn
             : "Notification settings updated";
         this.showSuccess("", msg);
 
-        const celebrationSub = this.projectProgressCelebrationService
-          .checkMilestone("whatsapp", this.profileAny?.roles ?? [])
-          .subscribe();
-        this.unsubscribe.push(celebrationSub);
+        // const celebrationSub = this.projectProgressCelebrationService
+        //   .checkMilestone("whatsapp", this.profileAny?.roles ?? [])
+        //   .subscribe();
+        // this.unsubscribe.push(celebrationSub);
       }),
       switchMap(() =>
         this.profileService.refreshProfile().pipe(

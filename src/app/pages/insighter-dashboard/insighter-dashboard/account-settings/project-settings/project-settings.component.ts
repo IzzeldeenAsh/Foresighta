@@ -1,8 +1,10 @@
 import { Component, Injector, OnInit } from '@angular/core';
+import { Router } from '@angular/router';
 import { BehaviorSubject, catchError, finalize, forkJoin, of } from 'rxjs';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ProfileService } from 'src/app/_fake/services/get-profile/get-profile.service';
 import { BaseComponent } from 'src/app/modules/base.component';
+import { environment } from 'src/environments/environment';
 import {
   ProjectAccountCheckResults,
   ProjectAccountProperties,
@@ -95,7 +97,8 @@ export class ProjectSettingsComponent extends BaseComponent implements OnInit {
     injector: Injector,
     private readonly fb: FormBuilder,
     private readonly projectSettingsService: ProjectSettingsService,
-    private readonly profileService: ProfileService
+    private readonly profileService: ProfileService,
+    private readonly router: Router
   ) {
     super(injector);
 
@@ -381,7 +384,7 @@ export class ProjectSettingsComponent extends BaseComponent implements OnInit {
         key: 'profile',
         title: this.lang === 'ar' ? 'إكمال الملف الشخصي' : 'Complete Profile',
         details: this.getProfileDetails(results),
-        route: '/app/profile/overview',
+        route: this.getLocalizedMainAppUrl('/profile/settings'),
         passed: this.isProfileComplete(results),
       },
       {
@@ -482,6 +485,23 @@ export class ProjectSettingsComponent extends BaseComponent implements OnInit {
 
   private isCompanyAccount(): boolean {
     return this.roles.includes('company') || this.roles.includes('company-insighter');
+  }
+
+  private getLocalizedMainAppUrl(path: string): string {
+    const locale = this.lang === 'ar' ? 'ar' : 'en';
+    const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+    return `${environment.mainAppUrl}/${locale}${normalizedPath}`;
+  }
+
+  openChecklistRoute(event: Event, route: string): void {
+    event.preventDefault();
+
+    if (/^https?:\/\//.test(route)) {
+      window.location.href = route;
+      return;
+    }
+
+    void this.router.navigateByUrl(route);
   }
 
   private patchSettingsForm(properties: ProjectAccountProperties): void {
