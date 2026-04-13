@@ -1,422 +1,384 @@
-
 <!-- Page Header -->
-<app-page-header
-  [titleEn]="'My Downloads'"
-  [titleAr]="'تحميلاتي'"
-  [subtitle]="getDownloadsSubtitle()"
-  [lang]="lang">
+<app-page-header [titleEn]="'My Downloads'" [titleAr]="'تحميلاتي'" [subtitle]="getDownloadsSubtitle()" [lang]="lang">
   <div slot="icon">
-    <svg class="fs-2x text-info" width="1em" height="1em" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M4.25984 12C3.39528 12 2.56612 11.673 1.95479 11.091C1.34345 10.509 1 9.71964 1 8.89655C1 8.07347 1.34345 7.28409 1.95479 6.70208C2.56612 6.12007 3.39528 5.7931 4.25984 5.7931C4.46403 4.88771 5.06138 4.09206 5.92047 3.58118C6.34585 3.32822 6.82268 3.15279 7.32375 3.06491C7.82481 2.97702 8.3403 2.9784 8.84077 3.06897C9.34124 3.15953 9.8169 3.33751 10.2406 3.59274C10.6643 3.84798 11.0277 4.17546 11.3101 4.5565C11.5925 4.93754 11.7883 5.36468 11.8864 5.81351C11.9845 6.26235 11.983 6.72411 11.8819 7.17241H12.5748C13.218 7.17241 13.8349 7.42672 14.2897 7.8794C14.7445 8.33207 15 8.94603 15 9.58621C15 10.2264 14.7445 10.8403 14.2897 11.293C13.8349 11.7457 13.218 12 12.5748 12H11.8819" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
-      <path d="M10 13L8 15L6 13" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
-      <path d="M8 15L8 9" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+    <svg class="fs-2x text-info" width="1em" height="1em" viewBox="0 0 16 16" fill="none"
+      xmlns="http://www.w3.org/2000/svg">
+      <path
+        d="M4.25984 12C3.39528 12 2.56612 11.673 1.95479 11.091C1.34345 10.509 1 9.71964 1 8.89655C1 8.07347 1.34345 7.28409 1.95479 6.70208C2.56612 6.12007 3.39528 5.7931 4.25984 5.7931C4.46403 4.88771 5.06138 4.09206 5.92047 3.58118C6.34585 3.32822 6.82268 3.15279 7.32375 3.06491C7.82481 2.97702 8.3403 2.9784 8.84077 3.06897C9.34124 3.15953 9.8169 3.33751 10.2406 3.59274C10.6643 3.84798 11.0277 4.17546 11.3101 4.5565C11.5925 4.93754 11.7883 5.36468 11.8864 5.81351C11.9845 6.26235 11.983 6.72411 11.8819 7.17241H12.5748C13.218 7.17241 13.8349 7.42672 14.2897 7.8794C14.7445 8.33207 15 8.94603 15 9.58621C15 10.2264 14.7445 10.8403 14.2897 11.293C13.8349 11.7457 13.218 12 12.5748 12H11.8819"
+        fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" />
+      <path d="M10 13L8 15L6 13" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" />
+      <path d="M8 15L8 9" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" />
     </svg>
   </div>
 </app-page-header>
 
 @if (loading()) {
-  <div *ngIf="loading" class="text-center py-10 bg-light rounded mb-5 border border-1 border-light">
-    <div class="my-5">
-        <div class="spinner-border text-primary mb-4" role="status" style="width: 3rem; height: 3rem;">
-            <span class="visually-hidden">{{ 'COMMON.LOADING' | translate }}</span>
-        </div>
-        <h3 class="fw-bold text-gray-800 mb-2">{{ 'COMMON.LOADING' | translate }}</h3>
-        <p class="text-gray-600 fs-6 px-3">{{ 'COMMON.PLEASE_WAIT' | translate }}</p>
+<div *ngIf="loading" class="text-center py-10 bg-light rounded mb-5 border border-1 border-light">
+  <div class="my-5">
+    <div class="spinner-border text-primary mb-4" role="status" style="width: 3rem; height: 3rem;">
+      <span class="visually-hidden">{{ 'COMMON.LOADING' | translate }}</span>
     </div>
+    <h3 class="fw-bold text-gray-800 mb-2">{{ 'COMMON.LOADING' | translate }}</h3>
+    <p class="text-gray-600 fs-6 px-3">{{ 'COMMON.PLEASE_WAIT' | translate }}</p>
+  </div>
 </div>
 } @else {
 
-  <div class="card">
-    <div class="card-body">
-      <div class="row">
-        <div class="col-12">
-          
-          <!-- Search Bar -->
-          <div class="row mb-10">
-            <div class="col-12">
-              <div class="d-flex align-items-center" [class.flex-row-reverse]="lang === 'ar'">
-                <div class="flex-grow-1" [class.me-3]="lang !== 'ar'" [class.ms-3]="lang === 'ar'">
-                  <div class="input-group" [class.flex-row-reverse]="lang === 'ar'">
-                    <span class="input-group-text bg-light" [class.border-end-0]="lang !== 'ar'" [class.border-start-0]="lang === 'ar'">
-                      <i class="ki-duotone ki-magnifier fs-4">
-                        <span class="path1"></span>
-                        <span class="path2"></span>
-                      </i>
-                    </span>
-                    <input 
-                      type="text" 
-                      class="form-control"
-                      [class.border-start-0]="lang !== 'ar'"
-                      [class.border-end-0]="lang === 'ar'"
-                      [formControl]="searchControl"
-                      [placeholder]="'MY_DOWNLOADS.SEARCH_PLACEHOLDER' | translate"
-                      [style.text-align]="lang === 'ar' ? 'right' : 'left'"
-                      [style.direction]="lang === 'ar' ? 'rtl' : 'ltr'"
-                      autocomplete="off">
+<div class="card">
+  <div class="card-body">
+    <div class="row">
+      <div class="col-12">
+
+        <!-- Search Bar -->
+        <div class="row mb-10">
+          <div class="col-12">
+            <div class="d-flex align-items-center" [class.flex-row-reverse]="lang === 'ar'">
+              <div class="flex-grow-1" [class.me-3]="lang !== 'ar'" [class.ms-3]="lang === 'ar'">
+                <div class="input-group" [class.flex-row-reverse]="lang === 'ar'">
+                  <span class="input-group-text bg-light" [class.border-end-0]="lang !== 'ar'"
+                    [class.border-start-0]="lang === 'ar'">
+                    <i class="ki-duotone ki-magnifier fs-4">
+                      <span class="path1"></span>
+                      <span class="path2"></span>
+                    </i>
+                  </span>
+                  <input type="text" class="form-control" [class.border-start-0]="lang !== 'ar'"
+                    [class.border-end-0]="lang === 'ar'" [formControl]="searchControl"
+                    [placeholder]="'MY_DOWNLOADS.SEARCH_PLACEHOLDER' | translate"
+                    [style.text-align]="lang === 'ar' ? 'right' : 'left'"
+                    [style.direction]="lang === 'ar' ? 'rtl' : 'ltr'" autocomplete="off">
+                </div>
+              </div>
+              @if (currentSearchTerm()) {
+              <button type="button" class="btn btn-sm btn-light-danger" (click)="clearSearch()"
+                [attr.title]="'COMMON.CLEAR_SEARCH' | translate">
+                <i class="ki-duotone ki-cross fs-2">
+                  <span class="path1"></span>
+                  <span class="path2"></span>
+                </i>
+              </button>
+              }
+              @if (currentUuids().length > 0) {
+              <button type="button" class="btn btn-sm btn-light-primary" [class.ms-2]="lang !== 'ar'"
+                [class.me-2]="lang === 'ar'" (click)="viewAll()" [attr.title]="'MY_DOWNLOADS.VIEW_ALL' | translate">
+                <i class="ki-duotone ki-eye fs-2">
+                  <span class="path1"></span>
+                  <span class="path2"></span>
+                  <span class="path3"></span>
+                </i>
+                <span [class.ms-1]="lang !== 'ar'" [class.me-1]="lang === 'ar'">{{ 'MY_DOWNLOADS.VIEW_ALL' | translate
+                  }}</span>
+              </button>
+              }
+            </div>
+          </div>
+        </div>
+
+        <!-- Archived Toggle Button Row -->
+        <div class="row mb-4">
+          <div class="col-12">
+            <div class="d-flex" [class.justify-content-start]="lang !== 'ar'"
+              [class.justify-content-end]="lang === 'ar'">
+              <button class="btn btn-sm btn-outline-info d-flex align-items-center toggle-archived-btn"
+                [class.active]="showArchivedDownloads()" (click)="toggleArchivedDownloads()" [pTooltip]="lang === 'ar'
+                    ? (showArchivedDownloads() ? 'إظهار التحميلات' : 'إظهار الأرشيف')
+                    : (showArchivedDownloads() ? 'Show Downloads' : 'Show Archived')" tooltipPosition="top">
+
+                @if (showArchivedDownloads()) {
+                <i [ngClass]="lang === 'ar' ? 'pi pi-arrow-right ms-2 text-dark' : 'pi pi-arrow-left me-2 text-dark'"
+                  style="font-size: 1rem;"></i>
+                } @else {
+                <i [ngClass]="lang === 'ar' ? 'pi pi-inbox ms-2 text-dark' : 'pi pi-inbox me-2 text-dark'"
+                  style="font-size: 1rem;"></i>
+                }
+
+                <!-- CHANGE 2: Updated Button Text Logic -->
+                <span>
+                  {{ lang === 'ar'
+                  ? (showArchivedDownloads() ? 'التحميلات' : 'الأرشيف')
+                  : (showArchivedDownloads() ? 'Downloads' : 'Archived')
+                  }}
+                </span>
+
+                @if (!showArchivedDownloads() && libraryStatistics()?.archived) {
+                <span class="badge badge-light-info" [class.ms-2]="lang !== 'ar'" [class.me-2]="lang === 'ar'">{{
+                  libraryStatistics()?.archived }}</span>
+                }
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Three Column Layout -->
+        <div class="row" style="min-height: 500px;" [attr.dir]="lang === 'ar' ? 'rtl' : 'ltr'">
+
+          <!-- Column 1: Knowledge Items -->
+          <div class="col-lg-4" [class.border-end]="lang !== 'ar'" [class.border-start]="lang === 'ar'"
+            (click)="onKnowledgeColumnClick()">
+            <div class="d-flex align-items-center gap-2 mb-4 bg-light-gray px-4 py-4 mobile-border">
+              <h5 class="mb-0 fw-bold text-dark">{{ 'MY_DOWNLOADS.KNOWLEDGE_ITEMS' | translate }}</h5>
+              <span class="badge badge-light-info">{{ currentDisplayTotalItems() }}</span>
+            </div>
+
+            <div #knowledgeList class="knowledge-list" style="max-height: 400px; overflow-y: auto;"
+              (scroll)="onKnowledgeListScroll()">
+              @if (currentKnowledgeItems().length === 0) {
+              <div class="text-center py-5">
+                @if (currentSearchTerm()) {
+                <i class="ki-duotone ki-magnifier fs-3x text-muted mb-3">
+                  <span class="path1"></span>
+                  <span class="path2"></span>
+                </i>
+                <p class="text-muted">{{ 'COMMON.NO_SEARCH_RESULTS' | translate }}</p>
+                <button class="btn btn-sm btn-light-info" (click)="clearSearch()">
+                  {{ 'COMMON.CLEAR' | translate }}
+                </button>
+                } @else {
+                <i class="ki-duotone ki-folder-down fs-3x text-muted mb-3">
+                  <span class="path1"></span>
+                  <span class="path2"></span>
+                </i>
+                <p class="text-muted">{{ 'MY_DOWNLOADS.NO_DOWNLOADS' | translate }}</p>
+                }
+              </div>
+              } @else {
+              @for (knowledge of currentKnowledgeItems(); track trackByKnowledgeUuid($index, knowledge)) {
+              <div
+                class="knowledge-item d-flex align-items-center px-4 py-2 mb-2 border rounded cursor-pointer position-relative"
+                [class.active]="selectedKnowledge()?.uuid === knowledge.uuid"
+                (click)="selectKnowledge(knowledge); $event.stopPropagation()">
+
+                @if (highlightedKnowledgeUuid() === knowledge.uuid) {
+                <span class="new-ribbon" [class.rtl]="lang === 'ar'">{{ lang === 'ar' ? 'جديد' : 'New' }}</span>
+                }
+
+                <!-- Folder Icon -->
+                <div [class.me-3]="lang !== 'ar'" [class.ms-3]="lang === 'ar'">
+                  <i class="ki-duotone ki-folder fs-4 text-info">
+                    <span class="path1"></span>
+                    <span class="path2"></span>
+                  </i>
+                </div>
+
+                <!-- Knowledge Title -->
+                <div class="flex-grow-1">
+                  <div class="fs-7 fw-bold" [attr.dir]="getTextDirection(knowledge.title)"
+                    [class.text-end]="startsWithArabic(knowledge.title)"
+                    [class.text-start]="!startsWithArabic(knowledge.title)">
+                    {{ knowledge.title | truncateText: 30 }}
+                  </div>
+                  <div class="d-flex align-items-center gap-1">
+
+                    <small class="text-muted fs-8"> @switch (knowledge.type) {
+                      @case ('data') {
+                      {{ 'KNOWLEDGE.DATA' | translate }}
+                      }
+                      @case ('statistic') {
+                      {{ 'KNOWLEDGE.STATISTIC' | translate }}
+                      }
+
+                      @case ('report') {
+                      {{ 'KNOWLEDGE.REPORT' | translate }}
+                      }
+                      @case ('manual') {
+                      {{ 'KNOWLEDGE.MANUAL' | translate }}
+                      }
+                      @case ('course') {
+                      {{ 'KNOWLEDGE.COURSE' | translate }}
+                      }
+                      @case ('media') {
+                      {{ 'KNOWLEDGE.MEDIA' | translate }}
+                      }
+                      @default {
+                      {{ knowledge.type || 'N/A' }}
+                      }
+                      }</small>
                   </div>
                 </div>
-                @if (currentSearchTerm()) {
-                  <button 
-                    type="button" 
-                    class="btn btn-sm btn-light-danger" 
-                    (click)="clearSearch()"
-                    [attr.title]="'COMMON.CLEAR_SEARCH' | translate">
-                    <i class="ki-duotone ki-cross fs-2">
-                      <span class="path1"></span>
-                      <span class="path2"></span>
-                    </i>
-                  </button>
-                }
-                @if (currentUuids().length > 0) {
-                  <button 
-                    type="button" 
-                    class="btn btn-sm btn-light-primary"
-                    [class.ms-2]="lang !== 'ar'"
-                    [class.me-2]="lang === 'ar'"
-                    (click)="viewAll()"
-                    [attr.title]="'MY_DOWNLOADS.VIEW_ALL' | translate">
-                    <i class="ki-duotone ki-eye fs-2">
-                      <span class="path1"></span>
-                      <span class="path2"></span>
-                      <span class="path3"></span>
-                    </i>
-                    <span [class.ms-1]="lang !== 'ar'" [class.me-1]="lang === 'ar'">{{ 'MY_DOWNLOADS.VIEW_ALL' | translate }}</span>
-                  </button>
-                }
-              </div>
-            </div>
-          </div>
 
-          <!-- Archived Toggle Button Row -->
-          <div class="row mb-4">
-            <div class="col-12">
-              <div class="d-flex" [class.justify-content-start]="lang !== 'ar'" [class.justify-content-end]="lang === 'ar'">
-                <button
-                  class="btn btn-sm btn-outline-info d-flex align-items-center toggle-archived-btn"
-                  [class.active]="showArchivedDownloads()"
-                  (click)="toggleArchivedDownloads()"
-                  [pTooltip]="lang === 'ar'
-                    ? (showArchivedDownloads() ? 'إظهار التحميلات' : 'إظهار الأرشيف')
-                    : (showArchivedDownloads() ? 'Show Downloads' : 'Show Archived')"
-                  
-                  tooltipPosition="top">
-                  
-                  @if (showArchivedDownloads()) {
-                    <i
-                      [ngClass]="lang === 'ar' ? 'pi pi-arrow-right ms-2 text-dark' : 'pi pi-arrow-left me-2 text-dark'"
-                      style="font-size: 1rem;"></i>
-                  } @else {
-                    <i
-                      [ngClass]="lang === 'ar' ? 'pi pi-inbox ms-2 text-dark' : 'pi pi-inbox me-2 text-dark'"
-                      style="font-size: 1rem;"></i>
-                  }
-                  
-                  <!-- CHANGE 2: Updated Button Text Logic -->
-                  <span>
-                    {{ lang === 'ar'
-                      ? (showArchivedDownloads() ? 'التحميلات' : 'الأرشيف')
-                      : (showArchivedDownloads() ? 'Downloads' : 'Archived')
-                    }}
-                  </span>
-                  
-                  @if (!showArchivedDownloads() && libraryStatistics()?.archived) {
-                    <span class="badge badge-light-info" [class.ms-2]="lang !== 'ar'" [class.me-2]="lang === 'ar'">{{ libraryStatistics()?.archived }}</span>
-                  }
-                </button>
-              </div>
-            </div>
-          </div>
+                <!-- Action Buttons -->
+                <div class="d-flex gap-1" [class.ms-2]="lang !== 'ar'" [class.me-2]="lang === 'ar'">
+                  <!-- Download Button -->
+                  <button class="btn btn-xs download-btn"
+                    [ngClass]="isKnowledgeDownloaded(knowledge) ? 'btn-info text-white' : 'btn-light-info text-primary'"
+                    (click)="downloadKnowledge(knowledge); $event.stopPropagation()"
+                    [disabled]="isKnowledgeDownloading(knowledge.uuid)"
+                    [pTooltip]="lang === 'ar' ? 'إعادة التنزيل' : 'Redownload'"
+                    style="border-color: transparent !important" tooltipPosition="top">
+                    @if (isKnowledgeDownloading(knowledge.uuid)) {
+                    <span class="spinner-border spinner-border-sm" role="status"></span>
+                    } @else {
+                    <svg width="15" height="13" viewBox="0 0 15 13" fill="none" xmlns="http://www.w3.org/2000/svg"
+                      [ngClass]="isKnowledgeDownloaded(knowledge) ? 'text-white' : 'text-primary'">
+                      <path
+                        d="M3.75984 9.5C2.89528 9.5 2.06612 9.17303 1.45479 8.59102C0.843447 8.00901 0.5 7.21964 0.5 6.39655C0.5 5.57347 0.843447 4.78409 1.45479 4.20208C2.06612 3.62007 2.89528 3.2931 3.75984 3.2931C3.96403 2.38771 4.56138 1.59206 5.42047 1.08118C5.84585 0.828223 6.32268 0.652792 6.82375 0.564905C7.32481 0.477019 7.8403 0.478399 8.34077 0.568966C8.84124 0.659532 9.3169 0.837513 9.74058 1.09274C10.1643 1.34798 10.5277 1.67546 10.8101 2.0565C11.0925 2.43754 11.2883 2.86468 11.3864 3.31351C11.4845 3.76235 11.483 4.22411 11.3819 4.67241H12.0748C12.718 4.67241 13.3349 4.92672 13.7897 5.3794C14.2445 5.83207 14.5 6.44603 14.5 7.08621C14.5 7.72638 14.2445 8.34034 13.7897 8.79302C13.3349 9.24569 12.718 9.5 12.0748 9.5H11.3819"
+                        stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" />
+                      <path d="M9.5 10.5L7.5 12.5L5.5 10.5" stroke="currentColor" stroke-linecap="round"
+                        stroke-linejoin="round" />
+                      <path d="M7.5 12.5L7.5 6.5" stroke="currentColor" stroke-linecap="round"
+                        stroke-linejoin="round" />
+                    </svg>
 
-                <!-- Three Column Layout -->
-                <div class="row" style="min-height: 500px;" [attr.dir]="lang === 'ar' ? 'rtl' : 'ltr'">
 
-                  <!-- Column 1: Knowledge Items -->
-                  <div class="col-lg-4"
-                       [class.border-end]="lang !== 'ar'"
-                       [class.border-start]="lang === 'ar'"
-                       (click)="onKnowledgeColumnClick()">
-                    <div class="d-flex align-items-center gap-2 mb-4 bg-light-gray px-4 py-4 mobile-border">
-                      <h5 class="mb-0 fw-bold text-dark">{{ 'MY_DOWNLOADS.KNOWLEDGE_ITEMS' | translate }}</h5>
-                      <span class="badge badge-light-info">{{ currentDisplayTotalItems() }}</span>
-                    </div>
-                    
-                    <div 
-                      #knowledgeList
-                      class="knowledge-list" 
-                      style="max-height: 400px; overflow-y: auto;"
-                      (scroll)="onKnowledgeListScroll()">
-                        @if (currentKnowledgeItems().length === 0) {
-                        <div class="text-center py-5">
-                          @if (currentSearchTerm()) {
-                            <i class="ki-duotone ki-magnifier fs-3x text-muted mb-3">
-                              <span class="path1"></span>
-                              <span class="path2"></span>
-                            </i>
-                            <p class="text-muted">{{ 'COMMON.NO_SEARCH_RESULTS' | translate }}</p>
-                            <button class="btn btn-sm btn-light-info" (click)="clearSearch()">
-                              {{ 'COMMON.CLEAR' | translate }}
-                            </button>
-                          } @else {
-                            <i class="ki-duotone ki-folder-down fs-3x text-muted mb-3">
-                              <span class="path1"></span>
-                              <span class="path2"></span>
-                            </i>
-                            <p class="text-muted">{{ 'MY_DOWNLOADS.NO_DOWNLOADS' | translate }}</p>
-                          }
-                        </div>
-                      } @else {
-                        @for (knowledge of currentKnowledgeItems(); track trackByKnowledgeUuid($index, knowledge)) {
-                          <div 
-                            class="knowledge-item d-flex align-items-center px-4 py-2 mb-2 border rounded cursor-pointer position-relative"
-                            [class.active]="selectedKnowledge()?.uuid === knowledge.uuid"
-                            (click)="selectKnowledge(knowledge); $event.stopPropagation()">
-                            
-                            @if (highlightedKnowledgeUuid() === knowledge.uuid) {
-                              <span class="new-ribbon" [class.rtl]="lang === 'ar'">{{ lang === 'ar' ? 'جديد' : 'New' }}</span>
-                            }
-                            
-                            <!-- Folder Icon -->
-                            <div [class.me-3]="lang !== 'ar'" [class.ms-3]="lang === 'ar'">
-                              <i class="ki-duotone ki-folder fs-4 text-info">
-                                <span class="path1"></span>
-                                <span class="path2"></span>
-                              </i>
-                            </div>
-                            
-                            <!-- Knowledge Title -->
-                            <div class="flex-grow-1">
-                              <div
-                                class="fs-7 fw-bold"
-                                [attr.dir]="getTextDirection(knowledge.title)"
-                                [class.text-end]="startsWithArabic(knowledge.title)"
-                                [class.text-start]="!startsWithArabic(knowledge.title)">
-                                {{ knowledge.title | truncateText: 30 }}
-                              </div>
-                              <div class="d-flex align-items-center gap-1">
-                            
-                                <small class="text-muted fs-8">  @switch (knowledge.type) {
-                                  @case ('data') {
-                                    {{ 'KNOWLEDGE.DATA' | translate }}
-                                  }
-                                  @case ('statistic') {
-                                    {{ 'KNOWLEDGE.STATISTIC' | translate }}
-                                  }
-                            
-                                 @case ('report') {
-                                  {{ 'KNOWLEDGE.REPORT' | translate }}
-                                 }
-                                 @case ('manual') {
-                                  {{ 'KNOWLEDGE.MANUAL' | translate }}
-                                 }
-                                 @case ('course') {
-                                    {{ 'KNOWLEDGE.COURSE' | translate }}
-                                 }
-                                 @case ('media') {
-                                  {{ 'KNOWLEDGE.MEDIA' | translate }}
-                                 }
-                                 @default {
-                                  {{ knowledge.type || 'N/A' }}
-                                 }
-                                }</small>
-                              </div>
-                            </div>
-                            
-                            <!-- Action Buttons -->
-                            <div class="d-flex gap-1" [class.ms-2]="lang !== 'ar'" [class.me-2]="lang === 'ar'">
-                              <!-- Download Button -->
-                              <button
-                                class="btn btn-xs download-btn"
-                                [ngClass]="isKnowledgeDownloaded(knowledge) ? 'btn-info text-white' : 'btn-light-info text-primary'"
-                                (click)="downloadKnowledge(knowledge); $event.stopPropagation()"
-                                [disabled]="isKnowledgeDownloading(knowledge.uuid)"
-                                [pTooltip]="lang === 'ar' ? 'تنزيل' : 'Download'"
-                                style="border-color: transparent !important"
-                                tooltipPosition="top">
-                                @if (isKnowledgeDownloading(knowledge.uuid)) {
-                                  <span class="spinner-border spinner-border-sm" role="status"></span>
-                                } @else {
-                                  <svg width="15" height="13" viewBox="0 0 15 13" fill="none" xmlns="http://www.w3.org/2000/svg" [ngClass]="isKnowledgeDownloaded(knowledge) ? 'text-white' : 'text-primary'">
-                                    <path d="M3.75984 9.5C2.89528 9.5 2.06612 9.17303 1.45479 8.59102C0.843447 8.00901 0.5 7.21964 0.5 6.39655C0.5 5.57347 0.843447 4.78409 1.45479 4.20208C2.06612 3.62007 2.89528 3.2931 3.75984 3.2931C3.96403 2.38771 4.56138 1.59206 5.42047 1.08118C5.84585 0.828223 6.32268 0.652792 6.82375 0.564905C7.32481 0.477019 7.8403 0.478399 8.34077 0.568966C8.84124 0.659532 9.3169 0.837513 9.74058 1.09274C10.1643 1.34798 10.5277 1.67546 10.8101 2.0565C11.0925 2.43754 11.2883 2.86468 11.3864 3.31351C11.4845 3.76235 11.483 4.22411 11.3819 4.67241H12.0748C12.718 4.67241 13.3349 4.92672 13.7897 5.3794C14.2445 5.83207 14.5 6.44603 14.5 7.08621C14.5 7.72638 14.2445 8.34034 13.7897 8.79302C13.3349 9.24569 12.718 9.5 12.0748 9.5H11.3819" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
-                                    <path d="M9.5 10.5L7.5 12.5L5.5 10.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
-                                    <path d="M7.5 12.5L7.5 6.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
-                                    </svg>
-                                    
-                                    
-                                }
-                              </button>
-
-                              <!-- Archive Button - only show when not viewing archived items -->
-                              @if (!showArchivedDownloads()) {
-                                <button
-                                  class="btn btn-xs btn-light-warning archive-btn"
-                                  (click)="archiveKnowledge(knowledge); $event.stopPropagation()"
-                                  [disabled]="isKnowledgeDownloading(knowledge.uuid)"
-                                  [pTooltip]="lang === 'ar' ? 'أرشفة الملف' : 'Archive Knowledge'"
-                                  tooltipPosition="top">
-                                  <i class="pi pi-inbox text-warning" style="font-size: 1rem; padding: 0;"></i>
-                                </button>
-                              }
-                            </div>
-                          </div>
-                        }
-                      }
-                    </div>
-                    
-                    <!-- Scroll Controls -->
-                    <div class="d-flex justify-content-center mt-3">
-                      @if (showScrollButton() === 'up') {
-                        <button 
-                          class="scroll-button"
-                          (click)="scrollUp(); $event.stopPropagation()"
-                          [attr.title]="'Scroll Up'">
-                          <i class="ki-duotone ki-up fs-4">
-                            <span class="path1"></span>
-                            <span class="path2"></span>
-                          </i>
-                        </button>
-                      }
-                      
-                      @if (showScrollButton() === 'down') {
-                        <button 
-                          class="scroll-button"
-                          (click)="scrollDown(); $event.stopPropagation()"
-                          [attr.title]="'Scroll Down'">
-                          <i class="ki-duotone ki-down fs-4">
-                            <span class="path1"></span>
-                            <span class="path2"></span>
-                          </i>
-                        </button>
-                      }
-                    </div>
-                    
-                    <!-- Pagination -->
-                    @if (currentDisplayTotalPages() > 1) {
-                      <div class="d-flex justify-content-center mt-4">
-                        <ul class="pagination pagination-sm">
-                          <li class="page-item" [class.disabled]="!hasPrevPage()">
-                            <a class="page-link" (click)="onPageChange(currentDisplayPage() - 1)">
-                              <i class="previous"></i>
-                            </a>
-                          </li>
-
-                          @for (page of getPages(); track trackByPageIndex($index, page)) {
-                            <li class="page-item"
-                                [class.active]="page === currentDisplayPage()"
-                                [class.disabled]="page === '...'">
-                              <a class="page-link" (click)="onPageClick(page)">{{ page }}</a>
-                            </li>
-                          }
-
-                          <li class="page-item" [class.disabled]="!hasNextPage()">
-                            <a class="page-link" (click)="onPageChange(currentDisplayPage() + 1)">
-                              <i class="next"></i>
-                            </a>
-                          </li>
-                        </ul>
-                      </div>
                     }
-                  </div>
-    
-                  <!-- Column 2: Documents -->
-                  <div class="col-lg-4"
-                       [class.border-end]="lang !== 'ar'"
-                       [class.border-start]="lang === 'ar'">
-                    <div class="d-flex align-items-center mb-4 bg-light-gray p-4 mobile-border">
-                      <h5 class="mb-0 fw-bold text-dark">{{ 'MY_DOWNLOADS.DOCUMENTS' | translate }}</h5>
-                      @if (selectedKnowledge()) {
-                        <span class="badge badge-light-success" [class.ms-2]="lang !== 'ar'" [class.me-2]="lang === 'ar'">{{ currentKnowledgeDocuments().length }}</span>
-                      }
-                    </div>
-                    
-                    <div class="documents-list" style="max-height: 400px; overflow-y: auto;">
-                      @if (!selectedKnowledge()) {
-                        <!-- <div class="text-center py-5">
+                  </button>
+
+                  <!-- Archive Button - only show when not viewing archived items -->
+                  @if (!showArchivedDownloads()) {
+                  <button class="btn btn-xs btn-light-warning archive-btn"
+                    (click)="archiveKnowledge(knowledge); $event.stopPropagation()"
+                    [disabled]="isKnowledgeDownloading(knowledge.uuid)"
+                    [pTooltip]="lang === 'ar' ? 'أرشفة الملف' : 'Archive Knowledge'" tooltipPosition="top">
+                    <i class="pi pi-inbox text-warning" style="font-size: 1rem; padding: 0;"></i>
+                  </button>
+                  }
+                </div>
+              </div>
+              }
+              }
+            </div>
+
+            <!-- Scroll Controls -->
+            <div class="d-flex justify-content-center mt-3">
+              @if (showScrollButton() === 'up') {
+              <button class="scroll-button" (click)="scrollUp(); $event.stopPropagation()" [attr.title]="'Scroll Up'">
+                <i class="ki-duotone ki-up fs-4">
+                  <span class="path1"></span>
+                  <span class="path2"></span>
+                </i>
+              </button>
+              }
+
+              @if (showScrollButton() === 'down') {
+              <button class="scroll-button" (click)="scrollDown(); $event.stopPropagation()"
+                [attr.title]="'Scroll Down'">
+                <i class="ki-duotone ki-down fs-4">
+                  <span class="path1"></span>
+                  <span class="path2"></span>
+                </i>
+              </button>
+              }
+            </div>
+
+            <!-- Pagination -->
+            @if (currentDisplayTotalPages() > 1) {
+            <div class="d-flex justify-content-center mt-4">
+              <ul class="pagination pagination-sm">
+                <li class="page-item" [class.disabled]="!hasPrevPage()">
+                  <a class="page-link" (click)="onPageChange(currentDisplayPage() - 1)">
+                    <i class="previous"></i>
+                  </a>
+                </li>
+
+                @for (page of getPages(); track trackByPageIndex($index, page)) {
+                <li class="page-item" [class.active]="page === currentDisplayPage()" [class.disabled]="page === '...'">
+                  <a class="page-link" (click)="onPageClick(page)">{{ page }}</a>
+                </li>
+                }
+
+                <li class="page-item" [class.disabled]="!hasNextPage()">
+                  <a class="page-link" (click)="onPageChange(currentDisplayPage() + 1)">
+                    <i class="next"></i>
+                  </a>
+                </li>
+              </ul>
+            </div>
+            }
+          </div>
+
+          <!-- Column 2: Documents -->
+          <div class="col-lg-4" [class.border-end]="lang !== 'ar'" [class.border-start]="lang === 'ar'">
+            <div class="d-flex align-items-center mb-4 bg-light-gray p-4 mobile-border">
+              <h5 class="mb-0 fw-bold text-dark">{{ 'MY_DOWNLOADS.DOCUMENTS' | translate }}</h5>
+              @if (selectedKnowledge()) {
+              <span class="badge badge-light-success" [class.ms-2]="lang !== 'ar'" [class.me-2]="lang === 'ar'">{{
+                currentKnowledgeDocuments().length }}</span>
+              }
+            </div>
+
+            <div class="documents-list" style="max-height: 400px; overflow-y: auto;">
+              @if (!selectedKnowledge()) {
+              <!-- <div class="text-center py-5">
                           <i class="ki-duotone ki-document fs-3x text-muted mb-3">
                             <span class="path1"></span>
                             <span class="path2"></span>
                           </i>
                           <p class="text-muted">{{ 'MY_DOWNLOADS.SELECT_KNOWLEDGE' | translate }}</p>
                         </div> -->
-                      } @else if (currentKnowledgeDocuments().length === 0) {
-                        <div class="text-center py-5">
-                          <i class="ki-duotone ki-document fs-3x text-muted mb-3">
-                            <span class="path1"></span>
-                            <span class="path2"></span>
-                          </i>
-                          <p class="text-muted">{{ 'MY_DOWNLOADS.NO_DOCUMENTS' | translate }}</p>
-                        </div>
-                      } @else {
-                        @for (document of currentKnowledgeDocuments(); track trackByDocumentUuid($index, document)) {
-                          <div 
-                            class="document-item d-flex align-items-center px-4 py-2 mb-2 border rounded cursor-pointer"
-                            [class.active]="selectedDocument()?.uuid === document.uuid"
-                            (click)="selectDocument(document)">
-                            
-                            <!-- Document Icon -->
-                            <div [class.me-3]="lang !== 'ar'" [class.ms-3]="lang === 'ar'">
-                              <img
-                                [src]="getFileIconByExtension(document.file_extension)"
-                                [alt]="document.file_extension + ' file'"
-                                width="32"
-                                height="32"
-                                class="file-icon"/>
-                            </div>
-                            
-                            <!-- Document Name -->
-                            <div class="flex-grow-1">
-                              <div
-                                class="fs-7 fw-bold"
-                                [attr.dir]="getTextDirection(document.file_name)"
-                                [class.text-end]="startsWithArabic(document.file_name)"
-                                [class.text-start]="!startsWithArabic(document.file_name)">
-                                {{ document.file_name | truncateText: 30 }}
-                              </div>
-                              <div class="d-flex align-items-center gap-2">
-                                <small class="text-muted fs-8">{{ document.file_size | fileSize }}</small>
-                                <span class="text-muted">•</span>
-                                @if (document.price > 0) {
-                                  <small class="text-muted fs-8">${{ document.price }}</small>
-                                } @else {
-                                  <small class="text-success fs-8">{{ 'COMMON.FREE' | translate }}</small>
-                                }
-                              </div>
-                            </div>
-                            
-                            <!-- Download Icon -->
-                            <div [class.ms-2]="lang !== 'ar'" [class.me-2]="lang === 'ar'">
-                              <button
-                                class="btn btn-xs download-btn"
-                                [ngClass]="isDocumentDownloaded(document) ? 'btn-info text-white' : 'btn-light-info text-primary'"
-                                (click)="downloadDocument(document); $event.stopPropagation()"
-                                [disabled]="isDocumentDownloading(document.uuid)"
-                                [pTooltip]="'Download Document'"
-                                style="border-color: transparent !important"
-                                tooltipPosition="top">
-                                @if (isDocumentDownloading(document.uuid)) {
-                                  <span class="spinner-border spinner-border-sm" role="status"></span>
-                                } @else {
-                                  <svg width="15" height="13" viewBox="0 0 15 13" fill="none" xmlns="http://www.w3.org/2000/svg" [ngClass]="isDocumentDownloaded(document) ? 'text-white' : 'text-primary'">
-                                    <path d="M3.75984 9.5C2.89528 9.5 2.06612 9.17303 1.45479 8.59102C0.843447 8.00901 0.5 7.21964 0.5 6.39655C0.5 5.57347 0.843447 4.78409 1.45479 4.20208C2.06612 3.62007 2.89528 3.2931 3.75984 3.2931C3.96403 2.38771 4.56138 1.59206 5.42047 1.08118C5.84585 0.828223 6.32268 0.652792 6.82375 0.564905C7.32481 0.477019 7.8403 0.478399 8.34077 0.568966C8.84124 0.659532 9.3169 0.837513 9.74058 1.09274C10.1643 1.34798 10.5277 1.67546 10.8101 2.0565C11.0925 2.43754 11.2883 2.86468 11.3864 3.31351C11.4845 3.76235 11.483 4.22411 11.3819 4.67241H12.0748C12.718 4.67241 13.3349 4.92672 13.7897 5.3794C14.2445 5.83207 14.5 6.44603 14.5 7.08621C14.5 7.72638 14.2445 8.34034 13.7897 8.79302C13.3349 9.24569 12.718 9.5 12.0748 9.5H11.3819" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
-                                    <path d="M9.5 10.5L7.5 12.5L5.5 10.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
-                                    <path d="M7.5 12.5L7.5 6.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
-                                  </svg>
-                                }
-                              </button>
-                            </div>
-                          </div>
-                        }
-                      }
-                    </div>
+              } @else if (currentKnowledgeDocuments().length === 0) {
+              <div class="text-center py-5">
+                <i class="ki-duotone ki-document fs-3x text-muted mb-3">
+                  <span class="path1"></span>
+                  <span class="path2"></span>
+                </i>
+                <p class="text-muted">{{ 'MY_DOWNLOADS.NO_DOCUMENTS' | translate }}</p>
+              </div>
+              } @else {
+              @for (document of currentKnowledgeDocuments(); track trackByDocumentUuid($index, document)) {
+              <div class="document-item d-flex align-items-center px-4 py-2 mb-2 border rounded cursor-pointer"
+                [class.active]="selectedDocument()?.uuid === document.uuid" (click)="selectDocument(document)">
+
+                <!-- Document Icon -->
+                <div [class.me-3]="lang !== 'ar'" [class.ms-3]="lang === 'ar'">
+                  <img [src]="getFileIconByExtension(document.file_extension)" [alt]="document.file_extension + ' file'"
+                    width="32" height="32" class="file-icon" />
+                </div>
+
+                <!-- Document Name -->
+                <div class="flex-grow-1">
+                  <div class="fs-7 fw-bold" [attr.dir]="getTextDirection(document.file_name)"
+                    [class.text-end]="startsWithArabic(document.file_name)"
+                    [class.text-start]="!startsWithArabic(document.file_name)">
+                    {{ document.file_name | truncateText: 30 }}
                   </div>
-    
-                  <!-- Column 3: Details -->
-                  <div class="col-lg-4">
-                    <div class="d-flex align-items-center gap-2 mb-4 bg-light-gray p-4 mobile-border">
-                      <h5 class="mb-0 fw-bold text-dark">{{ 'MY_DOWNLOADS.KNOWLEDGE_SOURCE' | translate }}</h5>
-                    </div>
-                    <div class="details-panel">
-                      @if (!selectedKnowledge()) {
-                        <!-- <div class="text-center py-5">
+                  <div class="d-flex align-items-center gap-2">
+                    <small class="text-muted fs-8">{{ document.file_size | fileSize }}</small>
+                    <span class="text-muted">•</span>
+                    @if (document.price > 0) {
+                    <small class="text-muted fs-8">${{ document.price }}</small>
+                    } @else {
+                    <small class="text-success fs-8">{{ 'COMMON.FREE' | translate }}</small>
+                    }
+                  </div>
+                </div>
+
+                <!-- Download Icon -->
+                <div [class.ms-2]="lang !== 'ar'" [class.me-2]="lang === 'ar'">
+                  <button class="btn btn-xs download-btn"
+                    [ngClass]="isDocumentDownloaded(document) ? 'btn-info text-white' : 'btn-light-info text-primary'"
+                    (click)="downloadDocument(document); $event.stopPropagation()"
+                    [disabled]="isDocumentDownloading(document.uuid)" [pTooltip]="'Download Document'"
+                    style="border-color: transparent !important" tooltipPosition="top">
+                    @if (isDocumentDownloading(document.uuid)) {
+                    <span class="spinner-border spinner-border-sm" role="status"></span>
+                    } @else {
+                    <svg width="15" height="13" viewBox="0 0 15 13" fill="none" xmlns="http://www.w3.org/2000/svg"
+                      [ngClass]="isDocumentDownloaded(document) ? 'text-white' : 'text-primary'">
+                      <path
+                        d="M3.75984 9.5C2.89528 9.5 2.06612 9.17303 1.45479 8.59102C0.843447 8.00901 0.5 7.21964 0.5 6.39655C0.5 5.57347 0.843447 4.78409 1.45479 4.20208C2.06612 3.62007 2.89528 3.2931 3.75984 3.2931C3.96403 2.38771 4.56138 1.59206 5.42047 1.08118C5.84585 0.828223 6.32268 0.652792 6.82375 0.564905C7.32481 0.477019 7.8403 0.478399 8.34077 0.568966C8.84124 0.659532 9.3169 0.837513 9.74058 1.09274C10.1643 1.34798 10.5277 1.67546 10.8101 2.0565C11.0925 2.43754 11.2883 2.86468 11.3864 3.31351C11.4845 3.76235 11.483 4.22411 11.3819 4.67241H12.0748C12.718 4.67241 13.3349 4.92672 13.7897 5.3794C14.2445 5.83207 14.5 6.44603 14.5 7.08621C14.5 7.72638 14.2445 8.34034 13.7897 8.79302C13.3349 9.24569 12.718 9.5 12.0748 9.5H11.3819"
+                        stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" />
+                      <path d="M9.5 10.5L7.5 12.5L5.5 10.5" stroke="currentColor" stroke-linecap="round"
+                        stroke-linejoin="round" />
+                      <path d="M7.5 12.5L7.5 6.5" stroke="currentColor" stroke-linecap="round"
+                        stroke-linejoin="round" />
+                    </svg>
+                    }
+                  </button>
+                </div>
+              </div>
+              }
+              }
+            </div>
+          </div>
+
+          <!-- Column 3: Details -->
+          <div class="col-lg-4">
+            <div class="d-flex align-items-center gap-2 mb-4 bg-light-gray p-4 mobile-border">
+              <h5 class="mb-0 fw-bold text-dark">{{ 'MY_DOWNLOADS.KNOWLEDGE_SOURCE' | translate }}</h5>
+            </div>
+            <div class="details-panel">
+              @if (!selectedKnowledge()) {
+              <!-- <div class="text-center py-5">
                           <i class="ki-duotone ki-information fs-3x text-muted mb-3">
                             <span class="path1"></span>
                             <span class="path2"></span>
@@ -424,222 +386,212 @@
                           </i>
                           <p class="text-muted">{{ 'MY_DOWNLOADS.SELECT_ITEM_DETAILS' | translate }}</p>
                         </div> -->
-                      } @else {
-                        <!-- Background section with type and title -->
-                        <div class="details-header">
-                          @if (currentKnowledgeDetails(); as details) {
-                            <div class="d-flex align-items-center  gap-2 mb-2">
-                              @switch (details.type) {
-                                @case ('data') {
-                                  <svg width="18" height="18" viewBox="0 0 30 34" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M14.5464 0C10.5851 0 6.86364 0.704566 4.06815 1.98373C1.48292 3.16777 0 4.73376 0 6.28348C0 7.8332 1.48292 9.39967 4.06815 10.5831C6.86364 11.8623 10.585 12.5669 14.5464 12.5669C18.5078 12.5669 22.2297 11.8623 25.0243 10.5831C27.6099 9.39967 29.0933 7.8333 29.0933 6.28348C29.0933 4.73367 27.6099 3.16777 25.0243 1.98373C22.2293 0.704566 18.5077 0 14.5464 0Z" fill="#0179FE"/>
-                                    <path d="M0 9.45442C0.821516 10.3442 1.99713 11.1499 3.49489 11.8359C6.46628 13.1954 10.3914 13.9444 14.5469 13.9444C18.7023 13.9444 22.627 13.1949 25.5984 11.8359C27.0961 11.1499 28.2718 10.3445 29.0933 9.45442V13.4496C29.0933 15.004 27.6131 16.5723 25.0331 17.7531C22.2436 19.029 18.5194 19.7326 14.5464 19.7326C10.5734 19.7326 6.84871 19.029 4.05982 17.7531C1.47967 16.5723 0 15.004 0 13.4496V9.45442Z" fill="#0179FE"/>
-                                    <path d="M29.0933 16.6207C26.6302 19.2908 21.1116 21.1102 14.5464 21.1102C7.98116 21.1102 2.46273 19.2908 0 16.6207V20.1383C0 21.6918 1.47967 23.261 4.05982 24.4417C6.84871 25.7181 10.5734 26.4217 14.5464 26.4217C18.5194 26.4217 22.2436 25.7181 25.0336 24.4417C27.6136 23.261 29.0933 21.6918 29.0933 20.1383V16.6207Z" fill="#0179FE"/>
-                                    <path d="M4.05982 31.608C1.47967 30.4272 0 28.858 0 27.3041V23.3093C2.46273 25.9799 7.98116 27.7994 14.5464 27.7994C21.1116 27.7994 26.6302 25.9799 29.0933 23.3093V27.3041C29.0933 28.858 27.6131 30.4272 25.0331 31.608C22.2436 32.8844 18.5194 33.5875 14.5464 33.5875C10.5734 33.5875 6.84871 32.8844 4.05982 31.608Z" fill="#0179FE"/>
-                                  </svg>
-                                }
-                                @case ('statistic') {
-                                  <svg width="18" height="18" viewBox="0 0 42 42" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M29.5625 0C37.1458 0 41.6663 4.52116 41.6455 12.1045V29.5625C41.6455 37.1457 37.1251 41.6669 29.542 41.667H12.1045C4.52127 41.667 0.00012927 37.146 0 29.542V12.1045C0 4.52116 4.52116 0 12.1045 0H29.5625ZM11.9346 21.46C10.7753 21.4601 9.83305 22.4022 9.83301 23.5615V29.4678C9.83321 30.6269 10.7754 31.5682 11.9346 31.5684C13.112 31.5684 14.0545 30.627 14.0547 29.4678V23.5615C14.0546 22.4021 13.1121 21.46 11.9346 21.46ZM19.96 12.1846C18.7825 12.1847 17.8409 13.1268 17.8408 14.2861V29.4678C17.841 30.6269 18.7827 31.5682 19.96 31.5684C21.1192 31.5684 22.0613 30.627 22.0615 29.4678V14.2861C22.0615 13.1267 21.1194 12.1846 19.96 12.1846ZM27.6689 8.83301C26.4561 8.83301 25.4854 9.93196 25.4854 11.2842V28.9912C25.4855 30.3434 26.4561 31.4424 27.6689 31.4424C28.863 31.4423 29.8329 30.3433 29.833 28.9912V11.2842C29.8329 9.93204 28.8631 8.83313 27.6689 8.83301Z" fill="#0179FE"/>
-                                  </svg>
-                                }
-                                @case ('report') {
-                                  <svg width="18" height="18" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path opacity="0.4" d="M45.125 21.75L43.0833 30.4583C41.3333 37.9792 37.875 41.0208 31.375 40.3958C30.3333 40.3125 29.2083 40.125 28 39.8333L24.5 39C15.8125 36.9375 13.125 32.6458 15.1667 23.9375L17.2083 15.2083C17.625 13.4375 18.125 11.8958 18.75 10.625C21.1875 5.58333 25.3333 4.22916 32.2917 5.875L35.7708 6.6875C44.5 8.72916 47.1667 13.0417 45.125 21.75Z" fill="#0179FE"/>
-                                    <path d="M31.375 40.3958C30.0833 41.2708 28.4583 42 26.4792 42.6458L23.1875 43.7292C14.9167 46.3958 10.5625 44.1667 7.87499 35.8958L5.20833 27.6667C2.54166 19.3958 4.74999 15.0208 13.0208 12.3542L16.3125 11.2708C17.1667 11 17.9792 10.7708 18.75 10.625C18.125 11.8958 17.625 13.4375 17.2083 15.2083L15.1667 23.9375C13.125 32.6458 15.8125 36.9375 24.5 39L28 39.8333C29.2083 40.125 30.3333 40.3125 31.375 40.3958Z" fill="#0179FE"/>
-                                  </svg>
-                                }
-                                @case ('manual') {
-                                  <svg width="18" height="18" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M42.7083 14.5834V31.25H13.2292C9.95834 31.25 7.29167 33.9167 7.29167 37.1875V14.5834C7.29167 6.25002 9.37501 4.16669 17.7083 4.16669H32.2917C40.625 4.16669 42.7083 6.25002 42.7083 14.5834Z" fill="#0179FE"/>
-                                    <path d="M42.7083 31.25V38.5417C42.7083 42.5625 39.4375 45.8333 35.4167 45.8333H14.5833C10.5625 45.8333 7.29167 42.5625 7.29167 38.5417V37.1875C7.29167 33.9167 9.95834 31.25 13.2292 31.25H42.7083Z" fill="#0179FE"/>
-                                    <path d="M33.3333 16.1458H16.6667C15.8125 16.1458 15.1042 15.4375 15.1042 14.5833C15.1042 13.7291 15.8125 13.0208 16.6667 13.0208H33.3333C34.1875 13.0208 34.8958 13.7291 34.8958 14.5833C34.8958 15.4375 34.1875 16.1458 33.3333 16.1458Z" fill="white"/>
-                                    <path d="M27.0833 23.4375H16.6667C15.8125 23.4375 15.1042 22.7292 15.1042 21.875C15.1042 21.0208 15.8125 20.3125 16.6667 20.3125H27.0833C27.9375 20.3125 28.6458 21.0208 28.6458 21.875C28.6458 22.7292 27.9375 23.4375 27.0833 23.4375Z" fill="white"/>
-                                  </svg>
-                                }
-                                @case ('course') {
-                                  <svg width="18" height="18" viewBox="0 0 39 36" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M31.9898 26.8163C31.9898 24.1788 29.8518 22.0408 27.2143 22.0408C24.5767 22.0408 22.4388 24.1788 22.4388 26.8163C22.4388 28.1696 23.0037 29.3885 23.9081 30.2576V36L27.2143 33.7959L30.5204 36V30.2576C31.4248 29.3885 31.9898 28.1696 31.9898 26.8163Z" fill="#0179FE"/>
-                                    <path d="M37.1327 0H1.86734C1.05624 0 0.397949 0.657551 0.397949 1.46939V30.8572C0.397949 31.6683 1.05624 32.3265 1.86734 32.3265H20.9694V31.3443C20.0143 30.0372 19.5 28.4694 19.5 26.8163C19.5 22.5625 22.9604 19.102 27.2143 19.102C31.4682 19.102 34.9286 22.5625 34.9286 26.8163C34.9286 28.4701 34.4143 30.038 33.4592 31.345V32.3265H37.1327C37.9438 32.3265 38.6021 31.6683 38.6021 30.8572V1.46939C38.6021 0.657551 37.9438 0 37.1327 0ZM20.9694 13.2245H8.47959V10.2857H20.9694V13.2245ZM30.5204 7.34694H8.47959V4.40816H30.5204V7.34694Z" fill="#0179FE"/>
-                                  </svg>
-                                }
-                                @case ('media') {
-                                  <svg width="18" height="18" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M25 0C11.215 0 0 11.215 0 25C0 38.785 11.215 50 25 50C38.785 50 50 38.785 50 25C50 11.215 38.785 0 25 0Z" fill="#0179FE"/>
-                                    <path d="M33 25L21 33V17L33 25Z" fill="white"/>
-                                  </svg>
-                                }
-                                @default {
-                                  <i class="ki-duotone ki-document fs-5" style="color: #0179FE;"><span class="path1"></span><span class="path2"></span></i>
-                                }
-                              }
-                              <div class="type-label">
-                                @switch (details.type) {
-                                  @case ('data') {
-                                    {{ 'KNOWLEDGE.DATA' | translate }}
-                                  }
-                                  @case ('statistic') {
-                                    {{ 'KNOWLEDGE.STATISTIC' | translate }}
-                                  }
-                            
-                                 @case ('report') {
-                                  {{ 'KNOWLEDGE.REPORT' | translate }}
-                                 }
-                                 @case ('manual') {
-                                  {{ 'KNOWLEDGE.MANUAL' | translate }}
-                                 }
-                                 @case ('course') {
-                                    {{ 'KNOWLEDGE.COURSE' | translate }}
-                                 }
-                                 @case ('media') {
-                                  {{ 'KNOWLEDGE.MEDIA' | translate }}
-                                 }
-                                 @default {
-                                  {{ details.type || 'N/A' }}
-                                 }
-                                }
-                              </div>
-                            </div>
-                            <a (click)="viewKnowledge(selectedKnowledge()!); $event.stopPropagation()" class="cursor-pointer">
-                            <h2
-                              class="knowledge-title"
-                              [attr.dir]="getTextDirection(selectedKnowledge()?.title)"
-                              [class.text-end]="startsWithArabic(selectedKnowledge()?.title)"
-                              [class.text-start]="!startsWithArabic(selectedKnowledge()?.title)">
-                              {{ (selectedKnowledge()?.title || '') | truncateText:40 }}
-                            </h2>
+              } @else {
+              <!-- Background section with type and title -->
+              <div class="details-header">
+                @if (currentKnowledgeDetails(); as details) {
+                <div class="d-flex align-items-center  gap-2 mb-2">
+                  @switch (details.type) {
+                  @case ('data') {
+                  <svg width="18" height="18" viewBox="0 0 30 34" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path
+                      d="M14.5464 0C10.5851 0 6.86364 0.704566 4.06815 1.98373C1.48292 3.16777 0 4.73376 0 6.28348C0 7.8332 1.48292 9.39967 4.06815 10.5831C6.86364 11.8623 10.585 12.5669 14.5464 12.5669C18.5078 12.5669 22.2297 11.8623 25.0243 10.5831C27.6099 9.39967 29.0933 7.8333 29.0933 6.28348C29.0933 4.73367 27.6099 3.16777 25.0243 1.98373C22.2293 0.704566 18.5077 0 14.5464 0Z"
+                      fill="#0179FE" />
+                    <path
+                      d="M0 9.45442C0.821516 10.3442 1.99713 11.1499 3.49489 11.8359C6.46628 13.1954 10.3914 13.9444 14.5469 13.9444C18.7023 13.9444 22.627 13.1949 25.5984 11.8359C27.0961 11.1499 28.2718 10.3445 29.0933 9.45442V13.4496C29.0933 15.004 27.6131 16.5723 25.0331 17.7531C22.2436 19.029 18.5194 19.7326 14.5464 19.7326C10.5734 19.7326 6.84871 19.029 4.05982 17.7531C1.47967 16.5723 0 15.004 0 13.4496V9.45442Z"
+                      fill="#0179FE" />
+                    <path
+                      d="M29.0933 16.6207C26.6302 19.2908 21.1116 21.1102 14.5464 21.1102C7.98116 21.1102 2.46273 19.2908 0 16.6207V20.1383C0 21.6918 1.47967 23.261 4.05982 24.4417C6.84871 25.7181 10.5734 26.4217 14.5464 26.4217C18.5194 26.4217 22.2436 25.7181 25.0336 24.4417C27.6136 23.261 29.0933 21.6918 29.0933 20.1383V16.6207Z"
+                      fill="#0179FE" />
+                    <path
+                      d="M4.05982 31.608C1.47967 30.4272 0 28.858 0 27.3041V23.3093C2.46273 25.9799 7.98116 27.7994 14.5464 27.7994C21.1116 27.7994 26.6302 25.9799 29.0933 23.3093V27.3041C29.0933 28.858 27.6131 30.4272 25.0331 31.608C22.2436 32.8844 18.5194 33.5875 14.5464 33.5875C10.5734 33.5875 6.84871 32.8844 4.05982 31.608Z"
+                      fill="#0179FE" />
+                  </svg>
+                  }
+                  @case ('statistic') {
+                  <svg width="18" height="18" viewBox="0 0 42 42" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path
+                      d="M29.5625 0C37.1458 0 41.6663 4.52116 41.6455 12.1045V29.5625C41.6455 37.1457 37.1251 41.6669 29.542 41.667H12.1045C4.52127 41.667 0.00012927 37.146 0 29.542V12.1045C0 4.52116 4.52116 0 12.1045 0H29.5625ZM11.9346 21.46C10.7753 21.4601 9.83305 22.4022 9.83301 23.5615V29.4678C9.83321 30.6269 10.7754 31.5682 11.9346 31.5684C13.112 31.5684 14.0545 30.627 14.0547 29.4678V23.5615C14.0546 22.4021 13.1121 21.46 11.9346 21.46ZM19.96 12.1846C18.7825 12.1847 17.8409 13.1268 17.8408 14.2861V29.4678C17.841 30.6269 18.7827 31.5682 19.96 31.5684C21.1192 31.5684 22.0613 30.627 22.0615 29.4678V14.2861C22.0615 13.1267 21.1194 12.1846 19.96 12.1846ZM27.6689 8.83301C26.4561 8.83301 25.4854 9.93196 25.4854 11.2842V28.9912C25.4855 30.3434 26.4561 31.4424 27.6689 31.4424C28.863 31.4423 29.8329 30.3433 29.833 28.9912V11.2842C29.8329 9.93204 28.8631 8.83313 27.6689 8.83301Z"
+                      fill="#0179FE" />
+                  </svg>
+                  }
+                  @case ('report') {
+                  <svg width="18" height="18" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path opacity="0.4"
+                      d="M45.125 21.75L43.0833 30.4583C41.3333 37.9792 37.875 41.0208 31.375 40.3958C30.3333 40.3125 29.2083 40.125 28 39.8333L24.5 39C15.8125 36.9375 13.125 32.6458 15.1667 23.9375L17.2083 15.2083C17.625 13.4375 18.125 11.8958 18.75 10.625C21.1875 5.58333 25.3333 4.22916 32.2917 5.875L35.7708 6.6875C44.5 8.72916 47.1667 13.0417 45.125 21.75Z"
+                      fill="#0179FE" />
+                    <path
+                      d="M31.375 40.3958C30.0833 41.2708 28.4583 42 26.4792 42.6458L23.1875 43.7292C14.9167 46.3958 10.5625 44.1667 7.87499 35.8958L5.20833 27.6667C2.54166 19.3958 4.74999 15.0208 13.0208 12.3542L16.3125 11.2708C17.1667 11 17.9792 10.7708 18.75 10.625C18.125 11.8958 17.625 13.4375 17.2083 15.2083L15.1667 23.9375C13.125 32.6458 15.8125 36.9375 24.5 39L28 39.8333C29.2083 40.125 30.3333 40.3125 31.375 40.3958Z"
+                      fill="#0179FE" />
+                  </svg>
+                  }
+                  @case ('manual') {
+                  <svg width="18" height="18" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path
+                      d="M42.7083 14.5834V31.25H13.2292C9.95834 31.25 7.29167 33.9167 7.29167 37.1875V14.5834C7.29167 6.25002 9.37501 4.16669 17.7083 4.16669H32.2917C40.625 4.16669 42.7083 6.25002 42.7083 14.5834Z"
+                      fill="#0179FE" />
+                    <path
+                      d="M42.7083 31.25V38.5417C42.7083 42.5625 39.4375 45.8333 35.4167 45.8333H14.5833C10.5625 45.8333 7.29167 42.5625 7.29167 38.5417V37.1875C7.29167 33.9167 9.95834 31.25 13.2292 31.25H42.7083Z"
+                      fill="#0179FE" />
+                    <path
+                      d="M33.3333 16.1458H16.6667C15.8125 16.1458 15.1042 15.4375 15.1042 14.5833C15.1042 13.7291 15.8125 13.0208 16.6667 13.0208H33.3333C34.1875 13.0208 34.8958 13.7291 34.8958 14.5833C34.8958 15.4375 34.1875 16.1458 33.3333 16.1458Z"
+                      fill="white" />
+                    <path
+                      d="M27.0833 23.4375H16.6667C15.8125 23.4375 15.1042 22.7292 15.1042 21.875C15.1042 21.0208 15.8125 20.3125 16.6667 20.3125H27.0833C27.9375 20.3125 28.6458 21.0208 28.6458 21.875C28.6458 22.7292 27.9375 23.4375 27.0833 23.4375Z"
+                      fill="white" />
+                  </svg>
+                  }
+                  @case ('course') {
+                  <svg width="18" height="18" viewBox="0 0 39 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path
+                      d="M31.9898 26.8163C31.9898 24.1788 29.8518 22.0408 27.2143 22.0408C24.5767 22.0408 22.4388 24.1788 22.4388 26.8163C22.4388 28.1696 23.0037 29.3885 23.9081 30.2576V36L27.2143 33.7959L30.5204 36V30.2576C31.4248 29.3885 31.9898 28.1696 31.9898 26.8163Z"
+                      fill="#0179FE" />
+                    <path
+                      d="M37.1327 0H1.86734C1.05624 0 0.397949 0.657551 0.397949 1.46939V30.8572C0.397949 31.6683 1.05624 32.3265 1.86734 32.3265H20.9694V31.3443C20.0143 30.0372 19.5 28.4694 19.5 26.8163C19.5 22.5625 22.9604 19.102 27.2143 19.102C31.4682 19.102 34.9286 22.5625 34.9286 26.8163C34.9286 28.4701 34.4143 30.038 33.4592 31.345V32.3265H37.1327C37.9438 32.3265 38.6021 31.6683 38.6021 30.8572V1.46939C38.6021 0.657551 37.9438 0 37.1327 0ZM20.9694 13.2245H8.47959V10.2857H20.9694V13.2245ZM30.5204 7.34694H8.47959V4.40816H30.5204V7.34694Z"
+                      fill="#0179FE" />
+                  </svg>
+                  }
+                  @case ('media') {
+                  <svg width="18" height="18" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path
+                      d="M25 0C11.215 0 0 11.215 0 25C0 38.785 11.215 50 25 50C38.785 50 50 38.785 50 25C50 11.215 38.785 0 25 0Z"
+                      fill="#0179FE" />
+                    <path d="M33 25L21 33V17L33 25Z" fill="white" />
+                  </svg>
+                  }
+                  @default {
+                  <i class="ki-duotone ki-document fs-5" style="color: #0179FE;"><span class="path1"></span><span
+                      class="path2"></span></i>
+                  }
+                  }
+                  <div class="type-label">
+                    @switch (details.type) {
+                    @case ('data') {
+                    {{ 'KNOWLEDGE.DATA' | translate }}
+                    }
+                    @case ('statistic') {
+                    {{ 'KNOWLEDGE.STATISTIC' | translate }}
+                    }
+
+                    @case ('report') {
+                    {{ 'KNOWLEDGE.REPORT' | translate }}
+                    }
+                    @case ('manual') {
+                    {{ 'KNOWLEDGE.MANUAL' | translate }}
+                    }
+                    @case ('course') {
+                    {{ 'KNOWLEDGE.COURSE' | translate }}
+                    }
+                    @case ('media') {
+                    {{ 'KNOWLEDGE.MEDIA' | translate }}
+                    }
+                    @default {
+                    {{ details.type || 'N/A' }}
+                    }
+                    }
+                  </div>
+                </div>
+                <a (click)="viewKnowledge(selectedKnowledge()!); $event.stopPropagation()" class="cursor-pointer">
+                  <h2 class="knowledge-title" [attr.dir]="getTextDirection(selectedKnowledge()?.title)"
+                    [class.text-end]="startsWithArabic(selectedKnowledge()?.title)"
+                    [class.text-start]="!startsWithArabic(selectedKnowledge()?.title)">
+                    {{ (selectedKnowledge()?.title || '') | truncateText:40 }}
+                  </h2>
+                </a>
+                }
+              </div>
+
+              <!-- White content area -->
+              <div class="details-content">
+                @if (currentKnowledgeDetails(); as details) {
+                <div class="publisher-info">
+                  <div class="publisher-content">
+                    <!-- Profile/Company Image Container -->
+                    <div class="publisher-image-container">
+                      @if (selectedKnowledge()?.company) {
+                      <!-- Company logo with insighter photo overlay -->
+                      <div class="company-logo-container">
+                        <img [src]="selectedKnowledge()?.company?.logo" [alt]="selectedKnowledge()?.company?.legal_name"
+                          class="company-logo rounded-circle" style="object-fit: cover; object-position: top;"
+                          onerror="this.src='assets/images/default-company.png'">
+                        @if (selectedKnowledge()?.insighter_photo) {
+                        <img [src]="selectedKnowledge()?.insighter_photo" [alt]="selectedKnowledge()?.insighter"
+                          class="insighter-overlay" style="object-fit: cover; object-position: top;"
+                          onerror="this.src='assets/images/default-avatar.png'">
+                        }
+                      </div>
+                      } @else if (selectedKnowledge()?.insighter_photo) {
+                      <!-- Only insighter photo -->
+                      <img [src]="selectedKnowledge()?.insighter_photo" [alt]="selectedKnowledge()?.insighter"
+                        class="insighter-photo" style="object-fit: cover; object-position: top;"
+                        onerror="this.src='assets/images/default-avatar.png'">
+                      }
+                    </div>
+
+                    <!-- Publisher Name and Company Info -->
+                    <div class="publisher-text">
+                      @if (selectedKnowledge()?.company) {
+                      <div class="company-info">
+                        <a class="company-name fw-bold cursor-pointer text-decoration-none"
+                          [href]="clientBaseUrl + '/' + lang + '/profile/' + selectedKnowledge()?.company?.uuid"
+                          target="_blank" (click)="$event.stopPropagation()">
+                          {{ selectedKnowledge()?.company?.legal_name }}
+                        </a>
+                        <span class="text-muted fs-8">
+                          <span class="publisher-inline-meta">
+                            <i class="pi pi-user publisher-user-icon" aria-hidden="true"></i>
+                            <span>{{ lang === 'ar' ? 'بواسطة' : 'By' }}</span>
+                          </span>
+                          <a class="cursor-pointer text-decoration-none publisher-inline-link"
+                            [href]="clientBaseUrl + '/' + lang + '/profile/' + selectedKnowledge()?.insighter_uuid + '?entity=insighter'"
+                            target="_blank" (click)="$event.stopPropagation()">
+                            {{ details.publisher }}
                           </a>
-                          }
-                        </div>
-    
-                        <!-- White content area -->
-                        <div class="details-content">
-                          @if (currentKnowledgeDetails(); as details) {
-                            <div class="publisher-info">
-                              <div class="publisher-content">
-                                <!-- Profile/Company Image Container -->
-                                <div class="publisher-image-container">
-                                  @if (selectedKnowledge()?.company) {
-                                    <!-- Company logo with insighter photo overlay -->
-                                    <div class="company-logo-container">
-                                      <img 
-                                        [src]="selectedKnowledge()?.company?.logo" 
-                                        [alt]="selectedKnowledge()?.company?.legal_name"
-                                        class="company-logo rounded-circle"
-                                        style="object-fit: cover; object-position: top;"
-                                        onerror="this.src='assets/images/default-company.png'">
-                                      @if (selectedKnowledge()?.insighter_photo) {
-                                        <img 
-                                          [src]="selectedKnowledge()?.insighter_photo" 
-                                          [alt]="selectedKnowledge()?.insighter"
-                                          class="insighter-overlay"
-                                          style="object-fit: cover; object-position: top;"
-                                          onerror="this.src='assets/images/default-avatar.png'">
-                                      }
-                                    </div>
-                                  } @else if (selectedKnowledge()?.insighter_photo) {
-                                    <!-- Only insighter photo -->
-                                    <img 
-                                      [src]="selectedKnowledge()?.insighter_photo" 
-                                      [alt]="selectedKnowledge()?.insighter"
-                                      class="insighter-photo"
-                                      style="object-fit: cover; object-position: top;"
-                                      onerror="this.src='assets/images/default-avatar.png'">
-                                  }
-                                </div>
-                                
-                                <!-- Publisher Name and Company Info -->
-                                <div class="publisher-text">
-                                  @if (selectedKnowledge()?.company) {
-                                    <div class="company-info">
-                                      <a 
-                                        class="company-name fw-bold cursor-pointer text-decoration-none" 
-                                        [href]="clientBaseUrl + '/' + lang + '/profile/' + selectedKnowledge()?.company?.uuid"
-                                        target="_blank"
-                                        (click)="$event.stopPropagation()">
-                                        {{ selectedKnowledge()?.company?.legal_name }}
-                                      </a>
-                                      <span class="text-muted fs-8">
-                                        <span class="publisher-inline-meta">
-                                          <i class="pi pi-user publisher-user-icon" aria-hidden="true"></i>
-                                          <span>{{ lang === 'ar' ? 'بواسطة' : 'By' }}</span>
-                                        </span>
-                                        <a 
-                                          class="cursor-pointer text-decoration-none publisher-inline-link" 
-                                          [href]="clientBaseUrl + '/' + lang + '/profile/' + selectedKnowledge()?.insighter_uuid + '?entity=insighter'"
-                                          target="_blank"
-                                          (click)="$event.stopPropagation()">
-                                          {{ details.publisher }}
-                                        </a>
-                                      </span>
-                                    </div>
-                                  } @else {
-                                    <a 
-                                      class="publisher-name fw-bold cursor-pointer text-decoration-none d-inline-flex align-items-center gap-2" 
-                                      [href]="clientBaseUrl + '/' + lang + '/profile/' + selectedKnowledge()?.insighter_uuid + '?entity=insighter'"
-                                      target="_blank"
-                                      (click)="$event.stopPropagation()">
-                                      <i class="pi pi-user publisher-user-icon" aria-hidden="true"></i>
-                                      {{ details.publisher }}
-                                    </a>
-                                  }
-                                </div>
-                              </div>
-                            </div>
-                            
-                            <div class="purchase-info">
-                              <div class="purchase-date">
-                                <span class="label">{{ 'MY_DOWNLOADS.PURCHASE_DATE' | translate }}</span>
-                                <span class="value">{{ details.purchaseDate | date:'yyyy/MM/dd' }}</span>
-                              </div>
-                            </div>
-                          }
-                        </div>
+                        </span>
+                      </div>
+                      } @else {
+                      <a class="publisher-name fw-bold cursor-pointer text-decoration-none d-inline-flex align-items-center gap-2"
+                        [href]="clientBaseUrl + '/' + lang + '/profile/' + selectedKnowledge()?.insighter_uuid + '?entity=insighter'"
+                        target="_blank" (click)="$event.stopPropagation()">
+                        <i class="pi pi-user publisher-user-icon" aria-hidden="true"></i>
+                        {{ details.publisher }}
+                      </a>
                       }
                     </div>
                   </div>
-    
                 </div>
-              
+
+                <div class="purchase-info">
+                  <div class="purchase-date">
+                    <span class="label">{{ 'MY_DOWNLOADS.PURCHASE_DATE' | translate }}</span>
+                    <span class="value">{{ details.purchaseDate | date:'yyyy/MM/dd' }}</span>
+                  </div>
+                </div>
+                }
+              </div>
+              }
+            </div>
+          </div>
+
         </div>
+
       </div>
     </div>
-    </div>
+  </div>
+</div>
 }
 
-<p-dialog
-  [(visible)]="showAddChannelsPrompt"
-  appendTo="body"
-  [modal]="true"
-  [dismissableMask]="true"
-  [draggable]="false"
-  [resizable]="false"
-  [closable]="false"
-  [showHeader]="false"
-  [style]="{ width: '520px', maxWidth: 'calc(100vw - 24px)' }"
-  [breakpoints]="{ '768px': 'calc(100vw - 24px)' }"
-  styleClass="knoldg-add-channels-dialog"
-  maskStyleClass="knoldg-add-channels-mask"
-  (onHide)="dismissAddChannelsPrompt()"
->
-  <div
-    class="knoldg-add-channels"
-    [class.is-rtl]="lang === 'ar'"
-    [attr.dir]="lang === 'ar' ? 'rtl' : 'ltr'"
-  >
-    <img
-      class="knoldg-add-channels__img"
-      [src]="addChannelsPromptImageUrl"
-      alt="Join our WhatsApp & SMS services"
-      loading="eager"
-    />
+<p-dialog [(visible)]="showAddChannelsPrompt" appendTo="body" [modal]="true" [dismissableMask]="true"
+  [draggable]="false" [resizable]="false" [closable]="false" [showHeader]="false"
+  [style]="{ width: '520px', maxWidth: 'calc(100vw - 24px)' }" [breakpoints]="{ '768px': 'calc(100vw - 24px)' }"
+  styleClass="knoldg-add-channels-dialog" maskStyleClass="knoldg-add-channels-mask"
+  (onHide)="dismissAddChannelsPrompt()">
+  <div class="knoldg-add-channels" [class.is-rtl]="lang === 'ar'" [attr.dir]="lang === 'ar' ? 'rtl' : 'ltr'">
+    <img class="knoldg-add-channels__img" [src]="addChannelsPromptImageUrl" alt="Join our WhatsApp & SMS services"
+      loading="eager" />
 
-    <button
-      type="button"
-      class="knoldg-add-channels__close"
-      (click)="dismissAddChannelsPrompt()"
-      [attr.aria-label]="addChannelsPromptCopy.close"
-    >
+    <button type="button" class="knoldg-add-channels__close" (click)="dismissAddChannelsPrompt()"
+      [attr.aria-label]="addChannelsPromptCopy.close">
       <i class="ki-duotone ki-cross fs-2" aria-hidden="true">
         <span class="path1"></span><span class="path2"></span>
       </i>
@@ -647,18 +599,12 @@
 
     <div class="knoldg-add-channels__actions">
       <div class="d-flex gap-3">
-        <button
-          type="button"
-          class="btn knoldg-add-channels__btn knoldg-add-channels__btn-later"
-          (click)="dismissAddChannelsPrompt()"
-        >
+        <button type="button" class="btn knoldg-add-channels__btn knoldg-add-channels__btn-later"
+          (click)="dismissAddChannelsPrompt()">
           {{ addChannelsPromptCopy.later }}
         </button>
-        <button
-          type="button"
-          class="btn knoldg-add-channels__btn knoldg-add-channels__btn-add"
-          (click)="onAddChannelsNow()"
-        >
+        <button type="button" class="btn knoldg-add-channels__btn knoldg-add-channels__btn-add"
+          (click)="onAddChannelsNow()">
           {{ addChannelsPromptCopy.add }}
         </button>
       </div>

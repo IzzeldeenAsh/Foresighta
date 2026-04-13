@@ -49,11 +49,43 @@
     </div>
   </div>
 
+  <!-- Dashboard — prominent top item -->
+  <div style="padding: 12px 16px; border-top: 1px solid #f1f5f9; border-bottom: 1px solid #f1f5f9;">
+    <a [routerLink]="'/app/insighter-dashboard/my-dashboard'"
+       style="display: flex; align-items: center; gap: 10px; padding: 4px; border-radius: 8px; border: 1px solid #eef2ff; background: linear-gradient(to right, #ffffff, #eef2ff); color: #4338ca; font-weight: 600; font-size: 13px; text-decoration: none; transition: background 0.15s;"
+       (click)="closeDropdown.emit()">
+      <svg width="33" height="33" viewBox="0 0 33 33" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <g filter="url(#filter0_d_667_189_angular)">
+          <rect x="3.75" y="2.43994" width="25" height="25" rx="6.25" fill="white" shape-rendering="crispEdges" />
+          <path d="M9.375 21.8149V19.9399H11.875V21.8149" fill="#FFC657" />
+          <path d="M9.375 19.9399V18.0649H11.875V19.9399" fill="#FFE0A6" />
+          <path d="M13.125 21.8149V18.3774H15.625V21.8149" fill="#1072FF" />
+          <path d="M13.125 18.3774V14.9399H15.625V18.3774" fill="#CBE1FF" />
+          <path d="M20.625 21.8149V15.5649H23.125V21.8149" fill="#1072FF" />
+          <path d="M20.625 15.5649V9.31494H23.125V15.5649" fill="#CBE1FF" />
+          <path d="M16.875 21.8149V17.1274H19.375V21.8149" fill="#FFC657" />
+          <path d="M16.875 17.1274V12.4399H19.375V17.1274" fill="#FFE0A6" />
+        </g>
+        <defs>
+          <filter id="filter0_d_667_189_angular" x="0" y="-5.8651e-05" width="32.5" height="32.5" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+            <feFlood flood-opacity="0" result="BackgroundImageFix" />
+            <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha" />
+            <feOffset dy="1.31" />
+            <feGaussianBlur stdDeviation="1.875" />
+            <feComposite in2="hardAlpha" operator="out" />
+            <feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.12 0" />
+            <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_667_189" />
+            <feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_667_189" result="shape" />
+          </filter>
+        </defs>
+      </svg>
+      {{ 'OVERVIEW' | translate }}
+    </a>
+  </div>
+
   <!-- Company/Insighter Actions Section -->
   <ng-container *ngIf="_user.roles.includes('insighter') || _user.roles.includes('company') || _user.roles.includes('company-insighter')">
-    <div class="separator my-2"></div>
-
-    <div class="menu-item px-5">
+    <div class="menu-item px-5 mt-2">
       <a [routerLink]="'/app/add-knowledge/stepper'" class="menu-link px-5 text-info" (click)="closeDropdown.emit()">
         {{ 'KNOWLEDGE.ADD_INSIGHT' | translate }}
         <i class="ki-duotone ki-plus fs-5 me-2 text-info"><span class="path1"></span><span class="path2"></span></i>
@@ -88,12 +120,6 @@
   <div class="menu-item px-5" *ngIf="_user.roles.includes('insighter') || _user.roles.includes('company') || _user.roles.includes('company-insighter')">
     <a [href]="getMyInsighterPageUrl(_user.uuid)" class="menu-link px-5" (click)="closeDropdown.emit()">
       {{ 'HOME.MY_INSIGHTER_PAGE' | translate }}
-    </a>
-  </div>
-
-  <div class="menu-item px-5">
-    <a [routerLink]="'/app/insighter-dashboard/my-dashboard'" class="menu-link px-5" (click)="closeDropdown.emit()">
-      {{ 'OVERVIEW' | translate }}
     </a>
   </div>
 
