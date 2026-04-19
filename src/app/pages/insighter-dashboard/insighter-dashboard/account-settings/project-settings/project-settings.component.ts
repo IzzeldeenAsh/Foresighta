@@ -9,6 +9,7 @@ import {
   ProjectAccountCheckResults,
   ProjectAccountProperties,
   ProjectAccountProjectType,
+  ProjectAccountTypeOption,
   ProjectServiceOption,
   ProjectSettingsService,
   SyncProjectAccountPropertiesPayload,
@@ -107,6 +108,7 @@ export class ProjectSettingsComponent extends BaseComponent implements OnInit {
       project_languages: [[], Validators.required],
       hourly_rate: [null, [Validators.required, Validators.min(0.1)]],
       services: [[], Validators.required],
+      service_match_ai: [false],
       project_types: [[], Validators.required],
     });
   }
@@ -211,6 +213,12 @@ export class ProjectSettingsComponent extends BaseComponent implements OnInit {
     return this.getSelectedServices().includes(serviceId);
   }
 
+  toggleServiceMatchAi(): void {
+    const current = !!this.settingsForm.get('service_match_ai')?.value;
+    this.settingsForm.patchValue({ service_match_ai: !current });
+    this.settingsForm.markAsDirty();
+  }
+
   submitProjectSettings(): void {
     if (this.settingsForm.invalid) {
       this.settingsForm.markAllAsTouched();
@@ -224,11 +232,12 @@ export class ProjectSettingsComponent extends BaseComponent implements OnInit {
     }
 
     const payload: SyncProjectAccountPropertiesPayload = {
-      project_status: this.settingsForm.get('project_status')?.value ? 'active' : 'inactive',
-      project_languages: this.mapProjectLanguagesForPayload(),
+      status: this.settingsForm.get('project_status')?.value ? 'active' : 'inactive',
+      languages: this.mapProjectLanguagesForPayload(),
       hourly_rate: String(this.settingsForm.get('hourly_rate')?.value ?? '').trim(),
       services: this.getSelectedServices(),
-      project_types: this.getSelectedProjectTypes(),
+      service_match_ai: !!this.settingsForm.get('service_match_ai')?.value,
+      types: this.getSelectedProjectTypes(),
     };
 
     this.savingSubject.next(true);
@@ -510,14 +519,15 @@ export class ProjectSettingsComponent extends BaseComponent implements OnInit {
       .filter((id): id is number => typeof id === 'number');
 
     this.settingsForm.patchValue({
-      project_status: properties.project_status !== 'inactive',
-      project_languages: this.mapProjectLanguagesToSelection(properties.project_languages),
+      project_status: properties.status !== 'inactive',
+      project_languages: this.mapProjectLanguagesToSelection(properties.languages),
       hourly_rate:
         properties.hourly_rate == null || properties.hourly_rate === ''
           ? null
           : Number(properties.hourly_rate),
       services: serviceIds,
-      project_types: this.mapProjectTypesToSelection(properties.project_types),
+      service_match_ai: !!properties.service_match_ai,
+      project_types: this.mapProjectTypesToSelection(properties.types),
     });
 
     this.settingsForm.markAsPristine();
@@ -565,10 +575,15 @@ export class ProjectSettingsComponent extends BaseComponent implements OnInit {
   }
 
   private mapProjectTypesToSelection(
-    projectTypes?: Array<ProjectAccountProjectType | 'framework' | 'urgent'>
+    projectTypes?: Array<ProjectAccountTypeOption | ProjectAccountProjectType | 'framework' | 'urgent'>
   ): ProjectAccountProjectType[] {
     const normalizedTypes = (projectTypes || [])
-      .map((projectType) => this.normalizeProjectType(projectType))
+      .map((entry) => {
+        const raw = typeof entry === 'object' && entry !== null
+          ? (entry as ProjectAccountTypeOption).project_type
+          : entry as ProjectAccountProjectType | 'framework' | 'urgent';
+        return this.normalizeProjectType(raw);
+      })
       .filter((projectType): projectType is ProjectAccountProjectType => !!projectType);
 
     return normalizedTypes.filter(

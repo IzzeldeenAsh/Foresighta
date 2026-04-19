@@ -128,6 +128,30 @@
                   <div *ngIf="servicesControl?.invalid && servicesControl?.touched" class="project-preferences-error">
                     {{ lang === 'ar' ? 'اختر خدمة واحدة على الأقل.' : 'Select at least one service.' }}
                   </div>
+
+                  <div class="project-service-match-ai d-flex align-items-start gap-3 mt-5 p-4 rounded border border-gray-200">
+                    <button type="button" class="project-status-toggle flex-shrink-0 mt-1"
+                      [class.is-active]="settingsForm.get('service_match_ai')?.value"
+                      [class.is-rtl]="isRtl"
+                      [attr.dir]="isRtl ? 'rtl' : 'ltr'"
+                      (click)="toggleServiceMatchAi()">
+                      <span class="project-status-toggle-track">
+                        <span class="project-status-toggle-thumb"></span>
+                      </span>
+                    </button>
+                    <div>
+                      <div class="fw-semibold text-gray-800">
+                        {{ lang === 'ar' ? 'المطابقة بالذكاء الاصطناعي' : 'AI Service Matching' }}
+                      </div>
+                      <div class="text-gray-500 fs-7 mt-1">
+                        {{
+                          lang === 'ar'
+                            ? 'اسمح للذكاء الاصطناعي بترشيحك لخدمات ذات صلة بتخصصك حتى لو لم تحددها بشكل مباشر.'
+                            : 'Allow AI to recommend you for services related to your expertise, even if you haven\'t selected them directly.'
+                        }}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
 

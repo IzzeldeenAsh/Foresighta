@@ -58,9 +58,14 @@ export class HorizontalComponent extends BaseComponent implements OnInit {
     // If it's published or scheduled, don't show "Saved as Draft"
     if (publishStatus === 'published' || publishStatus === 'scheduled') return false;
 
+    // Only show if user has reached at least step 2 and uploaded a file
+    const currentStep = this.currentStep$.value;
+    const hasDocuments = this.account$.value?.documents?.length > 0;
+    if (currentStep < 2 || !hasDocuments) return false;
+
     // Show if user didn't reach publish completion (step <= 5),
     // OR they finished but explicitly kept it unpublished (draft).
-    return this.currentStep$.value <= 5 || publishStatus === 'unpublished';
+    return currentStep <= 5 || publishStatus === 'unpublished';
   }
 
   private syncDraftFlagForExternalRedirect() {

@@ -57,31 +57,6 @@
     </div>
 
     <div class="mobile-section">
-      <div class="mobile-section-title">{{ lang === 'ar' ? 'السوق' : 'Marketplace' }}</div>
-      <div class="nav-item" [routerLink]="['my-orders']" routerLinkActive="active" (click)="closeMobileSidebar()">
-        <div class="item-icon">
-          <i class="pi pi-shopping-bag"></i>
-        </div>
-        <span>{{ 'INSIGHTER.DASHBOARD.NAV.MY_ORDERS' | translate }}</span>
-      </div>
-      <div class="nav-item" [routerLink]="['sales']" routerLinkActive="active"
-        *ngIf="(isInsighter$ | async) || (isCompany$ | async) || (isCompanyInsighter$ | async)"
-        (click)="closeMobileSidebar()">
-        <div class="item-icon">
-          <i class="ki-outline ki-chart-line-up"></i>
-        </div>
-        <span>{{ 'SALES.PAGE_TITLE' | translate }}</span>
-      </div>
-      <div class="nav-item" [routerLink]="['wallet']" routerLinkActive="active"
-        *ngIf="(isInsighter$ | async) || (isCompany$ | async)" (click)="closeMobileSidebar()">
-        <div class="item-icon">
-          <i class="ki-outline ki-wallet"></i>
-        </div>
-        <span>{{ 'INSIGHTER.DASHBOARD.NAV.WALLET' | translate }}</span>
-      </div>
-    </div>
-
-    <div class="mobile-section">
       <div class="mobile-section-title">{{ 'INSIGHTER.DASHBOARD.NAV.MEETINGS' | translate }}</div>
       <div class="nav-item" [routerLink]="['my-meetings']" routerLinkActive="active" (click)="closeMobileSidebar()">
         <div class="item-icon">
@@ -108,6 +83,31 @@
         <span>{{ lang === 'ar' ? 'إعدادات المشروع' : 'Project Settings' }}</span>
       </div>
     </div> -->
+
+    <div class="mobile-section">
+      <div class="mobile-section-title">{{ lang === 'ar' ? 'السوق' : 'Marketplace' }}</div>
+      <div class="nav-item" [routerLink]="['my-orders']" routerLinkActive="active" (click)="closeMobileSidebar()">
+        <div class="item-icon">
+          <i class="pi pi-shopping-bag"></i>
+        </div>
+        <span>{{ 'INSIGHTER.DASHBOARD.NAV.MY_ORDERS' | translate }}</span>
+      </div>
+      <div class="nav-item" [routerLink]="['sales']" routerLinkActive="active"
+        *ngIf="(isInsighter$ | async) || (isCompany$ | async) || (isCompanyInsighter$ | async)"
+        (click)="closeMobileSidebar()">
+        <div class="item-icon">
+          <i class="ki-outline ki-chart-line-up"></i>
+        </div>
+        <span>{{ 'SALES.PAGE_TITLE' | translate }}</span>
+      </div>
+      <div class="nav-item" [routerLink]="['wallet']" routerLinkActive="active"
+        *ngIf="(isInsighter$ | async) || (isCompany$ | async)" (click)="closeMobileSidebar()">
+        <div class="item-icon">
+          <i class="ki-outline ki-wallet"></i>
+        </div>
+        <span>{{ 'INSIGHTER.DASHBOARD.NAV.WALLET' | translate }}</span>
+      </div>
+    </div>
 
     <div class="mobile-section">
       <div class="mobile-section-title">{{ 'INSIGHTER.DASHBOARD.NAV.SETTINGS' | translate }}</div>
@@ -266,49 +266,6 @@
 
               <div class="p-card navigation-card">
                 <div class="p-card-header" *ngIf="!isNavCollapsed">
-                  <h3>{{ lang === 'ar' ? 'السوق' : 'Marketplace' }}</h3>
-                </div>
-                <div class="p-card-body">
-                  <div class="nav-item" [routerLink]="['my-orders']" routerLinkActive="active"
-                    [attr.title]="isNavCollapsed ? ('INSIGHTER.DASHBOARD.NAV.MY_ORDERS' | translate) : null"
-                    pTooltip="{{ isNavCollapsed ? ('INSIGHTER.DASHBOARD.NAV.MY_ORDERS' | translate) : '' }}"
-                    tooltipPosition="right" appendTo="body">
-                    <div class="item-icon">
-                      <i class="pi pi-shopping-bag"></i>
-                    </div>
-                    <div class="item-label" *ngIf="!isNavCollapsed">
-                      {{ 'INSIGHTER.DASHBOARD.NAV.MY_ORDERS' | translate }}
-                    </div>
-                  </div>
-                  <div class="nav-item" [routerLink]="['sales']" routerLinkActive="active"
-                    *ngIf="(isInsighter$ | async) || (isCompany$ | async) || (isCompanyInsighter$ | async)"
-                    [attr.title]="isNavCollapsed ? ('SALES.PAGE_TITLE' | translate) : null"
-                    pTooltip="{{ isNavCollapsed ? ('SALES.PAGE_TITLE' | translate) : '' }}" tooltipPosition="right"
-                    appendTo="body">
-                    <div class="item-icon">
-                      <i class="ki-outline ki-chart-line-up"></i>
-                    </div>
-                    <div class="item-label" *ngIf="!isNavCollapsed">
-                      {{ 'SALES.PAGE_TITLE' | translate }}
-                    </div>
-                  </div>
-                  <div class="nav-item" [routerLink]="['wallet']" routerLinkActive="active"
-                    [routerLinkActiveOptions]="{exact: true}" *ngIf="(isInsighter$ | async) || (isCompany$ | async)"
-                    [attr.title]="isNavCollapsed ? ('INSIGHTER.DASHBOARD.NAV.WALLET' | translate) : null"
-                    pTooltip="{{ isNavCollapsed ? ('INSIGHTER.DASHBOARD.NAV.WALLET' | translate) : '' }}"
-                    tooltipPosition="right" appendTo="body">
-                    <div class="item-icon">
-                      <i class="ki-outline ki-wallet"></i>
-                    </div>
-                    <div class="item-label" *ngIf="!isNavCollapsed">
-                      {{ 'INSIGHTER.DASHBOARD.NAV.WALLET' | translate }}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="p-card navigation-card">
-                <div class="p-card-header" *ngIf="!isNavCollapsed">
                   <h3>{{ 'INSIGHTER.DASHBOARD.NAV.MEETINGS' | translate }}</h3>
                 </div>
                 <div class="p-card-body">
@@ -357,6 +314,49 @@
                   </div>
                 </div>
               </div> -->
+
+              <div class="p-card navigation-card">
+                <div class="p-card-header" *ngIf="!isNavCollapsed">
+                  <h3>{{ lang === 'ar' ? 'السوق' : 'Marketplace' }}</h3>
+                </div>
+                <div class="p-card-body">
+                  <div class="nav-item" [routerLink]="['my-orders']" routerLinkActive="active"
+                    [attr.title]="isNavCollapsed ? ('INSIGHTER.DASHBOARD.NAV.MY_ORDERS' | translate) : null"
+                    pTooltip="{{ isNavCollapsed ? ('INSIGHTER.DASHBOARD.NAV.MY_ORDERS' | translate) : '' }}"
+                    tooltipPosition="right" appendTo="body">
+                    <div class="item-icon">
+                      <i class="pi pi-shopping-bag"></i>
+                    </div>
+                    <div class="item-label" *ngIf="!isNavCollapsed">
+                      {{ 'INSIGHTER.DASHBOARD.NAV.MY_ORDERS' | translate }}
+                    </div>
+                  </div>
+                  <div class="nav-item" [routerLink]="['sales']" routerLinkActive="active"
+                    *ngIf="(isInsighter$ | async) || (isCompany$ | async) || (isCompanyInsighter$ | async)"
+                    [attr.title]="isNavCollapsed ? ('SALES.PAGE_TITLE' | translate) : null"
+                    pTooltip="{{ isNavCollapsed ? ('SALES.PAGE_TITLE' | translate) : '' }}" tooltipPosition="right"
+                    appendTo="body">
+                    <div class="item-icon">
+                      <i class="ki-outline ki-chart-line-up"></i>
+                    </div>
+                    <div class="item-label" *ngIf="!isNavCollapsed">
+                      {{ 'SALES.PAGE_TITLE' | translate }}
+                    </div>
+                  </div>
+                  <div class="nav-item" [routerLink]="['wallet']" routerLinkActive="active"
+                    [routerLinkActiveOptions]="{exact: true}" *ngIf="(isInsighter$ | async) || (isCompany$ | async)"
+                    [attr.title]="isNavCollapsed ? ('INSIGHTER.DASHBOARD.NAV.WALLET' | translate) : null"
+                    pTooltip="{{ isNavCollapsed ? ('INSIGHTER.DASHBOARD.NAV.WALLET' | translate) : '' }}"
+                    tooltipPosition="right" appendTo="body">
+                    <div class="item-icon">
+                      <i class="ki-outline ki-wallet"></i>
+                    </div>
+                    <div class="item-label" *ngIf="!isNavCollapsed">
+                      {{ 'INSIGHTER.DASHBOARD.NAV.WALLET' | translate }}
+                    </div>
+                  </div>
+                </div>
+              </div>
 
               <div class="p-card navigation-card">
                 <div class="p-card-header" *ngIf="!isNavCollapsed">

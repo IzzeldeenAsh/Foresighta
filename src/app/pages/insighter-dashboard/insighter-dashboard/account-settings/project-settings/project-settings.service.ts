@@ -63,19 +63,26 @@ interface ProjectServiceListResponse {
 }
 
 export interface SyncProjectAccountPropertiesPayload {
-  project_status: 'active' | 'inactive';
-  project_languages: 'english' | 'arabic' | 'both';
+  status: 'active' | 'inactive';
+  languages: 'english' | 'arabic' | 'both';
   hourly_rate: string;
   services: number[];
-  project_types: ProjectAccountProjectType[];
+  service_match_ai: boolean;
+  types: ProjectAccountProjectType[];
+}
+
+export interface ProjectAccountTypeOption {
+  id: number;
+  project_type: ProjectAccountProjectType | 'framework' | 'urgent';
 }
 
 export interface ProjectAccountProperties {
-  project_status?: 'active' | 'inactive';
-  project_languages?: 'english' | 'arabic' | 'both';
+  status?: 'active' | 'inactive';
+  languages?: 'english' | 'arabic' | 'both';
   hourly_rate?: string | number | null;
   services?: Array<ProjectServiceOption | number>;
-  project_types?: Array<ProjectAccountProjectType | 'framework' | 'urgent'>;
+  service_match_ai?: boolean;
+  types?: Array<ProjectAccountTypeOption | ProjectAccountProjectType | 'framework' | 'urgent'>;
 }
 
 interface ProjectAccountPropertiesResponse {
@@ -87,7 +94,7 @@ interface ProjectAccountPropertiesResponse {
 })
 export class ProjectSettingsService {
   private readonly checkApiUrl = `${environment.apiBaseUrl}/insighter/project/account/initiate/check`;
-  private readonly propertiesApiUrl = `${environment.apiBaseUrl}/insighter/project/account/properties`;
+  private readonly propertiesApiUrl = `${environment.apiBaseUrl}/insighter/project/account/settings`;
   private readonly syncApiUrl = `${environment.apiBaseUrl}/insighter/project/account/properties/sync`;
   private readonly servicesApiUrl = `${environment.apiBaseUrl}/common/setting/service`;
 
