@@ -81,7 +81,7 @@ export class GeneralComponent extends BaseComponent implements OnInit, OnDestroy
   // Add these properties
   searchTerm: string = '';
   searchTimeout: any;
-  selectedType: 'grid' | 'list' = 'grid';
+  selectedType: 'grid' | 'list' = 'list';
   selectedKnowledgeType: string = ''; // Add this property for type filter
 
   // Update filter state to use the interface

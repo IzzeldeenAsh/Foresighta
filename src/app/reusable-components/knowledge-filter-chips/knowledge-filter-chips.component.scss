@@ -1,14 +1,13 @@
-// Filter Chips Styles
 .filter-chips-container {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.6rem;
+  gap: 8px;
   align-items: center;
   justify-content: flex-end;
   width: 100%;
   overflow-x: auto;
-  padding-bottom: 0.5rem;
-  margin-bottom: 1rem;
+  padding-bottom: 4px;
+  margin-bottom: 0;
   
   &::-webkit-scrollbar {
     height: 4px;
@@ -29,17 +28,18 @@
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.5rem 1rem;
-  border-radius: 50px; /* Fully rounded */
-  border: 1px solid #e4e6ef; /* Default border for unselected */
-  font-size: 0.875rem;
+  padding: 0 12px;
+  height: 32px;
+  border-radius: 999px;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  color: #4b5563;
+  font-size: 12px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s ease;
-  height: 32px;
-  min-width: 85px;
+  transition: border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease;
+  min-width: auto;
   justify-content: center;
-  margin-right: 0.5rem;
   position: relative;
   
   i { 
@@ -59,169 +59,36 @@
     min-width: 18px;
     height: 18px;
     border-radius: 50%;
-    font-size: 0.7rem;
+    font-size: 10px;
     font-weight: 600;
-    margin-left: 4px;
-    color: #ffffff;
+    margin-left: 2px;
+    color: #374151;
     padding: 0 4px;
-  }
-  
-  // Type-specific styling
-  &.chip-all {
-    color: #5E6278;
-    i { color: #3699FF; }
-    .count-badge {
-      background-color: #3699FF;
-    }
-    &.active {
-      background-color: #3699FF;
-      border-color: #3699FF;
-      color: #ffffff;
-      font-weight: 500;
-      i { color: #ffffff; } /* Keep icon visible and make it white */
-      .count-badge {
-        background-color: #ffffff;
-        color: #3699FF;
-      }
-    }
-  }
-  
-  &.chip-data {
-    color: #5E6278;
-    i { color: #3699FF; }
-    .count-badge {
-      background-color: #3699FF;
-    }
-    &.active {
-      background-color: #000000;
-      border-color: #000000;
-      color: #ffffff;
-      font-weight: 500;
-      i { color: #ffffff; } /* Keep icon visible and make it white */
-      .count-badge {
-        background-color: #ffffff;
-        color: #000000;
-      }
-    }
-  }
-  
-  &.chip-statistic {
-    color: #5E6278;
-    i { color: #50CDFE; }
-    .count-badge {
-      background-color: #8A1538;
-    }
-    &.active {
-      background-color: #891638;
-      border-color: #891638;
-      color: #ffffff;
-      font-weight: 500;
-      i { color: #ffffff; } /* Keep icon visible and make it white */
-      .count-badge {
-        background-color: #ffffff;
-        color: #891638;
-      }
-    }
-  }
-  
-  &.chip-report {
-    color: #5E6278;
-    i { color: #3699FF; }
-    .count-badge {
-      background-color: #3699FF;
-    }
-    &.active {
-      background-color: #3699FF;
-      border-color: #3699FF;
-      color: #ffffff;
-      font-weight: 500;
-      i { color: #ffffff; } /* Keep icon visible and make it white */
-      .count-badge {
-        background-color: #ffffff;
-        color: #3699FF;
-      }
-    }
-  }
-  
-  &.chip-manual {
-    color: #5E6278;
-    i { color: #FF9F43; }
-    .count-badge {
-      background-color: #FF9F43;
-    }
-    &.active {
-      background-color: #FF9F43;
-      border-color: #FF9F43;
-      color: #ffffff;
-      font-weight: 500;
-      i { color: #ffffff; } /* Keep icon visible and make it white */
-      .count-badge {
-        background-color: #ffffff;
-        color: #FF9F43;
-      }
-    }
-  }
-  
-  &.chip-course {
-    color: #5E6278;
-    i { color: #0ABB87; }
-    .count-badge {
-      background-color: #0ABB87;
-    }
-    &.active {
-      background-color: #0ABB87;
-      border-color: #0ABB87;
-      color: #ffffff;
-      font-weight: 500;
-      i { color: #ffffff; } /* Keep icon visible and make it white */
-      .count-badge {
-        background-color: #ffffff;
-        color: #0ABB87;
-      }
-    }
-  }
-  
-  &.chip-media {
-    color: #5E6278;
-    i { color: #F64E60; }
-    .count-badge {
-      background-color: #F64E60;
-    }
-    &.active {
-      background-color: #F64E60;
-      border-color: #F64E60;
-      color: #ffffff;
-      font-weight: 500;
-      i { color: #ffffff; } /* Keep icon visible and make it white */
-      .count-badge {
-        background-color: #ffffff;
-        color: #F64E60;
-      }
-    }
+    background: #f3f4f6;
   }
 }
 
-// Knowledge Type Filter Chips
+.filter-chip:hover {
+  border-color: #d1d5db;
+  background: #f9fafb;
+}
+
+.filter-chip.active {
+  border-color: #111827;
+  background: #111827;
+  color: #ffffff;
+}
+
+.filter-chip.active .count-badge {
+  background: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+}
+
+.filter-chip.active svg path {
+  fill: #ffffff !important;
+}
+
 .knowledge-type-stats {
-  margin-bottom: 1.5rem;
+  margin-bottom: 0;
   width: 100%;
-  
-  .filter-heading {
-    display: flex;
-    align-items: center;
-    width: 100%;
-    margin-bottom: 0.75rem;
-    
-    .filter-title {
-      font-size: 1rem;
-      font-weight: 500;
-      color: var(--kt-gray-800);
-    }
-    
-    .filter-count {
-      font-size: 0.85rem;
-      font-weight: 400;
-      color: var(--kt-gray-600);
-    }
-  }
 }

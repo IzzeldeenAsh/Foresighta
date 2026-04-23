@@ -1,21 +1,85 @@
+.knowledge-header-card {
+  border: 1px solid rgba(17, 24, 39, 0.08);
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: none;
+}
+
+.knowledge-header-card__head {
+  padding: 16px 16px 8px;
+}
+
+.knowledge-header-card__symbol .symbol-label {
+  width: 44px;
+  height: 44px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #f9fafb !important;
+}
+
+.knowledge-header-card__title {
+  margin: 0;
+  color: #111827;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.knowledge-header-card__subtitle {
+  color: #6b7280;
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.knowledge-header-card__meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.knowledge-header-card__meta-label {
+  color: #6b7280;
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.knowledge-header-card__meta-value {
+  color: #111827;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.knowledge-header-card__tabs .nav-link {
+  margin-right: 4px !important;
+  padding: 12px 8px !important;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.knowledge-header-card__tabs .nav-link.active {
+  color: #111827;
+  border-bottom-color: #111827 !important;
+}
+
 @media screen and (max-width: 575.98px) {
-    .nav-item{
-        font-size: 0.8rem !important;
-    }
-    .nav-line-tabs .nav-item .nav-link{
-        margin-right: 0.2rem !important;
-    }
-    .card{
-        padding: 0.5rem !important;
-        border: none !important;
-        background: transparent !important;
-        margin-bottom: 0.5rem !important;
-    }
-    .card-header{
-        padding: 0.5rem !important;
-        min-height: 10px !important;
-    }
-    .card-body{
-        padding: 0.5rem !important;
-    }
+  .knowledge-header-card {
+    margin-bottom: 12px !important;
+  }
+
+  .knowledge-header-card__head {
+    padding: 12px 12px 8px;
+  }
+
+  .knowledge-header-card__meta {
+    align-items: flex-start;
+  }
+
+  .knowledge-header-card__tabs .nav-link {
+    margin-right: 2px !important;
+    padding: 10px 6px !important;
+    font-size: 12px;
+  }
 }

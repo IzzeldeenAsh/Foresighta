@@ -53,7 +53,13 @@
     padding: 0;
   }
 
+  .doc-action-btn i {
+    color: var(--icon-color) !important;
+    transition: color 0.2s ease;
+  }
+
   .doc-action-btn:hover i,
+  .doc-action-btn:active i,
   .doc-action-btn:focus-visible i {
     color: #ffffff !important;
   }

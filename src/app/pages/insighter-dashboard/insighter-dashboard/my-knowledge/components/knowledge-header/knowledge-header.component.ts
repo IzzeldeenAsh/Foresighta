@@ -73,4 +73,8 @@ export class KnowledgeHeaderComponent extends BaseComponent implements OnInit {
   getTypeLabel(type: string): string {
     return this.knowledgeTypeMap[type]?.label || type.toUpperCase();
   }
+
+  get totalKnowledgeCount(): number {
+    return this.statistics?.data?.reduce((sum, item) => sum + item.count, 0) || 0;
+  }
 } 

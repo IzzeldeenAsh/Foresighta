@@ -1,17 +1,17 @@
-<div class="card">
+<div class="card knowledge-page-card">
   <!--begin::Card header-->
-<div class="card-header p-0">
+<div class="card-header p-0 knowledge-page-card__header">
   <!--begin::Search and Filters-->
-  <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center w-100 gap-3 mb-4" *ngIf="(knowledges && knowledges.length > 0) || searchTerm || selectedKnowledgeType">
+  <div class="knowledge-toolbar" *ngIf="(knowledges && knowledges.length > 0) || searchTerm || selectedKnowledgeType">
     <!--begin::Search section-->
-    <div class="d-flex align-items-center" >
+    <div class="knowledge-toolbar__search">
       <!--begin::Search-->
-      <div class="d-flex align-items-center position-relative my-1 w-100">
-        <i class="ki-outline ki-magnifier fs-1 position-absolute mx-2"></i>
+      <div class="d-flex align-items-center position-relative w-100">
+        <i class="ki-outline ki-magnifier fs-4 position-absolute mx-3 text-gray-500"></i>
         <input
           type="text"
           data-kt-filemanager-table-filter="search"
-          class="form-control form-solid px-10 w-100  w-300px"
+          class="form-control knowledge-toolbar__search-input"
           placeholder="{{ 'KNOWLEDGE.SEARCH_PLACEHOLDER' | translate }}"
           [(ngModel)]="searchTerm"
           (input)="onSearch($event)"
@@ -19,18 +19,56 @@
       </div>
       <!--end::Search-->
     </div>
-    
 
+    <div class="knowledge-toolbar__actions" *ngIf="knowledges && knowledges.length > 0">
+      <a [routerLink]="['/app/add-knowledge']" type="button" class="btn btn-info knowledge-toolbar__add-btn">
+        <i class="ki-outline ki-plus-square fs-5 text-white"></i>
+        {{ 'KNOWLEDGE.ADD_KNOWLEDGE' | translate }}
+      </a>
+
+      <div class="nav-group nav-group-fluid view-toggle">
+        <label>
+          <input
+            type="radio"
+            class="btn-check"
+            name="type"
+            value="grid"
+            [(ngModel)]="selectedType"
+            (change)="onTypeChange($event)"
+          />
+          <span class="radio view-toggle__option" [class.radio-active]="selectedType === 'grid'">
+            <i
+              class="ki-outline ki-element-11"
+              [ngClass]="{
+                'text-gray-900': selectedType === 'grid',
+                'text-gray-500': selectedType !== 'grid'
+              }"
+            ></i>
+          </span>
+        </label>
+        <label>
+          <input
+            type="radio"
+            class="btn-check"
+            name="type"
+            value="list"
+            [(ngModel)]="selectedType"
+            (change)="onTypeChange($event)"
+          />
+          <span class="radio view-toggle__option" [class.radio-active]="selectedType === 'list'">
+            <i
+              class="ki-outline ki-row-horizontal"
+              [ngClass]="{
+                'text-gray-900': selectedType === 'list',
+                'text-gray-500': selectedType !== 'list'
+              }"
+            ></i>
+          </span>
+        </label>
+      </div>
+    </div>
   </div>
   <!--end::Search and Filters-->
-    <!-- Begin::Knowledge Type Filter Chips -->
-    <div class="d-flex justify-content-end text-end ms-auto">
-      <app-knowledge-filter-chips
-        [selectedKnowledgeType]="selectedKnowledgeType"
-        (typeFilter)="filterByType($event)">
-      </app-knowledge-filter-chips>
-    </div>
-    <!-- End::Knowledge Type Filter Chips -->
   <!--begin::Card toolbar-->
   <div class="card-toolbar mt-3 mt-md-0" *ngIf="knowledges && knowledges.length > 0">
     <!--begin::Toolbar-->
@@ -60,7 +98,7 @@
   <!--end::Card toolbar-->
 </div>
 <!--end::Card header-->
-<div class="card-body">
+<div class="card-body knowledge-page-card__body">
 
 <!-- No Results State -->
 <app-empty-state *ngIf="knowledges && knowledges.length === 0 && !loading"
@@ -85,95 +123,35 @@ styleClass=""
 
 <!--begin::Card body with conditional content-->
 <div *ngIf="knowledges && knowledges.length > 0 && !loading">
+<!-- Begin::Knowledge Type Filter Chips -->
+<div class="knowledge-table-filters">
+  <app-knowledge-filter-chips
+    [selectedKnowledgeType]="selectedKnowledgeType"
+    (typeFilter)="filterByType($event)">
+  </app-knowledge-filter-chips>
+</div>
+<!-- End::Knowledge Type Filter Chips -->
+
 <!--begin::Table header-->
-<div class="d-flex justify-content-end mb-4">
- <div class="d-flex gap-1 justify-content-between"
- [ngClass]="selectedType !== 'grid' || selectedKnowledges.size !== 0 ? 'w-100' : 'w-0'"
-  >
-  <div class="d-flex">
-      <a [routerLink]="['/app/add-knowledge']" *ngIf="selectedType !== 'grid'"
-      type="button"
-      class="btn btn-primary"
-    >
-    <i class="ki-outline ki-plus-square fs-2 text-white d-none d-sm-inline-block">
-      <span class="path1"></span>
-      <span class="path2"></span>
-      <span class="path3"></span>
-    </i>
-    {{ 'KNOWLEDGE.ADD_KNOWLEDGE' | translate }}
-    </a>
-    <div
+<div class="knowledge-selection-bar" [class.knowledge-selection-bar--active]="selectedKnowledges.size > 0" *ngIf="selectedKnowledges.size > 0">
+  <div
     class="d-flex flex-column flex-sm-row justify-content-end align-items-center gap-2"
     [class.d-none]="selectedKnowledges.size === 0"
     data-kt-filemanager-table-toolbar="selected"
   >
-    <div class="fw-bold text-center text-sm-start">
+    <div class="fw-bold text-center text-sm-start knowledge-selection-bar__label">
       <span class="mx-2">{{ selectedKnowledges.size }}</span>
       {{ 'KNOWLEDGE.SELECTED' | translate }}
     </div>
   
     <button
       type="button"
-      class="btn btn-sm btn-danger"
+      class="btn btn-sm btn-danger knowledge-selection-bar__delete"
       (click)="deleteSelectedKnowledges()"
     >
       {{ 'KNOWLEDGE.DELETE_SELECTED' | translate }}
     </button>
-    </div>
   </div>
-
-   <!-- Add View Toggle -->
-   <div class="nav-group nav-group-fluid ms-3">
-    <label>
-      <input
-        type="radio"
-        class="btn-check"
-        name="type"
-        value="grid"
-        [(ngModel)]="selectedType"
-        (change)="onTypeChange($event)"
-        checked
-      />
-      <span
-      class="radio h-30px fw-bold px-4"
-      [class.radio-active]="selectedType === 'grid'"
-      >
-      <i
-      class="ki-outline ki-element-11"
-      [ngClass]="{
-        'text-gray-700': selectedType === 'grid',
-        'text-gray-500': selectedType !== 'grid'
-      }"
-    ></i>
-      </span>
-    </label>
-    <label>
-      <input
-        type="radio"
-        class="btn-check"
-        name="type"
-        value="list"
-        [(ngModel)]="selectedType"
-        (change)="onTypeChange($event)"
-      />
-      <span
-      class="radio h-30px fw-bold px-4"
-      [class.radio-active]="selectedType === 'list'"
-      >
-      <i
-      class="ki-outline ki-row-horizontal"
-      [ngClass]="{
-        'text-gray-700': selectedType === 'list',
-        'text-gray-500': selectedType !== 'list'
-      }"
-    ></i>
-      </span>
-    </label>
-  </div>
-  <!--begin::Items Counter-->
- 
- </div>
-  <!--end::Items Counter-->
 </div>
 <!--end::Table header-->
 
@@ -183,10 +161,10 @@ styleClass=""
        [class]="showPackageBuilder ? 'w-65' : 'w-100'">
     <!--begin::Table-->
     <div [ngClass]="{'d-none': selectedType !== 'list'}">
-      <div class="table-responsive">
-        <table class="table align-middle table-row-dashed fs-6 gy-5" *ngIf="!loading">
+      <div class="table-responsive knowledge-table-shell">
+        <table class="table align-middle fs-6 knowledge-table" *ngIf="!loading">
           <thead>
-            <tr class="text-inline-start text-gray-500 fw-bold fs-7 text-uppercase gs-0">
+            <tr class="text-inline-start text-gray-500 fw-semibold fs-8 text-uppercase gs-0">
               <th *ngIf="!showPackageBuilder">
                 <div class="form-check form-check-sm form-check-custom form-check-solid">
                   <input class="form-check-input" type="checkbox" [checked]="allSelected" (change)="toggleSelectAll()">
@@ -202,6 +180,7 @@ styleClass=""
           <tbody class="fw-semibold text-gray-600">
             <tr *ngFor="let knowledge of knowledges; trackBy: trackById"
                 draggable="true"
+                class="knowledge-table__row"
                 (dragstart)="onDragStart($event, knowledge)"
                 (dragend)="onDragEnd($event)">
               <td *ngIf="!showPackageBuilder">
@@ -213,13 +192,13 @@ styleClass=""
               </td>
               <td>
                 <div class="d-flex align-items-center">
-                  <a [routerLink]="['/app/my-knowledge-base/view-my-knowledge/', knowledge.id]" class="text-gray-800 text-hover-primary">
+                  <a [routerLink]="['/app/my-knowledge-base/view-my-knowledge/', knowledge.id]" class="text-gray-800 text-hover-info knowledge-row-link">
                     {{ knowledge.title && knowledge.title.trim() ? knowledge.title : ('Untitled knowledge' | translate) }}
                   </a>
                 </div>
               </td>
               <td >
-                <div class="d-flex align-items-center">
+                <div class="d-flex align-items-center knowledge-type-pill">
                   <svg *ngIf="knowledge.type === 'data'" width="15" height="15" viewBox="0 0 30 34" fill="none" xmlns="http://www.w3.org/2000/svg" class="icon-image me-2">
                     <path d="M14.5464 0C10.5851 0 6.86364 0.704566 4.06815 1.98373C1.48292 3.16777 0 4.73376 0 6.28348C0 7.8332 1.48292 9.39967 4.06815 10.5831C6.86364 11.8623 10.585 12.5669 14.5464 12.5669C18.5078 12.5669 22.2297 11.8623 25.0243 10.5831C27.6099 9.39967 29.0933 7.8333 29.0933 6.28348C29.0933 4.73367 27.6099 3.16777 25.0243 1.98373C22.2293 0.704566 18.5077 0 14.5464 0Z" fill="#000000"/>
                     <path d="M0 9.45442C0.821516 10.3442 1.99713 11.1499 3.49489 11.8359C6.46628 13.1954 10.3914 13.9444 14.5469 13.9444C18.7023 13.9444 22.627 13.1949 25.5984 11.8359C27.0961 11.1499 28.2718 10.3445 29.0933 9.45442V13.4496C29.0933 15.004 27.6131 16.5723 25.0331 17.7531C22.2436 19.029 18.5194 19.7326 14.5464 19.7326C10.5734 19.7326 6.84871 19.029 4.05982 17.7531C1.47967 16.5723 0 15.004 0 13.4496V9.45442Z" fill="#000000"/>
@@ -252,9 +231,9 @@ styleClass=""
                   {{ knowledge.type | titlecase }}
                 </div>
               </td>
-              <td class="fw-bold text-gray-900">{{ knowledge.total_price | currency }}</td>
+              <td class="fw-semibold text-gray-900">{{ knowledge.total_price | currency }}</td>
               <td>
-                <div class="d-flex align-items-center gap-2">
+                <div class="d-flex align-items-center gap-2 knowledge-status-cell">
                   <span *ngIf="knowledge.publish_as !== 'package'" [ngClass]="getStatusClass(knowledge.status)" class="text-capitalize">{{knowledge.status === 'unpublished' ? 'Draft' : knowledge.status }}</span>
                   <svg *ngIf="knowledge.publish_as === 'both'" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" ngbTooltip="Included in a package">
                     <path d="M16.1082 4.73332L10.8832 1.91665C10.3332 1.61665 9.66657 1.61665 9.11657 1.91665L3.89157 4.73332C3.50824 4.94165 3.2749 5.34165 3.2749 5.79998C3.2749 6.24998 3.50824 6.65832 3.89157 6.86665L9.11657 9.68332C9.39157 9.83332 9.6999 9.90832 9.9999 9.90832C10.2999 9.90832 10.6082 9.83332 10.8832 9.68332L16.1082 6.86665C16.4916 6.65832 16.7249 6.25832 16.7249 5.79998C16.7249 5.34165 16.4916 4.94165 16.1082 4.73332Z" fill="#0071FF"/>
@@ -269,10 +248,10 @@ styleClass=""
                 </div>
               </td>
               <td class="text-end"  *ngIf="!showPackageBuilder">
-                <div class="d-flex justify-content-end">
+                <div class="d-flex justify-content-end knowledge-row-actions">
                   <!-- View button -->
                   <a [routerLink]="['/app/my-knowledge-base/view-my-knowledge/', knowledge.id]" 
-                     class="btn btn-sm btn-icon btn-light btn-active-light-primary me-2"
+                     class="btn btn-sm btn-icon me-2 knowledge-action-btn"
                      ngbTooltip="{{ 'KNOWLEDGE.VIEW' | translate }}"
 >
                     <i class="ki-duotone ki-eye fs-2">
@@ -283,7 +262,7 @@ styleClass=""
                   </a>
                   <!-- Delete button -->
                   <button type="button" 
-                          class="btn btn-sm btn-icon btn-light btn-active-light-danger"
+                          class="btn btn-sm btn-icon knowledge-action-btn"
                           ngbTooltip="{{ 'KNOWLEDGE.DELETE' | translate }}"
                           (click)="deleteKnowledge(knowledge)"
                           *ngIf="canShowDeleteButton(knowledge)">
@@ -328,7 +307,7 @@ styleClass=""
             <!-- Title Section -->
             <div class="title-section">
               <a [routerLink]="['/app/my-knowledge-base/view-my-knowledge/', knowledge.id]" 
-                 class="knowledge-title text-hover-primary min-h-45px">
+                 class="knowledge-title text-hover-info min-h-45px">
                 {{ (knowledge.title && knowledge.title.trim()) ? (knowledge.title | truncateText:30) : ('Untitled knowledge' | translate) }}
               </a>
             </div>
@@ -376,7 +355,7 @@ styleClass=""
               
               <div class="d-flex gap-2">
                 <a [routerLink]="['/app/my-knowledge-base/view-my-knowledge/', knowledge.id]" 
-                   class="btn btn-sm btn-icon btn-light btn-active-light-primary"
+                   class="btn btn-sm btn-icon btn-light btn-active-light-info"
                    ngbTooltip="{{ 'KNOWLEDGE.VIEW' | translate }}">
                   <i class="ki-duotone ki-eye">
                     <span class="path1"></span>
@@ -404,7 +383,7 @@ styleClass=""
             <div class="position-absolute top-0 end-0 mt-3 me-3">
              
               <i *ngIf="knowledge.publish_as === 'package'" 
-                 class="ki-duotone ki-abstract-26 fs-2 text-primary" 
+                 class="ki-duotone ki-abstract-26 fs-2 text-info" 
                  ngbTooltip="Published in a package only">
                 <span class="path1"></span>
                 <span class="path2"></span>
@@ -418,7 +397,7 @@ styleClass=""
     <!-- Move pagination inside the content area -->
        <!--begin::Pagination-->
   <div class="d-flex justify-content-end mt-4" *ngIf="knowledges && knowledges.length > 0">
-    <ul class="pagination" *ngIf="!loading">
+    <ul class="pagination knowledge-pagination" *ngIf="!loading">
       <!-- Previous Button -->
       <li class="page-item" [ngClass]="{'disabled': currentPage === 1}">
         <a class="page-link cursor-pointer" (click)="currentPage > 1 && loadPage(currentPage - 1)">
@@ -449,7 +428,7 @@ styleClass=""
 
   <!-- Package Builder Toggle Button -->
   <div class="d-flex justify-content-end mt-6">
-    <button class="btn btn-primary d-none" (click)="togglePackageBuilder()">
+    <button class="btn btn-info d-none" (click)="togglePackageBuilder()">
       <i class="ki-duotone" [class.ki-abstract-24]="!showPackageBuilder" [class.ki-cross]="showPackageBuilder"></i>
       {{ showPackageBuilder ? ('KNOWLEDGE.CLOSE_PACKAGE_BUILDER' | translate) : ('KNOWLEDGE.GENERATE_PACKAGE' | translate) }}
     </button>
