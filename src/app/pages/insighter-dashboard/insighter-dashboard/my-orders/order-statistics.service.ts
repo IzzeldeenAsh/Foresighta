@@ -66,7 +66,7 @@ export class OrderStatisticsService {
         const roles = profile.roles || [];
         let endpoint = `${this.API_URL}/insighter/order/statistics`;
 
-        if (roles.includes('company') ) {
+        if (roles.includes('company')) {
           endpoint = `${this.API_URL}/company/order/statistics`;
         } else if (roles.includes('insighter') || roles.includes('company-insighter')) {
           endpoint = `${this.API_URL}/insighter/order/statistics`;

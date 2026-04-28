@@ -74,7 +74,7 @@ export class RequestsService {
 
   sendVerificationAnswers(requestId: number, verificationAnswers: VerificationAnswer[]): Observable<any> {
     const url = `https://api.insightabusiness.com/api/admin/request/action/company/verified/question/${requestId}`;
-    const body = { 
+    const body = {
       verification_answers: verificationAnswers
     };
     const headers = new HttpHeaders({
@@ -108,7 +108,7 @@ export class RequestsService {
     const headers = new HttpHeaders({
       'Accept': 'application/json',
       'Content-Type': 'application/json',
-      'Accept-Language':'en'
+      'Accept-Language': 'en'
     });
 
     let params = new HttpParams()
@@ -210,13 +210,13 @@ export class RequestsService {
       'Content-Type': 'application/json',
       'Accept-Language': 'en'
     });
-  
+
     const url = `${this.apiUrl}/action/company/verified/${requestId}`;
     const body = {
       staff_notes: staffNotes,
       status: status
     };
-  
+
     this.setLoading(true);
     return this.http.post<any>(url, body, { headers }).pipe(
       map((response) => response),

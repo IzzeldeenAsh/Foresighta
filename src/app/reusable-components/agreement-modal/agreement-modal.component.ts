@@ -193,7 +193,7 @@ import { BaseComponent } from 'src/app/modules/base.component';
 }
   `],
 })
-export class AgreementModalComponent extends BaseComponent  implements OnChanges {
+export class AgreementModalComponent extends BaseComponent implements OnChanges {
   @Input() visible: boolean = false;
   @Output() visibleChange = new EventEmitter<boolean>();
 

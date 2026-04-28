@@ -10,22 +10,22 @@ import { Observable, throwError } from 'rxjs';
 export class FileUploadService {
   private uploadUrl = 'https://api.insightabusiness.com/api/account/profile/photo';
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) { }
 
-  uploadProfilePhoto(file: File) :Observable<any> {
+  uploadProfilePhoto(file: File): Observable<any> {
 
     // Prepare FormData
     const formData = new FormData();
     formData.append('profile_photo', file);
 
     // Send POST request
-   return this.http
+    return this.http
       .post(this.uploadUrl, formData)
       .pipe(
         catchError((error: HttpErrorResponse) => {
           return throwError(() => error);
         })
       )
-      
+
   }
 }

@@ -64,7 +64,7 @@ export class ProductionLoginService {
   private readonly API_BASE_URL = 'https://api.insightabusiness.com/api';
   private readonly LOGIN_ENDPOINT = `${this.API_BASE_URL}/auth/login`;
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) { }
 
   login(email: string, password: string, locale: string = 'en'): Observable<ProductionLoginResponse> {
     const headers = new HttpHeaders({
@@ -88,7 +88,7 @@ export class ProductionLoginService {
 
   private handleError(error: HttpErrorResponse): Observable<never> {
     let errorMessage = 'An unexpected error occurred';
-    
+
     if (error.error) {
       if (error.error.message) {
         errorMessage = error.error.message;
@@ -120,8 +120,8 @@ export class ProductionLoginService {
       'Accept': 'application/json',
       'Accept-Language': locale
     });
-    
-    return this.http.get('https://api.insightabusiness.com/api/auth/provider/google', { 
+
+    return this.http.get('https://api.insightabusiness.com/api/auth/provider/google', {
       headers,
       responseType: 'text'
     });
@@ -132,10 +132,10 @@ export class ProductionLoginService {
    */
   getLinkedInAuthRedirectUrl(locale: string = 'en'): Observable<string> {
     const headers = new HttpHeaders({
-      'Accept': 'application/json', 
+      'Accept': 'application/json',
       'Accept-Language': locale
     });
-    
+
     return this.http.get('https://api.insightabusiness.com/api/auth/provider/linkedin-openid', {
       headers,
       responseType: 'text'

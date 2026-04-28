@@ -85,26 +85,26 @@ export class PrimengHeaderComponent implements OnInit, OnDestroy {
   userInitials: string = '';
   userProfileImage: string | null = null;
   lang: string = '';
-  
+
   // Notification related properties
   notifications: Notification[] = [];
   isNotificationsOpen: boolean = false;
   notificationCount: number = 0;
   private notificationChannel: Channel | null = null;
   private pusherGlobalHandler: ((eventName: string, data: any) => void) | null = null;
-  
+
   // Industries dropdown
   industries: Industry[] = [];
   isIndustriesMenuOpen: boolean = false;
-  
+
   isDashboardRoute: boolean = false;
-  
+
   // Search functionality
   searchQuery: string = '';
 
   // Sticky / glass header state (activated when page is scrolled)
   isSticky: boolean = false;
-  
+
   /**
    * Handle search submission
    * @param query Search query string
@@ -116,12 +116,12 @@ export class PrimengHeaderComponent implements OnInit, OnDestroy {
       searchParams.set('keyword', query.trim());
     }
     searchParams.set('search_type', searchType);
-    
+
     // Navigate to the React app's search page
     const searchUrl = `https://insightabusiness.com/${this.lang}/home?${searchParams.toString()}`;
     window.location.href = searchUrl;
   }
-  
+
   /**
    * Handle search form submission
    * @param event Form submit event
@@ -131,7 +131,7 @@ export class PrimengHeaderComponent implements OnInit, OnDestroy {
     event.stopPropagation();
     this.handleSearch();
   }
-  
+
   /**
    * Handle search input click - just focus, don't redirect immediately
    */
@@ -139,7 +139,7 @@ export class PrimengHeaderComponent implements OnInit, OnDestroy {
     // Don't redirect immediately on click, let user type first
     // Redirect only happens on form submit or search icon click
   }
-  
+
   /**
    * Handle search input change
    * @param event Input event
@@ -171,7 +171,7 @@ export class PrimengHeaderComponent implements OnInit, OnDestroy {
       '/app/insighter-register/vertical',
       '/app/add-knowledge/stepper'
     ];
-    
+
     return !excludedRoutes.some(route => currentUrl.includes(route));
   }
 
@@ -200,13 +200,13 @@ export class PrimengHeaderComponent implements OnInit, OnDestroy {
         const wasSmallScreen = this.isSmallScreen;
         // Consider XSmall and Small as mobile, Medium and above as desktop
         this.isSmallScreen = result.matches;
-        
+
         // If transitioning from small to large screen, close mobile sidebar and dropdowns
         if (wasSmallScreen && !this.isSmallScreen) {
           this.sidebarVisible = false;
           this.closeAllDropdowns();
         }
-        
+
         // Close dropdowns when switching to mobile to prevent overlap issues
         if (!wasSmallScreen && this.isSmallScreen) {
           this.closeAllDropdowns();
@@ -257,7 +257,7 @@ export class PrimengHeaderComponent implements OnInit, OnDestroy {
       const navEvent = event as NavigationEnd;
       // Check if the current URL contains 'dashboard'
       this.isDashboardRoute = navEvent.url.includes('dashboard');
-      
+
       // Close mobile sidebar on route change
       if (this.isSmallScreen) {
         this.sidebarVisible = false;
@@ -266,10 +266,10 @@ export class PrimengHeaderComponent implements OnInit, OnDestroy {
       // If the user just left the Add Knowledge wizard, show "Saved as draft" once
       this.maybeShowDraftSavedToastAfterLeavingWizard(navEvent.urlAfterRedirects || navEvent.url);
     });
-    
+
     // Also check the initial route
     this.isDashboardRoute = this.router.url.includes('dashboard');
-    
+
     // Initialize screen size on component load
     this.checkScreenSize();
 
@@ -371,7 +371,7 @@ export class PrimengHeaderComponent implements OnInit, OnDestroy {
     }
     if (this.profileSubscription) this.profileSubscription.unsubscribe();
     if (this.profileUpdateSubscription) this.profileUpdateSubscription.unsubscribe();
-    
+
     // Unsubscribe realtime
     try {
       if (this.profile?.id) {
@@ -382,9 +382,9 @@ export class PrimengHeaderComponent implements OnInit, OnDestroy {
         if (this.pusherGlobalHandler) {
           this.pusherClient.unbindGlobal(this.pusherGlobalHandler);
         }
-      } catch {}
+      } catch { }
       this.pusherClient.disconnect();
-    } catch {}
+    } catch { }
   }
 
   loadUserProfile() {
@@ -406,11 +406,11 @@ export class PrimengHeaderComponent implements OnInit, OnDestroy {
 
         // Check if profile has a profile_photo_url
         this.userProfileImage = profile.profile_photo_url || null;
-    //  if(profile.roles.includes('company') || profile.roles.includes('company-insighter')){
-    //   this.userProfileImage = profile.company?.logo || null;
-    //  }else{
-    //   this.userProfileImage = profile.profile_photo_url || null;
-    //  }
+        //  if(profile.roles.includes('company') || profile.roles.includes('company-insighter')){
+        //   this.userProfileImage = profile.company?.logo || null;
+        //  }else{
+        //   this.userProfileImage = profile.profile_photo_url || null;
+        //  }
       },
       (error) => {
         console.error('Error loading user profile:', error);
@@ -478,7 +478,7 @@ export class PrimengHeaderComponent implements OnInit, OnDestroy {
         expanded: false,
         routerLink: `https://insightabusiness.com/${this.lang}/industries/insight`
       },
-     
+
       {
         label: this.translate.instant('MENU.DATA'),
         iconName: '',
@@ -588,7 +588,7 @@ export class PrimengHeaderComponent implements OnInit, OnDestroy {
     this.isMobileUserDropdownOpen = !this.isMobileUserDropdownOpen;
     this.isUserDropdownOpen = false;
     this.isNotificationsOpen = false;
-    
+
     // Clear any previous inline positioning (CSS handles responsive layout)
     if (this.isMobileUserDropdownOpen) {
       setTimeout(() => {
@@ -599,7 +599,7 @@ export class PrimengHeaderComponent implements OnInit, OnDestroy {
       }, 10);
     }
   }
-  
+
   // Toggle notifications dropdown
   toggleNotifications(event: Event) {
     event.preventDefault();
@@ -612,7 +612,7 @@ export class PrimengHeaderComponent implements OnInit, OnDestroy {
     if (this.isNotificationsOpen && this.notificationCount > 0) {
       // Immediately set notification count to 0 for UI feedback
       // this.notificationCount = 0;
-      
+
       // const headers = new HttpHeaders({
       //   'Accept': 'application/json',
       //   'Content-Type': 'application/json',
@@ -653,15 +653,15 @@ export class PrimengHeaderComponent implements OnInit, OnDestroy {
       this.isSticky = next;
     }
   }
-  
+
   // Handle notification click
   handleNotificationClick(notificationId: string) {
     // Close notifications dropdown when clicked
     this.closeNotifications();
-    
+
     // Find the notification by ID
     const notification = this.notifications.find(n => n.id === notificationId);
-    
+
     // Mark notification as read
     this.notificationService.markAsRead(notificationId, this.lang).subscribe({
       next: () => {
@@ -676,7 +676,7 @@ export class PrimengHeaderComponent implements OnInit, OnDestroy {
         console.error('Error marking notification as read:', error);
       }
     });
-    
+
     // Handle routing for knowledge notifications
     if (notification && notification.type === 'knowledge') {
       if (notification.sub_type === 'accept_knowledge' || notification.sub_type === 'declined') {
@@ -726,13 +726,13 @@ export class PrimengHeaderComponent implements OnInit, OnDestroy {
     // Update isSmallScreen based on window width
     const wasSmallScreen = this.isSmallScreen;
     this.checkScreenSize();
-    
+
     // If transitioning from small to large screen, close mobile sidebar and dropdowns
     if (wasSmallScreen && !this.isSmallScreen) {
       this.sidebarVisible = false;
       this.closeAllDropdowns();
     }
-    
+
     // If transitioning from large to small screen, close desktop dropdowns
     if (!wasSmallScreen && this.isSmallScreen) {
       this.closeAllDropdowns();
@@ -758,7 +758,7 @@ export class PrimengHeaderComponent implements OnInit, OnDestroy {
         this.isMobileUserDropdownOpen = false;
       }
     }
-    
+
     // Close notifications dropdown when clicking outside
     if (this.isNotificationsOpen) {
       const target = event.target as HTMLElement;
@@ -790,7 +790,7 @@ export class PrimengHeaderComponent implements OnInit, OnDestroy {
         if (userId && token) {
           this.initPusher(userId, token, this.lang || 'en');
         }
-      } catch {}
+      } catch { }
     });
   }
 
@@ -837,18 +837,18 @@ export class PrimengHeaderComponent implements OnInit, OnDestroy {
         if (this.pusherGlobalHandler) {
           this.pusherClient.unbindGlobal(this.pusherGlobalHandler);
         }
-      } catch {}
+      } catch { }
       try {
         this.pusherClient.unsubscribePrivateUser(userId);
-      } catch {}
+      } catch { }
 
       const channel = this.pusherClient.subscribePrivateUser(userId, token, currentLocale);
       this.notificationChannel = channel;
 
       // Surface auth issues explicitly (otherwise it feels like "Pusher doesn't work")
       channel.bind('pusher:subscription_succeeded', () => {
-          // eslint-disable-next-line no-console
-         // console.log('[Pusher] Subscription succeeded', `private-user.${userId}`);
+        // eslint-disable-next-line no-console
+        // console.log('[Pusher] Subscription succeeded', `private-user.${userId}`);
       });
       channel.bind('pusher:subscription_error', (status: any) => {
         // eslint-disable-next-line no-console
@@ -861,11 +861,11 @@ export class PrimengHeaderComponent implements OnInit, OnDestroy {
       // Log ALL events received on this channel (like your Next.js hook does)
       this.pusherGlobalHandler = (eventName: string, data: any) => {
         // eslint-disable-next-line no-console
-    //   console.log('[Pusher][GLOBAL EVENT]', eventName, data);
+        //   console.log('[Pusher][GLOBAL EVENT]', eventName, data);
       };
       try {
         this.pusherClient.bindGlobal(this.pusherGlobalHandler);
-      } catch {}
+      } catch { }
 
       const events = [
         'account.activated',
@@ -889,7 +889,7 @@ export class PrimengHeaderComponent implements OnInit, OnDestroy {
       events.forEach(evt => {
         channel.bind(evt, (data: any) => {
           // eslint-disable-next-line no-console
-     //   console.log('[Pusher] Event:', evt, data);
+          //   console.log('[Pusher] Event:', evt, data);
 
           // Pusher callbacks can run outside Angular's zone -> UI won't update unless we re-enter.
           this.ngZone.run(() => {
@@ -905,7 +905,7 @@ export class PrimengHeaderComponent implements OnInit, OnDestroy {
       });
     } catch (e) {
       // eslint-disable-next-line no-console
-       console.warn('[Pusher] init error', e);
+      console.warn('[Pusher] init error', e);
     }
   }
 

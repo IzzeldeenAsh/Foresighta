@@ -55,7 +55,7 @@ export class ReviewInsighterKnowledgeComponent extends BaseComponent implements 
         this.breadcrumbs = data["breadcrumb"];
       }
     });
-    
+
     const paramsSubscription = this.route.params.subscribe((params: Params) => {
       this.knowledgeId = params["id"];
       if (this.knowledgeId) {
@@ -63,13 +63,13 @@ export class ReviewInsighterKnowledgeComponent extends BaseComponent implements 
         this.checkRequestStatus();
       }
     });
-    
+
     // Get request ID from query parameters
     this.route.queryParams.subscribe(params => {
       this.requestId = params['requestId'];
       console.log('Request ID from query params:', this.requestId);
     });
-    
+
     this.unsubscribe.push(paramsSubscription);
   }
 
@@ -78,28 +78,28 @@ export class ReviewInsighterKnowledgeComponent extends BaseComponent implements 
       .subscribe({
         next: (requests: UserRequest[]) => {
           // Filter requests for the current knowledge ID and accept_knowledge type
-          const relevantRequests = requests.filter(request => 
-            request.identity === this.knowledgeId && 
-            request.type && 
+          const relevantRequests = requests.filter(request =>
+            request.identity === this.knowledgeId &&
+            request.type &&
             request.type.key === 'accept_knowledge'
           );
-          
+
           if (relevantRequests.length > 0) {
             // Store the current request for reference
             this.currentRequest = relevantRequests[0];
             this.requestUser = this.currentRequest.requestable;
             this.hasChildRequest = this.hasChildrenRequests(this.currentRequest);
-            
+
             // Find the pending request in the entire tree
             this.pendingRequest = this.findPendingRequest(this.currentRequest);
-            
+
             // Only show the review box if there is a pending request
             this.showReviewBox = !!this.pendingRequest;
-            
+
             console.log('Root request:', this.currentRequest);
             console.log('Pending request:', this.pendingRequest);
             console.log('Show review box:', this.showReviewBox);
-            if(this.currentRequest.comments == "Accept Knowledge Request"){
+            if (this.currentRequest.comments == "Accept Knowledge Request") {
               this.statusRequestString = { en: 'Approve to Publish', ar: "طلب موافقة على النشر" };
             }
           }
@@ -125,7 +125,7 @@ export class ReviewInsighterKnowledgeComponent extends BaseComponent implements 
     if (request.status === 'pending') {
       return request;
     }
-    
+
     // If this request has children, check each child
     if (this.hasChildrenRequests(request)) {
       for (const child of request.children) {
@@ -135,21 +135,21 @@ export class ReviewInsighterKnowledgeComponent extends BaseComponent implements 
         }
       }
     }
-    
+
     // No pending request found in this branch
     return null;
   }
 
   public loadKnowledgeData(): void {
     this.isLoading = true;
-    
+
     // Define headers for the request
     const headers = new HttpHeaders({
       'Accept': 'application/json',
       'Content-Type': 'application/json',
       'Accept-Language': this.lang,
     });
-    
+
     // Using the company API endpoint for getting knowledge
     const knowledgeSubscription = this.http.get<any>(`https://api.insightabusiness.com/api/company/library/knowledge/${this.knowledgeId}`, { headers })
       .subscribe({
@@ -191,9 +191,9 @@ export class ReviewInsighterKnowledgeComponent extends BaseComponent implements 
       }
     } else {
       if (error.error && error.error.type === "warning") {
-        this.showWarn('','An unexpected warning occurred.');
+        this.showWarn('', 'An unexpected warning occurred.');
       } else {
-        this.showError('','An unexpected error occurred.');
+        this.showError('', 'An unexpected error occurred.');
       }
     }
   }
@@ -242,7 +242,7 @@ export class ReviewInsighterKnowledgeComponent extends BaseComponent implements 
       status === 'approve'
         ? 'btn btn-success fw-bold px-10'
         : 'btn btn-danger fw-bold px-10';
-    
+
     // Arabic translations
     const arMessages = {
       approve: {
@@ -295,7 +295,7 @@ export class ReviewInsighterKnowledgeComponent extends BaseComponent implements 
         : status === 'decline'
           ? messages.decline
           : messages.reject;
-    
+
     Swal.fire({
       title: currentMessages.title,
       text: currentMessages.text,
@@ -317,10 +317,10 @@ export class ReviewInsighterKnowledgeComponent extends BaseComponent implements 
 
   submitDecision(status: 'approve' | 'decline' | 'reject'): void {
     this.isLoading = true;
-    
+
     // Map to the API's expected values
     const apiStatus = status === 'approve' ? 'approved' : status === 'decline' ? 'declined' : 'rejected';
-    
+
     const body = {
       staff_notes: this.staffNotes,
       status: apiStatus
@@ -334,14 +334,14 @@ export class ReviewInsighterKnowledgeComponent extends BaseComponent implements 
 
     // Determine which request ID to use
     let targetRequestId = this.requestId;
-    
+
     // If we have a child request that's pending, use its ID instead
     if (this.hasChildRequest && this.childRequest && this.childRequest.status === 'pending') {
       targetRequestId = this.childRequest.id.toString();
     }
 
     if (!targetRequestId) { return; }
-    
+
     // Use request ID instead of knowledge ID if available
     const apiEndpoint = `https://api.insightabusiness.com/api/company/insighter/request/knowledge/accept/${targetRequestId}`;
 
@@ -349,7 +349,7 @@ export class ReviewInsighterKnowledgeComponent extends BaseComponent implements 
       .subscribe({
         next: (response) => {
           this.isLoading = false;
-          
+
           // Success messages based on language
           const successMessages = this.lang === 'ar' ? {
             title: 'تم بنجاح!',

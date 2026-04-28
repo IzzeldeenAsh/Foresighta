@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http'; 
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { BehaviorSubject, Observable, throwError } from 'rxjs';
 import { TranslationService } from 'src/app/modules/i18n/translation.service';
 import { map, catchError, finalize } from 'rxjs/operators';
@@ -70,7 +70,7 @@ export class TopicsService {
   constructor(
     private http: HttpClient,
     private translationService: TranslationService,
-    
+
   ) {
     this.translationService.onLanguageChange().subscribe(lang => {
       this.currentLang = lang || 'en';
@@ -118,8 +118,8 @@ export class TopicsService {
   }
 
   // Create a new topic
-  createTopic(topic: { 
-    name: { en: string; ar: string }; 
+  createTopic(topic: {
+    name: { en: string; ar: string };
     industry_id: number;
     status: string;
     keywords?: Array<{ en: string; ar: string }>;
@@ -139,8 +139,8 @@ export class TopicsService {
   }
 
   // Update an existing topic
-  updateTopic(topicId: number, topic: { 
-    name: { en: string; ar: string }; 
+  updateTopic(topicId: number, topic: {
+    name: { en: string; ar: string };
     industry_id: number;
     status: string;
     keywords?: Array<{ en: string; ar: string }>;
@@ -207,7 +207,7 @@ export class TopicsService {
     });
 
     this.setLoading(true);
-    return this.http.get<{data: string[]}>(`${this.insightaHost}/api/common/setting/topic/suggest-keywords/${industryId}`, { headers }).pipe(
+    return this.http.get<{ data: string[] }>(`${this.insightaHost}/api/common/setting/topic/suggest-keywords/${industryId}`, { headers }).pipe(
       map(res => res.data),
       catchError(error => this.handleError(error)),
       finalize(() => this.setLoading(false))

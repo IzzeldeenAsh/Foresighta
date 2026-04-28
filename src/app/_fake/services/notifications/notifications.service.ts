@@ -45,7 +45,7 @@ export class NotificationsService {
     this.translationService.onLanguageChange().subscribe(lang => {
       this.currentLang = lang || 'en';
     });
-    
+
   }
 
   private setLoading(loading: boolean) {
@@ -57,7 +57,7 @@ export class NotificationsService {
   }
 
   // Get all notifications
-  getNotifications(lang:string): Observable<Notification[]> {
+  getNotifications(lang: string): Observable<Notification[]> {
     const headers = new HttpHeaders({
       'Accept': 'application/json',
       'Content-Type': 'application/json',
@@ -73,7 +73,7 @@ export class NotificationsService {
   }
 
   // Mark a notification as read
-  markAsRead(notificationId: string,lang:string): Observable<any> {
+  markAsRead(notificationId: string, lang: string): Observable<any> {
     const headers = new HttpHeaders({
       'Accept': 'application/json',
       'Content-Type': 'application/json',
@@ -94,7 +94,7 @@ export class NotificationsService {
   startPolling() {
     // Initial fetch
     this.fetchNotifications();
-    
+
     // Set up interval (60000 ms = 1 minute)
     this.notificationInterval = setInterval(() => {
       this.fetchNotifications();

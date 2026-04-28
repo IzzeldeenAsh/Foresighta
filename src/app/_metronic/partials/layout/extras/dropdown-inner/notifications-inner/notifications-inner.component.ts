@@ -44,12 +44,12 @@ export class NotificationsInnerComponent extends BaseComponent implements OnInit
 
   private readonly isBrowser: boolean;
   private readonly messageCache = new Map<string, { raw: string; unreadHtml: SafeHtml; readText: string }>();
-  
+
   get unreadNotificationsCount(): number {
     // Count all unread notifications (where read_at is null or undefined)
     return this.notifications.filter(n => !n.read_at).length;
   }
-  
+
   constructor(
     injector: Injector,
     private translationService: TranslationService,
@@ -150,9 +150,9 @@ export class NotificationsInnerComponent extends BaseComponent implements OnInit
           const rawHref = (el.getAttribute('href') ?? '').trim();
           const href =
             rawHref.startsWith('http://') ||
-            rawHref.startsWith('https://') ||
-            rawHref.startsWith('/') ||
-            rawHref.startsWith('#')
+              rawHref.startsWith('https://') ||
+              rawHref.startsWith('/') ||
+              rawHref.startsWith('#')
               ? rawHref
               : '#';
 
@@ -170,14 +170,14 @@ export class NotificationsInnerComponent extends BaseComponent implements OnInit
       return this.escapeHtml(this.htmlToText(html));
     }
   }
-  
+
   // Handle click outside of dropdown
   onClickOutside(event: MouseEvent): void {
     const target = event.target as HTMLElement;
     // Check if the click was outside the dropdown
     if (
-      target && 
-      !target.closest('.notification-dropdown') && 
+      target &&
+      !target.closest('.notification-dropdown') &&
       !target.closest('.notification-toggle')
     ) {
       this.clickOutside.emit();
@@ -191,7 +191,7 @@ export class NotificationsInnerComponent extends BaseComponent implements OnInit
       'Accept': 'application/json',
       'Accept-Language': this.translationService.getSelectedLanguage()
     });
-    
+
     this.http.put(`https://api.insightabusiness.com/api/account/notification/read/${notificationId}`, {}, { headers })
       .subscribe(
         () => {
@@ -200,13 +200,13 @@ export class NotificationsInnerComponent extends BaseComponent implements OnInit
             const notification = this.notifications.find(n => n.id === notificationId);
             if (notification) {
               notification.read_at = new Date().toISOString();
-              
+
               // Count unread notifications
               const unreadCount = this.notifications.filter(n => !n.read_at).length;
-              
+
               // Emit notification count change
               this.notificationClicked.emit(notificationId);
-              
+
               // Execute callback if provided
               if (callback) {
                 callback();
@@ -232,14 +232,14 @@ export class NotificationsInnerComponent extends BaseComponent implements OnInit
     if (event) {
       event.preventDefault();
     }
-    
+
     // Always mark the notification as read first and ensure it completes
     this.markAsRead(notification.id, () => {
       // After marking as read is complete, handle navigation if needed
       this.handleNotificationNavigation(notification);
     });
   }
-  
+
   // Separate navigation logic to make it cleaner
   private handleNotificationNavigation(notification: Notification): void {
     // New: Order notifications redirect to Sales page
@@ -251,7 +251,7 @@ export class NotificationsInnerComponent extends BaseComponent implements OnInit
       }
       return;
     }
-    
+
     // First, check for knowledge accept/decline notifications that need special handling
     if (notification.type === 'knowledge' && (notification.sub_type === 'accept_knowledge' || notification.sub_type === 'declined')) {
       // Check if user has company-insighter role
@@ -263,61 +263,60 @@ export class NotificationsInnerComponent extends BaseComponent implements OnInit
       });
       return;
     }
-    
+
     // Handle knowledge notifications with category
     if (notification.type === 'knowledge' && notification.category) {
       // Construct the URL for knowledge page with sub_page and param
       const lang = this.translationService.getSelectedLanguage() || 'en';
       const knowledgeUrl = `https://insightabusiness.com/${lang}/knowledge/${notification.category}/${notification.param || ''}?tab=ask`;
-      
+
       // Navigate to the external URL
       window.open(knowledgeUrl, '_blank');
       return;
     }
-    
+
     // For meeting-related notifications, refresh profile first to ensure roles are current
-    if(notification.type === 'meeting') {
+    if (notification.type === 'meeting') {
       this.profileService.refreshProfile().subscribe(user => {
         let targetUrl: string = '';
-        if(notification.sub_type === 'insighter_meeting_reminder') {
+        if (notification.sub_type === 'insighter_meeting_reminder') {
           targetUrl = '/app/insighter-dashboard/my-meetings?tab=client';
         }
-        else if(notification.sub_type === 'client_meeting_new'){
+        else if (notification.sub_type === 'client_meeting_new') {
           targetUrl = '/app/insighter-dashboard/my-meetings?tab=client';
         }
-         else if(notification.sub_type === 'insighter_meeting_client_new')
-        {
+        else if (notification.sub_type === 'insighter_meeting_client_new') {
           targetUrl = '/app/insighter-dashboard/my-meetings?tab=client';
         }
-        else if(notification.sub_type === 'insighter_meeting_client_approved'){
+        else if (notification.sub_type === 'insighter_meeting_client_approved') {
           targetUrl = '/app/insighter-dashboard/my-meetings?tab=client';
         }
         else if (notification.sub_type.startsWith('client_')) {
           targetUrl = '/app/insighter-dashboard/my-meetings?tab=client';
-        } 
+        }
         else if (notification.sub_type.startsWith('insighter_')) {
           targetUrl = '/app/insighter-dashboard/my-meetings?tab=client';
-        } 
-        else if(notification.sub_type.startsWith('client_meeting_insighter_postponed')) {
-          targetUrl = '/app/insighter-dashboard/my-meetings?tab=my-meetings';
-        } 
-        else if(notification.sub_type.startsWith('insighter_meeting_client_reschedule')) {
-          targetUrl = '/app/insighter-dashboard/my-meetings?tab=client';
-        } 
-        else if(notification.sub_type.startsWith('client_meeting_reschedule')) {
-          targetUrl = '/app/insighter-dashboard/my-meetings?tab=my-meetings';
-        } 
-        else if(notification.sub_type.startsWith('insighter_meeting_reminder')) {
-          targetUrl = '/app/insighter-dashboard/my-meetings?tab=client';
-        } 
-        else if(notification.sub_type.startsWith('client_meeting_reminder')) {
+        }
+        else if (notification.sub_type.startsWith('client_meeting_insighter_postponed')) {
           targetUrl = '/app/insighter-dashboard/my-meetings?tab=my-meetings';
         }
-        
+        else if (notification.sub_type.startsWith('insighter_meeting_client_reschedule')) {
+          targetUrl = '/app/insighter-dashboard/my-meetings?tab=client';
+        }
+        else if (notification.sub_type.startsWith('client_meeting_reschedule')) {
+          targetUrl = '/app/insighter-dashboard/my-meetings?tab=my-meetings';
+        }
+        else if (notification.sub_type.startsWith('insighter_meeting_reminder')) {
+          targetUrl = '/app/insighter-dashboard/my-meetings?tab=client';
+        }
+        else if (notification.sub_type.startsWith('client_meeting_reminder')) {
+          targetUrl = '/app/insighter-dashboard/my-meetings?tab=my-meetings';
+        }
+
         // Check if we're already on this route before navigating
         if (targetUrl) {
           const currentUrl = this.router.url;
-          
+
           // Only navigate if we're not already on the target page
           if (currentUrl !== targetUrl) {
             this.router.navigateByUrl(targetUrl);
@@ -326,13 +325,13 @@ export class NotificationsInnerComponent extends BaseComponent implements OnInit
       });
     }
   }
-  
+
   // if(notification.type === 'meeting'){
   //   const baseUrl = window.location.origin;
   //   const lang = this.translationService.getSelectedLanguage() || 'en';
   //   // const tabParam = notification.param && notification.tap ? `?tab=${notification.tap}` : '';
   //   const knowledgeUrl = `https://insightabusiness.com/${lang}/knowledge/${notification.category}/${notification.param || ''}?`;
-    
+
   //   // Navigate to the external URL
   //   window.open(knowledgeUrl, '_blank');
   // }

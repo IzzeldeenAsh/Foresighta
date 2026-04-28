@@ -16,16 +16,16 @@ export class UpdateProfileService {
   private deleteCompanyCertificateUrl = 'https://api.insightabusiness.com/api/account/profile/company/certification';
   private isLoadingSubject = new BehaviorSubject<boolean>(false);
   public isLoading$: Observable<boolean> = this.isLoadingSubject.asObservable();
-  currentLang:string = "en"
+  currentLang: string = "en"
   constructor(
     private http: HttpClient,
     private translationService: TranslationService,
   ) {
     this.currentLang = this.translationService.getSelectedLanguage();
-    this.translationService.onLanguageChange().subscribe(lang=>{
-     this.currentLang = lang || 'en';
+    this.translationService.onLanguageChange().subscribe(lang => {
+      this.currentLang = lang || 'en';
     })
-   
+
   }
 
   private setLoading(loading: boolean) {
@@ -36,7 +36,7 @@ export class UpdateProfileService {
   private handleError(error: any) {
     return throwError(error);
   }
-  
+
 
   postProfile(profile: FormData): Observable<any> {
     const headers = new HttpHeaders({
@@ -67,7 +67,7 @@ export class UpdateProfileService {
     );
   }
 
-  addInsighterSocial(social: {type: string, link: string}[]): Observable<any> {
+  addInsighterSocial(social: { type: string, link: string }[]): Observable<any> {
     const headers = new HttpHeaders({
       'Accept': 'application/json',
       'Accept-Language': this.currentLang
@@ -81,9 +81,9 @@ export class UpdateProfileService {
     );
   }
 
-  addCompanySocial(social: {type: string, link: string}[]): Observable<any> {
+  addCompanySocial(social: { type: string, link: string }[]): Observable<any> {
     const headers = new HttpHeaders({
-      'Accept': 'application/json', 
+      'Accept': 'application/json',
       'Accept-Language': this.currentLang
     });
 
@@ -95,7 +95,7 @@ export class UpdateProfileService {
     );
   }
 
-  updateCompanyInfo(formData:any): Observable<any> {
+  updateCompanyInfo(formData: any): Observable<any> {
     const headers = new HttpHeaders({
       'Accept-Language': this.currentLang
     });
@@ -103,7 +103,7 @@ export class UpdateProfileService {
     this.setLoading(true);
     return this.http.post<any>(this.updateCompanyInfoUrl, formData, { headers }).pipe(
       map((res) => res),
-      catchError((error) => this.handleError(error)), 
+      catchError((error) => this.handleError(error)),
       finalize(() => this.setLoading(false))
     );
   }

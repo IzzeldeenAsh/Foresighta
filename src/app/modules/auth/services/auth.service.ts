@@ -22,9 +22,9 @@ export type UserType = InsightaUserModel | undefined;
   providedIn: "root",
 })
 export class AuthService implements OnDestroy {
-  private unsubscribe: Subscription[] = []; 
+  private unsubscribe: Subscription[] = [];
   private userLocalStorageKey = `currentUser`;
-  
+
   // public fields
   currentUser$: Observable<UserType>;
   isLoading$: Observable<boolean>;
@@ -42,10 +42,10 @@ export class AuthService implements OnDestroy {
     this.currentUserSubject = new BehaviorSubject<UserType>(undefined);
     this.currentUser$ = this.currentUserSubject.asObservable();
     this.isLoading$ = this.isLoadingSubject.asObservable();
-    
+
     const subscr = this.getUserByToken().subscribe();
     this.unsubscribe.push(subscr);
-    
+
     this.translationService.onLanguageChange().subscribe((lang) => {
       this.currentLang = lang || 'en';
     });
@@ -63,7 +63,7 @@ export class AuthService implements OnDestroy {
   // Cookie management methods
   private setTokenCookie(token: string): void {
     const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    
+
     let cookieSettings;
     if (isLocalhost) {
       cookieSettings = [
@@ -82,13 +82,13 @@ export class AuthService implements OnDestroy {
         `Secure`
       ];
     }
-    
+
     document.cookie = cookieSettings.join('; ');
   }
 
   getTokenFromCookie(): string | null {
     if (typeof document === 'undefined') return null;
-    
+
     const cookies = document.cookie.split(';');
     for (let cookie of cookies) {
       const [name, value] = cookie.trim().split('=');
@@ -101,7 +101,7 @@ export class AuthService implements OnDestroy {
 
   private removeTokenCookie(): void {
     const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    
+
     let cookieSettings;
     if (isLocalhost) {
       cookieSettings = [
@@ -119,13 +119,13 @@ export class AuthService implements OnDestroy {
         'Secure'
       ];
     }
-    
+
     document.cookie = cookieSettings.join('; ');
   }
 
   private setReturnUrlCookie(url: string): void {
     const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    
+
     let cookieSettings;
     if (isLocalhost) {
       cookieSettings = [
@@ -144,14 +144,14 @@ export class AuthService implements OnDestroy {
         `Secure`
       ];
     }
-    
+
     document.cookie = cookieSettings.join('; ');
   }
 
   // Token validation
   private isTokenExpired(token: string): boolean {
     if (!token) return true;
-    
+
     try {
       const payload = JSON.parse(atob(token.split(".")[1]));
       const currentTime = Math.floor(Date.now() / 1000);
@@ -223,9 +223,9 @@ export class AuthService implements OnDestroy {
   }
 
   // Public methods
-  login(email: string, password: string, lang: string, returnUrl?: string): Observable<{userData: any, token: string}> {
+  login(email: string, password: string, lang: string, returnUrl?: string): Observable<{ userData: any, token: string }> {
     this.isLoadingSubject.next(true);
-    
+
     // Store return URL in cookie if provided
     if (returnUrl && returnUrl !== '/') {
       this.setReturnUrlCookie(returnUrl);
@@ -234,10 +234,10 @@ export class AuthService implements OnDestroy {
     return this.authHttpService.login(email, password, lang).pipe(
       switchMap((response: any) => {
         const token = response.data.token;
-        
+
         // Store token in cookie
         this.setTokenCookie(token);
-        
+
         // Get profile with the token
         const headers = new HttpHeaders({
           Accept: "application/json",
@@ -257,7 +257,7 @@ export class AuthService implements OnDestroy {
 
             this.setUserInLocalStorage(userData);
             this.currentUserSubject.next(userData);
-            
+
             // Return both user data and token
             return {
               userData: profileResponse.data,
@@ -297,12 +297,12 @@ export class AuthService implements OnDestroy {
 
   registration(user: ForesightaGeneralUserModel): Observable<any> {
     this.isLoadingSubject.next(true);
-    
+
     return this.authHttpService.createUser(user).pipe(
       map((response: any) => {
         // Store token in cookie
         this.setTokenCookie(response.data.token);
-        
+
         const userData: UserType = {
           id: response.data.id,
           name: response.data.name,
@@ -313,7 +313,7 @@ export class AuthService implements OnDestroy {
 
         this.setUserInLocalStorage(userData);
         this.currentUserSubject.next(userData);
-        
+
         return response.data;
       }),
       catchError((error) => this.handleError(error)),
@@ -324,7 +324,7 @@ export class AuthService implements OnDestroy {
   getProfile(): Observable<any> {
     this.isLoadingSubject.next(true);
     const token = this.getTokenFromCookie();
-    
+
     if (!token) {
       this.isLoadingSubject.next(false);
       return throwError(() => new Error('No authentication token'));
@@ -348,7 +348,7 @@ export class AuthService implements OnDestroy {
 
         this.setUserInLocalStorage(userData);
         this.currentUserSubject.next(userData);
-        
+
         return response.data;
       }),
       catchError((error) => {
@@ -370,7 +370,7 @@ export class AuthService implements OnDestroy {
 
   getUserByToken(): Observable<any> {
     const token = this.getTokenFromCookie();
-    
+
     if (!token || this.isTokenExpired(token)) {
       if (token) {
         this.handleLogout().subscribe();
@@ -389,7 +389,7 @@ export class AuthService implements OnDestroy {
 
   logout(): Observable<any> {
     const token = this.getTokenFromCookie();
-    
+
     if (!token) {
       return of(null);
     }
@@ -431,7 +431,7 @@ export class AuthService implements OnDestroy {
 
   resendVerificationEmail(): Observable<any> {
     const token = this.getTokenFromCookie();
-    
+
     if (!token) {
       return throwError(() => new Error('No authentication token'));
     }
@@ -454,8 +454,8 @@ export class AuthService implements OnDestroy {
       'Accept': 'application/json',
       'Accept-Language': this.currentLang
     });
-    
-    return this.http.get('https://api.insightabusiness.com/api/auth/provider/google', { 
+
+    return this.http.get('https://api.insightabusiness.com/api/auth/provider/google', {
       headers,
       responseType: 'text'
     });
@@ -463,10 +463,10 @@ export class AuthService implements OnDestroy {
 
   getLinkedInAuthRedirectUrl(): Observable<string> {
     const headers = new HttpHeaders({
-      'Accept': 'application/json', 
+      'Accept': 'application/json',
       'Accept-Language': this.currentLang
     });
-    
+
     return this.http.get('https://api.insightabusiness.com/api/auth/provider/linkedin-openid', {
       headers,
       responseType: 'text'
@@ -475,7 +475,7 @@ export class AuthService implements OnDestroy {
 
   // Utility methods
   getCurrentUserId(): number | undefined {
-    const currentUser = this.currentUserValue; 
+    const currentUser = this.currentUserValue;
     return currentUser?.id;
   }
 

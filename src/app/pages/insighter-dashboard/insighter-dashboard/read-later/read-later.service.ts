@@ -61,7 +61,7 @@ export interface ReadLaterResponse {
 })
 export class ReadLaterService {
   private readonly API_URL = 'https://api.insightabusiness.com/api/account/favorite/knowledge';
-  
+
   private isLoadingSubject = new BehaviorSubject<boolean>(false);
   public isLoading$ = this.isLoadingSubject.asObservable();
   private currentLang: string = 'en';
@@ -78,7 +78,7 @@ export class ReadLaterService {
 
   private normalizeLanguage(lang: string): string {
     if (!lang) return 'en';
-    
+
     const normalizedLang = lang.toLowerCase().split(/[-_,;]/)[0];
     return normalizedLang === 'ar' ? 'ar' : 'en';
   }
@@ -103,7 +103,7 @@ export class ReadLaterService {
 
   getReadLaterItems(page: number = 1, filters?: { title?: string; type?: string }): Observable<ReadLaterResponse> {
     let url = `${this.API_URL}?page=${page}&per_page=10`;
-    
+
     // Add filter parameters if provided
     if (filters) {
       if (filters.title && filters.title.trim()) {
@@ -113,9 +113,9 @@ export class ReadLaterService {
         url += `&type=${encodeURIComponent(filters.type.trim())}`;
       }
     }
-    
+
     const headers = this.getHeaders();
-    
+
     this.setLoading(true);
     return this.http.get<ReadLaterResponse>(url, { headers }).pipe(
       map((response) => response),
@@ -127,7 +127,7 @@ export class ReadLaterService {
   deleteReadLaterItem(knowledgeSlug: string): Observable<any> {
     const url = `${this.API_URL}/${knowledgeSlug}`;
     const headers = this.getHeaders();
-    
+
     this.setLoading(true);
     return this.http.delete(url, { headers }).pipe(
       catchError(error => this.handleError(error)),

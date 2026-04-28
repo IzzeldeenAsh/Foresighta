@@ -183,19 +183,19 @@ export class CompanyAccountService {
     formData.append('email', data.email);
     formData.append('first_name', data.first_name);
     formData.append('last_name', data.last_name);
-    
+
     // Add country_id if provided
     if (data.country_id) {
       formData.append('country_id', data.country_id.toString());
     }
-    
+
     // Add industries as array
     if (data.industries && data.industries.length > 0) {
       data.industries.forEach(industry => {
         formData.append('industries[]', industry);
       });
     }
-    
+
     // Add consulting fields as array
     if (data.consulting_field && data.consulting_field.length > 0) {
       data.consulting_field.forEach(field => {
@@ -272,14 +272,14 @@ export class CompanyAccountService {
           pending: 0,
           inactive: 0
         };
-        
+
         response.data.forEach(insighter => {
           const status = insighter.insighter_status as string;
           if (status in statusCounts) {
             statusCounts[status]++;
           }
         });
-        
+
         // Format for chart
         return {
           data: [
@@ -309,13 +309,13 @@ export class CompanyAccountService {
           .filter(insighter => insighter.knowledge_type_statistics)
           .map(insighter => {
             const stats = insighter.knowledge_type_statistics || {};
-            
+
             // Calculate total knowledge items
             const totalKnowledge = Object.values(stats).reduce(
-              (sum: number, count: any) => sum + (typeof count === 'number' ? count : 0), 
+              (sum: number, count: any) => sum + (typeof count === 'number' ? count : 0),
               0
             );
-            
+
             return {
               id: insighter.id,
               name: insighter.name,
@@ -334,7 +334,7 @@ export class CompanyAccountService {
           .sort((a, b) => (b.totalKnowledge as number) - (a.totalKnowledge as number))
           // Take top contributors (limit to 10)
           .slice(0, 10);
-        
+
         return {
           data: insightersWithKnowledge
         };

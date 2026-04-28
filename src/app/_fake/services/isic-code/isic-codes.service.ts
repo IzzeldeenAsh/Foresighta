@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http'; 
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { BehaviorSubject, Observable, throwError } from 'rxjs';
 import { TranslationService } from 'src/app/modules/i18n/translation.service';
 import { map, catchError, finalize } from 'rxjs/operators';
@@ -18,7 +18,7 @@ export interface IsicCode {
   providedIn: 'root'
 })
 export class IsicCodesService {
-  private apiUrl = 'https://api.insightabusiness.com/api/common/setting/isic-code/tree-list'; 
+  private apiUrl = 'https://api.insightabusiness.com/api/common/setting/isic-code/tree-list';
   private apiList = 'https://api.insightabusiness.com/api/common/setting/isic-code/list'
   private isLoadingSubject = new BehaviorSubject<boolean>(false);
   public isLoading$: Observable<boolean> = this.isLoadingSubject.asObservable();
@@ -86,23 +86,23 @@ export class IsicCodesService {
     );
   }
 
-    // Fetch ISIC Codes data from the API
-    getIsicCodesTreeParent(): Observable<any[]> {
-      const headers = new HttpHeaders({
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-        'Accept-Language': this.currentLang
-      });
-  
-      this.setLoading(true);
-      return this.http.get<any>('https://api.insightabusiness.com/api/common/setting/isic-code/tree/parent', { headers }).pipe(
-        map((res) => this.transformToTreeNodeParent(res)),
-        catchError((error) => this.handleError(error)),
-        finalize(() => this.setLoading(false))
-      );
-    }
+  // Fetch ISIC Codes data from the API
+  getIsicCodesTreeParent(): Observable<any[]> {
+    const headers = new HttpHeaders({
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+      'Accept-Language': this.currentLang
+    });
 
-     // Fetch ISIC Codes data from the API
+    this.setLoading(true);
+    return this.http.get<any>('https://api.insightabusiness.com/api/common/setting/isic-code/tree/parent', { headers }).pipe(
+      map((res) => this.transformToTreeNodeParent(res)),
+      catchError((error) => this.handleError(error)),
+      finalize(() => this.setLoading(false))
+    );
+  }
+
+  // Fetch ISIC Codes data from the API
   getIndustryList(): Observable<any[]> {
     const headers = new HttpHeaders({
       'Accept': 'application/json',

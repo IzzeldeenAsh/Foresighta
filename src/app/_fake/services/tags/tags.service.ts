@@ -12,8 +12,8 @@ export interface Tag {
     en: string;
     ar: string;
   };
-  status?:string;
-  industries:number[];
+  status?: string;
+  industries: number[];
 }
 
 export interface TagResponse {
@@ -156,37 +156,37 @@ export class TagsService {
     );
   }
 
-// Create a new tag
-createTag(tag:   { name: { en: string; ar: string }; status: string; industries:any }): Observable<any> {
-  const headers = new HttpHeaders({
-    'Accept': 'application/json',
-    'Content-Type': 'application/json',
-    'Accept-Language': this.currentLang
-  });
+  // Create a new tag
+  createTag(tag: { name: { en: string; ar: string }; status: string; industries: any }): Observable<any> {
+    const headers = new HttpHeaders({
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+      'Accept-Language': this.currentLang
+    });
 
-  this.setLoading(true);
-  return this.http.post<any>(this.createApi, tag, { headers }).pipe(
-    map(res => res),
-    catchError(error => this.handleError(error)),
-    finalize(() => this.setLoading(false))
-  );
-}
+    this.setLoading(true);
+    return this.http.post<any>(this.createApi, tag, { headers }).pipe(
+      map(res => res),
+      catchError(error => this.handleError(error)),
+      finalize(() => this.setLoading(false))
+    );
+  }
 
-// Update an existing tag
-updateTag(tagId: number, tag:   { name: { en: string; ar: string }; status: string; industries:any } ): Observable<Tag> {
-  const headers = new HttpHeaders({
-    'Accept': 'application/json',
-    'Content-Type': 'application/json',
-    'Accept-Language': this.currentLang
-  });
+  // Update an existing tag
+  updateTag(tagId: number, tag: { name: { en: string; ar: string }; status: string; industries: any }): Observable<Tag> {
+    const headers = new HttpHeaders({
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+      'Accept-Language': this.currentLang
+    });
 
-  this.setLoading(true);
-  return this.http.put<Tag>(`${this.updateDeleteApi}/${tagId}`, tag, { headers }).pipe(
-    map(res => res),
-    catchError(error => this.handleError(error)),
-    finalize(() => this.setLoading(false))
-  );
-}
+    this.setLoading(true);
+    return this.http.put<Tag>(`${this.updateDeleteApi}/${tagId}`, tag, { headers }).pipe(
+      map(res => res),
+      catchError(error => this.handleError(error)),
+      finalize(() => this.setLoading(false))
+    );
+  }
 
   // Delete a tag
   deleteTag(tagId: number): Observable<any> {
@@ -205,7 +205,7 @@ updateTag(tagId: number, tag:   { name: { en: string; ar: string }; status: stri
   }
 
   // Get tags by industry
-  getTagsByIndustry(industryId: number,lang:string): Observable<{id: number, name: string}[]> {
+  getTagsByIndustry(industryId: number, lang: string): Observable<{ id: number, name: string }[]> {
     const headers = new HttpHeaders({
       'Accept': 'application/json',
       'Content-Type': 'application/json',
@@ -220,7 +220,7 @@ updateTag(tagId: number, tag:   { name: { en: string; ar: string }; status: stri
   }
 
   // Get tags by industry and topic
-  getTagsByTopic(industryId: number, topicId: number | string, lang: string): Observable<{id: number, name: string}[]> {
+  getTagsByTopic(industryId: number, topicId: number | string, lang: string): Observable<{ id: number, name: string }[]> {
     const headers = new HttpHeaders({
       'Accept': 'application/json',
       'Content-Type': 'application/json',
@@ -246,7 +246,7 @@ updateTag(tagId: number, tag:   { name: { en: string; ar: string }; status: stri
       'Content-Type': 'application/json',
       'Accept-Language': this.currentLang
     });
-  
+
     return this.http.get<{ data: { id: string; name: string }[] }>(`${this.insightaHost}/api/common/setting/tag/category/list`, { headers })
       .pipe(
         map(res => res.data),
@@ -261,7 +261,7 @@ updateTag(tagId: number, tag:   { name: { en: string; ar: string }; status: stri
       'Accept-Language': lang
     });
 
-    return this.http.get<{data: {[key: string]: string}}>(`${this.insightaHost}/api/insighter/library/knowledge/keyword/suggest/${knowledgeId}`, { headers })
+    return this.http.get<{ data: { [key: string]: string } }>(`${this.insightaHost}/api/insighter/library/knowledge/keyword/suggest/${knowledgeId}`, { headers })
       .pipe(
         map(res => Object.values(res.data)),
         catchError(error => this.handleError(error))
@@ -277,7 +277,7 @@ updateTag(tagId: number, tag:   { name: { en: string; ar: string }; status: stri
 
     // Note: This is a placeholder implementation. In a real scenario, you would have a specific endpoint.
     // Currently, we're reusing the knowledgeId endpoint since the API might not have a topic-specific endpoint.
-    return this.http.get<{data: {[key: string]: string}}>(`${this.insightaHost}/api/insighter/library/knowledge/keyword/suggest/${knowledgeId}`, { headers })
+    return this.http.get<{ data: { [key: string]: string } }>(`${this.insightaHost}/api/insighter/library/knowledge/keyword/suggest/${knowledgeId}`, { headers })
       .pipe(
         map(res => Object.values(res.data)),
         catchError(error => this.handleError(error))

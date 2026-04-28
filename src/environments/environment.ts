@@ -14,13 +14,13 @@ export const environment = {
   pusherKey: (window as any)?.__env?.PUSHER_KEY || '41745ad5e299f4af9e36 ',
   pusherCluster: (window as any)?.__env?.PUSHER_CLUSTER || 'eu',
   pusherAuthEndpoint: (window as any)?.__env?.PUSHER_AUTH_ENDPOINT || 'https://api.insightabusiness.com/broadcasting/auth',
-  
+
   // API configuration for sharing authentication between domains
   apiBaseUrl: 'https://api.insightabusiness.com/api',
   appDomain: '.insightabusiness.com',
   mainAppUrl: 'https://insightabusiness.com',
   subAppUrl: 'https://app.insightabusiness.com',
-  
+
   // Cookie configuration
   cookieOptions: {
     secure: true, // Set to true for HTTPS
@@ -28,7 +28,7 @@ export const environment = {
     path: '/',
     sameSite: 'None' // Changed from 'Lax' to 'None' for cross-domain sharing
   },
-  
+
   appThemeName: 'Metronic',
   appPurchaseUrl: 'https://1.envato.market/EA4JP',
   appHTMLIntegration:

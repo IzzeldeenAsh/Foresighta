@@ -13,7 +13,7 @@ export class InsighterRegistraionService {
   public isLoading$: Observable<boolean> =
     this.isLoadingSubject.asObservable();
   currentLang: string = 'en';
-  constructor(private http: HttpClient,private translationService :TranslationService) {}
+  constructor(private http: HttpClient, private translationService: TranslationService) { }
   private setLoading(loading: boolean) {
     this.isLoadingSubject.next(loading);
     this.currentLang = this.translationService.getSelectedLanguage()
@@ -27,28 +27,28 @@ export class InsighterRegistraionService {
     return throwError(error);
   }
 
-  personalInsighterRegister(insighterData:FormData){
+  personalInsighterRegister(insighterData: FormData) {
     const headers = new HttpHeaders({
       'Accept-Language': this.currentLang,
     });
-     this.setLoading(true);
+    this.setLoading(true);
     return this.http.post(this.individuial_insighter, insighterData, { headers }).pipe(
-      map((res)=>res),
-      catchError((error)=>this.handleError(error)),
-      finalize(()=>this.setLoading(false))
+      map((res) => res),
+      catchError((error) => this.handleError(error)),
+      finalize(() => this.setLoading(false))
     );
   }
 
 
-  corporateInsighterRegister(insighterData:FormData){
+  corporateInsighterRegister(insighterData: FormData) {
     const headers = new HttpHeaders({
       'Accept-Language': this.currentLang,
     });
-     this.setLoading(true);
+    this.setLoading(true);
     return this.http.post(this.company_insighter, insighterData, { headers }).pipe(
-      map((res)=>res),
-      catchError((error)=>this.handleError(error)),
-      finalize(()=>this.setLoading(false))
+      map((res) => res),
+      catchError((error) => this.handleError(error)),
+      finalize(() => this.setLoading(false))
     );
   }
 

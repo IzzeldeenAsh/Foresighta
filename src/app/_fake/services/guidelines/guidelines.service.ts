@@ -63,7 +63,7 @@ export class GuidelinesService {
   private isLoadingSubject = new BehaviorSubject<boolean>(false);
   public isLoading$: Observable<boolean> = this.isLoadingSubject.asObservable();
   currentLang: string = 'en';
-  constructor(private http: HttpClient,private translationService: TranslationService) {
+  constructor(private http: HttpClient, private translationService: TranslationService) {
     this.currentLang = this.translationService.getSelectedLanguage();
     this.translationService.onLanguageChange().subscribe((lang) => {
       this.currentLang = lang || 'en';
@@ -108,7 +108,7 @@ export class GuidelinesService {
   deleteGuideline(id: number): Observable<any> {
     const headers = new HttpHeaders({
       'Accept': 'application/json',
-        'Accept-Language': this.currentLang
+      'Accept-Language': this.currentLang
     });
     const apiUrl = `${this.createUpdateApi}/${id}`;
     this.setLoading(true);

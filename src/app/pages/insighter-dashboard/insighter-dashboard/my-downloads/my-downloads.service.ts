@@ -76,7 +76,7 @@ export class MyDownloadsService {
   private readonly STATISTICS_URL = 'https://api.insightabusiness.com/api/account/library/my-knowledge/statistics';
   private readonly DOWNLOAD_KNOWLEDGE_URL = 'https://api.insightabusiness.com/api/account/library/my-knowledge/download';
   private readonly DOWNLOAD_DOCUMENT_URL = 'https://api.insightabusiness.com/api/account/library/my-knowledge/document/download';
-  
+
   private isLoadingSubject = new BehaviorSubject<boolean>(false);
   public isLoading$ = this.isLoadingSubject.asObservable();
   private currentLang: string = 'en';
@@ -84,7 +84,7 @@ export class MyDownloadsService {
   constructor(
     private http: HttpClient,
     private translationService: TranslationService
-  ) { 
+  ) {
     this.currentLang = this.normalizeLanguage(this.translationService.getSelectedLanguage() || 'en');
     this.translationService.onLanguageChange().subscribe((lang) => {
       this.currentLang = this.normalizeLanguage(lang || 'en');
@@ -97,10 +97,10 @@ export class MyDownloadsService {
    */
   private normalizeLanguage(lang: string): string {
     if (!lang) return 'en';
-    
+
     // Convert to lowercase and extract language code
     const normalizedLang = lang.toLowerCase().split(/[-_,;]/)[0];
-    
+
     // Only allow 'ar' or 'en', default to 'en' for anything else
     return normalizedLang === 'ar' ? 'ar' : 'en';
   }
@@ -124,19 +124,19 @@ export class MyDownloadsService {
 
   getMyDownloads(page: number = 1, title?: string, uuids?: string[]): Observable<MyDownloadsResponse> {
     let url = `${this.API_URL}?page=${page}&per_page=10`;
-    
+
     // Add title query parameter if provided
     if (title && title.trim()) {
       url += `&title=${encodeURIComponent(title.trim())}`;
     }
-    
+
     const headers = this.getHeaders();
-    
+
     // Create request body if UUIDs are provided
     const body = uuids && uuids.length > 0 ? { uuids } : null;
-    
+
     this.setLoading(true);
-    
+
     // Use POST if body exists, otherwise GET
     return this.http.post<MyDownloadsResponse>(url, body, { headers }).pipe(
       map((response) => response),
@@ -148,7 +148,7 @@ export class MyDownloadsService {
   downloadKnowledge(knowledgeUUID: string): Observable<Blob> {
     const url = `${this.DOWNLOAD_KNOWLEDGE_URL}/${knowledgeUUID}`;
     const headers = this.getHeaders();
-    
+
     return this.http.post(url, {}, {
       headers,
       responseType: 'blob' as 'json'
@@ -158,11 +158,11 @@ export class MyDownloadsService {
     );
   }
 
-  downloadDocument(documentUuid: string): Observable<{url: string}> {
+  downloadDocument(documentUuid: string): Observable<{ url: string }> {
     const url = `${this.DOWNLOAD_DOCUMENT_URL}/${documentUuid}`;
     const headers = this.getHeaders();
 
-    return this.http.post<{data: {url: string}}>(url, {}, { headers }).pipe(
+    return this.http.post<{ data: { url: string } }>(url, {}, { headers }).pipe(
       map(response => ({ url: response.data.url })),
       catchError(error => this.handleError(error)),
     );
@@ -209,7 +209,7 @@ export class MyDownloadsService {
   getLibraryStatistics(): Observable<LibraryStatistics> {
     const headers = this.getHeaders();
 
-    return this.http.get<{data: LibraryStatistics}>(this.STATISTICS_URL, { headers }).pipe(
+    return this.http.get<{ data: LibraryStatistics }>(this.STATISTICS_URL, { headers }).pipe(
       map((response) => response.data),
       catchError(error => this.handleError(error))
     );

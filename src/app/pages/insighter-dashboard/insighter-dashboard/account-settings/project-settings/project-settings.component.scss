@@ -336,6 +336,17 @@
   gap: 0.75rem;
 }
 
+.project-service-match-ai {
+  align-items: flex-start;
+  display: flex;
+  gap: 0.75rem;
+}
+
+.project-service-match-ai-copy {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
 .project-chip-group.is-invalid .project-chip {
   border-color: rgba(220, 53, 69, 0.3);
 }
@@ -708,6 +719,14 @@
 
   .project-chip {
     width: 100%;
+  }
+
+  .project-service-match-ai {
+    flex-direction: column;
+  }
+
+  .project-service-match-ai .project-status-toggle {
+    width: auto;
   }
 
   .project-type-grid {

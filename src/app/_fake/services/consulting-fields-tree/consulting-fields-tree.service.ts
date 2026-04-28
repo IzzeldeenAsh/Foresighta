@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http'; 
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { BehaviorSubject, Observable, throwError } from 'rxjs';
 import { TranslationService } from 'src/app/modules/i18n/translation.service';
 import { map, catchError, finalize } from 'rxjs/operators';
@@ -19,7 +19,7 @@ export interface IsicCode {
   providedIn: 'root'
 })
 export class ConsultingFieldTreeService {
-  private apiUrl = 'https://api.insightabusiness.com/api/common/setting/consulting-field/tree/list'; 
+  private apiUrl = 'https://api.insightabusiness.com/api/common/setting/consulting-field/tree/list';
   private apiList = 'https://api.insightabusiness.com/api/common/setting/consulting-field/list'
   private isLoadingSubject = new BehaviorSubject<boolean>(false);
   public isLoading$: Observable<boolean> = this.isLoadingSubject.asObservable();
@@ -72,7 +72,7 @@ export class ConsultingFieldTreeService {
   }
 
   // Fetch ISIC Codes data from the API
-  getConsultingCodesTree(lang:string): Observable<TreeNode[]> {
+  getConsultingCodesTree(lang: string): Observable<TreeNode[]> {
     const headers = new HttpHeaders({
       'Accept': 'application/json',
       'Content-Type': 'application/json',
@@ -87,22 +87,22 @@ export class ConsultingFieldTreeService {
     );
   }
   // Fetch ISIC Codes data from the API
-  getConsultingCodesTreeParent(lang:string): Observable<any[]> {
-      const headers = new HttpHeaders({
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-        'Accept-Language': lang
-      });
-  
-      this.setLoading(true);
-      return this.http.get<any>('https://api.insightabusiness.com/api/common/setting/consulting-field/tree/parent', { headers }).pipe(
-        map((res) => this.transformToTreeNodeParent(res)),
-        catchError((error) => this.handleError(error)),
-        finalize(() => this.setLoading(false))
-      );
-    }
+  getConsultingCodesTreeParent(lang: string): Observable<any[]> {
+    const headers = new HttpHeaders({
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+      'Accept-Language': lang
+    });
+
+    this.setLoading(true);
+    return this.http.get<any>('https://api.insightabusiness.com/api/common/setting/consulting-field/tree/parent', { headers }).pipe(
+      map((res) => this.transformToTreeNodeParent(res)),
+      catchError((error) => this.handleError(error)),
+      finalize(() => this.setLoading(false))
+    );
+  }
   // Fetch ISIC Codes data from the API
-  getConsultingList(lang:string): Observable<any[]> {
+  getConsultingList(lang: string): Observable<any[]> {
     const headers = new HttpHeaders({
       'Accept': 'application/json',
       'Content-Type': 'application/json',
@@ -117,7 +117,7 @@ export class ConsultingFieldTreeService {
     );
   }
   // Create a new ISIC code
-  createConsultingField(isicCode: any,lang:string): Observable<IsicCode> {
+  createConsultingField(isicCode: any, lang: string): Observable<IsicCode> {
     const headers = new HttpHeaders({
       'Accept': 'application/json',
       'Content-Type': 'application/json',
@@ -130,7 +130,7 @@ export class ConsultingFieldTreeService {
     );
   }
   // Update an existing ISIC code
-  updateConsultingField(id: number, isicCode: any, lang:string): Observable<IsicCode> {
+  updateConsultingField(id: number, isicCode: any, lang: string): Observable<IsicCode> {
     const headers = new HttpHeaders({
       'Accept': 'application/json',
       'Content-Type': 'application/json',

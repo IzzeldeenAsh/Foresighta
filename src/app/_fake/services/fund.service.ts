@@ -193,7 +193,7 @@ export class FundService {
     const headers = this.getHeaders();
     this.setLoading(true);
 
-    return this.http.get<{data: InsighterWalletDetails[]}>(`${this.baseUrl}/insighter/payment/manual/${insighterId}`, { headers }).pipe(
+    return this.http.get<{ data: InsighterWalletDetails[] }>(`${this.baseUrl}/insighter/payment/manual/${insighterId}`, { headers }).pipe(
       map(response => response.data[0]),
       catchError(error => this.handleError(error)),
       finalize(() => this.setLoading(false))

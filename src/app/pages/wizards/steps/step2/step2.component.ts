@@ -17,12 +17,12 @@ import { CountriesService, Country } from 'src/app/_fake/services/countries/coun
   templateUrl: './step2.component.html',
   styleUrl: './step2.component.scss'
 })
-export class Step2Component implements OnInit, OnChanges, OnDestroy  {
+export class Step2Component implements OnInit, OnChanges, OnDestroy {
   isLoading$: Observable<boolean>;
   listOfConsultingFields: TreeNode[] = [];
   messages: Message[] = [];
   optionLabel: string = 'name.en';
-  lang:string;
+  lang: string;
   countries: Country[] = [];
   nodes: TreeNode[] = [];
   selectedNodes: any;
@@ -38,25 +38,25 @@ export class Step2Component implements OnInit, OnChanges, OnDestroy  {
   defaultImage = 'https://au.eragroup.com/wp-content/uploads/2018/02/logo-placeholder.png';
   private unsubscribe: Subscription[] = [];
 
-  allConsultingFieldSelected  = []
-  allIndustriesSelected  = []
+  allConsultingFieldSelected = []
+  allIndustriesSelected = []
 
   // Custom validator for arrays to ensure at least one item is selected
   arrayRequiredValidator(): ValidatorFn {
     return (control: AbstractControl): ValidationErrors | null => {
       const value = control.value;
-      
+
       if (!value || !Array.isArray(value) || value.length === 0) {
         return { required: true };
       }
-      
+
       // Filter out the "selectAll" node - only count actual selections
       const actualSelections = value.filter((node: any) => node.key !== "selectAll");
-      
+
       if (actualSelections.length === 0) {
         return { required: true };
       }
-      
+
       return null;
     };
   }
@@ -70,7 +70,7 @@ export class Step2Component implements OnInit, OnChanges, OnDestroy  {
 
       return timer(500).pipe( // Debounce for 500ms
         switchMap(() => {
-          return this.http.post<{exists: boolean}>('https://api.insightabusiness.com/api/account/insighter/company/name-exists', {
+          return this.http.post<{ exists: boolean }>('https://api.insightabusiness.com/api/account/insighter/company/name-exists', {
             legal_name: control.value.trim()
           }, {
             headers: new HttpHeaders({
@@ -95,22 +95,22 @@ export class Step2Component implements OnInit, OnChanges, OnDestroy  {
   constructor(
     private fb: FormBuilder,
     private _KnoldgFieldsService: ConsultingFieldTreeService,
-    private _translateion:TranslationService,
+    private _translateion: TranslationService,
     private _isicService: IndustryService,
     private _countriesService: CountriesService,
     private cdr: ChangeDetectorRef,
     private http: HttpClient
   ) {
-    this.lang=this._translateion.getSelectedLanguage();
+    this.lang = this._translateion.getSelectedLanguage();
   }
- 
+
 
   ngOnInit() {
     this.initApiCalls();
     this.initForm();
     this.updateParentModel({}, this.checkForm());
-    this._translateion.onLanguageChange().subscribe((lang)=>{
-      this.lang =lang;
+    this._translateion.onLanguageChange().subscribe((lang) => {
+      this.lang = lang;
       this.initApiCalls();
     });
     this.handleDefaultValues();
@@ -128,7 +128,7 @@ export class Step2Component implements OnInit, OnChanges, OnDestroy  {
       this.form.get('registerDocument')?.markAsTouched();
       this.updateParentModel({ registerDocument: this.defaultValues?.registerDocument }, this.checkForm());
     }
-    if(this.defaultValues?.logo){
+    if (this.defaultValues?.logo) {
       if (this.defaultValues.logo instanceof File) {
         const reader = new FileReader();
         reader.onload = () => {
@@ -143,7 +143,7 @@ export class Step2Component implements OnInit, OnChanges, OnDestroy  {
         this.updateBackgroundImage();
       }
     }
-    
+
     // Handle pre-selected country from profile
     if (this.defaultValues?.country && this.form) {
       this.form.patchValue({ country: this.defaultValues.country });
@@ -171,7 +171,7 @@ export class Step2Component implements OnInit, OnChanges, OnDestroy  {
   }
 
   initApiCalls() {
-    this.isLoading$=of(true);
+    this.isLoading$ = of(true);
     const apiCalls = forkJoin({
       consultingFields: this._KnoldgFieldsService.getConsultingCodesTree(this.lang || 'en'),
       isicCodes: this._isicService.getIsicCodesTree(this.lang || 'en'),
@@ -184,7 +184,7 @@ export class Step2Component implements OnInit, OnChanges, OnDestroy  {
           ...country,
           showFlag: true
         }));
-        this.isLoading$=of(false);
+        this.isLoading$ = of(false);
       },
       error: (err) => {
         this.messages = [];
@@ -199,14 +199,14 @@ export class Step2Component implements OnInit, OnChanges, OnDestroy  {
           setTimeout(() => {
             this.messages = [];
           }, 4000);
-          this.isLoading$=of(false);
+          this.isLoading$ = of(false);
         }
       }
     });
     this.unsubscribe.push(apiCalls);
   }
 
-  getBackgroundImage(){
+  getBackgroundImage() {
     if (this.logoPreview) {
       return `url(${this.logoPreview})`;
     }
@@ -217,38 +217,38 @@ export class Step2Component implements OnInit, OnChanges, OnDestroy  {
   updateBackgroundImage() {
     this.cdr.detectChanges();
   }
-  onLogoSelected(event:Event){
-    const input  =event.target as HTMLInputElement;
-    if(input.files && input.files[0]){
+  onLogoSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files[0]) {
       const file = input.files[0];
       const validTypes = ['image/png', 'image/jpeg', 'image/jpg'];
-      if(!validTypes.includes(file.type)){
+      if (!validTypes.includes(file.type)) {
         this.messages = [{
           severity: 'error',
           summary: 'Invalid File Type',
           detail: 'Please select a PNG or JPEG image.',
-          id:'fileType'
+          id: 'fileType'
         }];
         setTimeout(() => {
           this.messages = [];
         }, 4000);
         return
       };
-      const maxSize = 2 *1024*1024 ; //2MB
-      if(file.size > maxSize){
+      const maxSize = 2 * 1024 * 1024; //2MB
+      if (file.size > maxSize) {
         this.messages = [{
-          icon:'',
+          icon: '',
           severity: 'error',
-          summary:this.lang ==='en' ? 'Logo must be smaller than 2MB.' : 'يجب أن يكون الحجم أقل من ٢ ميجا',
-          detail:  '',
-          id:'fizeSize'
+          summary: this.lang === 'en' ? 'Logo must be smaller than 2MB.' : 'يجب أن يكون الحجم أقل من ٢ ميجا',
+          detail: '',
+          id: 'fizeSize'
         }];
         setTimeout(() => {
           this.messages = [];
         }, 4000);
         return;
       }
-      this.form.patchValue({logo:file});
+      this.form.patchValue({ logo: file });
       this.updateParentModel({ logo: file }, this.checkForm());
       const reader = new FileReader();
       reader.onload = () => {
@@ -272,65 +272,65 @@ export class Step2Component implements OnInit, OnChanges, OnDestroy  {
     this.cdr.detectChanges();
     this.updateBackgroundImage();
   }
-  
+
   onDropzoneClick() {
     this.fileInput.nativeElement.click();
   }
- 
-// Handle file selection from the file input
-onFileSelected(event: any) {
-  const file = event.target.files[0];
-  if (file) {
-    this.form.patchValue({ registerDocument: file });
-    this.form.get('registerDocument')?.markAsTouched();
-    this.updateParentModel({ registerDocument: file }, this.checkForm());
-  }
-}
 
-// Prevent default drag over behavior
-onDragOver(event: DragEvent) {
-  event.preventDefault();
-}
-
-// Handle files dropped into the dropzone
-onFileDrop(event: DragEvent) {
-  event.preventDefault();
-  const files = event.dataTransfer?.files;
-  if (files && files.length > 0) {
-    const file = files.item(0);
-    this.form.patchValue({ registerDocument: file });
-    this.form.get('registerDocument')?.markAsTouched();
-    this.updateParentModel({ registerDocument: file }, this.checkForm());
+  // Handle file selection from the file input
+  onFileSelected(event: any) {
+    const file = event.target.files[0];
+    if (file) {
+      this.form.patchValue({ registerDocument: file });
+      this.form.get('registerDocument')?.markAsTouched();
+      this.updateParentModel({ registerDocument: file }, this.checkForm());
+    }
   }
 
+  // Prevent default drag over behavior
+  onDragOver(event: DragEvent) {
+    event.preventDefault();
+  }
 
-}
+  // Handle files dropped into the dropzone
+  onFileDrop(event: DragEvent) {
+    event.preventDefault();
+    const files = event.dataTransfer?.files;
+    if (files && files.length > 0) {
+      const file = files.item(0);
+      this.form.patchValue({ registerDocument: file });
+      this.form.get('registerDocument')?.markAsTouched();
+      this.updateParentModel({ registerDocument: file }, this.checkForm());
+    }
 
-// Remove the uploaded register document
-removeRegisterDocument() {
-  this.form.patchValue({ registerDocument: null });
-  this.updateParentModel({ registerDocument: null }, this.checkForm());
-  this.fileInput.nativeElement.value =''
-}
 
-// Get the icon path based on the file extension
-getFileIcon(file: File): string {
-  const extension = file.name.split('.').pop()?.toLowerCase();
-  const iconPath = `./assets/media/svg/files/${extension}.svg`;
-  // If the icon doesn't exist, you can return a default icon path
-  return iconPath;
-}
+  }
 
-  onConsultingNodesSelected(event:any){
-   this.allConsultingFieldSelected=event && event.length >0 ? event : [];
-   const consultingFieldsControl = this.form.get('consultingFields');
-   consultingFieldsControl?.setValue(this.allConsultingFieldSelected);
-   consultingFieldsControl?.markAsTouched();
-   consultingFieldsControl?.markAsDirty();
-   consultingFieldsControl?.updateValueAndValidity();
-   
-   this.updateParentModel({consultingFields:this.allConsultingFieldSelected}, this.checkForm());
- 
+  // Remove the uploaded register document
+  removeRegisterDocument() {
+    this.form.patchValue({ registerDocument: null });
+    this.updateParentModel({ registerDocument: null }, this.checkForm());
+    this.fileInput.nativeElement.value = ''
+  }
+
+  // Get the icon path based on the file extension
+  getFileIcon(file: File): string {
+    const extension = file.name.split('.').pop()?.toLowerCase();
+    const iconPath = `./assets/media/svg/files/${extension}.svg`;
+    // If the icon doesn't exist, you can return a default icon path
+    return iconPath;
+  }
+
+  onConsultingNodesSelected(event: any) {
+    this.allConsultingFieldSelected = event && event.length > 0 ? event : [];
+    const consultingFieldsControl = this.form.get('consultingFields');
+    consultingFieldsControl?.setValue(this.allConsultingFieldSelected);
+    consultingFieldsControl?.markAsTouched();
+    consultingFieldsControl?.markAsDirty();
+    consultingFieldsControl?.updateValueAndValidity();
+
+    this.updateParentModel({ consultingFields: this.allConsultingFieldSelected }, this.checkForm());
+
   }
 
   onIndustrySelected(event: any) {
@@ -340,11 +340,11 @@ getFileIcon(file: File): string {
     isicCodesControl?.markAsTouched();
     isicCodesControl?.markAsDirty();
     isicCodesControl?.updateValueAndValidity();
-    
-    this.updateParentModel({isicCodes:this.allIndustriesSelected}, this.checkForm());
-   
+
+    this.updateParentModel({ isicCodes: this.allIndustriesSelected }, this.checkForm());
+
   }
-  
+
 
   initForm() {
     const accountType = this.defaultValues.accountType;
@@ -359,7 +359,7 @@ getFileIcon(file: File): string {
           ],
         ],
         consultingFields: [this.defaultValues.consultingFields || [], [this.arrayRequiredValidator()]],
-        isicCodes: [this.defaultValues.isicCodes  || [], [this.arrayRequiredValidator()]],
+        isicCodes: [this.defaultValues.isicCodes || [], [this.arrayRequiredValidator()]],
       });
     } else {
       this.form = this.fb.group(
@@ -385,7 +385,7 @@ getFileIcon(file: File): string {
         }
       );
     }
-    
+
 
     const formChangesSubscr = this.form.valueChanges.subscribe((val) => {
       this.updateParentModel(val, this.checkForm());
@@ -393,7 +393,7 @@ getFileIcon(file: File): string {
     this.unsubscribe.push(formChangesSubscr);
   }
 
-onFileChange(event: any) {
+  onFileChange(event: any) {
     const file = event.target.files[0];
     if (file) {
       this.form.patchValue({ registerDocument: file });
@@ -417,15 +417,15 @@ onFileChange(event: any) {
   customCountryFilter(event: any) {
     const query = event.filter.toLowerCase();
     const filtered: any[] = [];
-    
+
     for (let i = 0; i < this.countries.length; i++) {
       const country = this.countries[i];
-      if (country.names.en.toLowerCase().indexOf(query) !== -1 || 
-          country.names.ar.toLowerCase().indexOf(query) !== -1) {
+      if (country.names.en.toLowerCase().indexOf(query) !== -1 ||
+        country.names.ar.toLowerCase().indexOf(query) !== -1) {
         filtered.push(country);
       }
     }
-    
+
     return filtered;
   }
 
@@ -472,22 +472,22 @@ onFileChange(event: any) {
     const orderedControlSelectors: Array<{ control: string; selector: string }> =
       accountType === 'corporate'
         ? [
-            { control: 'logo', selector: '[data-control="logo"]' },
-            { control: 'legalName', selector: '[formcontrolname="legalName"]' },
-            { control: 'companyAddress', selector: '[formcontrolname="companyAddress"]' },
-            { control: 'country', selector: 'app-country-dropdown[formcontrolname="country"]' },
-            { control: 'phoneCountryCode', selector: '[data-control="companyPhone"]' },
-            { control: 'phoneCompanyNumber', selector: '[data-control="companyPhone"]' },
-            { control: 'consultingFields', selector: '[data-control="consultingFields"]' },
-            { control: 'isicCodes', selector: '[data-control="isicCodes"]' },
-            { control: 'aboutCompany', selector: '[formcontrolname="aboutCompany"]' },
-          ]
+          { control: 'logo', selector: '[data-control="logo"]' },
+          { control: 'legalName', selector: '[formcontrolname="legalName"]' },
+          { control: 'companyAddress', selector: '[formcontrolname="companyAddress"]' },
+          { control: 'country', selector: 'app-country-dropdown[formcontrolname="country"]' },
+          { control: 'phoneCountryCode', selector: '[data-control="companyPhone"]' },
+          { control: 'phoneCompanyNumber', selector: '[data-control="companyPhone"]' },
+          { control: 'consultingFields', selector: '[data-control="consultingFields"]' },
+          { control: 'isicCodes', selector: '[data-control="isicCodes"]' },
+          { control: 'aboutCompany', selector: '[formcontrolname="aboutCompany"]' },
+        ]
         : [
-            { control: 'isicCodes', selector: '[data-control="isicCodes"]' },
-            { control: 'consultingFields', selector: '[data-control="consultingFields"]' },
-            { control: 'bio', selector: '[formcontrolname="bio"]' },
-            { control: 'country', selector: 'app-country-dropdown[formcontrolname="country"]' },
-          ];
+          { control: 'isicCodes', selector: '[data-control="isicCodes"]' },
+          { control: 'consultingFields', selector: '[data-control="consultingFields"]' },
+          { control: 'bio', selector: '[formcontrolname="bio"]' },
+          { control: 'country', selector: 'app-country-dropdown[formcontrolname="country"]' },
+        ];
 
     for (const item of orderedControlSelectors) {
       const control = this.form.get(item.control);

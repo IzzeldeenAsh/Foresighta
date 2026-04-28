@@ -89,20 +89,20 @@ export class ProfileService {
         if (!isEmailNotVerified) {
           this.profileCache$ = null;
         }
-        
+
         if (err.status === 401) {
           this.profileCache$ = null;
           localStorage.removeItem("foresighta-creds");
           localStorage.removeItem("user");
           this.clearProfile();
-          
+
           // Save current URL before redirecting
           const currentUrl = window.location.pathname;
           console.log('401 error - Saving return URL:', currentUrl);
-          
+
           // Navigate to auth with returnUrl parameter
-          this.router.navigate(['/auth/login'], { 
-            queryParams: { returnUrl: currentUrl } 
+          this.router.navigate(['/auth/login'], {
+            queryParams: { returnUrl: currentUrl }
           });
         } else if (err.status === 403) {
           // Handle email verification errors
@@ -116,16 +116,16 @@ export class ProfileService {
             localStorage.removeItem("foresighta-creds");
             localStorage.removeItem("user");
             this.clearProfile();
-            
+
             const currentUrl = window.location.pathname;
             console.log('403 error - Access denied, redirecting to login');
-            
-            this.router.navigate(['/auth/login'], { 
-              queryParams: { returnUrl: currentUrl } 
+
+            this.router.navigate(['/auth/login'], {
+              queryParams: { returnUrl: currentUrl }
             });
           }
         }
-        
+
         return throwError(err);
       }),
       finalize(() => this.isLoadingSubject.next(false)),
@@ -173,34 +173,34 @@ export class ProfileService {
     return userStr ? JSON.parse(userStr) : null;
   }
 
-  isClient():Observable<any>{
+  isClient(): Observable<any> {
     return this.getProfile().pipe(
       map(profile => {
         const userRoles = profile.roles || [];
-        return userRoles.includes("client") && userRoles.length ==1;
+        return userRoles.includes("client") && userRoles.length == 1;
       })
     );
   }
 
-  isInsighter():Observable<any>{
+  isInsighter(): Observable<any> {
     return this.getProfile().pipe(
       map(profile => {
         const userRoles = profile.roles || [];
-        return userRoles.includes("insighter") 
+        return userRoles.includes("insighter")
       })
     );
   }
 
-  isCompanyInsighter():Observable<any>{
+  isCompanyInsighter(): Observable<any> {
     return this.getProfile().pipe(
       map(profile => {
         const userRoles = profile.roles || [];
-        return userRoles.includes("company-insighter") 
+        return userRoles.includes("company-insighter")
       })
     );
   }
 
-  isCompany():Observable<any>{
+  isCompany(): Observable<any> {
     return this.getProfile().pipe(
       map(profile => {
         const userRoles = profile.roles || [];

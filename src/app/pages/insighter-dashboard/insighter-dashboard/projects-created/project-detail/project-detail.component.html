@@ -1,0 +1,665 @@
+<div class="d-flex flex-column gap-4">
+
+  <p-progressBar
+    *ngIf="isLoading"
+    mode="indeterminate"
+    [style]="{ height: '3px' }">
+  </p-progressBar>
+
+  <div *ngIf="!isLoading && !project" class="pd-empty">
+    <i class="ki-outline ki-information-2 fs-3x text-gray-400 mb-3"></i>
+    <p class="text-gray-500 fs-6">{{ lang === 'ar' ? 'لم يتم العثور على المشروع.' : 'Project not found.' }}</p>
+  </div>
+
+  <ng-container *ngIf="project as p">
+    <div class="pd-wrap">
+
+      <div class="pd-main">
+
+        <!-- Back button inside card -->
+        <div class="pd-card-header">
+          <button type="button" class="pd-iconbtn" (click)="goBack()">
+            <i class="ki-outline fs-3" [ngClass]="getBackIcon()"></i>
+          </button>
+          <span class="text-gray-700 fw-semibold fs-6">
+            {{ lang === 'ar' ? 'المشاريع المنشأة' : 'Projects Created' }}
+          </span>
+        </div>
+
+        <div class="pd-body">
+          <!-- Hero -->
+          <div class="pd-hero">
+            <div class="pd-hero__eyebrow">
+              <div class="pd-type">
+                <ng-container *ngTemplateOutlet="typeIcon; context: { $implicit: p.type }"></ng-container>
+                <span class="pd-type__label">{{ getTypeLabel(p.type) }}</span>
+              </div>
+              <span *ngIf="p.status" class="badge" [ngClass]="getStatusBadgeClass(p.status)">
+                {{ getStatusLabel(p.status) }}
+              </span>
+            </div>
+
+            <h2 class="pd-hero__title">{{ p.title }}</h2>
+
+            <div class="pd-hero__meta">
+              <div class="pd-meta-item" *ngIf="p.deadline">
+                <i class="ki-outline ki-calendar fs-6"></i>
+                <div class="pd-meta-item__text">
+                  <span class="pd-meta-item__label">{{ lang === 'ar' ? 'الموعد النهائي' : 'Deadline' }}</span>
+                  <span class="pd-meta-item__value">{{ formatDate(p.deadline) }}</span>
+                </div>
+              </div>
+              <div class="pd-meta-item" *ngIf="p.service?.name">
+                <i class="ki-outline ki-briefcase fs-6"></i>
+                <div class="pd-meta-item__text">
+                  <span class="pd-meta-item__label">{{ lang === 'ar' ? 'الخدمة' : 'Service' }}</span>
+                  <span class="pd-meta-item__value">{{ p.service?.name }}</span>
+                </div>
+              </div>
+              <div class="pd-meta-item" *ngIf="p.language">
+                <span class="pd-lang-icon" aria-hidden="true">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                       stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 5h7"></path><path d="M9 3v2c0 4.418 -2.239 8 -5 8"></path>
+                    <path d="M5 9c0 2.144 2.952 3.908 6.7 4"></path>
+                    <path d="M12 20l4 -9l4 9"></path><path d="M19.1 18h-6.2"></path>
+                  </svg>
+                </span>
+                <div class="pd-meta-item__text">
+                  <span class="pd-meta-item__label">{{ lang === 'ar' ? 'اللغة' : 'Language' }}</span>
+                  <span class="pd-meta-item__value">{{ getLanguageLabel(p.language) }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Description -->
+          <section class="pd-section" *ngIf="p.service_prompt || p.description">
+            <p class="pd-section__text" *ngIf="p.service_prompt">{{ p.service_prompt }}</p>
+            <p class="pd-section__text" *ngIf="p.description">{{ p.description }}</p>
+          </section>
+
+          <!-- Facts grid -->
+          <section class="pd-facts">
+            <div class="pd-fact pd-fact--blue">
+              <i class="ki-outline ki-element-7 fs-4"></i>
+              <div class="pd-fact__body">
+                <div class="pd-fact__label">{{ lang === 'ar' ? 'نوع المشروع' : 'Project Type' }}</div>
+                <div class="pd-fact__value">{{ getTypeLabel(p.type) }}</div>
+              </div>
+            </div>
+
+            <div class="pd-fact pd-fact--green" *ngIf="p.phase">
+              <i class="ki-outline ki-chart-pie-simple fs-4"></i>
+              <div class="pd-fact__body">
+                <div class="pd-fact__label">{{ lang === 'ar' ? 'المرحلة' : 'Phase' }}</div>
+                <div class="pd-fact__value">{{ getPhaseLabel(p.phase) }}</div>
+              </div>
+            </div>
+
+            <div class="pd-fact pd-fact--slate" *ngIf="p.business_type">
+              <i class="ki-outline ki-briefcase fs-4"></i>
+              <div class="pd-fact__body">
+                <div class="pd-fact__label">{{ lang === 'ar' ? 'نوع العمل' : 'Business Type' }}</div>
+                <div class="pd-fact__value">{{ getBusinessTypeLabel(p.business_type) }}</div>
+              </div>
+            </div>
+
+            <div class="pd-fact pd-fact--slate" *ngIf="p.industry">
+              <i class="ki-outline ki-office-bag fs-4"></i>
+              <div class="pd-fact__body">
+                <div class="pd-fact__label">{{ lang === 'ar' ? 'القطاع' : 'Industry' }}</div>
+                <div class="pd-fact__value">{{ getFormattedValue(p.industry?.name || p.industry) }}</div>
+              </div>
+            </div>
+
+            <div class="pd-fact pd-fact--slate" *ngIf="p.language">
+              <span class="pd-lang-icon pd-lang-icon--fact" aria-hidden="true">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M4 5h7"></path><path d="M9 3v2c0 4.418 -2.239 8 -5 8"></path>
+                  <path d="M5 9c0 2.144 2.952 3.908 6.7 4"></path>
+                  <path d="M12 20l4 -9l4 9"></path><path d="M19.1 18h-6.2"></path>
+                </svg>
+              </span>
+              <div class="pd-fact__body">
+                <div class="pd-fact__label">{{ lang === 'ar' ? 'اللغة' : 'Language' }}</div>
+                <div class="pd-fact__value">{{ getLanguageLabel(p.language) }}</div>
+              </div>
+            </div>
+
+            <div class="pd-fact pd-fact--amber" *ngIf="p.budget_min !== null || p.budget_max !== null">
+              <i class="ki-outline ki-dollar fs-4"></i>
+              <div class="pd-fact__body">
+                <div class="pd-fact__label">{{ lang === 'ar' ? 'الميزانية' : 'Budget' }}</div>
+                <div class="pd-fact__value">
+                  <ng-container *ngIf="p.budget_min !== null && p.budget_max !== null">
+                    {{ p.budget_min }} – {{ p.budget_max }}
+                  </ng-container>
+                  <ng-container *ngIf="p.budget_min !== null && p.budget_max === null">
+                    {{ lang === 'ar' ? 'من' : 'From' }} {{ p.budget_min }}
+                  </ng-container>
+                  <ng-container *ngIf="p.budget_min === null && p.budget_max !== null">
+                    {{ lang === 'ar' ? 'حتى' : 'Up to' }} {{ p.budget_max }}
+                  </ng-container>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Deliverable Stages -->
+          <section class="pd-section" *ngIf="getComponent('deliverable-stage') as deliverableStage">
+            <div class="pd-section__head">
+              <h6 class="pd-section__title">{{ lang === 'ar' ? 'مراحل التسليم' : 'Deliverable Stages' }}</h6>
+              <span class="pd-section__eyebrow">{{ lang === 'ar' ? 'خطة التسليم' : 'Delivery Timeline' }}</span>
+            </div>
+            <div class="pd-stage-grid">
+              <div class="pd-stage-card" *ngIf="deliverableStage.first_draft as firstDraft">
+                <div class="pd-stage-card__head">
+                  <span class="pd-stage-card__icon"><i class="ki-outline ki-document fs-4"></i></span>
+                  <div class="pd-stage-card__copy">
+                    <span class="pd-stage-card__title">{{ lang === 'ar' ? 'المسودة الأولى' : 'First Draft' }}</span>
+                    <span class="pd-stage-card__subtitle">
+                      {{ lang === 'ar' ? 'مراجعة أولية قبل النسخة النهائية.' : 'Initial review milestone before final delivery.' }}
+                    </span>
+                  </div>
+                </div>
+                <div class="pd-stage-card__body">
+                  <div class="pd-detail-row">
+                    <span class="pd-detail-row__label">{{ lang === 'ar' ? 'التاريخ' : 'Date' }}</span>
+                    <span class="pd-detail-row__value">{{ formatDate(firstDraft.date) }}</span>
+                  </div>
+                  <div class="pd-detail-row" *ngIf="firstDraft.way?.selected">
+                    <span class="pd-detail-row__label">{{ lang === 'ar' ? 'طريقة التسليم' : 'Delivery Way' }}</span>
+                    <span class="pd-detail-row__value">{{ getWayLabel(firstDraft.way?.selected) }}</span>
+                  </div>
+                  <div class="pd-detail-row" *ngIf="firstDraft.way?.address">
+                    <span class="pd-detail-row__label">{{ lang === 'ar' ? 'العنوان' : 'Address' }}</span>
+                    <span class="pd-detail-row__value">{{ firstDraft.way?.address }}</span>
+                  </div>
+                  <div class="pd-chip-wrap" *ngIf="firstDraft.report_type?.length">
+                    <div class="pd-chip-wrap__label">{{ lang === 'ar' ? 'أنواع الملفات:' : 'Required File types:' }}</div>
+                    <span class="pd-chip pd-chip--file"
+                          *ngFor="let ft of firstDraft.report_type; trackBy: trackByValue">
+                      <img class="pd-chip__file" [src]="getFileTypeIconPath(ft)" [alt]="ft" loading="lazy"
+                           (error)="onFileIconLoadError($event)">
+                      {{ ft.toUpperCase() }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="pd-stage-card" *ngIf="deliverableStage.final_version as finalVersion">
+                <div class="pd-stage-card__head">
+                  <span class="pd-stage-card__icon"><i class="ki-outline ki-check-square fs-4"></i></span>
+                  <div class="pd-stage-card__copy">
+                    <span class="pd-stage-card__title">{{ lang === 'ar' ? 'النسخة النهائية' : 'Final Version' }}</span>
+                    <span class="pd-stage-card__subtitle">
+                      {{ lang === 'ar' ? 'الإصدار النهائي المعتمد للتسليم.' : 'Final approved version for delivery.' }}
+                    </span>
+                  </div>
+                </div>
+                <div class="pd-stage-card__body">
+                  <div class="pd-detail-row">
+                    <span class="pd-detail-row__label">{{ lang === 'ar' ? 'التاريخ' : 'Date' }}</span>
+                    <span class="pd-detail-row__value">{{ formatDate(finalVersion.date) }}</span>
+                  </div>
+                  <div class="pd-detail-row" *ngIf="finalVersion.way?.selected">
+                    <span class="pd-detail-row__label">{{ lang === 'ar' ? 'طريقة التسليم' : 'Delivery Way' }}</span>
+                    <span class="pd-detail-row__value">{{ getWayLabel(finalVersion.way?.selected) }}</span>
+                  </div>
+                  <div class="pd-detail-row" *ngIf="finalVersion.way?.address">
+                    <span class="pd-detail-row__label">{{ lang === 'ar' ? 'العنوان' : 'Address' }}</span>
+                    <span class="pd-detail-row__value">{{ finalVersion.way?.address }}</span>
+                  </div>
+                  <div class="pd-chip-wrap" *ngIf="finalVersion.report_type?.length">
+                    <div class="pd-chip-wrap__label">{{ lang === 'ar' ? 'أنواع الملفات:' : 'Required File types:' }}</div>
+                    <span class="pd-chip pd-chip--file"
+                          *ngFor="let ft of finalVersion.report_type; trackBy: trackByValue">
+                      <img class="pd-chip__file" [src]="getFileTypeIconPath(ft)" [alt]="ft" loading="lazy"
+                           (error)="onFileIconLoadError($event)">
+                      {{ ft.toUpperCase() }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Target Market -->
+          <section class="pd-section" *ngIf="getComponent('target-market') as targetMarket">
+            <div class="pd-section__head">
+              <h6 class="pd-section__title">{{ lang === 'ar' ? 'السوق المستهدف' : 'Target Market' }}</h6>
+              <span class="pd-section__eyebrow">{{ lang === 'ar' ? 'النطاق الجغرافي' : 'Geographic Reach' }}</span>
+            </div>
+            <div class="pd-detail-card">
+              <div class="pd-detail-card__header">
+                <span class="pd-detail-card__icon"><i class="ki-outline ki-geolocation fs-4"></i></span>
+                <div class="pd-detail-card__copy">
+                  <div class="pd-detail-card__title">{{ lang === 'ar' ? 'هيكل السوق' : 'Market Scope' }}</div>
+                  <div class="pd-detail-card__subtitle">
+                    {{ lang === 'ar' ? 'المناطق أو الدول المستهدفة لهذا المشروع.' : 'Regions or countries targeted by this project.' }}
+                  </div>
+                </div>
+              </div>
+              <div class="pd-detail-card__body">
+                <div class="pd-chip-wrap" *ngIf="targetMarket.objects?.length">
+                  <span class="pd-chip" *ngFor="let item of targetMarket.objects; trackBy: trackByIndex">
+                    <img *ngIf="targetMarket.type === 'country'"
+                         class="pd-chip__flag"
+                         [src]="getCountryFlagPath(item.flag)"
+                         [alt]="item.name"
+                         loading="lazy"
+                         (error)="onFlagLoadError($event)">
+                    {{ item.name }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Data Sources -->
+          <section class="pd-section" *ngIf="getComponent('data-sources-expected') as dataSources">
+            <div class="pd-section__head">
+              <h6 class="pd-section__title">{{ lang === 'ar' ? 'مصادر البيانات' : 'Data Sources' }}</h6>
+              <span class="pd-section__eyebrow">{{ lang === 'ar' ? 'منهجية البحث' : 'Research Inputs' }}</span>
+            </div>
+            <div class="pd-detail-card">
+              <div class="pd-detail-card__header">
+                <span class="pd-detail-card__icon"><i class="ki-outline ki-abstract-39 fs-4"></i></span>
+                <div class="pd-detail-card__copy">
+                  <div class="pd-detail-card__title">{{ lang === 'ar' ? 'مصدر البيانات المعتمد' : 'Preferred Data Source' }}</div>
+                  <div class="pd-detail-card__subtitle">
+                    {{ lang === 'ar' ? 'نوع البيانات المتوقع الاعتماد عليه.' : 'Expected data profile for this project.' }}
+                  </div>
+                </div>
+              </div>
+              <div class="pd-detail-card__body">
+                <div class="pd-chip-wrap">
+                  <span class="pd-chip pd-chip--primary">{{ getDataSourceLabel(dataSources) }}</span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Add-ons -->
+          <section class="pd-section" *ngIf="hasAddons()">
+            <div class="pd-section__head">
+              <h6 class="pd-section__title">{{ lang === 'ar' ? 'الإضافات' : 'Add-ons' }}</h6>
+              <span class="pd-section__eyebrow">{{ lang === 'ar' ? 'عناصر داعمة' : 'Supporting Scope' }}</span>
+            </div>
+            <div class="pd-addon-grid">
+              <div class="pd-addon-card" *ngIf="getAddon('kickoff-meeting') as kickoff">
+                <div class="pd-addon-card__head">
+                  <span class="pd-addon-card__icon"><i class="ki-outline ki-calendar-add fs-4"></i></span>
+                  <div class="pd-addon-card__title">{{ lang === 'ar' ? 'اجتماع البدء' : 'Kickoff Meeting' }}</div>
+                </div>
+                <div class="pd-detail-row" *ngIf="kickoff.date">
+                  <span class="pd-detail-row__label">{{ lang === 'ar' ? 'التاريخ' : 'Date' }}</span>
+                  <span class="pd-detail-row__value">{{ formatDate(kickoff.date) }}</span>
+                </div>
+              </div>
+
+              <div class="pd-addon-card" *ngIf="getAddon('survey-conduct') as survey">
+                <div class="pd-addon-card__head">
+                  <span class="pd-addon-card__icon"><i class="ki-outline ki-chart-line-up-2 fs-4"></i></span>
+                  <div class="pd-addon-card__title">{{ lang === 'ar' ? 'إجراء الاستبيان' : 'Survey Conduct' }}</div>
+                </div>
+                <div class="pd-chip-wrap" *ngIf="survey.scopes?.length">
+                  <span class="pd-chip" *ngFor="let s of survey.scopes; trackBy: trackByValue">
+                    {{ getFormattedValue(s) }}
+                  </span>
+                </div>
+                <div class="pd-detail-row" *ngIf="survey.parameters?.size">
+                  <span class="pd-detail-row__label">{{ lang === 'ar' ? 'الحجم' : 'Size' }}</span>
+                  <span class="pd-detail-row__value">{{ survey.parameters?.size }}</span>
+                </div>
+              </div>
+
+              <div class="pd-addon-card" *ngIf="getAddon('consulting-sessions') as sessions">
+                <div class="pd-addon-card__head">
+                  <span class="pd-addon-card__icon"><i class="ki-outline ki-people fs-4"></i></span>
+                  <div class="pd-addon-card__title">{{ lang === 'ar' ? 'جلسات استشارية' : 'Consulting Sessions' }}</div>
+                </div>
+                <div class="pd-chip-wrap">
+                  <span class="pd-chip" *ngFor="let s of sessions; trackBy: trackByIndex">{{ formatDate(s.date) }}</span>
+                </div>
+              </div>
+
+              <div class="pd-addon-card" *ngIf="getAddon('third-party-consultant') as thirdParty">
+                <div class="pd-addon-card__head">
+                  <span class="pd-addon-card__icon"><i class="ki-outline ki-profile-user fs-4"></i></span>
+                  <div class="pd-addon-card__title">{{ lang === 'ar' ? 'مستشار خارجي' : 'Third-Party Consultant' }}</div>
+                </div>
+                <div class="pd-chip-wrap">
+                  <ng-container *ngFor="let item of thirdParty; trackBy: trackByIndex">
+                    <span class="pd-chip" *ngIf="item?.date">{{ formatDate(item.date) }}</span>
+                  </ng-container>
+                </div>
+              </div>
+            </div>
+          </section>
+
+        </div>
+      </div>
+
+      <!-- Aside -->
+      <aside class="pd-aside">
+        <div class="pd-aside-card">
+          <div class="pd-aside-card__title">
+            {{ lang === 'ar' ? 'إجراءات المشروع' : 'Project Actions' }}
+          </div>
+          <p class="pd-aside-card__hint">
+            {{ lang === 'ar'
+              ? 'راجع تفاصيل مشروعك أو ابدأ عملية مطابقة جديدة مع الخبراء.'
+              : 'Review your project details or start a new matching process with experts.' }}
+          </p>
+
+          <section class="pd-action-panel">
+            <div class="pd-action-panel__head">
+              <div class="pd-action-panel__title">
+                {{ lang === 'ar' ? 'الخبراء المدعوون' : 'Invited Insighters' }}
+              </div>
+              <div class="pd-action-panel__subtitle">
+                {{ lang === 'ar'
+                  ? 'تابع حالة استجابات الخبراء لهذا المشروع.'
+                  : 'Track invited insighters and their response status for this project.' }}
+              </div>
+            </div>
+
+            <div class="pd-invite-list" *ngIf="hasInvitedInsighters(); else noInvitedInsighters">
+              <article class="pd-invite-card"
+                       *ngFor="let invite of invitedInsighters; trackBy: trackByInvite">
+                <div class="pd-invite-card__top">
+                  <a class="pd-invite-card__profile"
+                     [href]="getProfileUrl(invite.insighter?.uuid)"
+                     target="_blank"
+                     rel="noopener noreferrer">
+                    <div class="pd-invite-card__avatar">
+                      <img *ngIf="invite.insighter?.profile_photo_url"
+                           [src]="invite.insighter?.profile_photo_url"
+                           [alt]="invite.insighter?.name || 'Insighter'"
+                           loading="lazy">
+                      <span *ngIf="!invite.insighter?.profile_photo_url" class="pd-invite-card__avatar-fallback">
+                        {{ getInsighterInitials(invite) }}
+                      </span>
+                    </div>
+
+                    <div class="pd-invite-card__identity">
+                      <span class="pd-invite-card__name">{{ invite.insighter?.name || '-' }}</span>
+                      <span class="pd-invite-card__meta" *ngIf="invite.insighter?.country?.name">
+                        <img *ngIf="invite.insighter?.country?.flag"
+                             class="pd-invite-card__flag"
+                             [src]="getCountryFlagPath(invite.insighter?.country?.flag)"
+                             [alt]="invite.insighter?.country?.name || 'Country'"
+                             loading="lazy"
+                             (error)="onFlagLoadError($event)">
+                        {{ invite.insighter?.country?.name }}
+                      </span>
+                    </div>
+                  </a>
+
+                  <span class="badge pd-invite-card__status"
+                        [ngClass]="getInvitedStatusBadgeClass(invite)">
+                    {{ getInvitedStatusLabel(invite) }}
+                  </span>
+                </div>
+
+                <div class="pd-invite-card__footer">
+                  <span class="pd-invite-card__deadline" *ngIf="invite.deadline_offer">
+                    {{ lang === 'ar' ? 'موعد العرض:' : 'Offer deadline:' }} {{ formatDate(invite.deadline_offer) }}
+                  </span>
+
+                  <button *ngIf="canViewSubmittedOffer(invite)"
+                          type="button"
+                          class="pd-linkbtn"
+                          (click)="openProposalDrawer(invite)">
+                    {{ lang === 'ar' ? 'عرض العرض المقدم' : 'View Submitted Offer' }}
+                    <i class="ki-outline fs-7"
+                       [ngClass]="lang === 'ar' ? 'ki-arrow-left' : 'ki-arrow-right'"></i>
+                  </button>
+                </div>
+              </article>
+            </div>
+
+            <ng-template #noInvitedInsighters>
+              <div class="pd-action-panel__empty">
+                <i class="ki-outline ki-profile-circle fs-2 text-gray-400"></i>
+                <span>{{ lang === 'ar' ? 'لا توجد دعوات أو عروض مرسلة حتى الآن.' : 'No invited insighters or submitted offers yet.' }}</span>
+              </div>
+            </ng-template>
+          </section>
+
+          <button type="button"
+                  class="btn btn-info w-100 mt-3"
+                  disabled>
+            <i class="ki-outline ki-arrows-circle fs-6 me-1"></i>
+            {{ lang === 'ar' ? 'إعادة المطابقة' : 'Rematch' }}
+          </button>
+
+          <div class="pd-aside-table-wrap">
+            <table class="pd-aside-table">
+              <tbody>
+                <tr *ngIf="p.status">
+                  <th scope="row">{{ lang === 'ar' ? 'الحالة' : 'Status' }}</th>
+                  <td>
+                    <span class="badge" [ngClass]="getStatusBadgeClass(p.status)">{{ getStatusLabel(p.status) }}</span>
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row">{{ lang === 'ar' ? 'الخدمة' : 'Service' }}</th>
+                  <td>{{ p.service?.name || '-' }}</td>
+                </tr>
+                <tr>
+                  <th scope="row">{{ lang === 'ar' ? 'نوع المشروع' : 'Project Type' }}</th>
+                  <td>{{ getTypeLabel(p.type) }}</td>
+                </tr>
+                <tr>
+                  <th scope="row">{{ lang === 'ar' ? 'الموعد النهائي' : 'Deadline' }}</th>
+                  <td>{{ formatDate(p.deadline) }}</td>
+                </tr>
+                <tr>
+                  <th scope="row">{{ lang === 'ar' ? 'لغة المشروع' : 'Project Language' }}</th>
+                  <td>{{ getLanguageLabel(p.language) }}</td>
+                </tr>
+                <tr *ngIf="p.insighter_preferred_type">
+                  <th scope="row">{{ lang === 'ar' ? 'نوع الخبير المفضل' : 'Preferred Insighter' }}</th>
+                  <td>{{ getFormattedValue(p.insighter_preferred_type) }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </aside>
+
+    </div>
+  </ng-container>
+</div>
+
+<ng-template #typeIcon let-type>
+  <span class="pd-type__icon"
+        [class.pd-type__icon--adhoc]="type === 'ad_hoc'"
+        [class.pd-type__icon--framework]="type === 'frame_work_agreement'"
+        [class.pd-type__icon--urgent]="type === 'urgent_request'">
+    <ng-container [ngSwitch]="type">
+      <svg *ngSwitchCase="'ad_hoc'" width="18" height="18" viewBox="0 0 30 30" fill="none" aria-hidden="true">
+        <circle cx="15" cy="15" r="15" fill="#52D7FF" fill-opacity="0.14"/>
+        <path d="M21.4514 18.4413L21.3871 19.2642C21.2907 20.2478 21.2135 20.9999 19.4714 20.9999H11.3842C9.64208 20.9999 9.56494 20.2478 9.46851 19.2642L9.21136 16.0499C9.15994 15.5163 9.32708 15.0213 9.62922 14.642C9.63565 14.6356 9.63565 14.6356 9.64208 14.6292C9.99565 14.1985 10.5292 13.9285 11.1271 13.9285H19.7285C20.3264 13.9285 20.8535 14.1985 21.2007 14.6163C21.2071 14.6228 21.2135 14.6292 21.2135 14.6356C21.5285 15.0149 21.7021 15.5099 21.6442 16.0499" fill="#52D7FF" fill-opacity="0.14"/>
+        <path d="M21.4514 18.4413L21.3871 19.2642C21.2907 20.2478 21.2135 20.9999 19.4714 20.9999H11.3842C9.64208 20.9999 9.56494 20.2478 9.46851 19.2642L9.21136 16.0499C9.15994 15.5163 9.32708 15.0213 9.62922 14.642C9.63565 14.6356 9.63565 14.6356 9.64208 14.6292C9.99565 14.1985 10.5292 13.9285 11.1271 13.9285H19.7285C20.3264 13.9285 20.8535 14.1985 21.2007 14.6163C21.2071 14.6228 21.2135 14.6292 21.2135 14.6356C21.5285 15.0149 21.7021 15.5099 21.6442 16.0499" stroke="#0064E1" stroke-width="0.964286" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M9.96387 14.205V10.8943C9.96387 8.70854 10.5103 8.16211 12.696 8.16211H13.5124C14.3289 8.16211 14.5153 8.4064 14.8239 8.81782L15.6403 9.91068C15.846 10.1807 15.9682 10.3478 16.5146 10.3478H18.1539C20.3396 10.3478 20.886 10.8943 20.886 13.08V14.2307" fill="#52D7FF" fill-opacity="0.14"/>
+        <path d="M9.96387 14.205V10.8943C9.96387 8.70854 10.5103 8.16211 12.696 8.16211H13.5124C14.3289 8.16211 14.5153 8.4064 14.8239 8.81782L15.6403 9.91068C15.846 10.1807 15.9682 10.3478 16.5146 10.3478H18.1539C20.3396 10.3478 20.886 10.8943 20.886 13.08V14.2307" stroke="#0064E1" stroke-width="0.964286" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M13.7769 17.7856H17.0811" stroke="#0064E1" stroke-width="0.964286" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <svg *ngSwitchCase="'frame_work_agreement'" width="18" height="18" viewBox="0 0 30 30" fill="none" aria-hidden="true">
+        <circle cx="15" cy="15" r="15" fill="#FF8BF9" fill-opacity="0.13"/>
+        <path d="M12.0623 12.9583C13.1094 12.9583 13.9582 12.1095 13.9582 11.0625C13.9582 10.0154 13.1094 9.16663 12.0623 9.16663C11.0153 9.16663 10.1665 10.0154 10.1665 11.0625C10.1665 12.1095 11.0153 12.9583 12.0623 12.9583Z" stroke="#B0009E" stroke-width="0.875" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M11.9165 20.8334C12.883 20.8334 13.6665 20.0499 13.6665 19.0834C13.6665 18.1169 12.883 17.3334 11.9165 17.3334C10.95 17.3334 10.1665 18.1169 10.1665 19.0834C10.1665 20.0499 10.95 20.8334 11.9165 20.8334Z" stroke="#B0009E" stroke-width="0.875" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M20.0835 20.8334C21.05 20.8334 21.8335 20.0499 21.8335 19.0834C21.8335 18.1169 21.05 17.3334 20.0835 17.3334C19.117 17.3334 18.3335 18.1169 18.3335 19.0834C18.3335 20.0499 19.117 20.8334 20.0835 20.8334Z" stroke="#B0009E" stroke-width="0.875" stroke-linecap="round" stroke-linejoin="round"/>
+        <g opacity="0.4">
+          <path d="M11.9165 13.25V17.3333" stroke="#B0009E" stroke-width="0.875" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M11.9922 13.25C12.2547 14.2708 13.188 15.0292 14.2905 15.0233L16.2914 15.0175C17.8197 15.0117 19.1205 15.9917 19.5989 17.3567" stroke="#B0009E" stroke-width="0.875" stroke-linecap="round" stroke-linejoin="round"/>
+        </g>
+      </svg>
+      <svg *ngSwitchCase="'urgent_request'" width="18" height="18" viewBox="0 0 30 30" fill="none" aria-hidden="true">
+        <circle cx="15" cy="15" r="15" fill="#FFAF47" fill-opacity="0.13"/>
+        <path d="M20.1043 15.2292C20.1043 18.0467 17.8177 20.3333 15.0002 20.3333C12.1827 20.3333 9.896 18.0467 9.896 15.2292C9.896 12.4117 12.1827 10.125 15.0002 10.125C17.8177 10.125 20.1043 12.4117 20.1043 15.2292Z" stroke="#E08700" stroke-width="0.875" stroke-linecap="round" stroke-linejoin="round"/>
+        <path opacity="0.8" d="M15 12.1666V15.0833" stroke="#E08700" stroke-width="0.875" stroke-linecap="round" stroke-linejoin="round"/>
+        <path opacity="0.69" d="M13.25 8.66663H16.75" stroke="#E08700" stroke-width="0.875" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <i *ngSwitchDefault class="ki-outline ki-briefcase fs-7 text-info"></i>
+    </ng-container>
+  </span>
+</ng-template>
+
+<p-sidebar [(visible)]="proposalDrawerVisible"
+           position="right"
+           appendTo="body"
+           [modal]="true"
+           [dismissible]="true"
+           [blockScroll]="false"
+           [baseZIndex]="1300"
+           [showCloseIcon]="false"
+           [style]="{ width: '66vw', maxWidth: '1180px' }"
+           styleClass="pd-proposal-drawer"
+           (onHide)="closeProposalDrawer()">
+  <ng-container *ngIf="selectedInvite as invite">
+    <div class="pd-proposal-drawer__wrap">
+      <div class="pd-proposal-drawer__main">
+        <div class="pd-proposal-drawer__topbar">
+          <button type="button"
+                  class="pd-iconbtn"
+                  (click)="closeProposalDrawer()"
+                  [attr.aria-label]="lang === 'ar' ? 'رجوع' : 'Back'">
+            <i class="ki-outline fs-3" [ngClass]="getBackIcon()"></i>
+          </button>
+        </div>
+
+        <div class="pd-proposal-drawer__body">
+          <div class="pd-proposal-drawer__hero">
+            <div class="pd-proposal-drawer__eyebrow">
+              <span class="pd-proposal-drawer__pill">
+                {{ lang === 'ar' ? 'عرض مقدم' : 'Submitted Proposal' }}
+              </span>
+              <span class="badge" [ngClass]="getInvitedStatusBadgeClass(invite)">
+                {{ getInvitedStatusLabel(invite) }}
+              </span>
+            </div>
+
+            <div class="pd-proposal-drawer__person">
+              <div class="pd-proposal-drawer__avatar">
+                <img *ngIf="invite.insighter?.profile_photo_url"
+                     [src]="invite.insighter?.profile_photo_url"
+                     [alt]="invite.insighter?.name || 'Insighter'"
+                     loading="lazy">
+                <span *ngIf="!invite.insighter?.profile_photo_url" class="pd-proposal-drawer__avatar-fallback">
+                  {{ getInsighterInitials(invite) }}
+                </span>
+              </div>
+
+              <div class="pd-proposal-drawer__person-copy">
+                <h3 class="pd-proposal-drawer__title">{{ invite.insighter?.name || '-' }}</h3>
+                <a class="pd-proposal-drawer__profile-link"
+                   [href]="getProfileUrl(invite.insighter?.uuid)"
+                   target="_blank"
+                   rel="noopener noreferrer">
+                  {{ lang === 'ar' ? 'فتح الملف الشخصي' : 'Open Profile' }}
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <section class="pd-proposal-drawer__section">
+            <div class="pd-section__head">
+              <h6 class="pd-section__title">{{ lang === 'ar' ? 'الرسالة التعريفية' : 'Cover Letter' }}</h6>
+              <span class="pd-section__eyebrow">{{ lang === 'ar' ? 'محتوى العرض' : 'Proposal Note' }}</span>
+            </div>
+            <div class="pd-proposal-drawer__letter">
+              {{ invite.offer?.cover_letter || (lang === 'ar' ? 'لا توجد رسالة مرفقة.' : 'No cover letter provided.') }}
+            </div>
+          </section>
+
+          <section class="pd-proposal-drawer__section">
+            <div class="pd-section__head">
+              <h6 class="pd-section__title">{{ lang === 'ar' ? 'تفاصيل التسعير' : 'Commercial Details' }}</h6>
+              <span class="pd-section__eyebrow">{{ lang === 'ar' ? 'سعر ومدة' : 'Price & Time' }}</span>
+            </div>
+
+            <div class="pd-proposal-drawer__stats">
+              <div class="pd-proposal-drawer__stat">
+                <span class="pd-proposal-drawer__stat-label">{{ lang === 'ar' ? 'السعر المقترح' : 'Proposed Price' }}</span>
+                <span class="pd-proposal-drawer__stat-value">{{ formatPrice(invite.offer?.proposed_price) }}</span>
+              </div>
+              <div class="pd-proposal-drawer__stat">
+                <span class="pd-proposal-drawer__stat-label">{{ lang === 'ar' ? 'الدفعة الأولى' : 'Down Payment' }}</span>
+                <span class="pd-proposal-drawer__stat-value">{{ formatPrice(invite.offer?.down_payment) }}</span>
+              </div>
+              <div class="pd-proposal-drawer__stat">
+                <span class="pd-proposal-drawer__stat-label">{{ lang === 'ar' ? 'الدفعة النهائية' : 'Final Payment' }}</span>
+                <span class="pd-proposal-drawer__stat-value">{{ formatPrice(invite.offer?.final_payment) }}</span>
+              </div>
+              <div class="pd-proposal-drawer__stat">
+                <span class="pd-proposal-drawer__stat-label">{{ lang === 'ar' ? 'الساعات التقديرية' : 'Estimated Hours' }}</span>
+                <span class="pd-proposal-drawer__stat-value">{{ getEstimatedHours(invite.offer?.estimated_hours) }}</span>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+
+      <aside class="pd-proposal-drawer__aside">
+        <div class="pd-proposal-drawer__aside-card">
+          <div class="pd-proposal-drawer__aside-title">
+            {{ lang === 'ar' ? 'إجراء العرض' : 'Proposal Action' }}
+          </div>
+          <p class="pd-proposal-drawer__aside-hint">
+            {{ lang === 'ar'
+              ? 'يمكنك مراجعة العرض والقبول به عند تفعيل الإجراء لاحقاً.'
+              : 'You can review this proposal and accept it once the action is enabled.' }}
+          </p>
+
+          <button type="button"
+                  class="btn btn-info w-100"
+                  disabled>
+            <i class="ki-outline ki-check fs-6 me-1"></i>
+            {{ lang === 'ar' ? 'قبول العرض' : 'Accept Proposal' }}
+          </button>
+
+          <div class="pd-aside-table-wrap">
+            <table class="pd-aside-table">
+              <tbody>
+                <tr>
+                  <th scope="row">{{ lang === 'ar' ? 'الحالة' : 'Status' }}</th>
+                  <td>
+                    <span class="badge" [ngClass]="getInvitedStatusBadgeClass(invite)">
+                      {{ getInvitedStatusLabel(invite) }}
+                    </span>
+                  </td>
+                </tr>
+                <tr *ngIf="invite.deadline_offer">
+                  <th scope="row">{{ lang === 'ar' ? 'موعد العرض' : 'Offer Deadline' }}</th>
+                  <td>{{ formatDate(invite.deadline_offer) }}</td>
+                </tr>
+                <tr>
+                  <th scope="row">{{ lang === 'ar' ? 'الساعات' : 'Hours' }}</th>
+                  <td>{{ getEstimatedHours(invite.offer?.estimated_hours) }}</td>
+                </tr>
+                <tr>
+                  <th scope="row">{{ lang === 'ar' ? 'السعر' : 'Price' }}</th>
+                  <td>{{ formatPrice(invite.offer?.proposed_price) }}</td>
+                </tr>
+                <tr>
+                  <th scope="row">{{ lang === 'ar' ? 'الدفعة الأولى' : 'Down Payment' }}</th>
+                  <td>{{ formatPrice(invite.offer?.down_payment) }}</td>
+                </tr>
+                <tr>
+                  <th scope="row">{{ lang === 'ar' ? 'الدفعة النهائية' : 'Final Payment' }}</th>
+                  <td>{{ formatPrice(invite.offer?.final_payment) }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </ng-container>
+</p-sidebar>

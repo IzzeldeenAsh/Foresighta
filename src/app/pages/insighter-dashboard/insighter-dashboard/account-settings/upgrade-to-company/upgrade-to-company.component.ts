@@ -49,8 +49,7 @@ import { GuidelinesService } from "src/app/_fake/services/guidelines/guidelines.
 })
 export class UpgradeToCompanyComponent
   extends BaseComponent
-  implements OnInit, OnDestroy
-{
+  implements OnInit, OnDestroy {
   form: FormGroup;
   logoPreview: string | ArrayBuffer | null = null;
   gettingCodeLoader = false;
@@ -82,13 +81,13 @@ export class UpgradeToCompanyComponent
   isLoading$: Observable<boolean> = of(false);
   lang: string = 'en';
   countries: Country[] = [];
-  
+
   // Document types for certifications
   documentTypes: Document[] = [];
   isLoadingDocumentTypes: boolean = false;
   documentTypesError: string = "";
   fizeSizeMessages: Message[] = [];
-  
+
   // API error handling
   apiErrorMessages: string[] = [];
   showApiErrors: boolean = false;
@@ -117,10 +116,10 @@ export class UpgradeToCompanyComponent
   ngOnInit(): void {
     // Initialize form first
     this.initForm();
-    
+
     // Setup window resize handling
     this.windowResize();
-    
+
     // Load all required data
     this.initApiCalls();
     this.loadDocumentTypes();
@@ -156,11 +155,11 @@ export class UpgradeToCompanyComponent
     const websiteChangesSubscr = this.form.get('website')?.valueChanges.subscribe(() => {
       this.validateDomainMatching();
     });
-    
+
     const emailChangesSubscr = this.form.get('companyEmail')?.valueChanges.subscribe(() => {
       this.validateDomainMatching();
     });
-    
+
     if (websiteChangesSubscr) this.unsubscribe.push(websiteChangesSubscr);
     if (emailChangesSubscr) this.unsubscribe.push(emailChangesSubscr);
   }
@@ -179,20 +178,20 @@ export class UpgradeToCompanyComponent
         // Process consulting fields and industries
         this.listOfConsultingFields = results.consultingFields;
         this.nodes = results.isicCodes;
-        
+
         // Process countries with error handling
         this.countries = results.countries.map(country => ({
           ...country,
           showFlag: true
         }));
-        
+
         // Set loading states
         this.isLoadingFields = false;
         this.isLoading$ = of(false);
-        
+
         // Set default country from profile in a controlled manner
         this.setDefaultCountryFromProfile(results.profile);
-        
+
         // Force change detection after all data is set
         this.cdr.detectChanges();
       },
@@ -207,16 +206,16 @@ export class UpgradeToCompanyComponent
   }
 
   private handleApiError(message: string): void {
-    this.messageService.add({ 
-      severity: 'error', 
-      summary: 'Error', 
+    this.messageService.add({
+      severity: 'error',
+      summary: 'Error',
       detail: message
     });
   }
 
   private loadDocumentTypes() {
     this.isLoadingDocumentTypes = true;
-    
+
     // This screen is for upgrading to company (corporate) account.
     const docTypesSub = this.documentsService.getDocumentsTypes("corporate").subscribe({
       next: (types) => {
@@ -230,7 +229,7 @@ export class UpgradeToCompanyComponent
         console.error(error);
       },
     });
-    
+
     this.unsubscribe.push(docTypesSub);
   }
 
@@ -252,7 +251,7 @@ export class UpgradeToCompanyComponent
     const resizeSubscription = screenwidth$.subscribe((width) => {
       this.dialogWidth = width < 768 ? "100vw" : "70vw";
     });
-    
+
     this.unsubscribe.push(resizeSubscription);
   }
 
@@ -268,10 +267,10 @@ export class UpgradeToCompanyComponent
         return;
       }
     }
-    
+
     this.isLoadingAgreement = true;
     this.showAgreementDialog = true;
-    
+
     this.guidelinesService.getCurrentGuidelineByType('company_agreement').subscribe({
       next: (data) => {
         this.agreementContent = data;
@@ -280,15 +279,15 @@ export class UpgradeToCompanyComponent
       error: (error) => {
         console.error('Error loading agreement:', error);
         this.isLoadingAgreement = false;
-        this.messageService.add({ 
-          severity: 'error', 
-          summary: 'Error', 
-          detail: 'Failed to load agreement. Please try again.' 
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Failed to load agreement. Please try again.'
         });
       }
     });
   }
-  
+
   // Accept the agreement terms
   acceptAgreement() {
     this.form.get('agreement')?.setValue(true);
@@ -330,19 +329,19 @@ export class UpgradeToCompanyComponent
         </body>
         </html>
       `;
-      
+
       printWindow.document.open();
       printWindow.document.write(printContent);
       printWindow.document.close();
-      
+
       setTimeout(() => {
         printWindow.print();
       }, 500);
     } else {
-      this.messageService.add({ 
-        severity: 'error', 
-        summary: 'Error', 
-        detail: 'Could not open print window. Please check your browser settings.' 
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Could not open print window. Please check your browser settings.'
       });
     }
   }
@@ -352,10 +351,10 @@ export class UpgradeToCompanyComponent
     if (this.agreementContent) {
       const termsTitle = this.agreementContent.name || 'Company-Terms-of-Service';
       const termsText = this.stripHtmlTags(this.agreementContent.guideline);
-      
+
       // Create a Blob with the text content
       const blob = new Blob([termsText], { type: 'text/plain' });
-      
+
       // Create a download link and trigger the download
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -363,7 +362,7 @@ export class UpgradeToCompanyComponent
       a.download = `${termsTitle.replace(/\s+/g, '-')}.txt`;
       document.body.appendChild(a);
       a.click();
-      
+
       // Clean up
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
@@ -444,7 +443,7 @@ export class UpgradeToCompanyComponent
   onCertFileSelected(event: any) {
     const files: FileList = event.target.files;
     this.handleCertFiles(files);
-    
+
     // Reset the file input to allow re-uploading the same file if needed
     if (this.certFileInput) {
       this.certFileInput.nativeElement.value = "";
@@ -558,14 +557,14 @@ export class UpgradeToCompanyComponent
       // Check image dimensions for high quality
       const img = new Image();
       const reader = new FileReader();
-      
+
       reader.onload = (e) => {
         if (e.target) {
           img.src = e.target.result as string;
           img.onload = () => {
             const minWidth = 500; // Minimum width in pixels
             const minHeight = 300; // Minimum height in pixels
-            
+
             if (img.width < minWidth || img.height < minHeight) {
               this.messageService.add({
                 severity: "error",
@@ -579,7 +578,7 @@ export class UpgradeToCompanyComponent
               }
               return;
             }
-            
+
             // Image passed all quality checks
             this.form.patchValue({ logo: file });
             this.form.get("logo")?.updateValueAndValidity();
@@ -587,7 +586,7 @@ export class UpgradeToCompanyComponent
           };
         }
       };
-      
+
       reader.readAsDataURL(file);
     }
   }
@@ -619,7 +618,7 @@ export class UpgradeToCompanyComponent
         .subscribe({
           next: (response) => {
             this.messageService.add({
-              severity: "success", 
+              severity: "success",
               summary: "Success",
               detail: "Verification email sent successfully.",
             });
@@ -632,7 +631,7 @@ export class UpgradeToCompanyComponent
               error?.error?.message || "Failed to send verification code.";
             this.messageService.add({
               severity: "error",
-              summary: "Error", 
+              summary: "Error",
               detail: errorMsg,
             });
             this.gettingCodeLoader = false;
@@ -710,13 +709,13 @@ export class UpgradeToCompanyComponent
 
   onSubmit() {
     this.attemptedSubmit = true;
-    
+
     // Mark all form controls as touched to display validation errors
     this.markFormGroupTouched(this.form);
-    
+
     if (this.form.invalid) {
       // Scroll to the top to show validation errors
-      window.scrollTo({top: 0, behavior: 'smooth'});
+      window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
 
@@ -726,7 +725,7 @@ export class UpgradeToCompanyComponent
     formData.append("logo", this.form.get("logo")?.value);
     formData.append("address", this.form.get("address")?.value);
     formData.append("country", this.form.get("country")?.value);
-    
+
     // Add phone and phone code separately
     if (this.form.get("company_phone")?.value) {
       const phoneNumber = this.form.get("company_phone")?.value;
@@ -741,7 +740,7 @@ export class UpgradeToCompanyComponent
         formData.append("phone_code", cleanPhoneCode);
       }
     }
-    
+
     formData.append("company_agreement", "true"); // Add company agreement
 
     const verificationMethod = this.form.get("verificationMethod")?.value;
@@ -758,61 +757,61 @@ export class UpgradeToCompanyComponent
     }
 
     // Add consulting fields - standard fields and custom 'other' fields
-    const consultingFieldList = this.form.get('consultingFields')?.value.filter((node: any) => 
+    const consultingFieldList = this.form.get('consultingFields')?.value.filter((node: any) =>
       typeof node.key === 'number'
     );
-    
-    const otherConsultingFields = this.form.get('consultingFields')?.value.filter((node: any) => 
-      typeof node.key === 'string' && 
-      node.key !== 'selectAll' && 
-      node.data && 
-      node.data.customInput !== undefined && 
+
+    const otherConsultingFields = this.form.get('consultingFields')?.value.filter((node: any) =>
+      typeof node.key === 'string' &&
+      node.key !== 'selectAll' &&
+      node.data &&
+      node.data.customInput !== undefined &&
       node.data.customInput !== null
     );
-    
-    if(consultingFieldList && consultingFieldList.length > 0){
+
+    if (consultingFieldList && consultingFieldList.length > 0) {
       consultingFieldList.forEach((field: any) => {
         formData.append("consulting_field[]", field.key.toString());
       });
     }
-    
-    if(otherConsultingFields && otherConsultingFields.length > 0){
+
+    if (otherConsultingFields && otherConsultingFields.length > 0) {
       otherConsultingFields.forEach((field: any, index: number) => {
-        formData.append(`suggest_consulting_fields[${index}][parent_id]`, 
+        formData.append(`suggest_consulting_fields[${index}][parent_id]`,
           field.parent && field.parent.key ? (field.parent.key === "selectAll" ? "0" : field.parent.key) : "0");
         formData.append(`suggest_consulting_fields[${index}][name][en]`, field.data.customInput);
         formData.append(`suggest_consulting_fields[${index}][name][ar]`, field.data.customInput);
       });
     }
-    
+
     // Add industries - standard fields and custom 'other' fields
-    const industriesList = this.form.get('isicCodes')?.value.filter((node: any) => 
+    const industriesList = this.form.get('isicCodes')?.value.filter((node: any) =>
       typeof node.key === 'number'
     );
-    
-    const otherIndustriesFields = this.form.get('isicCodes')?.value.filter((node: any) => 
-      typeof node.key === 'string' && 
-      node.key !== 'selectAll' && 
-      node.data && 
-      node.data.customInput !== undefined && 
+
+    const otherIndustriesFields = this.form.get('isicCodes')?.value.filter((node: any) =>
+      typeof node.key === 'string' &&
+      node.key !== 'selectAll' &&
+      node.data &&
+      node.data.customInput !== undefined &&
       node.data.customInput !== null
     );
-    
-    if(industriesList && industriesList.length > 0){
+
+    if (industriesList && industriesList.length > 0) {
       industriesList.forEach((code: any) => {
         formData.append("industries[]", code.key.toString());
       });
     }
-    
-    if(otherIndustriesFields && otherIndustriesFields.length > 0){
+
+    if (otherIndustriesFields && otherIndustriesFields.length > 0) {
       otherIndustriesFields.forEach((field: any, index: number) => {
-        formData.append(`suggest_industries[${index}][parent_id]`, 
+        formData.append(`suggest_industries[${index}][parent_id]`,
           field.parent && field.parent.key ? (field.parent.key === "selectAll" ? "0" : field.parent.key) : "0");
         formData.append(`suggest_industries[${index}][name][en]`, field.data.customInput);
         formData.append(`suggest_industries[${index}][name][ar]`, field.data.customInput);
       });
     }
-    
+
     // Add certifications
     if (this.certifications.controls.length > 0) {
       this.certifications.controls.forEach((control: any, index: number) => {
@@ -864,9 +863,9 @@ export class UpgradeToCompanyComponent
       // Check for message property
       if (error.error.message) {
         if (error.error.type === "warning") {
-          this.showWarn('Error',error.error.message);
+          this.showWarn('Error', error.error.message);
         } else {
-          this.showError('Error',error.error.message);
+          this.showError('Error', error.error.message);
         }
       }
 
@@ -880,9 +879,9 @@ export class UpgradeToCompanyComponent
             // Handle 'common' errors or general errors not tied to a specific field
             if (key === 'common') {
               if (error.error.type === "warning") {
-                this.showWarn('Error',messages.join(", "));
+                this.showWarn('Error', messages.join(", "));
               } else {
-                this.showError('Error',messages.join(", "));
+                this.showError('Error', messages.join(", "));
               }
               this.showApiErrors = true;
             } else {
@@ -909,10 +908,10 @@ export class UpgradeToCompanyComponent
 
     // Scroll to the top to show validation errors
     if (this.showApiErrors) {
-      window.scrollTo({top: 0, behavior: 'smooth'});
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   }
-  
+
   /**
    * Recursively marks all controls in a form group as touched
    * @param formGroup - The form group to process
@@ -947,21 +946,21 @@ export class UpgradeToCompanyComponent
 
     // Extract country ID from profile with better error handling
     const countryId = profile?.data?.country_id || profile?.country_id;
-    
+
     if (!countryId) {
       return;
     }
 
     // Find the country in the list
     const userCountry = this.countries.find(country => country.id === countryId);
-    
+
     if (userCountry) {
       // Set the country value directly without multiple timeouts
       const countryControl = this.form.get('country');
       if (countryControl) {
         countryControl.setValue(userCountry.id);
         countryControl.markAsTouched();
-        
+
         // Trigger change detection only once
         this.cdr.markForCheck();
       }
@@ -978,16 +977,16 @@ export class UpgradeToCompanyComponent
       if (!control.value) {
         return null; // Don't validate empty values (required validator handles that)
       }
-      
+
       const website = control.value.trim();
-      
+
       // Basic URL format validation
       const urlPattern = /^(https?:\/\/)?(www\.)?[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.[a-zA-Z]{2,}(\.[a-zA-Z]{2,})?(\S*)?$/;
-      
+
       if (!urlPattern.test(website)) {
         return { invalidWebsite: true };
       }
-      
+
       return null;
     };
   }
@@ -997,51 +996,51 @@ export class UpgradeToCompanyComponent
     if (this.form.get('verificationMethod')?.value !== 'websiteEmail') {
       return true; // Not using website/email verification method
     }
-    
+
     const website = this.form.get('website')?.value;
     const email = this.form.get('companyEmail')?.value;
-    
+
     if (!website || !email) {
       return false; // Missing required fields
     }
-    
+
     const websiteDomain = this.extractDomainFromWebsite(website);
     const emailDomain = this.extractDomainFromEmail(email);
-    
+
     return !!(websiteDomain && emailDomain && emailDomain.endsWith(websiteDomain));
   }
-  
+
   // Extract domain from website URL, handling various formats
   extractDomainFromWebsite(website: string): string | null {
     if (!website) return null;
-    
+
     // Clean up the website input
     let domain = website.trim().toLowerCase();
-    
+
     // Remove protocol (http://, https://)
     domain = domain.replace(/^(https?:\/\/)/i, '');
-    
+
     // Remove www. prefix if present
     domain = domain.replace(/^www\./i, '');
-    
+
     // Remove path, query parameters, and hash
     domain = domain.split('/')[0];
     domain = domain.split('?')[0];
     domain = domain.split('#')[0];
-    
+
     // Remove port if present
     domain = domain.split(':')[0];
-    
+
     return domain || null;
   }
-  
+
   // Extract domain from email address
   extractDomainFromEmail(email: string): string | null {
     if (!email || !email.includes('@')) return null;
-    
+
     return email.split('@')[1].toLowerCase();
   }
-  
+
   // Check if email contains @ symbol for early validation
   hasEmailAtSymbol(): boolean {
     const email = this.form.get('companyEmail')?.value;

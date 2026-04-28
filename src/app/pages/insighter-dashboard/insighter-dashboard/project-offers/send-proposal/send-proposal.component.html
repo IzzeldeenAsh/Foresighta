@@ -1,0 +1,698 @@
+<div class="d-flex flex-column gap-4">
+
+  <p-progressBar *ngIf="isLoading" mode="indeterminate" [style]="{ height: '3px' }">
+  </p-progressBar>
+
+  <div *ngIf="!isLoading && !proposal" class="sp-empty">
+    <i class="ki-outline ki-information-2 fs-3x text-gray-400 mb-3"></i>
+    <p class="text-gray-500 fs-6">
+      {{ lang === 'ar' ? 'تعذر تحميل تفاصيل المقترح.' : 'Could not load proposal details.' }}
+    </p>
+  </div>
+
+  <ng-container *ngIf="proposal as p">
+    <div class="sp-wrap">
+
+      <!-- Left: Proposal form -->
+      <div class="sp-main">
+
+        <!-- Header inside card with back button -->
+        <div class="sp-card-header">
+          <button type="button" class="sp-iconbtn" (click)="goBack()">
+            <i class="ki-outline fs-3" [ngClass]="getBackIcon()"></i>
+          </button>
+          <div class="sp-card-header__text">
+            <span class="sp-card-header__eyebrow">
+              {{ lang === 'ar' ? 'إرسال عرض' : 'Send a proposal' }}
+            </span>
+            <span class="sp-card-header__title">{{ p.project?.title || (lang === 'ar' ? 'المقترح' : 'Proposal')
+              }}</span>
+          </div>
+        </div>
+
+        <div class="sp-body">
+
+          <!-- Proposal Details (Cover Letter) -->
+          <section class="sp-section">
+            <div class="sp-field">
+              <label class="sp-field__label" for="sp-cover-letter">
+                {{ lang === 'ar' ? 'الرسالة التعريفية' : 'Cover Letter' }}
+              </label>
+              <textarea id="sp-cover-letter" class="sp-input sp-textarea" rows="8" [(ngModel)]="coverLetter"
+                [placeholder]="lang === 'ar'
+                  ? 'اكتب رسالتك التعريفية وكيف ستتعامل مع هذا المشروع...'
+                  : 'Introduce yourself and explain how you will approach this project...'">
+              </textarea>
+              <div class="sp-field__hint">
+                {{ lang === 'ar'
+                ? 'وضّح خبراتك والمنهجية التي ستتبعها للوصول لأفضل النتائج.'
+                : 'Highlight your experience and the approach you’ll take to deliver the best result.' }}
+              </div>
+            </div>
+          </section>
+
+          <!-- Pricing & Estimated Working Time -->
+          <section class="sp-section">
+            <div class="sp-section__head">
+              <h3 class="sp-section__title">{{ lang === 'ar' ? 'التسعير والمدة' : 'Pricing & Estimated Time' }}</h3>
+              <p class="sp-section__sub">
+                {{ lang === 'ar'
+                ? 'حدّد أسلوب التقدير ثم راجع السعر النهائي.'
+                : 'Choose how you want to estimate the work, then review the final price.' }}
+              </p>
+            </div>
+
+            <!-- Unit toggle -->
+            <div class="sp-field">
+              <label class="sp-field__label">
+                {{ lang === 'ar' ? 'تقدير وقت العمل' : 'Estimated Working Time' }}
+              </label>
+              <div class="sp-toggle" role="tablist">
+                <button type="button" role="tab" class="sp-toggle__btn" [class.is-active]="estimateUnit === 'days'"
+                  (click)="setEstimateUnit('days')">
+                  <i class="ki-outline ki-calendar fs-6"></i>
+                  {{ lang === 'ar' ? 'أيام' : 'Days' }}
+                </button>
+                <button type="button" role="tab" class="sp-toggle__btn" [class.is-active]="estimateUnit === 'hours'"
+                  (click)="setEstimateUnit('hours')">
+                  <i class="ki-outline ki-time fs-6"></i>
+                  {{ lang === 'ar' ? 'ساعات' : 'Hours' }}
+                </button>
+              </div>
+            </div>
+
+            <!-- Amount input + suffix -->
+            <div class="sp-field">
+              <label class="sp-field__label" for="sp-estimate-amount">
+                {{ estimateUnit === 'days'
+                ? (lang === 'ar' ? 'عدد الأيام' : 'Number of Days')
+                : (lang === 'ar' ? 'عدد الساعات' : 'Number of Hours') }}
+              </label>
+              <div class="sp-input-group">
+                <input id="sp-estimate-amount" type="number" min="1" step="1" class="sp-input"
+                  [(ngModel)]="estimateAmount" (ngModelChange)="onEstimateAmountChange()"
+                  [placeholder]="estimateUnit === 'days' ? '0' : '0'" />
+                <span class="sp-input-group__suffix" *ngIf="estimateUnit === 'days'">
+                  {{ lang === 'ar' ? '8 ساعات/يوم' : '8 hrs / Day' }}
+                </span>
+                <span class="sp-input-group__suffix" *ngIf="estimateUnit === 'hours'">
+                  {{ lang === 'ar' ? 'ساعة' : 'hrs' }}
+                </span>
+              </div>
+              <div class="sp-field__hint" *ngIf="estimateUnit === 'days' && totalHours > 0">
+                {{ lang === 'ar' ? 'إجمالي الساعات' : 'Total hours' }}:
+                <strong>{{ totalHours }}</strong>
+                {{ lang === 'ar' ? 'ساعة' : 'hrs' }}
+              </div>
+            </div>
+
+            <!-- Hourly rate (read-only display) -->
+            <div class="sp-rate-row">
+              <div class="sp-rate-row__label">
+                <i class="ki-outline ki-dollar fs-4 text-info"></i>
+                <span>{{ lang === 'ar' ? 'سعر الساعة' : 'Your Hourly Rate' }}</span>
+              </div>
+              <div class="sp-rate-row__value">{{ formatPrice(hourlyRate) }}</div>
+            </div>
+
+            <!-- Final Price -->
+            <div class="sp-field">
+              <label class="sp-field__label" for="sp-final-price">
+                {{ lang === 'ar' ? 'السعر النهائي' : 'Final Price' }}
+              </label>
+              <div class="sp-input-group">
+                <span class="sp-input-group__prefix">$</span>
+                <input id="sp-final-price" type="number" min="0" step="0.01" class="sp-input sp-input--price"
+                  [(ngModel)]="proposedPrice" (input)="onProposedPriceManualChange()" placeholder="0.00" />
+                <span class="sp-input-group__suffix sp-input-group__suffix--muted">USD</span>
+              </div>
+              <div class="sp-field__hint" *ngIf="totalHours > 0">
+                {{ lang === 'ar' ? 'مقترح' : 'Suggested' }}:
+                <strong>{{ formatPrice(suggestedPrice) }}</strong>
+                ({{ totalHours }} {{ lang === 'ar' ? 'ساعة' : 'hrs' }} × {{ formatPrice(hourlyRate) }})
+              </div>
+            </div>
+          </section>
+
+          <!-- Earnings summary -->
+          <section class="sp-summary">
+            <div class="sp-summary__row">
+              <span class="sp-summary__label">{{ lang === 'ar' ? 'إجمالي العرض' : 'Total Proposal' }}</span>
+              <span class="sp-summary__value">{{ formatPrice(proposedPrice || 0) }}</span>
+            </div>
+            <div class="sp-summary__row sp-summary__row--muted">
+              <span class="sp-summary__label">{{ lang === 'ar' ? 'إجمالي الساعات' : 'Total Hours' }}</span>
+              <span class="sp-summary__value">{{ totalHours || 0 }} {{ lang === 'ar' ? 'ساعة' : 'hrs' }}</span>
+            </div>
+          </section>
+
+          <!-- Actions -->
+          <div class="sp-actions">
+            <button type="button" class="btn btn-light" [disabled]="isSubmitting" (click)="goBack()">
+              {{ lang === 'ar' ? 'إلغاء' : 'Cancel' }}
+            </button>
+            <button type="button" class="btn btn-info" [disabled]="isSubmitDisabled()" (click)="submitProposal()">
+              <i class="ki-outline ki-send fs-6 me-1" *ngIf="!isSubmitting"></i>
+              {{ isSubmitting
+              ? (lang === 'ar' ? 'جارٍ الإرسال...' : 'Submitting...')
+              : (lang === 'ar' ? 'إرسال العرض' : 'Submit Proposal') }}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Project summary aside -->
+      <aside class="sp-aside">
+        <div class="sp-aside-card">
+          <div class="sp-aside-card__title">
+            {{ lang === 'ar' ? 'ملخص المشروع' : 'Project Summary' }}
+          </div>
+
+          <div class="sp-aside-card__hero">
+            <span *ngIf="p.project?.type" class="sp-aside-pill">
+              {{ getTypeLabel(p.project?.type) }}
+            </span>
+            <span *ngIf="p.status" class="badge ms-2" [ngClass]="getStatusBadgeClass(p.status)">
+              {{ getStatusLabel(p.status) }}
+            </span>
+          </div>
+
+          <h4 class="sp-aside-card__name" *ngIf="p.project?.title">{{ p.project?.title }}</h4>
+
+          <p class="sp-aside-card__desc" *ngIf="p.project?.service_prompt">
+            {{ p.project?.service_prompt }}
+          </p>
+
+          <div class="sp-aside-table-wrap">
+            <table class="sp-aside-table">
+              <tbody>
+                <tr *ngIf="p.project?.service?.name">
+                  <th scope="row">{{ lang === 'ar' ? 'الخدمة' : 'Service' }}</th>
+                  <td>{{ p.project?.service?.name }}</td>
+                </tr>
+                <tr *ngIf="p.project?.deadline">
+                  <th scope="row">{{ lang === 'ar' ? 'الموعد النهائي' : 'Deadline' }}</th>
+                  <td>{{ formatDate(p.project?.deadline) }}</td>
+                </tr>
+                <tr *ngIf="p.project?.deadline_offer">
+                  <th scope="row">{{ lang === 'ar' ? 'موعد العرض' : 'Offer Deadline' }}</th>
+                  <td>{{ formatDate(p.project?.deadline_offer) }}</td>
+                </tr>
+                <tr *ngIf="p.project?.language">
+                  <th scope="row">{{ lang === 'ar' ? 'اللغة' : 'Language' }}</th>
+                  <td>{{ getLanguageLabel(p.project?.language) }}</td>
+                </tr>
+                <tr *ngIf="p.proposal_no">
+                  <th scope="row">{{ lang === 'ar' ? 'رقم المقترح' : 'Proposal #' }}</th>
+                  <td>{{ p.proposal_no }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <button type="button" class="btn btn-light-info w-100 sp-aside-cta" (click)="openDetailsDrawer()">
+            <i class="ki-outline ki-eye fs-5 me-2"></i>
+            {{ lang === 'ar' ? 'عرض التفاصيل الكاملة' : 'View Full Details' }}
+          </button>
+        </div>
+      </aside>
+
+    </div>
+  </ng-container>
+</div>
+
+<ng-template #typeIcon let-type>
+  <!-- <span class="po-type__icon" [class.po-type__icon--adhoc]="type === 'ad_hoc'"
+    [class.po-type__icon--framework]="type === 'frame_work_agreement'"
+    [class.po-type__icon--urgent]="type === 'urgent_request'">
+    <ng-container [ngSwitch]="type">
+      <svg *ngSwitchCase="'ad_hoc'" width="18" height="18" viewBox="0 0 30 30" fill="none" aria-hidden="true">
+        <circle cx="15" cy="15" r="15" fill="#52D7FF" fill-opacity="0.14" />
+        <path
+          d="M21.4514 18.4413L21.3871 19.2642C21.2907 20.2478 21.2135 20.9999 19.4714 20.9999H11.3842C9.64208 20.9999 9.56494 20.2478 9.46851 19.2642L9.21136 16.0499C9.15994 15.5163 9.32708 15.0213 9.62922 14.642C9.63565 14.6356 9.63565 14.6356 9.64208 14.6292C9.99565 14.1985 10.5292 13.9285 11.1271 13.9285H19.7285C20.3264 13.9285 20.8535 14.1985 21.2007 14.6163C21.2071 14.6228 21.2135 14.6292 21.2135 14.6356C21.5285 15.0149 21.7021 15.5099 21.6442 16.0499"
+          fill="#52D7FF" fill-opacity="0.14" />
+        <path
+          d="M21.4514 18.4413L21.3871 19.2642C21.2907 20.2478 21.2135 20.9999 19.4714 20.9999H11.3842C9.64208 20.9999 9.56494 20.2478 9.46851 19.2642L9.21136 16.0499C9.15994 15.5163 9.32708 15.0213 9.62922 14.642C9.63565 14.6356 9.63565 14.6356 9.64208 14.6292C9.99565 14.1985 10.5292 13.9285 11.1271 13.9285H19.7285C20.3264 13.9285 20.8535 14.1985 21.2007 14.6163C21.2071 14.6228 21.2135 14.6292 21.2135 14.6356C21.5285 15.0149 21.7021 15.5099 21.6442 16.0499"
+          stroke="#0064E1" stroke-width="0.964286" stroke-miterlimit="10" stroke-linecap="round"
+          stroke-linejoin="round" />
+        <path
+          d="M9.96387 14.205V10.8943C9.96387 8.70854 10.5103 8.16211 12.696 8.16211H13.5124C14.3289 8.16211 14.5153 8.4064 14.8239 8.81782L15.6403 9.91068C15.846 10.1807 15.9682 10.3478 16.5146 10.3478H18.1539C20.3396 10.3478 20.886 10.8943 20.886 13.08V14.2307"
+          fill="#52D7FF" fill-opacity="0.14" />
+        <path
+          d="M9.96387 14.205V10.8943C9.96387 8.70854 10.5103 8.16211 12.696 8.16211H13.5124C14.3289 8.16211 14.5153 8.4064 14.8239 8.81782L15.6403 9.91068C15.846 10.1807 15.9682 10.3478 16.5146 10.3478H18.1539C20.3396 10.3478 20.886 10.8943 20.886 13.08V14.2307"
+          stroke="#0064E1" stroke-width="0.964286" stroke-miterlimit="10" stroke-linecap="round"
+          stroke-linejoin="round" />
+        <path d="M13.7769 17.7856H17.0811" stroke="#0064E1" stroke-width="0.964286" stroke-miterlimit="10"
+          stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
+
+      <svg *ngSwitchCase="'frame_work_agreement'" width="18" height="18" viewBox="0 0 30 30" fill="none"
+        aria-hidden="true">
+        <circle cx="15" cy="15" r="15" fill="#FF8BF9" fill-opacity="0.13" />
+        <path
+          d="M12.0623 12.9583C13.1094 12.9583 13.9582 12.1095 13.9582 11.0625C13.9582 10.0154 13.1094 9.16663 12.0623 9.16663C11.0153 9.16663 10.1665 10.0154 10.1665 11.0625C10.1665 12.1095 11.0153 12.9583 12.0623 12.9583Z"
+          stroke="#B0009E" stroke-width="0.875" stroke-linecap="round" stroke-linejoin="round" />
+        <path
+          d="M11.9165 20.8334C12.883 20.8334 13.6665 20.0499 13.6665 19.0834C13.6665 18.1169 12.883 17.3334 11.9165 17.3334C10.95 17.3334 10.1665 18.1169 10.1665 19.0834C10.1665 20.0499 10.95 20.8334 11.9165 20.8334Z"
+          stroke="#B0009E" stroke-width="0.875" stroke-linecap="round" stroke-linejoin="round" />
+        <path
+          d="M20.0835 20.8334C21.05 20.8334 21.8335 20.0499 21.8335 19.0834C21.8335 18.1169 21.05 17.3334 20.0835 17.3334C19.117 17.3334 18.3335 18.1169 18.3335 19.0834C18.3335 20.0499 19.117 20.8334 20.0835 20.8334Z"
+          stroke="#B0009E" stroke-width="0.875" stroke-linecap="round" stroke-linejoin="round" />
+        <g opacity="0.4">
+          <path d="M11.9165 13.25V17.3333" stroke="#B0009E" stroke-width="0.875" stroke-linecap="round"
+            stroke-linejoin="round" />
+          <path
+            d="M11.9922 13.25C12.2547 14.2708 13.188 15.0292 14.2905 15.0233L16.2914 15.0175C17.8197 15.0117 19.1205 15.9917 19.5989 17.3567"
+            stroke="#B0009E" stroke-width="0.875" stroke-linecap="round" stroke-linejoin="round" />
+        </g>
+      </svg>
+
+      <svg *ngSwitchCase="'urgent_request'" width="18" height="18" viewBox="0 0 30 30" fill="none" aria-hidden="true">
+        <circle cx="15" cy="15" r="15" fill="#FFAF47" fill-opacity="0.13" />
+        <path
+          d="M20.1043 15.2292C20.1043 18.0467 17.8177 20.3333 15.0002 20.3333C12.1827 20.3333 9.896 18.0467 9.896 15.2292C9.896 12.4117 12.1827 10.125 15.0002 10.125C17.8177 10.125 20.1043 12.4117 20.1043 15.2292Z"
+          stroke="#E08700" stroke-width="0.875" stroke-linecap="round" stroke-linejoin="round" />
+        <path opacity="0.8" d="M15 12.1666V15.0833" stroke="#E08700" stroke-width="0.875" stroke-linecap="round"
+          stroke-linejoin="round" />
+        <path opacity="0.69" d="M13.25 8.66663H16.75" stroke="#E08700" stroke-width="0.875" stroke-miterlimit="10"
+          stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
+
+      <i *ngSwitchDefault class="ki-outline ki-briefcase fs-7 text-info"></i>
+    </ng-container>
+  </span> -->
+</ng-template>
+
+<p-sidebar [(visible)]="detailsDrawerVisible" position="right" appendTo="body" [modal]="true" [dismissible]="true"
+  [blockScroll]="false" [baseZIndex]="1300" [showCloseIcon]="false" [style]="{ width: '66vw', maxWidth: '1200px' }"
+  styleClass="po-drawer" (onHide)="closeDetailsDrawer()">
+  <ng-container *ngIf="proposal as p">
+    <div class="po-drawer__wrap">
+      <div class="po-drawer__main">
+        <div class="po-drawer__topbar">
+          <button type="button" class="po-iconbtn" (click)="closeDetailsDrawer()"
+            [attr.aria-label]="lang === 'ar' ? 'رجوع' : 'Back'">
+            <i class="ki-outline fs-3" [ngClass]="getBackIcon()"></i>
+          </button>
+        </div>
+
+        <div class="po-drawer__body">
+          <div class="po-drawer__hero">
+            <div class="po-drawer__hero-copy">
+              <div class="po-drawer__eyebrow">
+                <div class="po-type po-type--hero">
+                  <ng-container *ngTemplateOutlet="typeIcon; context:{ $implicit: p.project?.type }"></ng-container>
+                  <span class="po-type__label">{{ getTypeLabel(p.project?.type) }}</span>
+                </div>
+                <span *ngIf="p.status" class="badge" [ngClass]="getStatusBadgeClass(p.status)">
+                  {{ getStatusLabel(p.status) }}
+                </span>
+              </div>
+
+              <h3 class="po-drawer__title">{{ p.project?.title }}</h3>
+
+              <div class="po-drawer__meta">
+                <div class="po-drawer__meta-item" *ngIf="p.project?.deadline">
+                  <i class="ki-outline ki-calendar fs-6"></i>
+                  <div class="po-meta__text">
+                    <span class="po-meta__label">{{ lang === 'ar' ? 'الموعد النهائي' : 'Deadline' }}</span>
+                    <span class="po-meta__value">{{ formatDate(p.project?.deadline) }}</span>
+                  </div>
+                </div>
+                <div class="po-drawer__meta-item" *ngIf="p.project?.service?.name">
+                  <i class="ki-outline ki-briefcase fs-6"></i>
+                  <div class="po-meta__text">
+                    <span class="po-meta__label">{{ lang === 'ar' ? 'الخدمة' : 'Service' }}</span>
+                    <span class="po-meta__value">{{ p.project?.service?.name }}</span>
+                  </div>
+                </div>
+                <div class="po-drawer__meta-item" *ngIf="p.project?.language">
+                  <span class="po-language-icon" aria-hidden="true">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M4 5h7"></path>
+                      <path d="M9 3v2c0 4.418 -2.239 8 -5 8"></path>
+                      <path d="M5 9c0 2.144 2.952 3.908 6.7 4"></path>
+                      <path d="M12 20l4 -9l4 9"></path>
+                      <path d="M19.1 18h-6.2"></path>
+                    </svg>
+                  </span>
+                  <div class="po-meta__text">
+                    <span class="po-meta__label">{{ lang === 'ar' ? 'اللغة' : 'Language' }}</span>
+                    <span class="po-meta__value">{{ getLanguageLabel(p.project?.language) }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <section class="po-section" *ngIf="p.project?.service_prompt || p.project?.description">
+            <p class="po-section__text" *ngIf="p.project?.service_prompt">{{ p.project?.service_prompt }}</p>
+            <p class="po-section__text" *ngIf="p.project?.description">{{ p.project?.description }}</p>
+          </section>
+
+          <section class="po-facts">
+            <div class="po-fact po-fact--amber" *ngIf="p.project?.deadline_offer">
+              <i class="ki-outline ki-calendar-tick fs-4"></i>
+              <div class="po-fact__body">
+                <div class="po-fact__label">{{ lang === 'ar' ? 'الموعد النهائي للعرض' : 'Offer Deadline' }}</div>
+                <div class="po-fact__value">{{ formatDate(p.project?.deadline_offer) }}</div>
+              </div>
+            </div>
+
+            <div class="po-fact po-fact--blue">
+              <i class="ki-outline ki-element-7 fs-4"></i>
+              <div class="po-fact__body">
+                <div class="po-fact__label">{{ lang === 'ar' ? 'نوع المشروع' : 'Project Type' }}</div>
+                <div class="po-fact__value">{{ getTypeLabel(p.project?.type) }}</div>
+              </div>
+            </div>
+
+            <div class="po-fact po-fact--green" *ngIf="p.project?.phase">
+              <i class="ki-outline ki-chart-pie-simple fs-4"></i>
+              <div class="po-fact__body">
+                <div class="po-fact__label">{{ lang === 'ar' ? 'المرحلة' : 'Phase' }}</div>
+                <div class="po-fact__value">{{ getPhaseLabel(p.project?.phase) }}</div>
+              </div>
+            </div>
+
+            <div class="po-fact po-fact--slate" *ngIf="p.project?.business_type">
+              <i class="ki-outline ki-briefcase fs-4"></i>
+              <div class="po-fact__body">
+                <div class="po-fact__label">{{ lang === 'ar' ? 'نوع العمل' : 'Business Type' }}</div>
+                <div class="po-fact__value">{{ getBusinessTypeLabel(p.project?.business_type) }}</div>
+              </div>
+            </div>
+
+            <div class="po-fact po-fact--slate" *ngIf="p.project?.industry">
+              <i class="ki-outline ki-office-bag fs-4"></i>
+              <div class="po-fact__body">
+                <div class="po-fact__label">{{ lang === 'ar' ? 'القطاع' : 'Industry' }}</div>
+                <div class="po-fact__value">{{ getFormattedValue(p.project?.industry?.name || p.project?.industry) }}
+                </div>
+              </div>
+            </div>
+
+            <div class="po-fact po-fact--slate" *ngIf="p.project?.language">
+              <span class="po-language-icon po-language-icon--fact" aria-hidden="true">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M4 5h7"></path>
+                  <path d="M9 3v2c0 4.418 -2.239 8 -5 8"></path>
+                  <path d="M5 9c0 2.144 2.952 3.908 6.7 4"></path>
+                  <path d="M12 20l4 -9l4 9"></path>
+                  <path d="M19.1 18h-6.2"></path>
+                </svg>
+              </span>
+              <div class="po-fact__body">
+                <div class="po-fact__label">{{ lang === 'ar' ? 'اللغة' : 'Language' }}</div>
+                <div class="po-fact__value">{{ getLanguageLabel(p.project?.language) }}</div>
+              </div>
+            </div>
+          </section>
+
+          <section class="po-section" *ngIf="getComponent('deliverable-stage') as deliverableStage">
+            <div class="po-section__head">
+              <h6 class="po-section__title">{{ lang === 'ar' ? 'مراحل التسليم' : 'Deliverable Stages' }}</h6>
+              <span class="po-section__eyebrow">{{ lang === 'ar' ? 'خطة التسليم' : 'Delivery Timeline' }}</span>
+            </div>
+            <div class="po-stage-grid">
+              <div class="po-stage-card" *ngIf="deliverableStage.first_draft as firstDraft">
+                <div class="po-stage-card__head">
+                  <span class="po-stage-card__icon">
+                    <i class="ki-outline ki-document fs-4"></i>
+                  </span>
+                  <div class="po-stage-card__copy">
+                    <span class="po-stage-card__title">{{ lang === 'ar' ? 'المسودة الأولى' : 'First Draft' }}</span>
+                    <span class="po-stage-card__subtitle">
+                      {{ lang === 'ar' ? 'مراجعة أولية للمخرجات قبل النسخة النهائية.' : 'Initial review milestone before
+                      the final delivery.' }}
+                    </span>
+                  </div>
+                </div>
+                <div class="po-stage-card__body">
+                  <div class="po-detail-row">
+                    <span class="po-detail-row__label">{{ lang === 'ar' ? 'التاريخ' : 'Date' }}</span>
+                    <span class="po-detail-row__value">{{ formatDate(firstDraft.date) }}</span>
+                  </div>
+                  <div class="po-detail-row" *ngIf="firstDraft.way?.selected">
+                    <span class="po-detail-row__label">{{ lang === 'ar' ? 'طريقة التسليم' : 'Delivery Way' }}</span>
+                    <span class="po-detail-row__value">{{ getWayLabel(firstDraft.way?.selected) }}</span>
+                  </div>
+                  <div class="po-detail-row" *ngIf="firstDraft.way?.address">
+                    <span class="po-detail-row__label">{{ lang === 'ar' ? 'العنوان' : 'Address' }}</span>
+                    <span class="po-detail-row__value">{{ firstDraft.way?.address }}</span>
+                  </div>
+                  <div class="po-detail-chip-wrap" *ngIf="firstDraft.report_type?.length">
+                    <div class="po-stage-card__files-label">
+                      {{ lang === 'ar' ? 'أنواع الملفات المطلوبة:' : 'Required File types:' }}
+                    </div>
+                    <span class="po-detail-chip po-detail-chip--file"
+                      *ngFor="let type of firstDraft.report_type; trackBy: trackByValue">
+                      <img class="po-detail-chip__file" [src]="getFileTypeIconPath(type)" [alt]="type" loading="lazy"
+                        (error)="onFileIconLoadError($event)">
+                      {{ getFormattedValue(type) }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="po-stage-card" *ngIf="deliverableStage.final_version as finalVersion">
+                <div class="po-stage-card__head">
+                  <span class="po-stage-card__icon">
+                    <i class="ki-outline ki-check-square fs-4"></i>
+                  </span>
+                  <div class="po-stage-card__copy">
+                    <span class="po-stage-card__title">{{ lang === 'ar' ? 'النسخة النهائية' : 'Final Version' }}</span>
+                    <span class="po-stage-card__subtitle">
+                      {{ lang === 'ar' ? 'الإصدار النهائي المعتمد للتسليم على العميل أو المنصة.' : 'Final approved
+                      version for client or platform delivery.' }}
+                    </span>
+                  </div>
+                </div>
+                <div class="po-stage-card__body">
+                  <div class="po-detail-row">
+                    <span class="po-detail-row__label">{{ lang === 'ar' ? 'التاريخ' : 'Date' }}</span>
+                    <span class="po-detail-row__value">{{ formatDate(finalVersion.date) }}</span>
+                  </div>
+                  <div class="po-detail-row" *ngIf="finalVersion.way?.selected">
+                    <span class="po-detail-row__label">{{ lang === 'ar' ? 'طريقة التسليم' : 'Delivery Way' }}</span>
+                    <span class="po-detail-row__value">{{ getWayLabel(finalVersion.way?.selected) }}</span>
+                  </div>
+                  <div class="po-detail-row" *ngIf="finalVersion.way?.address">
+                    <span class="po-detail-row__label">{{ lang === 'ar' ? 'العنوان' : 'Address' }}</span>
+                    <span class="po-detail-row__value">{{ finalVersion.way?.address }}</span>
+                  </div>
+                  <div class="po-detail-chip-wrap" *ngIf="finalVersion.report_type?.length">
+                    <div class="po-stage-card__files-label">
+                      {{ lang === 'ar' ? 'أنواع الملفات المطلوبة:' : 'Required File types:' }}
+                    </div>
+                    <span class="po-detail-chip po-detail-chip--file"
+                      *ngFor="let type of finalVersion.report_type; trackBy: trackByValue">
+                      <img class="po-detail-chip__file" [src]="getFileTypeIconPath(type)" [alt]="type" loading="lazy"
+                        (error)="onFileIconLoadError($event)">
+                      {{ getFormattedValue(type) }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="po-section" *ngIf="getComponent('target-market') as targetMarket">
+            <div class="po-section__head">
+              <h6 class="po-section__title">{{ lang === 'ar' ? 'السوق المستهدف' : 'Target Market' }}</h6>
+              <span class="po-section__eyebrow">{{ lang === 'ar' ? 'النطاق الجغرافي' : 'Geographic Reach' }}</span>
+            </div>
+            <div class="po-detail-card po-detail-card--market">
+              <div class="po-detail-card__header">
+                <span class="po-detail-card__icon">
+                  <i class="ki-outline ki-geolocation fs-4"></i>
+                </span>
+                <div class="po-detail-card__copy">
+                  <div class="po-detail-card__title">{{ lang === 'ar' ? 'هيكل السوق' : 'Market Scope' }}</div>
+                  <div class="po-detail-card__subtitle">
+                    {{ lang === 'ar' ? 'اعرض المناطق أو الدول المستهدفة لهذا المشروع.' : 'Review the regions or
+                    countries targeted by this project.' }}
+                  </div>
+                </div>
+              </div>
+
+              <div class="po-detail-card__body">
+                <div class="po-detail-chip-wrap" *ngIf="targetMarket.objects?.length">
+                  <span class="po-detail-chip" *ngFor="let item of targetMarket.objects; trackBy: trackByIndex">
+                    <img *ngIf="targetMarket.type === 'country'" class="po-detail-chip__flag"
+                      [src]="getCountryFlagPath(item.flag)" [alt]="item.name" loading="lazy"
+                      (error)="onFlagLoadError($event)">
+                    {{ item.name }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="po-section" *ngIf="getComponent('data-sources-expected') as dataSources">
+            <div class="po-section__head">
+              <h6 class="po-section__title">{{ lang === 'ar' ? 'مصادر البيانات' : 'Data Sources' }}</h6>
+              <span class="po-section__eyebrow">{{ lang === 'ar' ? 'منهجية البحث' : 'Research Inputs' }}</span>
+            </div>
+            <div class="po-detail-card po-detail-card--source">
+              <div class="po-detail-card__header">
+                <span class="po-detail-card__icon">
+                  <i class="ki-outline ki-abstract-39 fs-4"></i>
+                </span>
+                <div class="po-detail-card__copy">
+                  <div class="po-detail-card__title">{{ lang === 'ar' ? 'مصدر البيانات المعتمد' : 'Preferred Data
+                    Source' }}</div>
+                  <div class="po-detail-card__subtitle">
+                    {{ lang === 'ar' ? 'يوضح نوع البيانات المتوقع الاعتماد عليه أثناء التنفيذ.' : 'Shows the data
+                    profile expected for delivery and analysis.' }}
+                  </div>
+                </div>
+              </div>
+
+              <div class="po-detail-card__body">
+                <div class="po-detail-chip-wrap">
+                  <span class="po-detail-chip po-detail-chip--primary">{{ getDataSourceLabel(dataSources) }}</span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="po-section" *ngIf="hasAddons()">
+            <div class="po-section__head">
+              <h6 class="po-section__title">{{ lang === 'ar' ? 'الإضافات' : 'Add-ons' }}</h6>
+              <span class="po-section__eyebrow">{{ lang === 'ar' ? 'عناصر داعمة' : 'Supporting Scope' }}</span>
+            </div>
+            <div class="po-addon-grid">
+              <div class="po-addon-card" *ngIf="getAddon('kickoff-meeting') as kickoffMeeting">
+                <div class="po-addon-card__head">
+                  <span class="po-addon-card__icon">
+                    <i class="ki-outline ki-calendar-add fs-4"></i>
+                  </span>
+                  <div class="po-addon-card__title">{{ lang === 'ar' ? 'اجتماع البدء' : 'Kickoff Meeting' }}</div>
+                </div>
+                <div class="po-detail-row">
+                  <span class="po-detail-row__label">{{ lang === 'ar' ? 'التاريخ' : 'Date' }}</span>
+                  <span class="po-detail-row__value">{{ formatDate(kickoffMeeting.date) }}</span>
+                </div>
+              </div>
+
+              <div class="po-addon-card" *ngIf="getAddon('survey-conduct') as surveyConduct">
+                <div class="po-addon-card__head">
+                  <span class="po-addon-card__icon">
+                    <i class="ki-outline ki-chart-line-up-2 fs-4"></i>
+                  </span>
+                  <div class="po-addon-card__title">{{ lang === 'ar' ? 'إجراء الاستبيان' : 'Survey Conduct' }}</div>
+                </div>
+                <div class="po-detail-chip-wrap" *ngIf="surveyConduct.scopes?.length">
+                  <span class="po-detail-chip" *ngFor="let scope of surveyConduct.scopes; trackBy: trackByValue">
+                    {{ getFormattedValue(scope) }}
+                  </span>
+                </div>
+                <div class="po-detail-row" *ngIf="surveyConduct.parameters?.size">
+                  <span class="po-detail-row__label">{{ lang === 'ar' ? 'الحجم' : 'Size' }}</span>
+                  <span class="po-detail-row__value">{{ surveyConduct.parameters?.size }}</span>
+                </div>
+                <div class="po-detail-row" *ngIf="surveyConduct.parameters?.distribution">
+                  <span class="po-detail-row__label">{{ lang === 'ar' ? 'التوزيع' : 'Distribution' }}</span>
+                  <span class="po-detail-row__value">{{ surveyConduct.parameters?.distribution }}</span>
+                </div>
+              </div>
+
+              <div class="po-addon-card" *ngIf="getAddon('consulting-sessions') as consultingSessions">
+                <div class="po-addon-card__head">
+                  <span class="po-addon-card__icon">
+                    <i class="ki-outline ki-people fs-4"></i>
+                  </span>
+                  <div class="po-addon-card__title">{{ lang === 'ar' ? 'جلسات استشارية' : 'Consulting Sessions' }}</div>
+                </div>
+                <div class="po-detail-chip-wrap">
+                  <span class="po-detail-chip" *ngFor="let item of consultingSessions; trackBy: trackByIndex">
+                    {{ formatDate(item.date) }}
+                  </span>
+                </div>
+              </div>
+
+              <div class="po-addon-card" *ngIf="getAddon('third-party-consultant') as thirdPartyConsultant">
+                <div class="po-addon-card__head">
+                  <span class="po-addon-card__icon">
+                    <i class="ki-outline ki-profile-user fs-4"></i>
+                  </span>
+                  <div class="po-addon-card__title">{{ lang === 'ar' ? 'مستشار خارجي' : 'Third-Party Consultant' }}
+                  </div>
+                </div>
+                <div class="po-detail-chip-wrap">
+                  <ng-container *ngFor="let item of thirdPartyConsultant; trackBy: trackByIndex">
+                    <span class="po-detail-chip" *ngIf="item?.date">
+                      {{ formatDate(item.date) }}
+                    </span>
+                  </ng-container>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+
+      <aside class="po-drawer__aside">
+        <div class="po-aside-card">
+          <div class="po-aside-card__title">
+            {{ lang === 'ar' ? 'ملخص المشروع' : 'Project Snapshot' }}
+          </div>
+          <p class="po-aside-card__hint">
+            {{ lang === 'ar'
+            ? 'راجع هذه المعلومات السريعة أثناء تجهيز عرضك قبل الإرسال.'
+            : 'Use this quick project summary while preparing your proposal before submission.' }}
+          </p>
+
+          <button type="button" class="btn btn-info w-100 mb-2" (click)="closeDetailsDrawer()">
+            <i class="ki-outline fs-6 me-1" [ngClass]="getBackIcon()"></i>
+            {{ lang === 'ar' ? 'العودة للعرض' : 'Back to Proposal' }}
+          </button>
+
+          <div class="po-aside-table-wrap">
+            <table class="po-aside-table">
+              <tbody>
+                <tr *ngIf="p.status">
+                  <th scope="row">{{ lang === 'ar' ? 'الحالة' : 'Status' }}</th>
+                  <td>
+                    <span class="badge" [ngClass]="getStatusBadgeClass(p.status)">{{ getStatusLabel(p.status) }}</span>
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row">{{ lang === 'ar' ? 'الخدمة' : 'Service' }}</th>
+                  <td>{{ p.project?.service?.name || '-' }}</td>
+                </tr>
+                <tr>
+                  <th scope="row">{{ lang === 'ar' ? 'نوع المشروع' : 'Project Type' }}</th>
+                  <td>{{ getTypeLabel(p.project?.type) }}</td>
+                </tr>
+                <tr>
+                  <th scope="row">{{ lang === 'ar' ? 'الموعد النهائي' : 'Deadline' }}</th>
+                  <td>{{ formatDate(p.project?.deadline) }}</td>
+                </tr>
+                <tr *ngIf="p.project?.deadline_offer">
+                  <th scope="row">{{ lang === 'ar' ? 'موعد العرض' : 'Offer Deadline' }}</th>
+                  <td>{{ formatDate(p.project?.deadline_offer) }}</td>
+                </tr>
+                <tr>
+                  <th scope="row">{{ lang === 'ar' ? 'لغة المشروع' : 'Project Language' }}</th>
+                  <td>{{ getLanguageLabel(p.project?.language) }}</td>
+                </tr>
+                <tr *ngIf="p.proposal_no">
+                  <th scope="row">{{ lang === 'ar' ? 'رقم المقترح' : 'Proposal #' }}</th>
+                  <td>{{ p.proposal_no }}</td>
+                </tr>
+                <tr>
+                  <th scope="row">{{ lang === 'ar' ? 'سعر الساعة' : 'Hourly Rate' }}</th>
+                  <td>{{ formatPrice(hourlyRate) }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </ng-container>
+</p-sidebar>

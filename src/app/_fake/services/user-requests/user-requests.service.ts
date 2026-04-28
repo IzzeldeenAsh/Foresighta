@@ -4,53 +4,53 @@ import { BehaviorSubject, Observable, catchError, finalize, map, throwError } fr
 import { TranslationService } from 'src/app/modules/i18n';
 // models/type.model.ts
 export interface Type {
-    key: string;
-    label: string;
-  }
-  
-  // models/requestable.model.ts
-  export interface Requestable {
-    id?: number;
-    uuid?: string;
-    legal_name?: string;
-    website?: string | null;
-    verified_email?: string | null;
-    about_us?: string;
-    register_document?: string;
-    logo?: string;
-    status?: string;
-    verified?: boolean;
-    address?: string;
-    company_phone?: string;
-    first_name?: string;
-        final_status_label:string;
-    status_label:string;
-    last_name?: string;
-    roles?: string[];
-    // Properties for insighter requestable objects
-    name?: string;
-    profile_photo_url?: string | null;
-  }
-  
-  // models/data-item.model.ts
+  key: string;
+  label: string;
+}
+
+// models/requestable.model.ts
+export interface Requestable {
+  id?: number;
+  uuid?: string;
+  legal_name?: string;
+  website?: string | null;
+  verified_email?: string | null;
+  about_us?: string;
+  register_document?: string;
+  logo?: string;
+  status?: string;
+  verified?: boolean;
+  address?: string;
+  company_phone?: string;
+  first_name?: string;
+  final_status_label: string;
+  status_label: string;
+  last_name?: string;
+  roles?: string[];
+  // Properties for insighter requestable objects
+  name?: string;
+  profile_photo_url?: string | null;
+}
+
+// models/data-item.model.ts
 export interface UserRequest {
-    id: number;
-    type: Type;
-    requestable_type: string;
-    comments: string;
-    staff_notes: string | null;
-    handel_by: string | null; // Consider renaming to 'handled_by' for clarity
-    handel_at: string | null; // Consider renaming to 'handled_at' for clarity
-    status: string;
-    requestable: Requestable;
-    final_status: string;
-    children: UserRequest[];
-    final_status_label:string;
-    status_label:string;
-    identity?:string;
-    identity_object?: any;
-  }
-  
+  id: number;
+  type: Type;
+  requestable_type: string;
+  comments: string;
+  staff_notes: string | null;
+  handel_by: string | null; // Consider renaming to 'handled_by' for clarity
+  handel_at: string | null; // Consider renaming to 'handled_at' for clarity
+  status: string;
+  requestable: Requestable;
+  final_status: string;
+  children: UserRequest[];
+  final_status_label: string;
+  status_label: string;
+  identity?: string;
+  identity_object?: any;
+}
+
 export interface RequestsMeta {
   current_page: number;
   last_page: number;
@@ -191,7 +191,7 @@ export class UserRequestsService {
    * Fetch all user requests.
    * @returns Observable of UserRequest array
    */
-  getAllUserRequests(lang:string): Observable<UserRequest[]> {
+  getAllUserRequests(lang: string): Observable<UserRequest[]> {
     const headers = new HttpHeaders({
       'Accept': 'application/json',
       'Content-Type': 'application/json',
@@ -327,9 +327,9 @@ export class UserRequestsService {
    * @param parentId Parent company ID
    * @returns Observable of the request response
    */
-  sendReactivateRequest(type:string): Observable<any> {
+  sendReactivateRequest(type: string): Observable<any> {
     const url = type === 'company' ? 'https://api.insightabusiness.com/api/company/activate' : 'https://api.insightabusiness.com/api/insighter/activate';
-    
+
     const headers = new HttpHeaders({
       'Accept': 'application/json',
       'Accept-Language': this.currentLang
@@ -351,16 +351,16 @@ export class UserRequestsService {
    */
   updateInsighterRequestStatus(requestId: string, status: string, staffNotes: string): Observable<any> {
     const url = `${this.insighterRequestsUrl}/${requestId}/accept`;
-    
+
     const formData = new FormData();
     formData.append('status', status);
     formData.append('staff_notes', staffNotes);
-    
+
     const headers = new HttpHeaders({
       'Accept': 'application/json',
       'Accept-Language': this.currentLang
     });
-    
+
     this.setLoading(true);
     return this.http.post(url, formData, { headers }).pipe(
       catchError((error: any) => this.handleError(error)),
@@ -377,17 +377,17 @@ export class UserRequestsService {
    */
   sendKnowledgeReviewRequest(comments: string, parentId: string, knowledgeId: string): Observable<any> {
     const url = 'https://api.insightabusiness.com/api/insighter/request/knowledge/review';
-    
+
     const formData = new FormData();
     formData.append('comments', comments);
     formData.append('parent_id', parentId);
     formData.append('knowledge_id', knowledgeId);
-    
+
     const headers = new HttpHeaders({
       'Accept': 'application/json',
       'Accept-Language': this.currentLang
     });
-    
+
     this.setLoading(true);
     return this.http.post(url, formData, { headers }).pipe(
       catchError((error: any) => this.handleError(error)),

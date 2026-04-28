@@ -11,7 +11,7 @@ import { environment } from 'src/environments/environment';
 export class InvitationService {
   private apiUrl = environment.apiUrl;
   private acceptInsighterInvitationApi = `https://api.insightabusiness.com/api/account/invitation/accept/insighter`;
-  
+
   private isLoadingSubject = new BehaviorSubject<boolean>(false);
   public isLoading$: Observable<boolean> = this.isLoadingSubject.asObservable();
   currentLang: string = 'en';

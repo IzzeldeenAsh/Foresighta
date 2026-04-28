@@ -14,30 +14,30 @@ const API_USERS_URL = `test`;
   providedIn: 'root',
 })
 export class AuthHTTPService {
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) { }
   private apiUrlLogin = ' https://api.insightabusiness.com/api/common/user/login'; // Define your API URL
   // public methods
   // login(email: string, password: string , lang:string): Observable<AuthModel | Error> {
   //   if (!email || !password) {
   //     return throwError(() => new Error('Email and password are required'));
   //   }
-  
+
   //   const body = { email, password }; // Request body
-  
+
   //   // Define custom headers
   //   const headers = new HttpHeaders({
   //     'Accept': 'application/json',
   //     'Accept-Language': lang // As per your example
   //   });
-  
+
   //   return this.http.post<any>(this.apiUrlLogin, body, { headers }).pipe(
   //     map((response) => {
   //       const data = response?.data;
-  
+
   //       if (!data || !data.token) {
   //         throw new Error('Invalid login response');
   //       }
-  
+
   //       // Map the response data to UserModel or AuthModel as required
   //       const user = new InsightaUserModel();
   //       user.id = data.id;
@@ -46,12 +46,12 @@ export class AuthHTTPService {
   //       user.countryId = data.countryId;
   //       user.country = data.country;
   //       user.roles = data.roles;
-  
+
   //       // Create AuthModel
   //       const auth = new AuthModel();
   //       auth.authToken = data.token;
   //       auth.expiresIn = new Date(Date.now() + 100 * 24 * 60 * 60 * 1000); // Token expiration logic
-  
+
   //       return auth;
   //     }),
   //     catchError((error) => {
@@ -94,7 +94,7 @@ export class AuthHTTPService {
   }
 
   // getUserByToken(token: string): Observable<UserModel | undefined> {
-   
+
   // }
 
   getAllUsers(): Observable<UserModel[]> {

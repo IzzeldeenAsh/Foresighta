@@ -10,7 +10,7 @@ export class ProfileService {
   private removeUrl = 'https://api.insightabusiness.com/api/account/profile/photo/remove';
   private updateLogo = 'https://api.insightabusiness.com/api/account/profile/company/logo';
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) { }
 
   updateProfilePhoto(file: File): Observable<any> {
     const formData = new FormData();

@@ -30,7 +30,7 @@ export class TransferCorporateAccountService {
     return throwError(error);
   }
 
-  sendTransferInvitation(email: string,lang:string): Observable<any> {
+  sendTransferInvitation(email: string, lang: string): Observable<any> {
     const headers = new HttpHeaders({
       'Accept': 'application/json',
       'Accept-Language': lang
@@ -51,26 +51,26 @@ export class TransferCorporateAccountService {
       'Accept': 'application/json',
       'Accept-Language': lang
     });
-  
+
     const formData = new FormData();
     formData.append('email', email);
     formData.append('code', code);
-  
+
     this.setLoading(true);
     return this.http.post<any>('https://api.insightabusiness.com/api/company/transfer/account/verification', formData, { headers }).pipe(
       map((res) => res),
-      catchError((error) => this.handleError(error)), 
+      catchError((error) => this.handleError(error)),
       finalize(() => this.setLoading(false))
     );
   }
 
   searchInsighters(keyword: string, lang: string = 'en'): Observable<any[]> {
-    
+
     const headers = new HttpHeaders({
       'Accept-Language': lang
     });
     const params = { keyword };
     return this.http.get<any[]>(this.searchInsighterUrl, { headers, params });
   }
-  
+
 }

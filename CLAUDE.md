@@ -78,7 +78,7 @@ npm run serve:ssr          # Serve SSR build
 **Cross-Domain Authentication**: 
 - Configured for `*.insightabusiness.com` domain with cookie sharing
 - Cross-domain authentication helper component for subdomain integration
-- Environment-specific API endpoints (dev: localhost, prod: api.insightabusiness.com)
+- Environment-specific API endpoints (dev: localhost, prod: api.foresighta.co)
 
 **Role-Based System**:
 - Multiple user types: Insighter, Company, Admin

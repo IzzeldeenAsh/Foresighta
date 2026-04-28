@@ -11,7 +11,7 @@ export class KnowldegePackegesService {
   private isLoadingSubject = new BehaviorSubject<boolean>(false);
   public isLoading$: Observable<boolean> = this.isLoadingSubject.asObservable();
   private baseUrl = 'https://api.insightabusiness.com/api/insighter/library';
-  
+
   constructor(
     private http: HttpClient,
     private translationService: TranslationService

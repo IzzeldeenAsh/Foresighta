@@ -6,29 +6,29 @@ import { environment } from '../../../../../environments/environment';
 import { AuthModel } from '../../models/auth.model';
 
 const API_USERS_URL = `auth`;
-const API_GENERALREGISTER= 'https://api.insightabusiness.com/api/auth/register';
+const API_GENERALREGISTER = 'https://api.insightabusiness.com/api/auth/register';
 
 @Injectable({
   providedIn: 'root',
 })
 export class AuthHTTPService {
   private authLocalStorageKey = 'foresighta-creds';
-  
+
   constructor(
     private http: HttpClient
-  ) {}
-  
+  ) { }
+
   private apiUrlLogin = 'https://api.insightabusiness.com/api/auth/login';
-  
+
   // public methods
   login(email: string, password: string, lang: string): Observable<any> {
     const headers = new HttpHeaders({
       'Accept': 'application/json',
       'Accept-Language': lang,
     });
-    
+
     return this.http.post<any>(
-      this.apiUrlLogin, 
+      this.apiUrlLogin,
       { email, password },
       { headers }
     );
@@ -42,7 +42,7 @@ export class AuthHTTPService {
     });
 
     return this.http.post<ForesightaGeneralUserModel>(
-      API_GENERALREGISTER, 
+      API_GENERALREGISTER,
       user,
       { headers }
     );
@@ -51,7 +51,7 @@ export class AuthHTTPService {
   // Your server should check email => If email exists send link to the user and return true | If email doesn't exist return false
   forgotPassword(email: string): Observable<boolean> {
     return this.http.post<boolean>(
-      `${API_USERS_URL}/forgot-password`, 
+      `${API_USERS_URL}/forgot-password`,
       { email }
     );
   }
@@ -77,18 +77,18 @@ export class AuthHTTPService {
       'Accept': 'application/json',
       'Accept-Language': lang
     });
-    
+
     if (token) {
       headers = headers.set('Authorization', `Bearer ${token}`);
     }
-    
+
     return headers;
   }
 
   getUserByToken(): Observable<any> {
     const headers = this.getAuthHeaders();
     return this.http.get<UserModel>(
-      `${environment.apiBaseUrl}/account/profile`, 
+      `${environment.apiBaseUrl}/account/profile`,
       { headers }
     );
   }

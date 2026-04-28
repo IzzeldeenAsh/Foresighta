@@ -25,17 +25,17 @@ export class DepartmentsService {
   private updateDeleteApi = "https://api.insightabusiness.com/api/admin/setting/department"; // Replace with the actual API URL
   private isLoadingSubject = new BehaviorSubject<boolean>(false);
   public isLoading$: Observable<boolean> = this.isLoadingSubject.asObservable();
-  currentLang:string = "en"
+  currentLang: string = "en"
   constructor(
     private http: HttpClient,
     private translationService: TranslationService,
-    
-  
+
+
   ) {
-    this.translationService.onLanguageChange().subscribe(lang=>{
-     this.currentLang = lang || 'en';
+    this.translationService.onLanguageChange().subscribe(lang => {
+      this.currentLang = lang || 'en';
     })
-   
+
   }
 
   private setLoading(loading: boolean) {

@@ -26,7 +26,7 @@ export class LoginComponent extends BaseComponent implements OnInit, OnDestroy {
     email: null,
     password: null,
   };
-  
+
   loginForm: FormGroup;
   hasError: boolean = false;
   returnUrl: string;
@@ -65,7 +65,7 @@ export class LoginComponent extends BaseComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.initForm();
-    
+
     // Get return URL from route parameters
     this.returnUrl = this.route.snapshot.queryParams["returnUrl"] || "/";
     if (this.returnUrl && this.returnUrl !== "/") {
@@ -76,7 +76,7 @@ export class LoginComponent extends BaseComponent implements OnInit, OnDestroy {
         console.error("Error decoding returnUrl:", e);
       }
     }
-    
+
     console.log('Login component initialized with returnUrl:', this.returnUrl);
 
     // Subscribe to language changes
@@ -126,13 +126,13 @@ export class LoginComponent extends BaseComponent implements OnInit, OnDestroy {
     const returnUrl = this.getReturnUrl();
     const effectiveLang = this.selectedLang || 'en';
     const localizedReturnUrl = this.localizeNextJsUrl(returnUrl, effectiveLang);
-    
+
     // Store return URL in cookie
     this.setReturnUrlCookie(localizedReturnUrl);
     // Store preferred language in cookie for Next.js middleware
     this.cookieService.setPreferredLanguage(effectiveLang);
-    
-    const authMethod = provider === 'google' 
+
+    const authMethod = provider === 'google'
       ? this.authService.getGoogleAuthRedirectUrl()
       : this.authService.getLinkedInAuthRedirectUrl();
 
@@ -142,10 +142,10 @@ export class LoginComponent extends BaseComponent implements OnInit, OnDestroy {
       },
       error: (err) => {
         console.error(`Error getting ${provider} auth redirect URL`, err);
-        this.messageService.add({ 
-          severity: 'error', 
-          summary: 'Error', 
-          detail: `Failed to initiate ${provider} sign-in.` 
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: `Failed to initiate ${provider} sign-in.`
         });
       }
     });
@@ -155,14 +155,14 @@ export class LoginComponent extends BaseComponent implements OnInit, OnDestroy {
     this.passwordVisible = !this.passwordVisible;
     passwordField.type = this.passwordVisible ? "text" : "password";
   }
-  
+
   private getReturnUrl(): string {
     let returnUrl = this.returnUrl !== "/" ? this.returnUrl : document.referrer;
 
     if (returnUrl && this.isAngularReturnUrl(returnUrl)) {
       return this.toAbsoluteAngularReturnUrl(returnUrl);
     }
-    
+
     // Check if returnUrl is a full URL from allowed domains
     if (returnUrl && (
       returnUrl.includes('insightabusiness.com') ||
@@ -172,15 +172,15 @@ export class LoginComponent extends BaseComponent implements OnInit, OnDestroy {
     )) {
       return returnUrl;
     }
-    
+
     // Don't return to login or auth pages
     if (!returnUrl || returnUrl === "/" || returnUrl.includes("/login") || returnUrl.includes("/auth/")) {
       return "/";
     }
-    
+
     return returnUrl;
   }
-  
+
   submit() {
     if (this.loginForm.invalid) {
       this.loginForm.markAllAsTouched();
@@ -191,7 +191,7 @@ export class LoginComponent extends BaseComponent implements OnInit, OnDestroy {
     this.messages = [];
 
     const returnUrl = this.getReturnUrl();
-    
+
     const loginSubscr = this.authService
       .login(this.f.email.value, this.f.password.value, this.selectedLang, returnUrl)
       .pipe(first())
@@ -203,13 +203,13 @@ export class LoginComponent extends BaseComponent implements OnInit, OnDestroy {
           this.handleLoginError(error);
         },
       });
-    
+
     this.unsubscribe.push(loginSubscr);
   }
 
   private handleLoginSuccess(userData: any, token: string): void {
     console.log('Login successful for user:', userData.email, 'with token:', token.substring(0, 20) + '...');
-    
+
     // Check if user needs email verification
     if (userData.verified === false) {
       const returnUrl = this.getReturnUrl();
@@ -289,9 +289,9 @@ export class LoginComponent extends BaseComponent implements OnInit, OnDestroy {
     const returnUrl = this.getReturnUrl();
     const effectiveLang = this.selectedLang || 'en';
     const localizedReturnUrl = this.localizeNextJsUrl(returnUrl, effectiveLang);
-    
+
     console.log('Redirecting to Next.js with token:', token.substring(0, 20) + '...', 'and returnUrl:', returnUrl);
-    
+
     // Store token in cookie for Next.js to read (cross-domain)
     this.cookieService.setAuthCookie('token', token);
     // Also store return URL in cookie (for consistency with social auth)
@@ -303,14 +303,14 @@ export class LoginComponent extends BaseComponent implements OnInit, OnDestroy {
 
     // Build the redirect URL WITHOUT token (cookie-based handoff)
     let redirectUrl = `${environment.mainAppUrl}/${effectiveLang}/callback`;
-    
+
     // Add return URL as query parameter if it exists
     if (localizedReturnUrl && localizedReturnUrl !== '/') {
       redirectUrl += `?returnUrl=${encodeURIComponent(localizedReturnUrl)}`;
     }
-    
+
     console.log('Final redirect URL:', redirectUrl);
-    
+
     // Redirect immediately; Next.js callback will show its own loader
     window.location.href = redirectUrl;
   }
@@ -326,7 +326,7 @@ export class LoginComponent extends BaseComponent implements OnInit, OnDestroy {
 
   private setReturnUrlCookie(url: string): void {
     const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    
+
     let cookieSettings;
     if (isLocalhost) {
       cookieSettings = [
@@ -345,7 +345,7 @@ export class LoginComponent extends BaseComponent implements OnInit, OnDestroy {
         `Secure`
       ];
     }
-    
+
     document.cookie = cookieSettings.join('; ');
   }
 

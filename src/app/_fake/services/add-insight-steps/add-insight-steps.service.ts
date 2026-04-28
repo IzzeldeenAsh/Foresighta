@@ -205,7 +205,7 @@ export class AddInsightStepsService {
       "Content-Type": "application/json",
       "Accept-Language": this.currentLang,
     });
-  
+
     this.setLoading(true);
     return this.http
       .put<CreateKnowledgeResponse>(`${this.apiUrl}/type/${knowledgeId}`, { type }, { headers })
@@ -358,7 +358,7 @@ export class AddInsightStepsService {
     if (request.description) {
       formData.append("description", request.description);
     }
-    
+
     if (request.table_of_content) {
       request.table_of_content.forEach((chapter: any, index: number) => {
         formData.append(`table_of_content[${index}][chapter][title]`, chapter.chapter.title);
@@ -375,8 +375,8 @@ export class AddInsightStepsService {
     });
 
     this.setLoading(true);
-    
-    const url = isUpdate 
+
+    const url = isUpdate
       ? `${this.apiUrl}/document/${knowledgeId}`
       : `${this.apiUrl}/document/upload/${knowledgeId}`;
 

@@ -23,6 +23,10 @@
 /* Apply 'Readex Pro' to body and its descendants, excluding .ki-duotone and its descendants */
 /* 1. Apply 'Readex Pro' to all elements within RTL, excluding specific classes and their descendants */
 /* 1. Apply 'Readex Pro' to all elements within RTL, excluding specific classes and their descendants */
+html[dir="ltr"] *:not(.ki-duotone):not(.ki-duotone *):not(.ki-outline):not(.ki-outline *):not(.ki-solid):not(.ki-solid *):not(.fa-classic):not(.fa-classic *):not(.fa-regular):not(.fa-regular *):not(.fa-solid):not(.fa-solid *):not(.far):not(.far *):not(.fas):not(.fas *):not(.pi):not(.pi *) {
+    font-family: 'Inter', 'Almarai', sans-serif !important;
+}
+
 html[dir="rtl"] *:not(.ki-duotone):not(.ki-duotone *):not(.ki-outline):not(.ki-outline *):not(.ki-solid):not(.ki-solid *):not(.fa-classic):not(.fa-classic *):not(.fa-regular):not(.fa-regular *):not(.fa-solid):not(.fa-solid *):not(.far):not(.far *):not(.fas):not(.fas *):not(.pi):not(.pi *) {
     font-family: 'Almarai', sans-serif !important;
 }

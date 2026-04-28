@@ -26,13 +26,13 @@ export class ReviewKnowledgeDetailsComponent extends BaseComponent implements On
   activeDocumentId: number | null = null;
   knowledge: any;
   private readonly DOWNLOAD_DOCUMENT_URL = 'https://api.insightabusiness.com/api/company/insighter/knowledge/document/download';
-  
+
   constructor(
-    injector:Injector,
+    injector: Injector,
     private route: ActivatedRoute,
     private knowledgeService: KnowledgeService,
     private http: HttpClient,
-    
+
   ) {
     super(injector);
   }
@@ -47,7 +47,7 @@ export class ReviewKnowledgeDetailsComponent extends BaseComponent implements On
 
   loadData(): void {
     // Get knowledge data from the parent component
-    this.route.parent?.snapshot.data['knowledge'] && 
+    this.route.parent?.snapshot.data['knowledge'] &&
       (this.knowledge = this.route.parent.snapshot.data['knowledge']);
 
     if (this.knowledgeId) {
@@ -59,7 +59,7 @@ export class ReviewKnowledgeDetailsComponent extends BaseComponent implements On
           'Content-Type': 'application/json',
           'Accept-Language': this.lang
         });
-        
+
         // Use company API endpoint to get knowledge data
         this.http.get<any>(`https://api.insightabusiness.com/api/company/library/knowledge/${this.knowledgeId}`, { headers })
           .subscribe({
@@ -73,13 +73,13 @@ export class ReviewKnowledgeDetailsComponent extends BaseComponent implements On
       }
 
       // Load documents - skip for now since it might cause 403 errors
-      
+
       this.knowledgeService.getReviewDocumentsList(this.knowledgeId).subscribe(
         (response: DocumentListResponse) => {
           this.documents = response.data;
         }
       );
-      
+
     }
   }
 

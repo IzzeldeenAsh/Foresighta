@@ -27,9 +27,9 @@ export class CorsTestComponent implements OnInit {
   error: any = null;
   result: any = null;
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) { }
 
-  ngOnInit(): void {}
+  ngOnInit(): void { }
 
   testRequest(): void {
     this.loading = true;
@@ -55,7 +55,7 @@ export class CorsTestComponent implements OnInit {
         this.error = err;
         this.loading = false;
         console.error('Error:', err);
-        
+
         // Log specific CORS-related details
         if (err.status === 0) {
           console.error('CORS Error: This is likely a CORS issue');

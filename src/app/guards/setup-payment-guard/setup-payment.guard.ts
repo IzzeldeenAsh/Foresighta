@@ -13,7 +13,7 @@ export class SetupPaymentGuard implements CanActivate {
     private router: Router,
     private authService: AuthService,
     private profileService: ProfileService
-  ) {}
+  ) { }
 
   canActivate(
     route: ActivatedRouteSnapshot,
@@ -28,7 +28,7 @@ export class SetupPaymentGuard implements CanActivate {
           // Optionally check if they already have complete payment info and redirect
           return this.checkIfPaymentSetupNeeded(state.url);
         }
-        
+
         // User doesn't have required roles, redirect to dashboard
         console.log('Setup Payment Guard - User lacks required roles, redirecting to dashboard');
         return of(this.router.createUrlTree(['/app/insighter-dashboard']));
@@ -43,7 +43,7 @@ export class SetupPaymentGuard implements CanActivate {
 
   private checkIfPaymentSetupNeeded(currentUrl: string): Observable<boolean | UrlTree> {
     const token = this.authService.getTokenFromCookie();
-    
+
     if (!token) {
       // No token, allow access (auth guard will handle this)
       return of(true);
@@ -52,7 +52,7 @@ export class SetupPaymentGuard implements CanActivate {
     const headers = new HttpHeaders({
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json',
-        'Accept-Language':'en'
+      'Accept-Language': 'en'
     });
 
     return this.http.get<any>('https://api.insightabusiness.com/api/insighter/payment/account/details', { headers }).pipe(
@@ -60,11 +60,11 @@ export class SetupPaymentGuard implements CanActivate {
         if (response && response.data && response.data.primary) {
           const primaryData = response.data.primary;
           const secondaryData = response.data.secondary;
-          
+
           // Check if payment setup is complete
           const isManualComplete = primaryData.type === 'manual' && primaryData.iban && primaryData.status === 'active';
           const isStripeComplete = primaryData.type === 'provider' && ((secondaryData.details_submitted_at) || (primaryData.status === 'active' && secondaryData.charges_enable_at));
-          
+
           if (isManualComplete || isStripeComplete) {
             // Payment is already complete
             // If user is trying to access the main setup page, redirect to dashboard
@@ -75,17 +75,17 @@ export class SetupPaymentGuard implements CanActivate {
             // Allow access to sub-pages (success, etc.)
             return true;
           }
-          
+
           // Payment setup is incomplete, allow access
           return true;
         }
-        
+
         // No payment data (403 or empty response), allow access to setup
         return true;
       }),
       catchError(error => {
         console.log('Setup Payment Guard - Payment API error:', error);
-        
+
         // For 403 or other errors, allow access to setup payment
         return of(true);
       })

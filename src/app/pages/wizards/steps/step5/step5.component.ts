@@ -28,7 +28,7 @@ export class Step5Component extends BaseComponent implements OnInit {
   lang: string;
   dialogWidth: string = "50vw";
   reverseLoader: boolean = false;
-  gettingCodeLoader:boolean=false;
+  gettingCodeLoader: boolean = false;
   @Input("updateParentModel") updateParentModel: (
     part: Partial<ICreateAccount>,
     isFormValid: boolean
@@ -65,22 +65,22 @@ export class Step5Component extends BaseComponent implements OnInit {
     // Initialize core components
     this.initForm();
     this.windowResize();
-    
+
     // Setup subscriptions
     this.setupSubscriptions();
-    
+
     // Initialize from default values
     this.initializeFromDefaults();
-    
+
     // Update parent model initially with all step 5 data
     this.updateParentModel(
-      { 
+      {
         verificationMethod: this.form.get('verificationMethod')?.value,
         website: this.form.get('website')?.value,
         companyEmail: this.form.get('companyEmail')?.value,
         code: this.form.get('code')?.value,
         registerDocument: this.defaultValues?.registerDocument,
-        companyAgreement: this.agreementChecked 
+        companyAgreement: this.agreementChecked
       },
       this.form.valid && this.agreementChecked
     );
@@ -101,7 +101,7 @@ export class Step5Component extends BaseComponent implements OnInit {
       });
       this.form.get("registerDocument")?.markAsTouched();
     }
-    
+
     // Initialize verification method from default values
     if (this.defaultValues?.verificationMethod) {
       this.form.patchValue({
@@ -109,7 +109,7 @@ export class Step5Component extends BaseComponent implements OnInit {
       });
       this.updateConditionalValidators(this.defaultValues.verificationMethod);
     }
-    
+
     // Initialize website input from default values
     if (this.defaultValues?.website) {
       this.form.patchValue({
@@ -117,7 +117,7 @@ export class Step5Component extends BaseComponent implements OnInit {
       });
       this.form.get("website")?.markAsTouched();
     }
-    
+
     // Initialize company email from default values
     if (this.defaultValues?.companyEmail) {
       this.form.patchValue({
@@ -125,7 +125,7 @@ export class Step5Component extends BaseComponent implements OnInit {
       });
       this.form.get("companyEmail")?.markAsTouched();
     }
-    
+
     // Initialize verification code from default values
     if (this.defaultValues?.code) {
       this.form.patchValue({
@@ -133,7 +133,7 @@ export class Step5Component extends BaseComponent implements OnInit {
       });
       this.form.get("code")?.markAsTouched();
     }
-    
+
     if (this.defaultValues?.companyAgreement) {
       this.agreementChecked = true;
     }
@@ -145,10 +145,10 @@ export class Step5Component extends BaseComponent implements OnInit {
     if (event) {
       event.preventDefault();
     }
-    
+
     this.isLoadingAgreement = true;
     this.showAgreementDialog = true;
-    
+
     this.commonService.getGuidelineByTypeCurrent('company_agreement').subscribe({
       next: (response) => {
         this.agreementContent = response.data;
@@ -157,15 +157,15 @@ export class Step5Component extends BaseComponent implements OnInit {
       error: (error) => {
         console.error('Error loading agreement:', error);
         this.isLoadingAgreement = false;
-        this.messageService.add({ 
-          severity: 'error', 
-          summary: 'Error', 
-          detail: 'Failed to load agreement. Please try again.' 
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Failed to load agreement. Please try again.'
         });
       }
     });
   }
-  
+
   // Accept the agreement terms
   acceptAgreement() {
     this.agreementChecked = true;
@@ -206,19 +206,19 @@ export class Step5Component extends BaseComponent implements OnInit {
         </body>
         </html>
       `;
-      
+
       printWindow.document.open();
       printWindow.document.write(printContent);
       printWindow.document.close();
-      
+
       setTimeout(() => {
         printWindow.print();
       }, 500);
     } else {
-      this.messageService.add({ 
-        severity: 'error', 
-        summary: 'Error', 
-        detail: 'Could not open print window. Please check your browser settings.' 
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Could not open print window. Please check your browser settings.'
       });
     }
   }
@@ -228,10 +228,10 @@ export class Step5Component extends BaseComponent implements OnInit {
     if (this.agreementContent) {
       const termsTitle = this.agreementContent.name || 'Company-Terms-of-Service';
       const termsText = this.stripHtmlTags(this.agreementContent.guideline);
-      
+
       // Create a Blob with the text content
       const blob = new Blob([termsText], { type: 'text/plain' });
-      
+
       // Create a download link and trigger the download
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -239,7 +239,7 @@ export class Step5Component extends BaseComponent implements OnInit {
       a.download = `${termsTitle.replace(/\s+/g, '-')}.txt`;
       document.body.appendChild(a);
       a.click();
-      
+
       // Clean up
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
@@ -269,7 +269,7 @@ export class Step5Component extends BaseComponent implements OnInit {
     if (this.resizeSubscription) {
       this.resizeSubscription.unsubscribe();
     }
-    
+
     // Unsubscribe from all subscriptions
     this.unsubscribe.forEach(sub => {
       if (sub && !sub.closed) {
@@ -282,13 +282,13 @@ export class Step5Component extends BaseComponent implements OnInit {
   }
   getCode() {
     const email = this.form.get('companyEmail')?.value;
-    
+
     if (!email || !this.form.get('companyEmail')?.valid) {
       return;
     }
 
     this.gettingCodeLoader = true;
-    
+
     const headers = new HttpHeaders({
       'Accept': 'application/json',
       'Content-Type': 'application/json',
@@ -298,20 +298,20 @@ export class Step5Component extends BaseComponent implements OnInit {
     const getCodeSub = this.http.post('https://api.insightabusiness.com/api/auth/company/code/send', {
       verified_email: email,
     }, { headers })
-    .subscribe({
-      next: () => {
-        this.showSuccess('Success', 'Verification email sent successfully.');
-        this.gettingCodeLoader = false;
-        this.startGetCodeCooldown();
-      },
-      error: (error) => {
-        console.error('Error sending code:', error);
-        const errorMsg = error?.error?.message || 'Failed to send verification code.';
-        this.showError('Error', errorMsg);
-        this.gettingCodeLoader = false;
-      }
-    });
-    
+      .subscribe({
+        next: () => {
+          this.showSuccess('Success', 'Verification email sent successfully.');
+          this.gettingCodeLoader = false;
+          this.startGetCodeCooldown();
+        },
+        error: (error) => {
+          console.error('Error sending code:', error);
+          const errorMsg = error?.error?.message || 'Failed to send verification code.';
+          this.showError('Error', errorMsg);
+          this.gettingCodeLoader = false;
+        }
+      });
+
     this.unsubscribe.push(getCodeSub);
   }
   startGetCodeCooldown(): void {
@@ -319,7 +319,7 @@ export class Step5Component extends BaseComponent implements OnInit {
 
     this.isGetCodeDisabled = true;
     this.getCodeCountdown$.next(countdownTime);
-    
+
     const countdown$ = timer(0, 1000).pipe(
       take(countdownTime + 1),
       map(value => countdownTime - value)
@@ -370,7 +370,7 @@ export class Step5Component extends BaseComponent implements OnInit {
   onFileDrop(event: DragEvent) {
     event.preventDefault();
     const files = event.dataTransfer?.files;
-    
+
     if (!files || files.length === 0) {
       return;
     }
@@ -411,8 +411,8 @@ export class Step5Component extends BaseComponent implements OnInit {
       companyEmail: [''],
       code: [''],
       registerDocument: [null]
-    }, { 
-      validators: this.verificationMethodValidator() 
+    }, {
+      validators: this.verificationMethodValidator()
     });
 
     this.setupFormSubscriptions();
@@ -435,7 +435,7 @@ export class Step5Component extends BaseComponent implements OnInit {
         };
         this.updateParentModel(updateData, this.checkForm());
       });
-    
+
     if (verificationMethodSub) {
       this.unsubscribe.push(verificationMethodSub);
     }
@@ -454,7 +454,7 @@ export class Step5Component extends BaseComponent implements OnInit {
       this.updateParentModel(updateData, this.checkForm());
     });
     this.unsubscribe.push(formChangesSub);
-    
+
     // Domain matching validation
     this.setupDomainValidationSubscriptions();
   }
@@ -462,10 +462,10 @@ export class Step5Component extends BaseComponent implements OnInit {
   private setupDomainValidationSubscriptions(): void {
     const websiteChangesSub = this.form.get('website')?.valueChanges
       .subscribe(() => this.validateDomainMatching());
-    
+
     const emailChangesSub = this.form.get('companyEmail')?.valueChanges
       .subscribe(() => this.validateDomainMatching());
-    
+
     if (websiteChangesSub) this.unsubscribe.push(websiteChangesSub);
     if (emailChangesSub) this.unsubscribe.push(emailChangesSub);
   }
@@ -492,8 +492,8 @@ export class Step5Component extends BaseComponent implements OnInit {
     this.form.get('registerDocument')?.updateValueAndValidity();
   }
 
-  verificationMethodValidator(){
-    return (group:FormGroup)=>{
+  verificationMethodValidator() {
+    return (group: FormGroup) => {
       const verificationMethod = group.get('verificationMethod')?.value;
       if (verificationMethod === 'websiteEmail') {
         const website = group.get('website')?.value;
@@ -502,7 +502,7 @@ export class Step5Component extends BaseComponent implements OnInit {
         if (!website || !companyEmail || !code) {
           return { websiteEmailRequired: true };
         }
-      }else if (verificationMethod === 'uploadDocument') {
+      } else if (verificationMethod === 'uploadDocument') {
         const registerDocument = group.get('registerDocument')?.value;
         if (!registerDocument) {
           return { registerDocumentRequired: true };
@@ -536,13 +536,13 @@ export class Step5Component extends BaseComponent implements OnInit {
   }
   checkForm(): boolean {
     const isValid = this.form.valid && this.agreementChecked;
-    
+
     // Update the parent with the agreement status
     this.updateParentModel({ companyAgreement: this.agreementChecked }, isValid);
-    
+
     // Show agreement error only after attempted submit or explicit decline
     this.showAgreementError = !this.agreementChecked && this.attemptedSubmit;
-    
+
     return isValid;
   }
 
@@ -551,64 +551,64 @@ export class Step5Component extends BaseComponent implements OnInit {
     if (this.form.get('verificationMethod')?.value !== 'websiteEmail') {
       return true; // Not using website/email verification method
     }
-    
+
     const website = this.form.get('website')?.value;
     const email = this.form.get('companyEmail')?.value;
-    
+
     if (!website || !email) {
       return false; // Missing required fields
     }
-    
+
     const websiteDomain = this.extractDomainFromWebsite(website);
     const emailDomain = this.extractDomainFromEmail(email);
-    
+
     return !!(websiteDomain && emailDomain && emailDomain.endsWith(websiteDomain));
   }
-  
+
   // Extract domain from website URL, handling various formats
   extractDomainFromWebsite(website: string): string | null {
     if (!website) return null;
-    
+
     // Clean up the website input
     let domain = website.trim().toLowerCase();
-    
+
     // Remove protocol (http://, https://)
     domain = domain.replace(/^(https?:\/\/)/i, '');
-    
+
     // Remove www. prefix if present
     domain = domain.replace(/^www\./i, '');
-    
+
     // Remove path, query parameters, and hash
     domain = domain.split('/')[0];
     domain = domain.split('?')[0];
     domain = domain.split('#')[0];
-    
+
     // Remove port if present
     domain = domain.split(':')[0];
-    
+
     return domain || null;
   }
-  
+
   // Extract domain from email address
   extractDomainFromEmail(email: string): string | null {
     if (!email || !email.includes('@')) return null;
-    
+
     return email.split('@')[1].toLowerCase();
   }
-  
+
   // Check if email contains @ symbol for early validation
   hasEmailAtSymbol(): boolean {
     const email = this.form.get('companyEmail')?.value;
     return email && email.includes('@');
   }
-  
+
   // Call this before submitting the form - used by the parent component
   prepareForSubmit() {
     this.attemptedSubmit = true;
-    
+
     // Mark all relevant fields as touched to show validation errors
     this.validateAndMarkTouched();
-    
+
     if (!this.agreementChecked) {
       this.showAgreementError = true;
     }
@@ -630,10 +630,10 @@ export class Step5Component extends BaseComponent implements OnInit {
       // Mark website, email, and code fields as touched
       this.form.get('website')?.markAsTouched();
       this.form.get('website')?.updateValueAndValidity();
-      
+
       this.form.get('companyEmail')?.markAsTouched();
       this.form.get('companyEmail')?.updateValueAndValidity();
-      
+
       this.form.get('code')?.markAsTouched();
       this.form.get('code')?.updateValueAndValidity();
     } else if (verificationMethod === 'uploadDocument') {

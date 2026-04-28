@@ -114,7 +114,7 @@ export class MeetingsService {
 
   getMeetings(page: number = 1, perPage: number = 10, dateStatus?: string): Observable<MeetingResponse> {
     const headers = this.getHeaders();
-    
+
     let params = new HttpParams()
       .set('page', page.toString())
       .set('per_page', perPage.toString());
@@ -137,7 +137,7 @@ export class MeetingsService {
     const url = `https://api.insightabusiness.com/api/insighter/meeting/action/${meetingUuid}`;
     console.log('API URL being called:', url);
     const headers = this.getHeaders();
-    
+
     const body = {
       status: status,
       notes: notes

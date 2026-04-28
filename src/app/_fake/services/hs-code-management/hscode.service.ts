@@ -74,7 +74,7 @@ export class HSCodeService {
   }
 
   // Fetch HSCode data by ISIC code
-  getHSCodeByISIC(isicCodeId: number,language:string): Observable<HSCode[]> {
+  getHSCodeByISIC(isicCodeId: number, language: string): Observable<HSCode[]> {
     const headers = new HttpHeaders({
       Accept: 'application/json',
       'Content-Type': 'application/json',

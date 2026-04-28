@@ -15,7 +15,7 @@ export class DeactivateAccountService {
   constructor(
     private http: HttpClient,
   ) {
-  
+
   }
 
   private setLoading(loading: boolean) {

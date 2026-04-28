@@ -41,7 +41,7 @@ export class ManualAccountComponent extends BaseComponent implements OnInit, Aft
   acceptAgreement: boolean = false;
   initialFormValue: any = null;
   showUnsavedChangesDialog: boolean = false;
-  pendingNavigation: () => void = () => {};
+  pendingNavigation: () => void = () => { };
   isFormDirtyOnEdit: boolean = false;
   allowNavigationAfterDiscard: boolean = false;
   private navigationResolver: ((value: boolean) => void) | null = null;
@@ -120,7 +120,7 @@ export class ManualAccountComponent extends BaseComponent implements OnInit, Aft
   // Check if form has unsaved changes
   private hasFormChanged(): boolean {
     if (!this.initialFormValue) return false;
-    
+
     const currentValue = this.manualAccountForm.getRawValue();
     const keysToCheck = ['account_name', 'account_country_id', 'account_phone', 'bank_name', 'bank_country_id', 'bank_address', 'bank_iban', 'bank_swift_code', 'accept_terms'];
 
@@ -185,7 +185,7 @@ export class ManualAccountComponent extends BaseComponent implements OnInit, Aft
     // Also handle any explicit pending navigation (for back button)
     if (this.pendingNavigation) {
       this.pendingNavigation();
-      this.pendingNavigation = () => {};
+      this.pendingNavigation = () => { };
     }
   }
 
@@ -261,7 +261,7 @@ export class ManualAccountComponent extends BaseComponent implements OnInit, Aft
   // Check if manual account is fully set up (has all required data)
   private isManualAccountFullySetUp(manualAccount: PaymentMethod | null): boolean {
     if (!manualAccount) return false;
-    
+
     // Check if key fields are filled (not null/empty)
     return !!(
       manualAccount.account_name &&
@@ -282,23 +282,23 @@ export class ManualAccountComponent extends BaseComponent implements OnInit, Aft
         // Check if manual account exists with actual data
         // If manual account doesn't exist OR iban is null, treat as new account
         this.hasExistingManualAccount = manualAccount !== null &&
-                                       manualAccount.bank_iban !== null &&
-                                       manualAccount.bank_iban !== '';
+          manualAccount.bank_iban !== null &&
+          manualAccount.bank_iban !== '';
 
         // Set accept_agreement status from the manual account
         // If account is not fully set up (has null values), show terms checkbox
         const isFullySetUp = this.isManualAccountFullySetUp(manualAccount);
         this.acceptAgreement = isFullySetUp && (manualAccount?.accept_agreement || false);
-        
+
         // Check for edit mode
         const urlParams = new URLSearchParams(window.location.search);
         const isEditMode = urlParams.get('edit') === 'true';
-        
+
         if (isEditMode && manualAccount) {
           // Edit mode - populate form with existing data
           this.isEditing = true;
           this.existingData = manualAccount;
-          
+
           // Parse phone number from separate fields
           let countryCode = '';
           let phoneNumber = '';
@@ -332,12 +332,12 @@ export class ManualAccountComponent extends BaseComponent implements OnInit, Aft
             console.log('Bank country ID to set:', bankCountryId);
             console.log('Bank country ID type:', typeof bankCountryId);
           }
-          
+
           // Set selected country
           if (this.existingData.account_country) {
             this.setSelectedCountry(this.existingData.account_country);
           }
-          
+
           // Pre-fill form
           const formData = {
             account_name: this.existingData.account_name || '',
@@ -353,13 +353,13 @@ export class ManualAccountComponent extends BaseComponent implements OnInit, Aft
             phoneNumber: phoneNumber.replace(/\D/g, '')
           };
 
-          console.log('Available countries for dropdown:', this.countries.map(c => ({id: c.id, name: c.name})));
+          console.log('Available countries for dropdown:', this.countries.map(c => ({ id: c.id, name: c.name })));
           console.log('Looking for bank country ID:', bankCountryId, 'type:', typeof bankCountryId);
 
           const matchingBankCountry = this.countries.find(c => c.id === bankCountryId);
           console.log('Matching bank country found:', matchingBankCountry);
           this.manualAccountForm.patchValue(formData);
-          
+
           // Store initial form value after pre-filling
           setTimeout(() => {
             this.initialFormValue = this.manualAccountForm.getRawValue();
@@ -379,7 +379,7 @@ export class ManualAccountComponent extends BaseComponent implements OnInit, Aft
             bank_country_id: manualAccount.country.id
           });
         }
-        
+
         // Load terms for new accounts or accounts that are not fully set up
         if (!isEditMode || !isFullySetUp) {
           this.loadManualPaymentTerms();
@@ -649,7 +649,7 @@ export class ManualAccountComponent extends BaseComponent implements OnInit, Aft
     // Update the form control with the OTP code
     this.manualAccountForm.patchValue({ code: otpCode });
     this.manualAccountForm.get('code')?.markAsTouched();
-    
+
     // Automatically submit the form after OTP is entered
     this.submitFormWithOtp();
   }
@@ -699,11 +699,11 @@ export class ManualAccountComponent extends BaseComponent implements OnInit, Aft
         'bank_address',
         'bank_iban'
       ];
-      
+
       if (!this.isCompanyAccount) {
         requiredFields.push('account_country_id');
       }
-      
+
       if (!this.acceptAgreement) {
         requiredFields.push('accept_terms');
       }
@@ -717,12 +717,12 @@ export class ManualAccountComponent extends BaseComponent implements OnInit, Aft
 
       // Show error with specific fields
       const errorMessage = invalidFields.length > 0
-        ? (this.lang === 'ar' 
-            ? `الحقول التالية مطلوبة: ${invalidFields.join(', ')}`
-            : `The following fields are required: ${invalidFields.join(', ')}`)
-        : (this.lang === 'ar' 
-            ? 'يرجى التأكد من ملء جميع الحقول المطلوبة'
-            : 'Please ensure all required fields are filled');
+        ? (this.lang === 'ar'
+          ? `الحقول التالية مطلوبة: ${invalidFields.join(', ')}`
+          : `The following fields are required: ${invalidFields.join(', ')}`)
+        : (this.lang === 'ar'
+          ? 'يرجى التأكد من ملء جميع الحقول المطلوبة'
+          : 'Please ensure all required fields are filled');
 
       this.showError(
         this.lang === 'ar' ? 'خطأ في التحقق' : 'Validation Error',
@@ -912,11 +912,11 @@ export class ManualAccountComponent extends BaseComponent implements OnInit, Aft
         </body>
         </html>
       `;
-      
+
       printWindow.document.open();
       printWindow.document.write(printContent);
       printWindow.document.close();
-      
+
       setTimeout(() => {
         printWindow.print();
       }, 500);
@@ -927,7 +927,7 @@ export class ManualAccountComponent extends BaseComponent implements OnInit, Aft
     if (this.termsContent) {
       const termsTitle = this.lang === 'ar' ? 'شروط-وأحكام-محفظة-الدفع' : 'Wallet-Payment-Terms-and-Conditions';
       const termsText = this.stripHtmlTags(this.termsContent);
-      
+
       const blob = new Blob([termsText], { type: 'text/plain' });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -935,7 +935,7 @@ export class ManualAccountComponent extends BaseComponent implements OnInit, Aft
       a.download = `${termsTitle}.txt`;
       document.body.appendChild(a);
       a.click();
-      
+
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
     }
@@ -971,8 +971,8 @@ export class ManualAccountComponent extends BaseComponent implements OnInit, Aft
       }
       if (control.errors['minlength']) {
         const minLength = control.errors['minlength'].requiredLength;
-        return this.lang === 'ar' 
-          ? `${this.getFieldLabel(fieldName)} يجب أن يكون على الأقل ${minLength} أحرف` 
+        return this.lang === 'ar'
+          ? `${this.getFieldLabel(fieldName)} يجب أن يكون على الأقل ${minLength} أحرف`
           : `${this.getFieldLabel(fieldName)} must be at least ${minLength} characters`;
       }
     }

@@ -49,12 +49,12 @@ export class InsighterAsCompany {
 
     this.setLoading(true);
     return this.http
-    .post(this.apiUrl, formData,{headers})
-    .pipe(
+      .post(this.apiUrl, formData, { headers })
+      .pipe(
         map(res => res),
         catchError(error => this.handleError(error)),
         finalize(() => this.setLoading(false))
-    )
+      )
   }
 
   // Optionally, you can add methods to fetch, create, or update certifications

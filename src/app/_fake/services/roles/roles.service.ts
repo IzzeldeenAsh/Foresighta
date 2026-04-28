@@ -1,6 +1,6 @@
 // roles.service.ts
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http'; 
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { BehaviorSubject, Observable, throwError } from 'rxjs';
 import { catchError, finalize, map } from 'rxjs/operators';
 import { TranslationService } from 'src/app/modules/i18n/translation.service';

@@ -95,7 +95,7 @@ interface ProjectAccountPropertiesResponse {
 export class ProjectSettingsService {
   private readonly checkApiUrl = `${environment.apiBaseUrl}/insighter/project/account/initiate/check`;
   private readonly propertiesApiUrl = `${environment.apiBaseUrl}/insighter/project/account/settings`;
-  private readonly syncApiUrl = `${environment.apiBaseUrl}/insighter/project/account/properties/sync`;
+  private readonly syncApiUrl = `${environment.apiBaseUrl}/insighter/project/account/settings/sync`;
   private readonly servicesApiUrl = `${environment.apiBaseUrl}/common/setting/service`;
 
   constructor(

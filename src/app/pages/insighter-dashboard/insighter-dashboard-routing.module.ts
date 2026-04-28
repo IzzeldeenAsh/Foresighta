@@ -85,6 +85,18 @@ const routes: Routes = [
         loadChildren: () => import('./insighter-dashboard/sales/sales.module').then(m => m.SalesModule),
         canActivate: [authGuard, RolesGuard],
         data: { roles: ['insighter', 'company', 'company-insighter'] }
+      },
+      {
+        path: 'project-offers',
+        loadChildren: () => import('./insighter-dashboard/project-offers/project-offers.module').then(m => m.ProjectOffersModule),
+        canActivate: [authGuard, RolesGuard],
+        data: { roles: ['insighter', 'company', 'company-insighter'] }
+      },
+      {
+        path: 'projects-created',
+        loadChildren: () => import('./insighter-dashboard/projects-created/projects-created.module').then(m => m.ProjectsCreatedModule),
+        canActivate: [authGuard, RolesGuard],
+        data: { roles: ['client', 'insighter', 'company', 'company-insighter'] }
       }
     ]
   }

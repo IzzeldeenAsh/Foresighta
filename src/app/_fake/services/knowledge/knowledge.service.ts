@@ -28,7 +28,7 @@ export interface IsicCode {
 
 export interface Knowledge {
   id: number;
-  type: "data" | "insight" | "report" | "manual" | "course" | "media"  | "statistic";
+  type: "data" | "insight" | "report" | "manual" | "course" | "media" | "statistic";
   title: string;
   slug: string;
   description: string;
@@ -42,20 +42,20 @@ export interface Knowledge {
   hs_code: any;
   language: string;
   total_price: string;
-  package?:any[];
+  package?: any[];
   status: string;
   regions: any[];
   countries: any[];
   economic_blocs: any[];
   published_at?: string;
   publish_as?: 'both' | 'package' | 'standalone';
-  need_to_review?:boolean;
+  need_to_review?: boolean;
   account_manager_process: {
-  need_to_review: boolean;
-  action: string | null;
-  request_id: number | null;
-  request_status: string | null;
-}
+    need_to_review: boolean;
+    action: string | null;
+    request_id: number | null;
+    request_status: string | null;
+  }
 }
 
 export interface KnowledgeResponse {

@@ -119,7 +119,7 @@ export class SentMeetingsService {
 
   getSentMeetings(page: number = 1, perPage: number = 10, dateStatus?: string): Observable<SentMeetingResponse> {
     const headers = this.getHeaders();
-    
+
     let params = new HttpParams()
       .set('page', page.toString())
       .set('per_page', perPage.toString());
@@ -149,13 +149,13 @@ export class SentMeetingsService {
   getAvailableHours(insighterUuid: string): Observable<AvailableHoursResponse> {
     const headers = this.getHeaders();
     const url = `https://api.insightabusiness.com/api/platform/insighter/meeting/available/hours/${insighterUuid}`;
-    
+
     // Calculate date range - from tomorrow to 3 months from tomorrow
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     const endDate = new Date(tomorrow);
     endDate.setMonth(endDate.getMonth() + 3);
-    
+
     const body = {
       start_date: tomorrow.toISOString().split('T')[0],
       end_date: endDate.toISOString().split('T')[0]

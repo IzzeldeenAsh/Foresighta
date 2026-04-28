@@ -129,7 +129,7 @@
                     {{ lang === 'ar' ? 'اختر خدمة واحدة على الأقل.' : 'Select at least one service.' }}
                   </div>
 
-                  <div class="project-service-match-ai d-flex align-items-start gap-3 mt-5 p-4 rounded border border-gray-200">
+                  <div class="project-service-match-ai mt-5 p-4 rounded border border-gray-200">
                     <button type="button" class="project-status-toggle flex-shrink-0 mt-1"
                       [class.is-active]="settingsForm.get('service_match_ai')?.value"
                       [class.is-rtl]="isRtl"
@@ -139,7 +139,7 @@
                         <span class="project-status-toggle-thumb"></span>
                       </span>
                     </button>
-                    <div>
+                    <div class="project-service-match-ai-copy">
                       <div class="fw-semibold text-gray-800">
                         {{ lang === 'ar' ? 'المطابقة بالذكاء الاصطناعي' : 'AI Service Matching' }}
                       </div>

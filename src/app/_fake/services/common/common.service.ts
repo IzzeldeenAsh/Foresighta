@@ -60,17 +60,17 @@ export class CommonService {
       finalize(() => this.setLoading(false))
     );
   }
-  
+
   // Fetch insighter agreement for personal accounts
   getInsighterAgreement(): Observable<any> {
     return this.getGuidelineByTypeCurrent('insighter_agreement');
   }
-  
+
   // Fetch company agreement for company accounts
   getCompanyAgreement(): Observable<any> {
     return this.getGuidelineByTypeCurrent('company_agreement');
   }
-  
+
   // Get the appropriate agreement based on account type
   getAgreementByAccountType(accountType: string): Observable<any> {
     if (accountType === 'company') {

@@ -147,7 +147,7 @@ export class MyOrdersService {
 
   private isLoadingSubject = new BehaviorSubject<boolean>(false);
   public isLoading$ = this.isLoadingSubject.asObservable();
-  
+
   private isMeetingLoadingSubject = new BehaviorSubject<boolean>(false);
   public isMeetingLoading$ = this.isMeetingLoadingSubject.asObservable();
 
@@ -156,7 +156,7 @@ export class MyOrdersService {
 
   private isMeetingSalesLoadingSubject = new BehaviorSubject<boolean>(false);
   public isMeetingSalesLoading$ = this.isMeetingSalesLoadingSubject.asObservable();
-  
+
   private currentLang: string = 'en';
 
   constructor(
@@ -171,7 +171,7 @@ export class MyOrdersService {
 
   private normalizeLanguage(lang: string): string {
     if (!lang) return 'en';
-    
+
     const normalizedLang = lang.toLowerCase().split(/[-_,;]/)[0];
     return normalizedLang === 'ar' ? 'ar' : 'en';
   }
@@ -209,7 +209,7 @@ export class MyOrdersService {
   getOrders(page: number = 1): Observable<OrdersResponse> {
     const url = `${this.API_URL}?page=${page}&per_page=5`;
     const headers = this.getHeaders();
-    
+
     this.setLoading(true);
     return this.http.get<OrdersResponse>(url, { headers }).pipe(
       map((response) => response),
@@ -221,7 +221,7 @@ export class MyOrdersService {
   getMeetingOrders(page: number = 1): Observable<OrdersResponse> {
     const url = `${this.MEETING_API_URL}?page=${page}&per_page=5`;
     const headers = this.getHeaders();
-    
+
     this.setMeetingLoading(true);
     return this.http.get<OrdersResponse>(url, { headers }).pipe(
       map((response) => response),

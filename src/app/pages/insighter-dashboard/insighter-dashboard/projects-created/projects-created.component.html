@@ -1,0 +1,223 @@
+<div class="d-flex flex-column gap-5">
+  <app-page-header
+    [titleEn]="'Projects Created'"
+    [titleAr]="'المشاريع المُنشأة'"
+    [subtitle]="lang === 'ar' ? 'تصفح وإدارة المشاريع التي أنشأتها.' : 'Browse and manage the projects you have created.'"
+    [lang]="lang">
+    <div slot="icon">
+      <i class="ki-outline ki-rocket fs-2x text-info"></i>
+    </div>
+  </app-page-header>
+
+  <p-progressBar
+    *ngIf="isLoading$ | async"
+    mode="indeterminate"
+    [style]="{ height: '3px' }">
+  </p-progressBar>
+
+  <div class="d-flex justify-content-between align-items-end flex-wrap gap-3">
+    <div class="d-flex align-items-center flex-wrap gap-3">
+      <div class="pc-filter">
+        <label class="pc-filter__label">{{ lang === 'ar' ? 'حالة المشروع' : 'Project Status' }}</label>
+        <p-dropdown
+          [options]="projectStatusDropdownOptions"
+          [(ngModel)]="selectedProjectStatus"
+          optionLabel="label"
+          optionValue="value"
+          [showClear]="true"
+          [placeholder]="lang === 'ar' ? 'كل الحالات' : 'All statuses'"
+          styleClass="pc-filter__dropdown"
+          (onChange)="onProjectStatusChange($event.value)">
+        </p-dropdown>
+      </div>
+    </div>
+
+    <div class="pc-view-toggle" role="group">
+      <button type="button"
+              class="pc-view-toggle__btn"
+              [class.active]="viewMode === 'grid'"
+              (click)="setViewMode('grid')"
+              [attr.aria-label]="lang === 'ar' ? 'عرض شبكي' : 'Grid view'">
+        <i class="ki-outline ki-element-11 fs-5"></i>
+      </button>
+      <button type="button"
+              class="pc-view-toggle__btn"
+              [class.active]="viewMode === 'list'"
+              (click)="setViewMode('list')"
+              [attr.aria-label]="lang === 'ar' ? 'عرض قائمة' : 'List view'">
+        <i class="ki-outline ki-row-horizontal fs-5"></i>
+      </button>
+    </div>
+  </div>
+
+  <div *ngIf="!(isLoading$ | async) && projects.length === 0" class="pc-empty">
+    <i class="ki-outline ki-rocket fs-3x text-info mb-4"></i>
+    <h6 class="fw-semibold text-gray-800 mb-2">
+      {{ lang === 'ar' ? 'لا توجد مشاريع بعد' : 'No projects yet' }}
+    </h6>
+    <p class="text-gray-500 fs-7 mb-0">
+      {{ lang === 'ar' ? 'ستظهر مشاريعك هنا بمجرد إنشائها.' : 'Your created projects will appear here.' }}
+    </p>
+  </div>
+
+  <div *ngIf="projects.length > 0 && viewMode === 'grid'" class="row g-3">
+    <div class="col-12 col-md-6 col-xl-4" *ngFor="let project of projects; trackBy: trackByProject">
+      <ng-container *ngTemplateOutlet="projectCard; context: { $implicit: project }"></ng-container>
+    </div>
+  </div>
+
+  <div *ngIf="projects.length > 0 && viewMode === 'list'" class="table-responsive pc-table-shell">
+    <table class="table align-middle fs-6 pc-table">
+      <thead>
+        <tr class="text-start text-gray-500 fw-semibold fs-8 text-uppercase gs-0">
+          <th class="min-w-300px">{{ lang === 'ar' ? 'المشروع' : 'Project' }}</th>
+          <th class="min-w-170px">{{ lang === 'ar' ? 'النوع' : 'Type' }}</th>
+          <th class="min-w-180px">{{ lang === 'ar' ? 'الخدمة' : 'Service' }}</th>
+          <th class="min-w-150px">{{ lang === 'ar' ? 'الموعد النهائي' : 'Deadline' }}</th>
+          <th class="min-w-130px" *ngIf="projects[0]?.status !== null">{{ lang === 'ar' ? 'الحالة' : 'Status' }}</th>
+          <th class="w-120px"></th>
+        </tr>
+      </thead>
+      <tbody class="fw-semibold text-gray-600">
+        <tr *ngFor="let project of projects; trackBy: trackByProject" class="pc-table__row">
+          <td>
+            <div class="pc-table__project">
+              <span class="pc-table__project-title">{{ project.title }}</span>
+              <span class="pc-table__project-summary">{{ getSummary(project) }}</span>
+            </div>
+          </td>
+
+          <td>
+            <div class="pc-table__type">
+              <ng-container *ngTemplateOutlet="typeIcon; context: { $implicit: project.type }"></ng-container>
+              <span>{{ getTypeLabel(project.type) }}</span>
+            </div>
+          </td>
+
+          <td>
+            <div class="pc-table__service-cell" *ngIf="project.service?.name; else emptyService">
+              <span class="pc-service-icon"><i class="ki-outline ki-briefcase fs-7"></i></span>
+              <span>{{ project.service?.name }}</span>
+            </div>
+            <ng-template #emptyService>-</ng-template>
+          </td>
+
+          <td class="text-gray-800 fw-semibold">{{ formatDate(project.deadline) }}</td>
+
+          <td *ngIf="project.status !== null">
+            <span class="pc-status-badge" [ngClass]="getStatusBadgeClass(project.status)">
+              <span class="pc-status-badge__dot"></span>
+              {{ getStatusLabel(project.status) }}
+            </span>
+          </td>
+
+          <td class="text-end">
+            <button type="button"
+                    class="btn btn-sm btn-light-info"
+                    (click)="viewDetails(project)">
+              <i class="ki-outline ki-eye fs-6 me-1"></i>
+              {{ lang === 'ar' ? 'التفاصيل' : 'View Details' }}
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div *ngIf="totalRecords > rows" class="d-flex justify-content-end">
+    <p-paginator
+      [rows]="rows"
+      [totalRecords]="totalRecords"
+      [first]="first"
+      (onPageChange)="onPageChange($event)"
+      styleClass="p-paginator-sm">
+    </p-paginator>
+  </div>
+</div>
+
+<ng-template #projectCard let-project>
+  <div class="pc-card" (click)="viewDetails(project)">
+    <div class="pc-card__header">
+      <span class="pc-card-pill"
+            [class.pc-card-pill--adhoc]="project.type === 'ad_hoc'"
+            [class.pc-card-pill--framework]="project.type === 'frame_work_agreement'"
+            [class.pc-card-pill--urgent]="project.type === 'urgent_request'">
+        <ng-container *ngTemplateOutlet="typeIcon; context: { $implicit: project.type }"></ng-container>
+        <span>{{ getTypeLabel(project.type) }}</span>
+      </span>
+
+      <span *ngIf="project.status"
+            class="pc-status-badge"
+            [ngClass]="getStatusBadgeClass(project.status)">
+        <span class="pc-status-badge__dot"></span>
+        {{ getStatusLabel(project.status) }}
+      </span>
+    </div>
+
+    <div class="pc-card__content">
+      <h6 class="pc-card__title" [title]="project.title">{{ project.title }}</h6>
+      <p class="pc-card__summary">{{ getSummary(project) }}</p>
+    </div>
+
+    <div class="pc-card__service" *ngIf="project.service?.name">
+      <span class="pc-service-icon"><i class="ki-outline ki-briefcase fs-5"></i></span>
+      <span class="pc-card__service-text">{{ project.service?.name }}</span>
+    </div>
+
+    <div class="pc-card__footer">
+      <div class="pc-card__deadline">
+        <span class="pc-card__deadline-icon"><i class="ki-outline ki-calendar fs-5"></i></span>
+        <div class="pc-card__deadline-copy">
+          <span class="pc-card__deadline-label">{{ lang === 'ar' ? 'الموعد النهائي' : 'Deadline' }}</span>
+          <span class="pc-card__deadline-value">{{ formatDate(project.deadline) }}</span>
+        </div>
+      </div>
+
+      <button type="button"
+              class="pc-view-button"
+              (click)="$event.stopPropagation(); viewDetails(project)">
+        <span>{{ lang === 'ar' ? 'التفاصيل' : 'View Details' }}</span>
+        <i class="ki-outline pc-view-button__icon"
+           [ngClass]="lang === 'ar' ? 'ki-arrow-left' : 'ki-arrow-right'"></i>
+      </button>
+    </div>
+  </div>
+</ng-template>
+
+<ng-template #typeIcon let-type>
+  <span class="pc-type__icon"
+        [class.pc-type__icon--adhoc]="type === 'ad_hoc'"
+        [class.pc-type__icon--framework]="type === 'frame_work_agreement'"
+        [class.pc-type__icon--urgent]="type === 'urgent_request'">
+    <ng-container [ngSwitch]="type">
+      <svg *ngSwitchCase="'ad_hoc'" width="18" height="18" viewBox="0 0 30 30" fill="none" aria-hidden="true">
+        <circle cx="15" cy="15" r="15" fill="#52D7FF" fill-opacity="0.14"/>
+        <path d="M21.4514 18.4413L21.3871 19.2642C21.2907 20.2478 21.2135 20.9999 19.4714 20.9999H11.3842C9.64208 20.9999 9.56494 20.2478 9.46851 19.2642L9.21136 16.0499C9.15994 15.5163 9.32708 15.0213 9.62922 14.642C9.63565 14.6356 9.63565 14.6356 9.64208 14.6292C9.99565 14.1985 10.5292 13.9285 11.1271 13.9285H19.7285C20.3264 13.9285 20.8535 14.1985 21.2007 14.6163C21.2071 14.6228 21.2135 14.6292 21.2135 14.6356C21.5285 15.0149 21.7021 15.5099 21.6442 16.0499" fill="#52D7FF" fill-opacity="0.14"/>
+        <path d="M21.4514 18.4413L21.3871 19.2642C21.2907 20.2478 21.2135 20.9999 19.4714 20.9999H11.3842C9.64208 20.9999 9.56494 20.2478 9.46851 19.2642L9.21136 16.0499C9.15994 15.5163 9.32708 15.0213 9.62922 14.642C9.63565 14.6356 9.63565 14.6356 9.64208 14.6292C9.99565 14.1985 10.5292 13.9285 11.1271 13.9285H19.7285C20.3264 13.9285 20.8535 14.1985 21.2007 14.6163C21.2071 14.6228 21.2135 14.6292 21.2135 14.6356C21.5285 15.0149 21.7021 15.5099 21.6442 16.0499" stroke="#0064E1" stroke-width="0.964286" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M9.96387 14.205V10.8943C9.96387 8.70854 10.5103 8.16211 12.696 8.16211H13.5124C14.3289 8.16211 14.5153 8.4064 14.8239 8.81782L15.6403 9.91068C15.846 10.1807 15.9682 10.3478 16.5146 10.3478H18.1539C20.3396 10.3478 20.886 10.8943 20.886 13.08V14.2307" fill="#52D7FF" fill-opacity="0.14"/>
+        <path d="M9.96387 14.205V10.8943C9.96387 8.70854 10.5103 8.16211 12.696 8.16211H13.5124C14.3289 8.16211 14.5153 8.4064 14.8239 8.81782L15.6403 9.91068C15.846 10.1807 15.9682 10.3478 16.5146 10.3478H18.1539C20.3396 10.3478 20.886 10.8943 20.886 13.08V14.2307" stroke="#0064E1" stroke-width="0.964286" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M13.7769 17.7856H17.0811" stroke="#0064E1" stroke-width="0.964286" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+
+      <svg *ngSwitchCase="'frame_work_agreement'" width="18" height="18" viewBox="0 0 30 30" fill="none" aria-hidden="true">
+        <circle cx="15" cy="15" r="15" fill="#FF8BF9" fill-opacity="0.13"/>
+        <path d="M12.0623 12.9583C13.1094 12.9583 13.9582 12.1095 13.9582 11.0625C13.9582 10.0154 13.1094 9.16663 12.0623 9.16663C11.0153 9.16663 10.1665 10.0154 10.1665 11.0625C10.1665 12.1095 11.0153 12.9583 12.0623 12.9583Z" stroke="#B0009E" stroke-width="0.875" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M11.9165 20.8334C12.883 20.8334 13.6665 20.0499 13.6665 19.0834C13.6665 18.1169 12.883 17.3334 11.9165 17.3334C10.95 17.3334 10.1665 18.1169 10.1665 19.0834C10.1665 20.0499 10.95 20.8334 11.9165 20.8334Z" stroke="#B0009E" stroke-width="0.875" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M20.0835 20.8334C21.05 20.8334 21.8335 20.0499 21.8335 19.0834C21.8335 18.1169 21.05 17.3334 20.0835 17.3334C19.117 17.3334 18.3335 18.1169 18.3335 19.0834C18.3335 20.0499 19.117 20.8334 20.0835 20.8334Z" stroke="#B0009E" stroke-width="0.875" stroke-linecap="round" stroke-linejoin="round"/>
+        <g opacity="0.4">
+          <path d="M11.9165 13.25V17.3333" stroke="#B0009E" stroke-width="0.875" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M11.9922 13.25C12.2547 14.2708 13.188 15.0292 14.2905 15.0233L16.2914 15.0175C17.8197 15.0117 19.1205 15.9917 19.5989 17.3567" stroke="#B0009E" stroke-width="0.875" stroke-linecap="round" stroke-linejoin="round"/>
+        </g>
+      </svg>
+
+      <svg *ngSwitchCase="'urgent_request'" width="18" height="18" viewBox="0 0 30 30" fill="none" aria-hidden="true">
+        <circle cx="15" cy="15" r="15" fill="#FFAF47" fill-opacity="0.13"/>
+        <path d="M20.1043 15.2292C20.1043 18.0467 17.8177 20.3333 15.0002 20.3333C12.1827 20.3333 9.896 18.0467 9.896 15.2292C9.896 12.4117 12.1827 10.125 15.0002 10.125C17.8177 10.125 20.1043 12.4117 20.1043 15.2292Z" stroke="#E08700" stroke-width="0.875" stroke-linecap="round" stroke-linejoin="round"/>
+        <path opacity="0.8" d="M15 12.1666V15.0833" stroke="#E08700" stroke-width="0.875" stroke-linecap="round" stroke-linejoin="round"/>
+        <path opacity="0.69" d="M13.25 8.66663H16.75" stroke="#E08700" stroke-width="0.875" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+
+      <i *ngSwitchDefault class="ki-outline ki-briefcase fs-7 text-info"></i>
+    </ng-container>
+  </span>
+</ng-template>
