@@ -73,6 +73,27 @@
             </div>
           </div>
 
+          <div class="pd-tabs" role="tablist" [attr.aria-label]="lang === 'ar' ? 'أقسام المشروع' : 'Project sections'">
+            <button type="button"
+                    class="pd-tab"
+                    role="tab"
+                    [class.active]="activeTab === 'overview'"
+                    [attr.aria-selected]="activeTab === 'overview'"
+                    (click)="setActiveTab('overview')">
+              <span>{{ lang === 'ar' ? 'نظرة عامة' : 'Overview' }}</span>
+            </button>
+
+            <button type="button"
+                    class="pd-tab"
+                    role="tab"
+                    [class.active]="activeTab === 'documents'"
+                    [attr.aria-selected]="activeTab === 'documents'"
+                    (click)="setActiveTab('documents')">
+              <span>{{ lang === 'ar' ? 'المستندات' : 'Documents' }}</span>
+            </button>
+          </div>
+
+          <ng-container *ngIf="activeTab === 'overview'">
           <!-- Description -->
           <section class="pd-section" *ngIf="p.service_prompt || p.description">
             <p class="pd-section__text" *ngIf="p.service_prompt">{{ p.service_prompt }}</p>
@@ -142,6 +163,48 @@
                   <ng-container *ngIf="p.budget_min === null && p.budget_max !== null">
                     {{ lang === 'ar' ? 'حتى' : 'Up to' }} {{ p.budget_max }}
                   </ng-container>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Scopes -->
+          <section class="pd-section" *ngIf="p.scopes?.length">
+            <div class="pd-section__head">
+              <h6 class="pd-section__title">{{ lang === 'ar' ? 'النطاقات' : 'Scopes' }}</h6>
+              <span class="pd-section__eyebrow">{{ lang === 'ar' ? 'تفاصيل العمل' : 'Work Scope' }}</span>
+            </div>
+
+            <div class="pd-scope-list">
+              <div class="pd-detail-card pd-detail-card--scope"
+                   *ngFor="let scope of p.scopes; trackBy: trackByScope">
+                <div class="pd-detail-card__header">
+                  <span class="pd-detail-card__icon">
+                    <i class="ki-outline ki-subtitle fs-4"></i>
+                  </span>
+                  <div class="pd-detail-card__copy">
+                    <div class="pd-detail-card__title">{{ getScopeLabel(scope) }}</div>
+                    <div class="pd-detail-card__subtitle" *ngIf="getScopeDescription(scope)">
+                      {{ getScopeDescription(scope) }}
+                    </div>
+                  </div>
+                </div>
+
+                <div class="pd-detail-card__body" *ngIf="getScopeChildren(scope).length">
+                  <div class="pd-scope-card__label" *ngIf="getScopeChildren(scope).length">
+                    {{ lang === 'ar' ? 'النطاقات الفرعية' : 'Sub-scopes' }}
+                  </div>
+                  <div class="pd-scope-card__children" *ngIf="getScopeChildren(scope).length">
+                    <div class="pd-scope-child" *ngFor="let child of getScopeChildren(scope); trackBy: trackByScope">
+                      <span class="pd-scope-child__bullet"></span>
+                      <div class="pd-scope-child__copy">
+                        <span class="pd-scope-child__title">{{ getScopeLabel(child) }}</span>
+                        <span class="pd-scope-child__description" *ngIf="getScopeDescription(child)">
+                          {{ getScopeDescription(child) }}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -339,6 +402,73 @@
               </div>
             </div>
           </section>
+          </ng-container>
+
+          <ng-container *ngIf="activeTab === 'documents'">
+            <section class="pd-documents" *ngIf="hasDocuments(p); else noDocuments">
+              <div class="pd-document-group"
+                   *ngFor="let group of getDocumentGroups(p); trackBy: trackByDocumentGroup">
+                <div class="pd-document-group__head">
+                  <div>
+                    <h6 class="pd-document-group__title">{{ getDocumentGroupLabel(group) }}</h6>
+                    <p class="pd-document-group__hint">{{ getDocumentGroupDescription(group) }}</p>
+                  </div>
+                  <span class="pd-document-group__count">
+                    {{ group.files.length }} {{ lang === 'ar' ? 'ملف' : (group.files.length === 1 ? 'file' : 'files') }}
+                  </span>
+                </div>
+
+                <div class="pd-document-list">
+                  <button type="button"
+                          class="pd-document-card"
+                          *ngFor="let file of group.files; trackBy: trackByFile"
+                          [disabled]="isOpeningFile(file)"
+                          (click)="openProjectFile(file)">
+                    <img class="pd-document-card__icon"
+                         [src]="getFileTypeIconPath(getProjectFileExtension(file))"
+                         [alt]="getProjectFileExtension(file) || 'file'"
+                         loading="lazy"
+                         (error)="onFileIconLoadError($event)">
+
+                    <span class="pd-document-card__body">
+                      <span class="pd-document-card__name">
+                        {{
+                          isOpeningFile(file)
+                            ? (lang === 'ar' ? 'جارٍ الفتح...' : 'Opening...')
+                            : (getProjectFileScope(file) || getProjectFileName(file))
+                        }}
+                      </span>
+                      <span class="pd-document-card__meta">
+                        <ng-container *ngIf="getProjectFileScope(file)">
+                          <span class="pd-document-card__file-label">
+                            {{ getProjectFileName(file) }}
+                          </span>
+                        </ng-container>
+                        <ng-container *ngIf="getProjectFileUploader(file)">
+                          <span class="pd-document-card__dot" *ngIf="getProjectFileScope(file)"></span>
+                          {{ getProjectFileUploader(file) }}
+                        </ng-container>
+                        <ng-container *ngIf="getProjectFileUploadDate(file)">
+                          <span class="pd-document-card__dot" *ngIf="getProjectFileScope(file) || getProjectFileUploader(file)"></span>
+                          {{ getProjectFileUploadDate(file) }}
+                        </ng-container>
+                      </span>
+                    </span>
+
+                    <i class="ki-outline fs-4 pd-document-card__action"
+                       [ngClass]="isOpeningFile(file) ? 'ki-loading' : 'ki-file-down'"></i>
+                  </button>
+                </div>
+              </div>
+            </section>
+
+            <ng-template #noDocuments>
+              <div class="pd-documents-empty">
+                <i class="ki-outline ki-folder fs-2x text-gray-400"></i>
+                <span>{{ lang === 'ar' ? 'لا توجد مستندات مرفقة بهذا المشروع.' : 'No documents are attached to this project.' }}</span>
+              </div>
+            </ng-template>
+          </ng-container>
 
         </div>
       </div>
@@ -351,8 +481,8 @@
           </div>
           <p class="pd-aside-card__hint">
             {{ lang === 'ar'
-              ? 'راجع تفاصيل مشروعك أو ابدأ عملية مطابقة جديدة مع الخبراء.'
-              : 'Review your project details or start a new matching process with experts.' }}
+              ? (hasContractAction(p) ? 'تم قبول عرض لهذا المشروع. راجع العقد واختر طريقة التوقيع.' : 'راجع تفاصيل مشروعك أو ابدأ عملية مطابقة جديدة مع الخبراء.')
+              : (hasContractAction(p) ? 'An offer has been accepted for this project. Review the contract and choose how to sign.' : 'Review your project details or start a new matching process with experts.') }}
           </p>
 
           <section class="pd-action-panel">
@@ -399,24 +529,25 @@
                     </div>
                   </a>
 
-                  <span class="badge pd-invite-card__status"
-                        [ngClass]="getInvitedStatusBadgeClass(invite)">
-                    {{ getInvitedStatusLabel(invite) }}
+                  <span class="badge pd-invite-card__action-status flex-shrink-0"
+                        [class.pd-invite-card__action-status--offered]="canViewSubmittedOffer(invite)"
+                        [ngClass]="getInviteActionStatusBadgeClass(invite)">
+                    {{ getInviteActionStatusLabel(invite) }}
                   </span>
                 </div>
 
-                <div class="pd-invite-card__footer">
-                  <span class="pd-invite-card__deadline" *ngIf="invite.deadline_offer">
-                    {{ lang === 'ar' ? 'موعد العرض:' : 'Offer deadline:' }} {{ formatDate(invite.deadline_offer) }}
+                <div class="pd-invite-card__footer d-flex align-items-center justify-content-between gap-2 mt-3 pt-3 border-top">
+                  <span class="badge pd-invite-card__status flex-shrink-0"
+                        [ngClass]="getInviteStatusBadgeClass(invite)">
+                    {{ getInviteStatusLabel(invite) }}
                   </span>
 
-                  <button *ngIf="canViewSubmittedOffer(invite)"
-                          type="button"
-                          class="pd-linkbtn"
+                  <button type="button"
+                          *ngIf="canViewSubmittedOffer(invite)"
+                          class="btn btn-sm btn-light-info pd-invite-card__offer-btn d-inline-flex align-items-center gap-1 flex-shrink-0 text-nowrap"
                           (click)="openProposalDrawer(invite)">
-                    {{ lang === 'ar' ? 'عرض العرض المقدم' : 'View Submitted Offer' }}
-                    <i class="ki-outline fs-7"
-                       [ngClass]="lang === 'ar' ? 'ki-arrow-left' : 'ki-arrow-right'"></i>
+                    <i class="ki-outline ki-file-up fs-7"></i>
+                    <span>{{ lang === 'ar' ? 'عرض العرض' : 'View Offer' }}</span>
                   </button>
                 </div>
               </article>
@@ -431,10 +562,24 @@
           </section>
 
           <button type="button"
+                  *ngIf="hasContractAction(p)"
+                  class="btn btn-info w-100 mt-3 pd-contract-pulse"
+                  (click)="viewContract()">
+            <i class="ki-outline ki-document fs-6 me-1"></i>
+            {{ lang === 'ar' ? 'عرض العقد' : 'View Contract' }}
+          </button>
+
+          <button type="button"
+                  *ngIf="!hasContractAction(p)"
                   class="btn btn-info w-100 mt-3"
-                  disabled>
+                  (click)="onRematch()"
+                  [disabled]="isRematchLoading || isSubmittingRematch">
             <i class="ki-outline ki-arrows-circle fs-6 me-1"></i>
-            {{ lang === 'ar' ? 'إعادة المطابقة' : 'Rematch' }}
+            {{
+              rematchPhase === 'creating'
+                ? (lang === 'ar' ? 'جاري البدء...' : 'Starting...')
+                : (lang === 'ar' ? 'إعادة المطابقة' : 'Rematch')
+            }}
           </button>
 
           <div class="pd-aside-table-wrap">
@@ -469,12 +614,305 @@
               </tbody>
             </table>
           </div>
+
         </div>
       </aside>
 
     </div>
   </ng-container>
 </div>
+
+<p-dialog
+  [(visible)]="rematchDialogVisible"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [dismissableMask]="false"
+  [closable]="!isRematchLoading && !isSubmittingRematch"
+  appendTo="body"
+  [baseZIndex]="1200"
+  [style]="{ width: 'min(980px, calc(100vw - 32px))' }"
+  styleClass="pd-rematch-dialog"
+  (onHide)="closeRematchWizard()">
+  <ng-template pTemplate="header">
+    <div class="pd-rematch-header" [attr.dir]="lang === 'ar' ? 'rtl' : 'ltr'">
+      <div class="pd-rematch-header__icon">
+        <i class="ki-outline ki-arrows-circle fs-2"></i>
+      </div>
+      <div class="pd-rematch-header__copy">
+        <span class="pd-rematch-header__eyebrow">
+          {{ lang === 'ar' ? 'إعادة المطابقة' : 'Rematch proposal' }}
+        </span>
+        <h3>{{ project?.title || (lang === 'ar' ? 'المشروع' : 'Project') }}</h3>
+      </div>
+    </div>
+  </ng-template>
+
+  <div class="pd-rematch" [attr.dir]="lang === 'ar' ? 'rtl' : 'ltr'">
+    <div class="pd-rematch-steps">
+      <div class="pd-rematch-step" [class.is-active]="rematchStep === 'matches'" [class.is-complete]="rematchStep === 'deadline'">
+        <span>1</span>
+        <strong>{{ lang === 'ar' ? 'اختيار الخبراء' : 'Select users' }}</strong>
+      </div>
+      <div class="pd-rematch-step" [class.is-active]="rematchStep === 'deadline'">
+        <span>2</span>
+        <strong>{{ lang === 'ar' ? 'تاريخ العرض' : 'Offer deadline' }}</strong>
+      </div>
+    </div>
+
+    <ng-container *ngIf="rematchStep === 'matches'">
+      <div class="pd-rematch-intro">
+        <h4>
+          {{
+            isRematchLoading
+              ? (lang === 'ar' ? 'جارٍ البحث عن المطابقات' : 'Searching for matches')
+              : (lang === 'ar' ? 'اختر واحدًا أو أكثر من النتائج' : 'Select one or more matches')
+          }}
+        </h4>
+        <p>
+          {{
+            isRematchLoading
+              ? (lang === 'ar' ? 'ننشئ مقترحًا جديدًا ثم نبحث عن أفضل الخبراء لهذا المشروع.' : 'Creating a new proposal and finding the best matching insighters for this project.')
+              : (lang === 'ar' ? 'راجع النتائج وحدد الخبراء الذين تريد إرسال المقترح لهم.' : 'Review the results and choose who should receive this proposal.')
+          }}
+        </p>
+      </div>
+
+      <div *ngIf="isRematchLoading" class="pd-rematch-loading">
+        <div class="pd-rematch-loader-card" *ngFor="let item of [1, 2, 3]">
+          <span></span>
+          <div>
+            <i></i>
+            <i></i>
+          </div>
+          <b></b>
+        </div>
+      </div>
+
+      <div *ngIf="rematchPhase === 'ready'" class="pd-match-list">
+        <article
+          *ngFor="let match of visibleRematchMatches; trackBy: trackByMatch"
+          class="pd-match-card"
+          [class.is-selected]="isRematchSelected(match.uuid)"
+          (click)="toggleRematchSelection(match.uuid)">
+          <div class="pd-match-card__main">
+            <label class="pd-match-checkbox"
+                   [class.is-checked]="isRematchSelected(match.uuid)"
+                   (click)="toggleRematchSelection(match.uuid); $event.stopPropagation()">
+              <input
+                type="checkbox"
+                [checked]="isRematchSelected(match.uuid)"
+                [attr.aria-label]="lang === 'ar' ? 'اختيار ' + match.insighter.name : 'Select ' + match.insighter.name" />
+              <span></span>
+            </label>
+
+            <div class="pd-match-avatar">
+              <ng-container *ngIf="getMatchAvatarUrl(match) as avatarUrl; else rematchInitials">
+                <img *ngIf="avatarUrl; else rematchInitials" [src]="avatarUrl" [alt]="match.insighter.name" />
+              </ng-container>
+              <ng-template #rematchInitials>
+                <span>{{ getMatchInitials(match) }}</span>
+              </ng-template>
+              <img
+                *ngIf="getMatchOverlayAvatarUrl(match)"
+                class="pd-match-avatar__overlay"
+                [src]="getMatchOverlayAvatarUrl(match)"
+                [alt]="match.insighter.name" />
+            </div>
+
+            <div class="pd-match-card__identity">
+              <div class="pd-match-card__title-row">
+                <strong>{{ match.insighter.name }}</strong>
+                <i *ngIf="match.insighter.company?.verified" class="ki-solid ki-verify text-primary"></i>
+                <span class="pd-match-type" [class.pd-match-type--company]="isCompanyMatch(match)">
+                  {{ getMatchBadgeLabel(match) }}
+                </span>
+                <span *ngIf="match.is_match_before" class="pd-match-before">
+                  {{ lang === 'ar' ? 'مدعو سابقًا' : 'Previously invited' }}
+                </span>
+              </div>
+
+              <div *ngIf="isCompanyMatch(match) && match.insighter.company?.legal_name" class="pd-match-company">
+                {{ lang === 'ar' ? 'مدير في ' : 'Manager at ' }}
+                <a
+                  *ngIf="match.insighter.company?.uuid; else companyNameOnly"
+                  [href]="getCompanyProfileUrl(match.insighter.company?.uuid)"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  (click)="$event.stopPropagation()">
+                  {{ match.insighter.company?.legal_name }}
+                </a>
+                <ng-template #companyNameOnly>{{ match.insighter.company?.legal_name }}</ng-template>
+              </div>
+
+              <div class="pd-match-meta">
+                <span *ngIf="getMatchCountryName(match.insighter.country)">
+                  <img
+                    *ngIf="match.insighter.country?.flag"
+                    [src]="getCountryFlagPath(match.insighter.country?.flag)"
+                    [alt]="getMatchCountryName(match.insighter.country)"
+                    (error)="onFlagLoadError($event)" />
+                  {{ getMatchCountryName(match.insighter.country) }}
+                </span>
+                <span *ngIf="getMatchStatusLabel(match.status)">
+                  <i class="ki-outline ki-information-5 fs-8"></i>
+                  {{ getMatchStatusLabel(match.status) }}
+                </span>
+              </div>
+
+              <div class="pd-match-card__links">
+                <a
+                  [href]="getProfileUrl(match.insighter.uuid)"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  (click)="$event.stopPropagation()">
+                  {{ lang === 'ar' ? 'عرض الملف الشخصي' : 'View profile' }}
+                  <i class="ki-outline ki-exit-right-corner fs-8"></i>
+                </a>
+
+                <button
+                  *ngIf="getMatchCriteriaEntries(match.matches).length > 0"
+                  type="button"
+                  (click)="toggleMatchDetails(match.uuid, $event)"
+                  [attr.aria-expanded]="isMatchExpanded(match.uuid)">
+                  {{ lang === 'ar' ? 'التفاصيل' : 'Details' }}
+                  <i class="ki-outline ki-down fs-8" [class.is-open]="isMatchExpanded(match.uuid)"></i>
+                </button>
+              </div>
+            </div>
+
+            <div class="pd-match-score">
+              <div class="pd-match-score__ring" [ngStyle]="getMatchScoreStyle(match.match_score)">
+                <span>{{ getMatchScorePercent(match.match_score) }}%</span>
+              </div>
+              <small>{{ lang === 'ar' ? 'نسبة التطابق' : 'Matching Score' }}</small>
+            </div>
+          </div>
+
+          <div *ngIf="isMatchExpanded(match.uuid)" class="pd-match-criteria">
+            <span class="pd-match-criteria__label">{{ lang === 'ar' ? 'معايير التطابق' : 'Match criteria' }}</span>
+            <div>
+              <span
+                *ngFor="let criteria of getMatchCriteriaEntries(match.matches)"
+                class="pd-match-criteria__pill"
+                [class.is-matched]="criteria.matched">
+                <i class="ki-outline" [ngClass]="criteria.matched ? 'ki-check-circle' : 'ki-cross-circle'"></i>
+                {{ criteria.label }}
+              </span>
+            </div>
+          </div>
+        </article>
+      </div>
+
+      <div *ngIf="rematchPhase === 'ready' && shouldAskToIncludePreviousInvited" class="pd-rematch-previous">
+        <strong>{{ lang === 'ar' ? 'تم العثور على نتائج جديدة' : 'New matches found' }}</strong>
+        <div class="pd-rematch-previous__actions" role="group" [attr.aria-label]="lang === 'ar' ? 'تضمين المدعوين سابقًا' : 'Include previously invited insighters'">
+          <button type="button"
+                  [class.is-active]="includePreviousInvited"
+                  (click)="setIncludePreviousInvited(true)">
+            {{ lang === 'ar' ? 'نعم' : 'Yes' }}
+          </button>
+          <button type="button"
+                  [class.is-active]="!includePreviousInvited"
+                  (click)="setIncludePreviousInvited(false)">
+            {{ lang === 'ar' ? 'لا' : 'No' }}
+          </button>
+        </div>
+        <span>
+          {{
+            lang === 'ar'
+              ? 'هل تريد تضمين الخبراء الذين تمت دعوتهم سابقًا؟'
+              : 'Do you want to include previously invited insighters?'
+          }}
+        </span>
+      </div>
+
+      <div *ngIf="rematchPhase === 'empty'" class="pd-rematch-empty">
+        <i class="ki-outline ki-user-search fs-2x"></i>
+        <strong>{{ lang === 'ar' ? 'لا توجد مطابقات متاحة' : 'No matches available' }}</strong>
+        <span>
+          {{ lang === 'ar' ? 'لم يرجع البحث أي خبراء لهذا المشروع.' : 'The match search did not return any insighters for this project.' }}
+        </span>
+      </div>
+
+      <div *ngIf="rematchPhase === 'error'" class="pd-rematch-empty pd-rematch-empty--error">
+        <i class="ki-outline ki-cross-circle fs-2x"></i>
+        <strong>{{ lang === 'ar' ? 'تعذر تحميل المطابقات' : 'Unable to load matches' }}</strong>
+        <span>{{ rematchError }}</span>
+      </div>
+    </ng-container>
+
+    <ng-container *ngIf="rematchStep === 'deadline'">
+      <div class="pd-rematch-intro pd-rematch-intro--deadline">
+        <h4>{{ lang === 'ar' ? 'متى تنتهي صلاحية هذا العرض؟' : 'When should this offer expire?' }}</h4>
+        <p>
+          {{
+            lang === 'ar'
+              ? 'إذا لم يتم التعاقد قبل هذا التاريخ، سيتم إزالة العرض تلقائيًا.'
+              : 'If no contract is made by this date, the offer will be automatically removed.'
+          }}
+        </p>
+        <div class="pd-rematch-selected-count">
+          <span>{{ selectedRematchCount }}</span>
+          {{
+            lang === 'ar'
+              ? 'من الخبراء/الجهات المختارة سيتم إرسالهم مع هذا العرض'
+              : 'selected matches will be submitted with this offer'
+          }}
+        </div>
+      </div>
+
+      <div class="pd-rematch-date">
+        <label for="rematch-deadline-offer">
+          {{ lang === 'ar' ? 'تاريخ انتهاء العرض' : 'Offer expiry date' }}
+        </label>
+        <input
+          id="rematch-deadline-offer"
+          type="date"
+          [(ngModel)]="deadlineOfferDate"
+          [attr.min]="todayDateString"
+          [attr.max]="isRematchUrgentProject ? tomorrowDateString : null"
+          (ngModelChange)="rematchError = null" />
+        <small *ngIf="isRematchUrgentProject">
+          {{ lang === 'ar' ? 'طلبات المشروع العاجلة تنتهي خلال 24 ساعة.' : 'Urgent project offers must expire within 24 hours.' }}
+        </small>
+      </div>
+
+      <div *ngIf="deadlineValidationError || rematchError" class="pd-rematch-error">
+        {{ deadlineValidationError || rematchError }}
+      </div>
+    </ng-container>
+  </div>
+
+  <ng-template pTemplate="footer">
+    <div class="pd-rematch-footer" [attr.dir]="lang === 'ar' ? 'rtl' : 'ltr'">
+      <button type="button"
+              class="pd-rematch-footer__secondary"
+              (click)="rematchStep === 'deadline' ? goToRematchMatches() : closeRematchWizard()"
+              [disabled]="isSubmittingRematch || isRematchLoading">
+        {{ rematchStep === 'deadline' ? (lang === 'ar' ? 'رجوع' : 'Back') : (lang === 'ar' ? 'إلغاء' : 'Cancel') }}
+      </button>
+
+      <button
+        *ngIf="rematchStep === 'matches'"
+        type="button"
+        class="pd-rematch-footer__primary"
+        (click)="goToRematchDeadline()"
+        [disabled]="!canContinueRematchMatches">
+        {{ isRematchLoading ? (lang === 'ar' ? 'جاري البحث...' : 'Searching...') : (lang === 'ar' ? 'متابعة' : 'Continue') }}
+      </button>
+
+      <button
+        *ngIf="rematchStep === 'deadline'"
+        type="button"
+        class="pd-rematch-footer__primary"
+        (click)="submitRematchProposal()"
+        [disabled]="isSubmittingRematch || !deadlineOfferDate || !!deadlineValidationError">
+        {{ isSubmittingRematch ? (lang === 'ar' ? 'جاري الإرسال...' : 'Submitting...') : (lang === 'ar' ? 'إرسال المقترح' : 'Submit proposal') }}
+      </button>
+    </div>
+  </ng-template>
+</p-dialog>
 
 <ng-template #typeIcon let-type>
   <span class="pd-type__icon"
@@ -538,7 +976,7 @@
           <div class="pd-proposal-drawer__hero">
             <div class="pd-proposal-drawer__eyebrow">
               <span class="pd-proposal-drawer__pill">
-                {{ lang === 'ar' ? 'عرض مقدم' : 'Submitted Proposal' }}
+                {{ lang === 'ar' ? 'عرض مقدم' : 'Submitted Offer' }}
               </span>
               <span class="badge" [ngClass]="getInvitedStatusBadgeClass(invite)">
                 {{ getInvitedStatusLabel(invite) }}
@@ -571,7 +1009,7 @@
           <section class="pd-proposal-drawer__section">
             <div class="pd-section__head">
               <h6 class="pd-section__title">{{ lang === 'ar' ? 'الرسالة التعريفية' : 'Cover Letter' }}</h6>
-              <span class="pd-section__eyebrow">{{ lang === 'ar' ? 'محتوى العرض' : 'Proposal Note' }}</span>
+              <span class="pd-section__eyebrow">{{ lang === 'ar' ? 'محتوى العرض' : 'Offer Note' }}</span>
             </div>
             <div class="pd-proposal-drawer__letter">
               {{ invite.offer?.cover_letter || (lang === 'ar' ? 'لا توجد رسالة مرفقة.' : 'No cover letter provided.') }}
@@ -585,21 +1023,43 @@
             </div>
 
             <div class="pd-proposal-drawer__stats">
-              <div class="pd-proposal-drawer__stat">
-                <span class="pd-proposal-drawer__stat-label">{{ lang === 'ar' ? 'السعر المقترح' : 'Proposed Price' }}</span>
-                <span class="pd-proposal-drawer__stat-value">{{ formatPrice(invite.offer?.proposed_price) }}</span>
+              <div class="pd-proposal-drawer__stat pd-proposal-drawer__stat--price">
+                <span class="pd-proposal-drawer__stat-icon">
+                  <i class="ki-outline ki-dollar fs-4"></i>
+                </span>
+                <span class="pd-proposal-drawer__stat-copy">
+                  <span class="pd-proposal-drawer__stat-label">{{ lang === 'ar' ? 'سعر العرض' : 'Offer Price' }}</span>
+                  <span class="pd-proposal-drawer__stat-value">{{ formatPrice(invite.offer?.proposed_price) }}</span>
+                </span>
               </div>
-              <div class="pd-proposal-drawer__stat">
-                <span class="pd-proposal-drawer__stat-label">{{ lang === 'ar' ? 'الدفعة الأولى' : 'Down Payment' }}</span>
-                <span class="pd-proposal-drawer__stat-value">{{ formatPrice(invite.offer?.down_payment) }}</span>
+              <div class="pd-proposal-drawer__stat pd-proposal-drawer__stat--down"
+                   *ngIf="shouldShowDownPayment(invite.offer)">
+                <span class="pd-proposal-drawer__stat-icon">
+                  <i class="ki-outline ki-wallet fs-4"></i>
+                </span>
+                <span class="pd-proposal-drawer__stat-copy">
+                  <span class="pd-proposal-drawer__stat-label">{{ lang === 'ar' ? 'الدفعة الأولى' : 'Down Payment' }}</span>
+                  <span class="pd-proposal-drawer__stat-value">{{ formatPrice(getDownPaymentAmount(invite.offer)) }}</span>
+                </span>
               </div>
-              <div class="pd-proposal-drawer__stat">
-                <span class="pd-proposal-drawer__stat-label">{{ lang === 'ar' ? 'الدفعة النهائية' : 'Final Payment' }}</span>
-                <span class="pd-proposal-drawer__stat-value">{{ formatPrice(invite.offer?.final_payment) }}</span>
+              <div class="pd-proposal-drawer__stat pd-proposal-drawer__stat--final"
+                   *ngIf="shouldShowFinalPayment(invite.offer)">
+                <span class="pd-proposal-drawer__stat-icon">
+                  <i class="ki-outline ki-bank fs-4"></i>
+                </span>
+                <span class="pd-proposal-drawer__stat-copy">
+                  <span class="pd-proposal-drawer__stat-label">{{ lang === 'ar' ? 'الدفعة النهائية' : 'Final Payment' }}</span>
+                  <span class="pd-proposal-drawer__stat-value">{{ formatPrice(getFinalPaymentAmount(invite.offer)) }}</span>
+                </span>
               </div>
-              <div class="pd-proposal-drawer__stat">
-                <span class="pd-proposal-drawer__stat-label">{{ lang === 'ar' ? 'الساعات التقديرية' : 'Estimated Hours' }}</span>
-                <span class="pd-proposal-drawer__stat-value">{{ getEstimatedHours(invite.offer?.estimated_hours) }}</span>
+              <div class="pd-proposal-drawer__stat pd-proposal-drawer__stat--hours">
+                <span class="pd-proposal-drawer__stat-icon">
+                  <i class="ki-outline ki-time fs-4"></i>
+                </span>
+                <span class="pd-proposal-drawer__stat-copy">
+                  <span class="pd-proposal-drawer__stat-label">{{ lang === 'ar' ? 'الساعات التقديرية' : 'Estimated Hours' }}</span>
+                  <span class="pd-proposal-drawer__stat-value">{{ getEstimatedHours(invite.offer?.estimated_hours) }}</span>
+                </span>
               </div>
             </div>
           </section>
@@ -609,19 +1069,24 @@
       <aside class="pd-proposal-drawer__aside">
         <div class="pd-proposal-drawer__aside-card">
           <div class="pd-proposal-drawer__aside-title">
-            {{ lang === 'ar' ? 'إجراء العرض' : 'Proposal Action' }}
+            {{ lang === 'ar' ? 'إجراء العرض' : 'Offer Action' }}
           </div>
           <p class="pd-proposal-drawer__aside-hint">
             {{ lang === 'ar'
-              ? 'يمكنك مراجعة العرض والقبول به عند تفعيل الإجراء لاحقاً.'
-              : 'You can review this proposal and accept it once the action is enabled.' }}
+              ? 'راجع تفاصيل العرض ثم اقبله للانتقال إلى مرحلة العقد.'
+              : 'Review the offer details, then accept it to move into the contract stage.' }}
           </p>
 
           <button type="button"
                   class="btn btn-info w-100"
-                  disabled>
+                  [disabled]="!canAcceptOffer(invite)"
+                  (click)="acceptOffer(invite)">
             <i class="ki-outline ki-check fs-6 me-1"></i>
-            {{ lang === 'ar' ? 'قبول العرض' : 'Accept Proposal' }}
+            {{
+              isAcceptingOffer(invite)
+                ? (lang === 'ar' ? 'جاري القبول...' : 'Accepting...')
+                : (lang === 'ar' ? 'قبول العرض' : 'Accept Offer')
+            }}
           </button>
 
           <div class="pd-aside-table-wrap">
@@ -647,16 +1112,54 @@
                   <th scope="row">{{ lang === 'ar' ? 'السعر' : 'Price' }}</th>
                   <td>{{ formatPrice(invite.offer?.proposed_price) }}</td>
                 </tr>
-                <tr>
+                <tr *ngIf="shouldShowDownPayment(invite.offer)">
                   <th scope="row">{{ lang === 'ar' ? 'الدفعة الأولى' : 'Down Payment' }}</th>
-                  <td>{{ formatPrice(invite.offer?.down_payment) }}</td>
+                  <td>{{ formatPrice(getDownPaymentAmount(invite.offer)) }}</td>
                 </tr>
-                <tr>
+                <tr *ngIf="shouldShowFinalPayment(invite.offer)">
                   <th scope="row">{{ lang === 'ar' ? 'الدفعة النهائية' : 'Final Payment' }}</th>
-                  <td>{{ formatPrice(invite.offer?.final_payment) }}</td>
+                  <td>{{ formatPrice(getFinalPaymentAmount(invite.offer)) }}</td>
                 </tr>
               </tbody>
             </table>
+          </div>
+
+          <div class="pd-proposal-files" *ngIf="getOfferFiles(invite).length">
+            <div class="pd-proposal-files__title">
+              {{ lang === 'ar' ? 'ملفات العرض' : 'Offer Files' }}
+            </div>
+
+            <button type="button"
+                    class="pd-proposal-files__item"
+                    *ngFor="let file of getOfferFiles(invite); trackBy: trackByFile"
+                    [disabled]="isOpeningFile(file)"
+                    (click)="openProjectFile(file)">
+              <span class="pd-proposal-files__iconbox">
+                <img class="pd-proposal-files__icon"
+                     [src]="getFileTypeIconPath(getProjectFileExtension(file))"
+                     [alt]="getProjectFileExtension(file) || 'file'"
+                     loading="lazy"
+                     (error)="onFileIconLoadError($event)">
+              </span>
+              <span class="pd-proposal-files__copy">
+                <span class="pd-proposal-files__name">
+                  {{ isOpeningFile(file) ? (lang === 'ar' ? 'جارٍ الفتح...' : 'Opening...') : getProjectFileName(file) }}
+                </span>
+                <span class="pd-proposal-files__meta">
+                  <ng-container *ngIf="getProjectFileUploader(file)">
+                    {{ getProjectFileUploader(file) }}
+                  </ng-container>
+                  <ng-container *ngIf="getProjectFileUploadDate(file)">
+                    <span class="pd-proposal-files__dot" *ngIf="getProjectFileUploader(file)"></span>
+                    {{ getProjectFileUploadDate(file) }}
+                  </ng-container>
+                </span>
+              </span>
+              <span class="pd-proposal-files__action">
+                <i class="ki-outline"
+                   [ngClass]="isOpeningFile(file) ? 'ki-loading' : 'ki-file-down'"></i>
+              </span>
+            </button>
           </div>
         </div>
       </aside>

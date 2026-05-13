@@ -9,7 +9,7 @@ import { BreadcrumbItem } from 'src/app/reusable-components/dashboard-statistics
 })
 export class ProjectOffersStatisticsComponent extends BaseComponent implements OnInit {
   breadcrumbs: BreadcrumbItem[] = [
-    { label: 'Project Offers', translationKey: 'PROJECT_OFFERS.PAGE_TITLE' }
+    { label: 'Project Proposals', translationKey: 'PROJECT_OFFERS.PAGE_TITLE' }
   ];
 
   constructor(injector: Injector) {

@@ -209,6 +209,7 @@
   border-radius: 999px;
   display: inline-flex;
   flex-shrink: 0;
+  gap: 0.4rem;
   font-size: 0.85rem;
   font-weight: 700;
   justify-content: center;
@@ -225,8 +226,14 @@
 }
 
 .project-checklist-status.is-pending {
-  background: #fff1bf;
-  color: #bd5d00;
+  background: #0d6efd;
+  
+  color: #ffffff;
+}
+
+.project-checklist-status.is-pending i {
+  font-size: 0.7rem;
+  font-weight: 700;
 }
 
 .project-preferences {
@@ -550,6 +557,87 @@
   margin-top: 0.45rem;
 }
 
+.project-service-agreement {
+  background: #ffffff;
+  border: 1px solid #d8dee8;
+  border-radius: 1rem;
+  margin-bottom: 1.25rem;
+  padding: 1rem;
+  transition: border-color 0.2s ease;
+}
+
+.project-service-agreement.is-invalid {
+  border-color: rgba(220, 53, 69, 0.45);
+}
+
+.project-service-agreement-main {
+  align-items: flex-start;
+  display: flex;
+  gap: 0.85rem;
+}
+
+.project-service-agreement-input {
+  flex: 0 0 auto;
+  margin-top: 0.25rem;
+}
+
+.project-service-agreement-copy {
+  min-width: 0;
+}
+
+.project-service-agreement-title {
+  color: #111827;
+  font-size: 0.98rem;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.project-service-agreement-text {
+  color: #5b6473;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  margin-top: 0.25rem;
+}
+
+.project-service-agreement-link {
+  background: transparent;
+  border: 0;
+  color: #0d6efd;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+  padding: 0 0.15rem;
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+}
+
+.project-service-agreement-note,
+.project-service-agreement-error {
+  font-size: 0.84rem;
+  font-weight: 600;
+  margin-top: 0.45rem;
+}
+
+.project-service-agreement-note {
+  color: #6b7280;
+}
+
+.project-service-agreement-error {
+  color: #bd5d00;
+}
+
+.project-service-agreement-dialog {
+  max-height: 68vh;
+  overflow: auto;
+  padding: 0.25rem 0.25rem 0;
+}
+
+.project-service-agreement-content {
+  color: #1f2937;
+  font-size: 0.95rem;
+  line-height: 1.7;
+}
+
 .project-preferences-loading,
 .project-preferences-empty {
   color: #6b7280;
@@ -727,6 +815,10 @@
 
   .project-service-match-ai .project-status-toggle {
     width: auto;
+  }
+
+  .project-service-agreement-main {
+    gap: 0.7rem;
   }
 
   .project-type-grid {

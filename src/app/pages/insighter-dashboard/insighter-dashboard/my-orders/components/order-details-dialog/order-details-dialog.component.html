@@ -28,13 +28,13 @@
 
       <div class="d-flex justify-content-between align-items-center">
         <div class="payment-method-display d-inline-flex align-items-center bg-white rounded border px-3 py-2">
-          <ng-container *ngIf="utils.shouldShowCardLogo(order?.payment); else showIcon3">
-            <div class="me-2" [innerHTML]="cardLogoSvg(order?.payment)" style="width: 24px; height: 16px; display: flex; align-items: center;"></div>
+          <ng-container *ngIf="utils.shouldShowCardLogo(utils.getPrimaryPayment(order)); else showIcon3">
+            <div class="me-2" [innerHTML]="cardLogoSvg(utils.getPrimaryPayment(order))" style="width: 24px; height: 16px; display: flex; align-items: center;"></div>
           </ng-container>
           <ng-template #showIcon3>
-            <i class="fs-6 me-2 text-info" [ngClass]="utils.getPaymentMethodIcon(order?.payment)"></i>
+            <i class="fs-6 me-2 text-info" [ngClass]="utils.getPaymentMethodIcon(utils.getPrimaryPayment(order))"></i>
           </ng-template>
-          <span class="fw-bold text-dark">{{ utils.getPaymentMethodDisplay(order?.payment, lang) }}</span>
+          <span class="fw-bold text-dark">{{ utils.getPaymentMethodDisplay(utils.getPrimaryPayment(order), lang) }}</span>
         </div>
       </div>
     </div>
@@ -212,4 +212,3 @@
 
   </div>
 </p-dialog>
-

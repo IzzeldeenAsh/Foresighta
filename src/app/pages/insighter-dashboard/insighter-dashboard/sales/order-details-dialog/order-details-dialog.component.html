@@ -28,11 +28,11 @@
 
       <div class="d-flex justify-content-between align-items-center">
         <div class="payment-method-display d-inline-flex align-items-center bg-white rounded border px-3 py-2" *ngIf="order.amount > 0">
-          <ng-container *ngIf="utils.shouldShowCardLogo(order?.payment);">
-            <div class="me-2" [innerHTML]="cardLogoSvg(order?.payment)" style="width: 24px; height: 16px; display: flex; align-items: center;"></div>
+          <ng-container *ngIf="utils.shouldShowCardLogo(utils.getPrimaryPayment(order));">
+            <div class="me-2" [innerHTML]="cardLogoSvg(utils.getPrimaryPayment(order))" style="width: 24px; height: 16px; display: flex; align-items: center;"></div>
           </ng-container>
          
-          <span class="fw-bold text-dark">{{ utils.getPaymentMethodDisplay(order?.payment, lang) }}</span>
+          <span class="fw-bold text-dark">{{ utils.getPaymentMethodDisplay(utils.getPrimaryPayment(order), lang) }}</span>
         </div>
       </div>
     </div>
@@ -106,7 +106,7 @@
         <div class="flex-grow-1">
           <div class="mb-2">
             <a *ngIf="order.user.uuid; else justName"
-               [href]="'https://insightabusiness.com/' + lang + '/profile/' + order.user.uuid + '?entity=insighter'"
+               [href]="'http://localhost:3000/' + lang + '/profile/' + order.user.uuid + '?entity=insighter'"
                target="_blank"
                class="text-info text-decoration-none fw-bold client-name-link d-flex align-items-center">
               <span class="me-2">{{ order.user.name }}</span>
@@ -149,7 +149,7 @@
         <div class="flex-grow-1">
           <div class="mb-2">
             <a *ngIf="order.orderable?.insighter?.uuid; else justInsighterName"
-               [href]="'https://insightabusiness.com/' + lang + '/profile/' + order.orderable?.insighter?.uuid + '?entity=insighter'"
+               [href]="'http://localhost:3000/' + lang + '/profile/' + order.orderable?.insighter?.uuid + '?entity=insighter'"
                target="_blank"
                class="text-info text-decoration-none fw-bold d-flex align-items-center">
               <span class="me-2">{{ order.orderable?.insighter?.name }}</span>

@@ -31,7 +31,7 @@
   <!-- All Notifications -->
   <ng-container *ngIf="notifications.length > 0">
     <ng-container *ngFor="let alert of notifications">
-      <a [routerLink]="alert.type === 'knowledge' && alert.category ? null : (alert.type | notificationsLinks:parent)" (click)="onNotificationClick(alert, $event)">
+      <a [routerLink]="alert.type === 'knowledge' && alert.category ? null : ((alert.sub_type === 'project_proposal_offer' ? alert.sub_type : alert.type) | notificationsLinks:parent)" (click)="onNotificationClick(alert, $event)">
       <div  class="d-flex flex-stack py-4 cursor-pointer bg-hover-light-info px-8">
         
         <div class="d-flex align-items-center">

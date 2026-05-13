@@ -1,0 +1,849 @@
+<div class="d-flex flex-column gap-10">
+  <app-page-header
+    [titleEn]="'Projects'"
+    [titleAr]="'المشاريع'"
+    [subtitle]="lang === 'ar' ? 'تابع عروض المشاريع والمشاريع المقبولة من مكان واحد.' : 'Manage project proposals and accepted work from one place.'"
+    [lang]="lang"
+    [showTabs]="true">
+    <div slot="icon">
+      <i class="ki-outline ki-briefcase fs-2x text-info"></i>
+    </div>
+
+    <div slot="tabs" class="d-flex justify-content-between w-100">
+      <ul class="nav nav-stretch nav-line-tabs nav-line-tabs-2x border-transparent fs-5 fw-semibold flex-nowrap">
+        <li class="nav-item">
+          <a
+            class="nav-link text-active-primary pb-4"
+            [routerLink]="['/app/insighter-dashboard/project-offers']">
+            {{ lang === 'ar' ? 'عروض المشاريع' : 'Project Proposals' }}
+          </a>
+        </li>
+        <li class="nav-item">
+          <a
+            class="nav-link text-active-primary pb-4 active"
+            [routerLink]="['/app/insighter-dashboard/on-work-projects']">
+            {{ lang === 'ar' ? 'المشاريع الموافق عليها' : 'Accepted Projects' }}
+          </a>
+        </li>
+      </ul>
+    </div>
+  </app-page-header>
+
+  <div class="d-flex justify-content-end align-items-center">
+    <div class="po-view-toggle" role="group" style="max-height: fit-content;">
+      <button
+        type="button"
+        class="po-view-toggle__btn"
+        [class.active]="viewMode === 'grid'"
+        (click)="setViewMode('grid')"
+        [attr.aria-label]="lang === 'ar' ? 'عرض شبكي' : 'Grid view'">
+        <i class="ki-outline ki-element-11 fs-5"></i>
+      </button>
+      <button
+        type="button"
+        class="po-view-toggle__btn"
+        [class.active]="viewMode === 'list'"
+        (click)="setViewMode('list')"
+        [attr.aria-label]="lang === 'ar' ? 'عرض قائمـة' : 'List view'">
+        <i class="ki-outline ki-row-horizontal fs-5"></i>
+      </button>
+    </div>
+  </div>
+
+  <p-progressBar *ngIf="isLoading$ | async" mode="indeterminate" [style]="{ height: '3px' }"></p-progressBar>
+
+  <div *ngIf="!(isLoading$ | async) && projects.length === 0" class="po-empty">
+    <i class="ki-outline ki-briefcase fs-3x text-info mb-4"></i>
+    <h6 class="fw-semibold text-gray-800 mb-2">
+      {{ lang === 'ar' ? 'لا توجد مشاريع قيد التنفيذ' : 'No on-work projects' }}
+    </h6>
+    <p class="text-gray-500 fs-7 mb-0">
+      {{ lang === 'ar' ? 'ستظهر المشاريع المقبولة هنا بعد انتقالها إلى مرحلة العمل.' : 'Accepted projects will appear here once they move into work.' }}
+    </p>
+  </div>
+
+  <div *ngIf="projects.length > 0 && viewMode === 'grid'" class="row g-3 mt-4">
+    <div class="col-12 col-md-6 col-xl-4" *ngFor="let project of projects; trackBy: trackByProject">
+      <ng-container *ngTemplateOutlet="projectCard; context:{ $implicit: project, layout: 'grid' }"></ng-container>
+    </div>
+  </div>
+
+  <div *ngIf="projects.length > 0 && viewMode === 'list'" class="table-responsive po-table-shell">
+    <table class="table align-middle fs-6 po-table">
+      <thead>
+        <tr class="text-inline-start text-gray-500 fw-semibold fs-8 text-uppercase gs-0">
+          <th class="min-w-300px">{{ lang === 'ar' ? 'المشروع' : 'Project' }}</th>
+          <th class="min-w-170px">{{ lang === 'ar' ? 'النوع' : 'Type' }}</th>
+          <th class="min-w-180px">{{ lang === 'ar' ? 'الخدمة' : 'Service' }}</th>
+          <th class="min-w-150px">{{ lang === 'ar' ? 'موعد التسليم' : 'Deadline' }}</th>
+          <th class="min-w-220px">{{ lang === 'ar' ? 'التوقيع' : 'Signature' }}</th>
+          <th class="w-150px">{{ lang === 'ar' ? 'التفاصيل' : 'Details' }}</th>
+        </tr>
+      </thead>
+
+      <tbody class="fw-semibold text-gray-600">
+        <tr *ngFor="let project of projects; trackBy: trackByProject" class="po-table__row">
+          <td>
+            <button type="button" class="po-table__project" (click)="openDrawer(project)">
+              <span class="po-table__project-image">
+                <img
+                  src="https://res.cloudinary.com/dsiku9ipv/image/upload/v1777637418/job-offer_8062313_lqbkuq.png"
+                  alt=""
+                  loading="lazy">
+              </span>
+              <span class="po-table__project-copy">
+                <span class="po-table__project-title">{{ project.project.title }}</span>
+                <span class="po-table__project-summary">{{ getSummary(project) }}</span>
+              </span>
+            </button>
+          </td>
+
+          <td>
+            <div class="po-table__type">
+              <ng-container *ngTemplateOutlet="typeIcon; context:{ $implicit: project.project.type }"></ng-container>
+              <span>{{ getTypeLabel(project.project.type) }}</span>
+            </div>
+          </td>
+
+          <td>
+            <div class="po-table__service-cell" *ngIf="project.project.service?.name; else emptyService">
+              <span class="po-card__service-icon">
+                <i class="ki-outline ki-briefcase fs-7"></i>
+              </span>
+              <span>{{ project.project.service?.name }}</span>
+            </div>
+            <ng-template #emptyService>-</ng-template>
+          </td>
+
+          <td class="text-gray-800 fw-semibold">{{ getDeadlineLabel(project) }}</td>
+
+          <td>
+            <span class="owp-signature-pill" [ngClass]="getSignatureSummaryClass(project)">
+              <i class="ki-outline" [ngClass]="getSignatureSummaryIcon(project)"></i>
+              <strong>{{ getSignatureSummaryLabel(project) }}</strong>
+            </span>
+          </td>
+
+          <td class="text-end">
+            <button
+              type="button"
+              class="btn btn-sm btn-info owp-contract-button"
+              (click)="openDrawer(project)">
+              <i class="ki-outline ki-eye fs-6 me-1"></i>
+              {{ lang === 'ar' ? 'عرض التفاصيل' : 'View Details' }}
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div *ngIf="totalRecords > rows" class="d-flex justify-content-end">
+    <p-paginator
+      [rows]="rows"
+      [totalRecords]="totalRecords"
+      [first]="first"
+      (onPageChange)="onPageChange($event)"
+      styleClass="p-paginator-sm">
+    </p-paginator>
+  </div>
+</div>
+
+<ng-template #projectCard let-project let-layout="layout">
+  <div class="po-card" [class.po-card--list]="layout === 'list'" (click)="openDrawer(project)">
+    <div class="po-card__hero">
+      <div class="po-card__header">
+        <span
+          class="po-card-pill po-card-pill--type"
+          [class.po-card-pill--adhoc]="project.project.type === 'ad_hoc'"
+          [class.po-card-pill--framework]="project.project.type === 'frame_work_agreement'"
+          [class.po-card-pill--urgent]="project.project.type === 'urgent_request'">
+          <ng-container *ngTemplateOutlet="typeIcon; context:{ $implicit: project.project.type }"></ng-container>
+          <span>{{ getTypeLabel(project.project.type) }}</span>
+        </span>
+
+        <span class="po-card__status" [ngClass]="getContractStatusClass(project)">
+          <span class="po-card__status-dot"></span>
+          {{ getContractStatusLabel(project) }}
+        </span>
+      </div>
+
+      <div class="po-card__content">
+        <div class="po-card__title fs-1" [title]="project.project.title">
+          {{ project.project.title }}
+        </div>
+
+        <p class="po-card__summary">
+          {{ getSummary(project) }}
+        </p>
+      </div>
+
+      <div class="po-card__service" *ngIf="project.project.service?.name">
+        <span class="po-card__service-icon">
+          <i class="ki-outline ki-briefcase fs-5"></i>
+        </span>
+        <span class="po-card__service-text">{{ project.project.service?.name }}</span>
+      </div>
+    </div>
+
+    <div class="po-card__footer">
+      <div class="po-card__deadline">
+        <span class="po-card__deadline-icon">
+          <i class="ki-outline ki-calendar fs-5"></i>
+        </span>
+        <div class="po-card__deadline-copy">
+          <span class="po-card__deadline-label">{{ lang === 'ar' ? 'موعد التسليم' : 'Deadline' }}</span>
+          <span class="po-card__deadline-value">{{ getDeadlineLabel(project) }}</span>
+        </div>
+      </div>
+
+      <button
+        type="button"
+        class="po-view-button"
+        (click)="$event.stopPropagation(); openDrawer(project)">
+        <span>{{ lang === 'ar' ? 'عرض التفاصيل' : 'View Details' }}</span>
+        <i class="ki-outline po-view-button__icon" [ngClass]="lang === 'ar' ? 'ki-arrow-left' : 'ki-arrow-right'"></i>
+      </button>
+    </div>
+  </div>
+</ng-template>
+
+<ng-template #typeIcon let-type>
+  <span
+    class="po-type__icon"
+    [class.po-type__icon--adhoc]="type === 'ad_hoc'"
+    [class.po-type__icon--framework]="type === 'frame_work_agreement'"
+    [class.po-type__icon--urgent]="type === 'urgent_request'">
+    <i
+      class="ki-outline fs-7"
+      [ngClass]="type === 'urgent_request' ? 'ki-time' : (type === 'frame_work_agreement' ? 'ki-abstract-25' : 'ki-briefcase')">
+    </i>
+  </span>
+</ng-template>
+
+<p-sidebar
+  [(visible)]="drawerVisible"
+  position="right"
+  appendTo="body"
+  [modal]="true"
+  [dismissible]="true"
+  [blockScroll]="false"
+  [baseZIndex]="1300"
+  [showCloseIcon]="false"
+  [style]="{ width: '66vw', maxWidth: '1200px' }"
+  styleClass="po-drawer owp-drawer"
+  (onHide)="closeDrawer()">
+  <ng-container *ngIf="selectedProject as project">
+    <div class="po-drawer__wrap">
+      <div class="po-drawer__main">
+        <div class="po-drawer__topbar">
+          <button
+            type="button"
+            class="po-iconbtn"
+            (click)="closeDrawer()"
+            [attr.aria-label]="lang === 'ar' ? 'رجوع' : 'Back'">
+            <i class="ki-outline fs-3" [ngClass]="getDrawerBackIcon()"></i>
+          </button>
+        </div>
+
+        <div class="po-drawer__body">
+          <div class="po-drawer__hero">
+            <div class="po-drawer__hero-copy">
+              <div class="po-drawer__eyebrow">
+                <div class="po-type po-type--hero">
+                  <ng-container *ngTemplateOutlet="typeIcon; context:{ $implicit: project.project.type }"></ng-container>
+                  <span class="po-type__label">{{ getTypeLabel(project.project.type) }}</span>
+                </div>
+                <span class="badge" [ngClass]="getContractStatusClass(project)">
+                  {{ getContractStatusLabel(project) }}
+                </span>
+              </div>
+
+              <h3 class="po-drawer__title">{{ project.project.title }}</h3>
+
+              <div class="po-drawer__meta">
+                <div class="po-drawer__meta-item" *ngIf="project.project.deadline">
+                  <i class="ki-outline ki-calendar fs-6"></i>
+                  <div class="po-meta__text">
+                    <span class="po-meta__label">{{ lang === 'ar' ? 'موعد التسليم' : 'Deadline' }}</span>
+                    <span class="po-meta__value">{{ formatDate(project.project.deadline) }}</span>
+                  </div>
+                </div>
+                <div class="po-drawer__meta-item" *ngIf="project.project.service?.name">
+                  <i class="ki-outline ki-briefcase fs-6"></i>
+                  <div class="po-meta__text">
+                    <span class="po-meta__label">{{ lang === 'ar' ? 'الخدمة' : 'Service' }}</span>
+                    <span class="po-meta__value">{{ project.project.service?.name }}</span>
+                  </div>
+                </div>
+                <div class="po-drawer__meta-item" *ngIf="project.project.language">
+                  <span class="po-language-icon" aria-hidden="true">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M4 5h7"></path>
+                      <path d="M9 3v2c0 4.418 -2.239 8 -5 8"></path>
+                      <path d="M5 9c0 2.144 2.952 3.908 6.7 4"></path>
+                      <path d="M12 20l4 -9l4 9"></path>
+                      <path d="M19.1 18h-6.2"></path>
+                    </svg>
+                  </span>
+                  <div class="po-meta__text">
+                    <span class="po-meta__label">{{ lang === 'ar' ? 'اللغة' : 'Language' }}</span>
+                    <span class="po-meta__value">{{ getLanguageLabel(project.project.language) }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="po-drawer-tabs" role="tablist" [attr.aria-label]="lang === 'ar' ? 'تبويبات تفاصيل المشروع' : 'Project detail tabs'">
+            <button
+              type="button"
+              *ngFor="let tab of drawerTabOptions; trackBy: trackByDrawerTab"
+              class="po-drawer-tab"
+              role="tab"
+              [class.active]="activeDrawerTab === tab.value"
+              [attr.aria-selected]="activeDrawerTab === tab.value"
+              (click)="setDrawerTab(tab.value)">
+              <span>{{ lang === 'ar' ? tab.labelAr : tab.labelEn }}</span>
+            </button>
+          </div>
+
+          <ng-container [ngSwitch]="activeDrawerTab">
+            <div *ngSwitchCase="'overview'" class="po-tab-panel">
+              <section class="po-section" *ngIf="project.project.service_prompt || project.project.description">
+                <p class="po-section__text" *ngIf="project.project.service_prompt">{{ project.project.service_prompt }}</p>
+                <p class="po-section__text" *ngIf="project.project.description">{{ project.project.description }}</p>
+              </section>
+
+              <section class="po-facts">
+                <div class="po-fact po-fact--blue">
+                  <i class="ki-outline ki-element-7 fs-4"></i>
+                  <div class="po-fact__body">
+                    <div class="po-fact__label">{{ lang === 'ar' ? 'نوع المشروع' : 'Project Type' }}</div>
+                    <div class="po-fact__value">{{ getTypeLabel(project.project.type) }}</div>
+                  </div>
+                </div>
+
+                <div class="po-fact po-fact--green" *ngIf="project.project.phase">
+                  <i class="ki-outline ki-chart-pie-simple fs-4"></i>
+                  <div class="po-fact__body">
+                    <div class="po-fact__label">{{ lang === 'ar' ? 'المرحلة' : 'Phase' }}</div>
+                    <div class="po-fact__value">{{ getPhaseLabel(project.project.phase) }}</div>
+                  </div>
+                </div>
+
+                <div class="po-fact po-fact--slate" *ngIf="project.project.business_type">
+                  <i class="ki-outline ki-briefcase fs-4"></i>
+                  <div class="po-fact__body">
+                    <div class="po-fact__label">{{ lang === 'ar' ? 'نوع العمل' : 'Business Type' }}</div>
+                    <div class="po-fact__value">{{ getBusinessTypeLabel(project.project.business_type) }}</div>
+                  </div>
+                </div>
+
+                <div class="po-fact po-fact--slate" *ngIf="project.project.language">
+                  <span class="po-language-icon po-language-icon--fact" aria-hidden="true">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M4 5h7"></path>
+                      <path d="M9 3v2c0 4.418 -2.239 8 -5 8"></path>
+                      <path d="M5 9c0 2.144 2.952 3.908 6.7 4"></path>
+                      <path d="M12 20l4 -9l4 9"></path>
+                      <path d="M19.1 18h-6.2"></path>
+                    </svg>
+                  </span>
+                  <div class="po-fact__body">
+                    <div class="po-fact__label">{{ lang === 'ar' ? 'اللغة' : 'Language' }}</div>
+                    <div class="po-fact__value">{{ getLanguageLabel(project.project.language) }}</div>
+                  </div>
+                </div>
+              </section>
+
+              <section class="po-section" *ngIf="project.project.scopes?.length">
+                <div class="po-section__head">
+                  <h6 class="po-section__title">{{ lang === 'ar' ? 'النطاقات' : 'Scopes' }}</h6>
+                  <span class="po-section__eyebrow">{{ lang === 'ar' ? 'تفاصيل العمل' : 'Work Scope' }}</span>
+                </div>
+                <div class="po-scope-list">
+                  <div class="po-detail-card po-detail-card--scope"
+                    *ngFor="let scope of project.project.scopes; trackBy: trackByScope">
+                    <div class="po-detail-card__header">
+                      <span class="po-detail-card__icon">
+                        <i class="ki-outline ki-subtitle fs-4"></i>
+                      </span>
+                      <div class="po-detail-card__copy">
+                        <div class="po-detail-card__title">{{ getScopeLabel(scope) }}</div>
+                        <div class="po-detail-card__subtitle" *ngIf="getScopeDescription(scope)">
+                          {{ getScopeDescription(scope) }}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="po-detail-card__body" *ngIf="getScopeChildren(scope).length || getScopeFiles(scope).length">
+                      <div class="po-file-list" *ngIf="getScopeFiles(scope).length">
+                        <button
+                          type="button"
+                          class="po-file-button"
+                          *ngFor="let file of getScopeFiles(scope); trackBy: trackByFile"
+                          [disabled]="isOpeningFile(file)"
+                          (click)="openProjectFile(file)">
+                          <i class="ki-outline fs-5" [ngClass]="isOpeningFile(file) ? 'ki-loading' : 'ki-file-down'"></i>
+                          <span>{{ isOpeningFile(file) ? (lang === 'ar' ? 'جارٍ الفتح...' : 'Opening...') : getProjectFileName(file) }}</span>
+                        </button>
+                      </div>
+
+                      <div class="po-scope-card__label" *ngIf="getScopeChildren(scope).length">
+                        {{ lang === 'ar' ? 'النطاقات الفرعية' : 'Sub-scopes' }}
+                      </div>
+                      <div class="po-scope-card__children" *ngIf="getScopeChildren(scope).length">
+                        <div class="po-scope-child" *ngFor="let child of getScopeChildren(scope); trackBy: trackByScope">
+                          <span class="po-scope-child__bullet"></span>
+                          <div class="po-scope-child__copy">
+                            <span class="po-scope-child__title">{{ getScopeLabel(child) }}</span>
+                            <span class="po-scope-child__description" *ngIf="getScopeDescription(child)">
+                              {{ getScopeDescription(child) }}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <section class="po-section" *ngIf="getComponent(project, 'deliverable-stage') as deliverableStage">
+                <div class="po-section__head">
+                  <h6 class="po-section__title">{{ lang === 'ar' ? 'مراحل التسليم' : 'Deliverable Stages' }}</h6>
+                  <span class="po-section__eyebrow">{{ lang === 'ar' ? 'خطة التسليم' : 'Delivery Timeline' }}</span>
+                </div>
+                <div class="po-stage-grid">
+                  <div class="po-stage-card" *ngIf="deliverableStage.first_draft as firstDraft">
+                    <div class="po-stage-card__head">
+                      <span class="po-stage-card__icon">
+                        <i class="ki-outline ki-document fs-4"></i>
+                      </span>
+                      <div class="po-stage-card__copy">
+                        <span class="po-stage-card__title">{{ lang === 'ar' ? 'المسودة الأولى' : 'First Draft' }}</span>
+                        <span class="po-stage-card__subtitle">
+                          {{ lang === 'ar' ? 'مراجعة أولية قبل النسخة النهائية.' : 'Initial review milestone before final delivery.' }}
+                        </span>
+                      </div>
+                    </div>
+                    <div class="po-stage-card__body">
+                      <div class="po-detail-row">
+                        <span class="po-detail-row__label">{{ lang === 'ar' ? 'التاريخ' : 'Date' }}</span>
+                        <span class="po-detail-row__value">{{ formatDate(firstDraft.date) }}</span>
+                      </div>
+                      <div class="po-detail-row" *ngIf="firstDraft.way?.selected">
+                        <span class="po-detail-row__label">{{ lang === 'ar' ? 'طريقة التسليم' : 'Delivery Way' }}</span>
+                        <span class="po-detail-row__value">{{ getWayLabel(firstDraft.way?.selected) }}</span>
+                      </div>
+                      <div class="po-detail-row" *ngIf="firstDraft.way?.address">
+                        <span class="po-detail-row__label">{{ lang === 'ar' ? 'العنوان' : 'Address' }}</span>
+                        <span class="po-detail-row__value">{{ firstDraft.way?.address }}</span>
+                      </div>
+                      <div class="po-detail-chip-wrap" *ngIf="firstDraft.report_type?.length">
+                        <div class="po-stage-card__files-label">
+                          {{ lang === 'ar' ? 'أنواع الملفات المطلوبة:' : 'Required File types:' }}
+                        </div>
+                        <span class="po-detail-chip po-detail-chip--file"
+                          *ngFor="let type of firstDraft.report_type; trackBy: trackByValue">
+                          <img
+                            class="po-detail-chip__file"
+                            [src]="getFileTypeIconPath(type)"
+                            [alt]="type"
+                            loading="lazy"
+                            (error)="onFileIconLoadError($event)">
+                          {{ getFormattedValue(type) }}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="po-stage-card" *ngIf="deliverableStage.final_version as finalVersion">
+                    <div class="po-stage-card__head">
+                      <span class="po-stage-card__icon">
+                        <i class="ki-outline ki-check-square fs-4"></i>
+                      </span>
+                      <div class="po-stage-card__copy">
+                        <span class="po-stage-card__title">{{ lang === 'ar' ? 'النسخة النهائية' : 'Final Version' }}</span>
+                        <span class="po-stage-card__subtitle">
+                          {{ lang === 'ar' ? 'الإصدار النهائي المعتمد للتسليم.' : 'Final approved version for delivery.' }}
+                        </span>
+                      </div>
+                    </div>
+                    <div class="po-stage-card__body">
+                      <div class="po-detail-row">
+                        <span class="po-detail-row__label">{{ lang === 'ar' ? 'التاريخ' : 'Date' }}</span>
+                        <span class="po-detail-row__value">{{ formatDate(finalVersion.date) }}</span>
+                      </div>
+                      <div class="po-detail-row" *ngIf="finalVersion.way?.selected">
+                        <span class="po-detail-row__label">{{ lang === 'ar' ? 'طريقة التسليم' : 'Delivery Way' }}</span>
+                        <span class="po-detail-row__value">{{ getWayLabel(finalVersion.way?.selected) }}</span>
+                      </div>
+                      <div class="po-detail-row" *ngIf="finalVersion.way?.address">
+                        <span class="po-detail-row__label">{{ lang === 'ar' ? 'العنوان' : 'Address' }}</span>
+                        <span class="po-detail-row__value">{{ finalVersion.way?.address }}</span>
+                      </div>
+                      <div class="po-detail-chip-wrap" *ngIf="finalVersion.report_type?.length">
+                        <div class="po-stage-card__files-label">
+                          {{ lang === 'ar' ? 'أنواع الملفات المطلوبة:' : 'Required File types:' }}
+                        </div>
+                        <span class="po-detail-chip po-detail-chip--file"
+                          *ngFor="let type of finalVersion.report_type; trackBy: trackByValue">
+                          <img
+                            class="po-detail-chip__file"
+                            [src]="getFileTypeIconPath(type)"
+                            [alt]="type"
+                            loading="lazy"
+                            (error)="onFileIconLoadError($event)">
+                          {{ getFormattedValue(type) }}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <section class="po-section" *ngIf="getComponent(project, 'target-market') as targetMarket">
+                <div class="po-section__head">
+                  <h6 class="po-section__title">{{ lang === 'ar' ? 'السوق المستهدف' : 'Target Market' }}</h6>
+                  <span class="po-section__eyebrow">{{ lang === 'ar' ? 'النطاق الجغرافي' : 'Geographic Reach' }}</span>
+                </div>
+                <div class="po-detail-card po-detail-card--market">
+                  <div class="po-detail-card__header">
+                    <span class="po-detail-card__icon">
+                      <i class="ki-outline ki-geolocation fs-4"></i>
+                    </span>
+                    <div class="po-detail-card__copy">
+                      <div class="po-detail-card__title">{{ lang === 'ar' ? 'هيكل السوق' : 'Market Scope' }}</div>
+                      <div class="po-detail-card__subtitle">
+                        {{ lang === 'ar' ? 'المناطق أو الدول المستهدفة لهذا المشروع.' : 'Regions or countries targeted by this project.' }}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="po-detail-card__body">
+                    <div class="po-detail-chip-wrap" *ngIf="targetMarket.objects?.length">
+                      <span class="po-detail-chip" *ngFor="let item of targetMarket.objects; trackBy: trackByIndex">
+                        <img
+                          *ngIf="targetMarket.type === 'country'"
+                          class="po-detail-chip__flag"
+                          [src]="getCountryFlagPath(item.flag)"
+                          [alt]="item.name"
+                          loading="lazy"
+                          (error)="onFlagLoadError($event)">
+                        {{ item.name }}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <section class="po-section" *ngIf="getComponent(project, 'data-sources-expected') as dataSources">
+                <div class="po-section__head">
+                  <h6 class="po-section__title">{{ lang === 'ar' ? 'مصادر البيانات' : 'Data Sources' }}</h6>
+                  <span class="po-section__eyebrow">{{ lang === 'ar' ? 'منهجية البحث' : 'Research Inputs' }}</span>
+                </div>
+                <div class="po-detail-card po-detail-card--source">
+                  <div class="po-detail-card__header">
+                    <span class="po-detail-card__icon">
+                      <i class="ki-outline ki-abstract-39 fs-4"></i>
+                    </span>
+                    <div class="po-detail-card__copy">
+                      <div class="po-detail-card__title">{{ lang === 'ar' ? 'مصدر البيانات المعتمد' : 'Preferred Data Source' }}</div>
+                      <div class="po-detail-card__subtitle">
+                        {{ lang === 'ar' ? 'نوع البيانات المتوقع الاعتماد عليه أثناء التنفيذ.' : 'Expected data profile for delivery and analysis.' }}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="po-detail-card__body">
+                    <div class="po-detail-chip-wrap">
+                      <span class="po-detail-chip po-detail-chip--primary">{{ getDataSourceLabel(dataSources) }}</span>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <section class="po-section" *ngIf="hasAddons(project)">
+                <div class="po-section__head">
+                  <h6 class="po-section__title">{{ lang === 'ar' ? 'الإضافات' : 'Add-ons' }}</h6>
+                  <span class="po-section__eyebrow">{{ lang === 'ar' ? 'عناصر داعمة' : 'Supporting Scope' }}</span>
+                </div>
+                <div class="po-addon-grid">
+                  <div class="po-addon-card" *ngIf="getAddon(project, 'kickoff-meeting') as kickoffMeeting">
+                    <div class="po-addon-card__head">
+                      <span class="po-addon-card__icon">
+                        <i class="ki-outline ki-calendar-add fs-4"></i>
+                      </span>
+                      <div class="po-addon-card__title">{{ lang === 'ar' ? 'اجتماع البدء' : 'Kickoff Meeting' }}</div>
+                    </div>
+                    <div class="po-detail-row">
+                      <span class="po-detail-row__label">{{ lang === 'ar' ? 'التاريخ' : 'Date' }}</span>
+                      <span class="po-detail-row__value">{{ formatDate(kickoffMeeting.date) }}</span>
+                    </div>
+                  </div>
+                </div>
+              </section>
+            </div>
+
+            <section *ngSwitchCase="'documents'" class="po-section po-documents">
+              <div class="po-section__head">
+                <h6 class="po-section__title">{{ lang === 'ar' ? 'المستندات' : 'Documents' }}</h6>
+                <span class="po-section__eyebrow">{{ lang === 'ar' ? 'ملفات المشروع والعرض' : 'Project & Offer Files' }}</span>
+              </div>
+
+              <ng-container *ngIf="getAllProposalFiles(project).length || getRequestFiles(project).length; else noProjectDocuments">
+                <div class="po-document-group" *ngIf="getProposalFiles(project, 'general').length">
+                  <div class="po-document-group__head">
+                    <span class="po-document-group__icon"><i class="ki-outline ki-folder fs-5"></i></span>
+                    <div>
+                      <h6>{{ lang === 'ar' ? 'عام' : 'General' }}</h6>
+                      <span>{{ getProposalFiles(project, 'general').length }} {{ lang === 'ar' ? 'ملف' : 'file(s)' }}</span>
+                    </div>
+                  </div>
+                  <div class="po-document-list">
+                    <button
+                      type="button"
+                      class="po-document-item"
+                      *ngFor="let file of getProposalFiles(project, 'general'); trackBy: trackByFile"
+                      [disabled]="isOpeningFile(file)"
+                      (click)="openProjectFile(file)">
+                      <span class="po-document-item__icon">
+                        <i class="ki-outline fs-5" [ngClass]="isOpeningFile(file) ? 'ki-loading' : 'ki-file-down'"></i>
+                      </span>
+                      <span class="po-document-item__copy">
+                        <strong>{{ getProjectFileName(file) }}</strong>
+                        <small>{{ file.uploadBy || '-' }} &middot; {{ formatDate(file.upload_date) }}</small>
+                      </span>
+                    </button>
+                  </div>
+                </div>
+
+                <div class="po-document-group" *ngIf="getProposalFiles(project, 'scopes').length">
+                  <div class="po-document-group__head">
+                    <span class="po-document-group__icon po-document-group__icon--scope"><i class="ki-outline ki-subtitle fs-5"></i></span>
+                    <div>
+                      <h6>{{ lang === 'ar' ? 'النطاقات' : 'Scopes' }}</h6>
+                      <span>{{ getProposalFiles(project, 'scopes').length }} {{ lang === 'ar' ? 'ملف' : 'file(s)' }}</span>
+                    </div>
+                  </div>
+                  <div class="po-document-list">
+                    <button
+                      type="button"
+                      class="po-document-item"
+                      *ngFor="let file of getProposalFiles(project, 'scopes'); trackBy: trackByFile"
+                      [disabled]="isOpeningFile(file)"
+                      (click)="openProjectFile(file)">
+                      <span class="po-document-item__icon">
+                        <i class="ki-outline fs-5" [ngClass]="isOpeningFile(file) ? 'ki-loading' : 'ki-file-down'"></i>
+                      </span>
+                      <span class="po-document-item__copy">
+                        <strong>{{ file.scope || getProjectFileName(file) }}</strong>
+                        <small>
+                          <ng-container *ngIf="file.scope">{{ getProjectFileName(file) }} &middot; </ng-container>
+                          {{ file.uploadBy || '-' }} &middot; {{ formatDate(file.upload_date) }}
+                        </small>
+                      </span>
+                    </button>
+                  </div>
+                </div>
+
+                <div class="po-document-group" *ngIf="getProposalFiles(project, 'offer').length">
+                  <div class="po-document-group__head">
+                    <span class="po-document-group__icon po-document-group__icon--offer"><i class="ki-outline ki-document fs-5"></i></span>
+                    <div>
+                      <h6>{{ lang === 'ar' ? 'العرض' : 'Offer' }}</h6>
+                      <span>{{ getProposalFiles(project, 'offer').length }} {{ lang === 'ar' ? 'ملف' : 'file(s)' }}</span>
+                    </div>
+                  </div>
+                  <div class="po-document-list">
+                    <button
+                      type="button"
+                      class="po-document-item"
+                      *ngFor="let file of getProposalFiles(project, 'offer'); trackBy: trackByFile"
+                      [disabled]="isOpeningFile(file)"
+                      (click)="openProjectFile(file)">
+                      <span class="po-document-item__icon">
+                        <i class="ki-outline fs-5" [ngClass]="isOpeningFile(file) ? 'ki-loading' : 'ki-file-down'"></i>
+                      </span>
+                      <span class="po-document-item__copy">
+                        <strong>{{ getProjectFileName(file) }}</strong>
+                        <small>{{ file.uploadBy || '-' }} &middot; {{ formatDate(file.upload_date) }}</small>
+                      </span>
+                    </button>
+                  </div>
+                </div>
+
+                <div class="po-document-group" *ngIf="getRequestFiles(project).length">
+                  <div class="po-document-group__head">
+                    <span class="po-document-group__icon"><i class="ki-outline ki-file-added fs-5"></i></span>
+                    <div>
+                      <h6>{{ lang === 'ar' ? 'ملفات الطلب' : 'Request Files' }}</h6>
+                      <span>{{ getRequestFiles(project).length }} {{ lang === 'ar' ? 'ملف' : 'file(s)' }}</span>
+                    </div>
+                  </div>
+                  <div class="po-document-list">
+                    <button
+                      type="button"
+                      class="po-document-item"
+                      *ngFor="let file of getRequestFiles(project); trackBy: trackByFile"
+                      [disabled]="isOpeningFile(file)"
+                      (click)="openProjectFile(file)">
+                      <span class="po-document-item__icon">
+                        <i class="ki-outline fs-5" [ngClass]="isOpeningFile(file) ? 'ki-loading' : 'ki-file-down'"></i>
+                      </span>
+                      <span class="po-document-item__copy">
+                        <strong>{{ getProjectFileName(file) }}</strong>
+                        <small>{{ file.uploadBy || '-' }} &middot; {{ formatDate(file.upload_date) }}</small>
+                      </span>
+                    </button>
+                  </div>
+                </div>
+              </ng-container>
+
+              <ng-template #noProjectDocuments>
+                <div class="po-empty po-empty--compact">
+                  <i class="ki-outline ki-document fs-2x text-info mb-3"></i>
+                  <h6 class="fw-semibold text-gray-800 mb-2">
+                    {{ lang === 'ar' ? 'لا توجد مستندات' : 'No documents' }}
+                  </h6>
+                  <p class="text-gray-500 fs-7 mb-0">
+                    {{ lang === 'ar' ? 'لم يتم إرفاق ملفات لهذا المشروع.' : 'No project files are attached yet.' }}
+                  </p>
+                </div>
+              </ng-template>
+            </section>
+
+            <section *ngSwitchCase="'contract'" class="po-section owp-contract-tab">
+              <div class="po-section__head">
+                <h6 class="po-section__title">{{ lang === 'ar' ? 'العقد' : 'Contract' }}</h6>
+                <span class="po-section__eyebrow">{{ lang === 'ar' ? 'مراجعة وتوقيع' : 'Review & Signature' }}</span>
+              </div>
+
+              <ng-container *ngIf="hasContract(project); else noContract">
+                <p-progressBar *ngIf="contractDetailsLoading" mode="indeterminate" [style]="{ height: '3px' }"></p-progressBar>
+
+                <div class="po-detail-card po-detail-card--offer owp-contract-panel">
+                  <div class="po-detail-card__header">
+                    <span class="po-detail-card__icon">
+                      <i class="ki-outline ki-document fs-4"></i>
+                    </span>
+                    <div class="po-detail-card__copy">
+                      <div class="po-detail-card__title">
+                        {{ contractDetails?.name || (lang === 'ar' ? 'عقد المشروع' : 'Project Contract') }}
+                      </div>
+                      <div class="po-detail-card__subtitle">
+                        {{ lang === 'ar'
+                          ? 'راجع العقد ضمن سياق تفاصيل المشروع، ثم افتحه للتوقيع أو المتابعة.'
+                          : 'Review the contract in project context, then open it to sign or continue.' }}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="po-detail-card__body">
+                    <div class="owp-contract-status-grid">
+                      <div
+                        class="owp-contract-status"
+                        [class.owp-contract-status--signed]="isContractSigned(project)"
+                        [class.owp-contract-status--warning]="isContractWaiting(project)">
+                        <span>{{ lang === 'ar' ? 'حالة العقد' : 'Contract Status' }}</span>
+                        <strong>
+                          <i class="ki-outline fs-5" [ngClass]="getSignatureSummaryIcon(project)"></i>
+                          {{ getSignatureSummaryLabel(project) }}
+                        </strong>
+                      </div>
+                      <div class="owp-contract-status">
+                        <span>{{ lang === 'ar' ? 'نوع العقد' : 'Contract Type' }}</span>
+                        <strong>{{ getContractTypeLabel(contractDetails) }}</strong>
+                      </div>
+                    </div>
+
+                    <div *ngIf="contractDetailsError" class="alert alert-warning mt-4 mb-0">
+                      {{ lang === 'ar' ? 'تعذر تحميل ملخص العقد. لا يزال بإمكانك فتح صفحة العقد.' : 'Could not load the contract summary. You can still open the contract page.' }}
+                    </div>
+
+                    <button
+                      type="button"
+                      class="btn btn-info mt-5"
+                      [disabled]="!canOpenContract(project)"
+                      (click)="viewContract(project)">
+                      <i class="ki-outline ki-document fs-6 me-1"></i>
+                      {{ lang === 'ar' ? 'فتح العقد' : 'Open Contract' }}
+                    </button>
+                  </div>
+                </div>
+              </ng-container>
+
+              <ng-template #noContract>
+                <div class="po-empty po-empty--compact">
+                  <i class="ki-outline ki-information-2 fs-2x text-warning mb-3"></i>
+                  <h6 class="fw-semibold text-gray-800 mb-2">
+                    {{ lang === 'ar' ? 'العقد غير متاح' : 'Contract unavailable' }}
+                  </h6>
+                  <p class="text-gray-500 fs-7 mb-0">
+                    {{ lang === 'ar' ? 'لم يتم العثور على عقد لهذا المشروع بعد.' : 'No contract was found for this project yet.' }}
+                  </p>
+                </div>
+              </ng-template>
+            </section>
+          </ng-container>
+        </div>
+      </div>
+
+      <aside class="po-drawer__aside">
+        <div class="po-aside-card">
+          <div class="po-aside-card__title">
+            {{ lang === 'ar' ? 'إجراءات المشروع' : 'Project Actions' }}
+          </div>
+          <p class="po-aside-card__hint">
+            {{ lang === 'ar'
+              ? 'راجع تفاصيل المشروع والمستندات أولاً، ثم انتقل إلى العقد عند الحاجة.'
+              : 'Review the project details and documents first, then continue to the contract when needed.' }}
+          </p>
+
+          <button
+            type="button"
+            class="btn btn-info w-100 mb-3"
+            [disabled]="!canOpenContract(project)"
+            (click)="viewContract(project)">
+            <i class="ki-outline ki-document fs-6 me-1"></i>
+            {{ lang === 'ar' ? 'فتح العقد' : 'Open Contract' }}
+          </button>
+
+          <div class="po-aside-table-wrap">
+            <table class="po-aside-table">
+              <tbody>
+                <tr>
+                  <th scope="row">{{ lang === 'ar' ? 'الخدمة' : 'Service' }}</th>
+                  <td>{{ project.project.service?.name || '-' }}</td>
+                </tr>
+                <tr>
+                  <th scope="row">{{ lang === 'ar' ? 'نوع المشروع' : 'Project Type' }}</th>
+                  <td>{{ getTypeLabel(project.project.type) }}</td>
+                </tr>
+                <tr>
+                  <th scope="row">{{ lang === 'ar' ? 'موعد التسليم' : 'Deadline' }}</th>
+                  <td>{{ formatDate(project.project.deadline) }}</td>
+                </tr>
+                <tr>
+                  <th scope="row">{{ lang === 'ar' ? 'لغة المشروع' : 'Project Language' }}</th>
+                  <td>{{ getLanguageLabel(project.project.language) }}</td>
+                </tr>
+                <tr>
+                  <th scope="row">{{ lang === 'ar' ? 'العقد' : 'Contract' }}</th>
+                  <td>
+                    <span class="badge" [ngClass]="getContractStatusClass(project)">
+                      {{ getContractStatusLabel(project) }}
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </ng-container>
+</p-sidebar>

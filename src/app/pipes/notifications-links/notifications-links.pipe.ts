@@ -14,6 +14,10 @@ export class NotificationsLinksPipe implements PipeTransform {
     if (value === 'requests') {
       return '/app/insighter-dashboard/my-requests';
     }
+
+    if (value === 'project_proposal_offer') {
+      return '/app/insighter-dashboard/project-offers';
+    }
     
     return '/app/insighter-dashboard/my-dashboard';
   }

@@ -63,7 +63,6 @@ interface ProjectServiceListResponse {
 }
 
 export interface SyncProjectAccountPropertiesPayload {
-  status: 'active' | 'inactive';
   languages: 'english' | 'arabic' | 'both';
   hourly_rate: string;
   services: number[];
@@ -78,11 +77,16 @@ export interface ProjectAccountTypeOption {
 
 export interface ProjectAccountProperties {
   status?: 'active' | 'inactive';
+  receive_project_services?: 'active' | 'inactive';
   languages?: 'english' | 'arabic' | 'both';
   hourly_rate?: string | number | null;
   services?: Array<ProjectServiceOption | number>;
   service_match_ai?: boolean;
   types?: Array<ProjectAccountTypeOption | ProjectAccountProjectType | 'framework' | 'urgent'>;
+  agreement?: boolean;
+  accept_agreement?: boolean;
+  project_service_agreement?: boolean;
+  project_service_agreement_accepted?: boolean;
 }
 
 interface ProjectAccountPropertiesResponse {
@@ -96,6 +100,9 @@ export class ProjectSettingsService {
   private readonly checkApiUrl = `${environment.apiBaseUrl}/insighter/project/account/initiate/check`;
   private readonly propertiesApiUrl = `${environment.apiBaseUrl}/insighter/project/account/settings`;
   private readonly syncApiUrl = `${environment.apiBaseUrl}/insighter/project/account/settings/sync`;
+  private readonly activateApiUrl = `${environment.apiBaseUrl}/insighter/project/account/activate`;
+  private readonly deactivateApiUrl = `${environment.apiBaseUrl}/insighter/project/account/deactivate`;
+  private readonly acceptAgreementApiUrl = `${environment.apiBaseUrl}/insighter/project/account/agreement/accept`;
   private readonly servicesApiUrl = `${environment.apiBaseUrl}/common/setting/service`;
 
   constructor(
@@ -148,5 +155,29 @@ export class ProjectSettingsService {
     return this.http.post(this.syncApiUrl, payload, {
       headers: this.getHeaders(),
     });
+  }
+
+  activateReceivingProjectService(): Observable<unknown> {
+    return this.http.post(
+      this.activateApiUrl,
+      { agreement: true },
+      { headers: this.getHeaders() }
+    );
+  }
+
+  deactivateReceivingProjectService(): Observable<unknown> {
+    return this.http.post(
+      this.deactivateApiUrl,
+      { agreement: true },
+      { headers: this.getHeaders() }
+    );
+  }
+
+  acceptProjectServiceAgreement(): Observable<unknown> {
+    return this.http.post(
+      this.acceptAgreementApiUrl,
+      { agreement: true },
+      { headers: this.getHeaders() }
+    );
   }
 }

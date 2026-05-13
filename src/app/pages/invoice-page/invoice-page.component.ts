@@ -5,6 +5,7 @@ import { MyOrdersService, OrdersResponse, Order } from '../insighter-dashboard/i
 import { ProfileService } from 'src/app/_fake/services/get-profile/get-profile.service';
 import { InvoiceData } from 'src/app/reusable-components/invoice-viewer/invoice-viewer.component';
 import { forkJoin, catchError, of, Observable } from 'rxjs';
+import * as OrderViewUtils from '../insighter-dashboard/insighter-dashboard/my-orders/utils/order-view.utils';
 
 @Component({
   selector: 'app-invoice-page',
@@ -106,24 +107,24 @@ export class InvoicePageComponent extends BaseComponent implements OnInit {
 
             // Find the order by order number in all order types
             let foundOrder: Order | undefined = orders.data.find((order: Order) =>
-              order.order_no === orderNo || order.invoice_no === orderNo
+              this.orderMatchesIdentifier(order, orderNo)
             );
 
             if (!foundOrder) {
               foundOrder = meetingOrders.data.find((order: Order) =>
-                order.order_no === orderNo || order.invoice_no === orderNo
+                this.orderMatchesIdentifier(order, orderNo)
               );
             }
 
             if (!foundOrder && !isClient) {
               foundOrder = salesKnowledgeOrders.data.find((order: Order) =>
-                order.order_no === orderNo || order.invoice_no === orderNo
+                this.orderMatchesIdentifier(order, orderNo)
               );
             }
 
             if (!foundOrder && !isClient) {
               foundOrder = salesMeetingOrders.data.find((order: Order) =>
-                order.order_no === orderNo || order.invoice_no === orderNo
+                this.orderMatchesIdentifier(order, orderNo)
               );
             }
 
@@ -139,7 +140,7 @@ export class InvoicePageComponent extends BaseComponent implements OnInit {
                 email: string;
                 country: string;
               } | undefined = undefined;
-              let billingAddress: string | null = null;
+              let billingAddress: InvoiceData['billingAddress'] = null;
 
               if (isPurchasedOrder) {
                 // For purchased orders, bill-to should be the current logged-in user
@@ -150,11 +151,7 @@ export class InvoicePageComponent extends BaseComponent implements OnInit {
                   email: userProfile?.email || '',
                   country: ''
                 };
-                // billing_address is a string, use it directly (not an object)
-                const billingAddr = foundOrder.payment?.billing_address;
-                billingAddress = typeof billingAddr === 'string' && billingAddr !== '' 
-                  ? billingAddr 
-                  : null;
+                billingAddress = this.getBillingAddress(foundOrder, orderNo);
               } else if (isSoldOrder) {
                 // For sold orders, bill-to should be the buyer (user object in the order)
                 billToProfile = {
@@ -164,16 +161,12 @@ export class InvoicePageComponent extends BaseComponent implements OnInit {
                   email: foundOrder.user?.email || '',
                   country: ''
                 };
-                // billing_address is a string, use it directly (not an object)
-                const billingAddr = foundOrder.payment?.billing_address;
-                billingAddress = typeof billingAddr === 'string' && billingAddr !== '' 
-                  ? billingAddr 
-                  : null;
+                billingAddress = this.getBillingAddress(foundOrder, orderNo);
               }
 
               this.invoiceData = {
                 order_no: foundOrder.order_no,
-                invoice_no: foundOrder.invoice_no,
+                invoice_no: this.getInvoiceNo(foundOrder, orderNo),
                 date: foundOrder.date,
                 amount: foundOrder.amount,
                 service: foundOrder.service,
@@ -200,6 +193,25 @@ export class InvoicePageComponent extends BaseComponent implements OnInit {
         this.isLoading = false;
       }
     });
+  }
+
+  private orderMatchesIdentifier(order: Order, identifier: string): boolean {
+    return order.order_no === identifier
+      || order.invoice_no === identifier
+      || OrderViewUtils.getOrderPayments(order).some(payment => payment.invoice_no === identifier);
+  }
+
+  private getInvoiceNo(order: Order, identifier: string): string {
+    const matchedPayment = OrderViewUtils.getOrderPayments(order).find(payment => payment.invoice_no === identifier);
+    return matchedPayment?.invoice_no || OrderViewUtils.getOrderInvoiceNo(order) || order.order_no;
+  }
+
+  private getBillingAddress(order: Order, identifier: string): InvoiceData['billingAddress'] {
+    const matchedPayment = OrderViewUtils.getOrderPayments(order).find(payment => payment.invoice_no === identifier);
+    const payment = matchedPayment || OrderViewUtils.getPrimaryPayment(order);
+    const billingAddress = payment?.billing_address;
+
+    return billingAddress || null;
   }
 
   goBack(): void {

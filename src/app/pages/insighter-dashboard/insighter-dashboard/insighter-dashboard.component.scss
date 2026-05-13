@@ -26,6 +26,29 @@
         padding-inline: 3rem;
     }
 }
+
+#kt_app_toolbar_container,
+.main-content-area {
+    max-width: 1440px;
+    margin-inline: auto;
+    box-sizing: border-box;
+}
+
+@media screen and (min-width: 1440px) {
+    #kt_app_toolbar_container {
+        transform: translate(0, -50px);
+    }
+
+    .main-content-area {
+        max-width: 1136px;
+    }
+
+    .responsive-cont {
+        max-width: none;
+        margin-inline: 0;
+        transform: translate(0, -50px);
+    }
+}
 .btn-custom {
     background-color: #0182d51a !important;
     border-bottom: 3px solid #0fe1ff !important;

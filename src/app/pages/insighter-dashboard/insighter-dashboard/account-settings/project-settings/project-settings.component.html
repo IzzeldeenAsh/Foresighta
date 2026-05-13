@@ -21,9 +21,14 @@
           <div *ngIf="allChecksPassed" class="card-toolbar">
             <button type="button" class="project-status-toggle project-status-toggle-header"
               [class.is-active]="settingsForm.get('project_status')?.value" [class.is-rtl]="isRtl"
-              [attr.dir]="isRtl ? 'rtl' : 'ltr'" (click)="toggleProjectStatus()">
+              [attr.dir]="isRtl ? 'rtl' : 'ltr'"
+              [disabled]="isProjectStatusUpdating || (isSaving$ | async)"
+              (click)="toggleProjectStatus()">
               <span class="project-status-toggle-text">
                 {{
+                isProjectStatusUpdating
+                ? (lang === 'ar' ? 'جاري التحديث...' : 'Updating...')
+                :
                 settingsForm.get('project_status')?.value
                 ? (lang === 'ar' ? 'متاح لاستقبال العروض' : 'Available for receiving offers')
                 : (lang === 'ar' ? 'غير متاح لاستقبال العروض' : 'Unavailable for receiving offers')
@@ -73,6 +78,7 @@
 
                   <span class="project-checklist-status" [class.is-complete]="item.passed"
                     [class.is-pending]="!item.passed">
+                    <i *ngIf="!item.passed" class="pi pi-plus"></i>
                     {{ item.passed ? (lang === 'ar' ? 'مكتمل' : 'Done') : (lang === 'ar' ? 'أضف' : 'Add') }}
                   </span>
                 </div>
@@ -268,7 +274,7 @@
                   <div class="card-title m-0">
                     <h5 class="m-0">
                       <i class="bi bi-currency-dollar me-2"></i>
-                      {{ lang === 'ar' ? 'سعر الساعة' : 'Hourly rate' }}
+                      {{ lang === 'ar' ? 'سعر ساعتك' : 'Your Hourly rate' }}
                     </h5>
                   </div>
                 </div>
@@ -339,6 +345,63 @@
                   <div *ngIf="projectLanguagesControl?.invalid && projectLanguagesControl?.touched"
                     class="project-preferences-error">
                     {{ lang === 'ar' ? 'اختر لغة واحدة على الأقل.' : 'Select at least one language.' }}
+                  </div>
+                </div>
+              </div>
+
+              <div class="project-service-agreement" [class.is-invalid]="showAgreementError">
+                <div class="project-service-agreement-main">
+                  <input
+                    id="project_service_agreement"
+                    class="form-check-input project-service-agreement-input"
+                    type="checkbox"
+                    formControlName="project_service_agreement"
+                    (change)="onAgreementCheckboxChange()"
+                  />
+
+                  <div class="project-service-agreement-copy">
+                    <div class="project-service-agreement-title">
+                      {{
+                      lang === 'ar'
+                      ? 'أوافق على اتفاقية خدمات المشاريع'
+                      : 'I agree to the project services agreement'
+                      }}
+                    </div>
+
+                    <div class="project-service-agreement-text">
+                      {{
+                      lang === 'ar'
+                      ? 'الموافقة مطلوبة قبل تفعيل استقبال عروض المشاريع.'
+                      : 'Acceptance is required before enabling project offer receiving.'
+                      }}
+
+                      <button
+                        type="button"
+                        class="project-service-agreement-link"
+                        (click)="openProjectServiceAgreementDialog()"
+                      >
+                        {{
+                        projectServiceAgreement?.name ||
+                        (lang === 'ar' ? 'عرض الاتفاقية' : 'View agreement')
+                        }}
+                      </button>
+                    </div>
+
+                    <div *ngIf="isAgreementLoading" class="project-service-agreement-note">
+                      {{ lang === 'ar' ? 'جاري تحميل الاتفاقية...' : 'Loading agreement...' }}
+                    </div>
+
+                    <div *ngIf="agreementErrorMessage" class="project-service-agreement-error">
+                      {{ agreementErrorMessage }}
+                    </div>
+
+                    <div *ngIf="showAgreementError" class="project-preferences-error">
+                      {{
+                      lang === 'ar'
+                      ? 'اقبل اتفاقية خدمات المشاريع أولاً.'
+                      : 'Accept the project services agreement first.'
+                      }}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -422,3 +485,44 @@
     </div>
   </div>
 </ng-template>
+
+<p-dialog
+  [(visible)]="isAgreementDialogVisible"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  appendTo="body"
+  [style]="{ width: '85vw', maxWidth: '960px' }"
+  [breakpoints]="{ '992px': '90vw', '576px': '96vw' }"
+>
+  <ng-template pTemplate="header">
+    <h5 class="m-0">
+      {{
+      projectServiceAgreement?.name ||
+      (lang === 'ar' ? 'اتفاقية خدمات المشاريع' : 'Project services agreement')
+      }}
+    </h5>
+  </ng-template>
+
+  <div class="project-service-agreement-dialog" [dir]="isRtl ? 'rtl' : 'ltr'">
+    <div *ngIf="isAgreementLoading" class="project-preferences-loading">
+      {{ lang === 'ar' ? 'جاري تحميل الاتفاقية...' : 'Loading agreement...' }}
+    </div>
+
+    <div *ngIf="!isAgreementLoading && agreementErrorMessage" class="alert alert-warning project-settings-alert">
+      {{ agreementErrorMessage }}
+    </div>
+
+    <div
+      *ngIf="!isAgreementLoading && projectServiceAgreementHtml"
+      class="project-service-agreement-content"
+      [innerHTML]="projectServiceAgreementHtml"
+    ></div>
+  </div>
+
+  <ng-template pTemplate="footer">
+    <button type="button" class="btn btn-primary project-preferences-save" (click)="isAgreementDialogVisible = false">
+      {{ lang === 'ar' ? 'إغلاق' : 'Close' }}
+    </button>
+  </ng-template>
+</p-dialog>

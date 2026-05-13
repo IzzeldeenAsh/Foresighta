@@ -19,9 +19,11 @@ interface ProjectTypeMeta {
   labelAr: string;
 }
 
-interface DropdownOption {
-  label: string;
-  value: string;
+interface StatusFilterOption<T> {
+  value: T;
+  labelEn: string;
+  labelAr: string;
+  iconClass: string;
 }
 
 @Component({
@@ -33,7 +35,8 @@ export class ProjectsCreatedComponent extends BaseComponent implements OnInit, O
   isLoading$: Observable<boolean>;
 
   projects: CreatedProject[] = [];
-  viewMode: ViewMode = 'grid';
+  viewMode: ViewMode = 'list';
+  projectImageUrl = 'https://res.cloudinary.com/dsiku9ipv/image/upload/v1778674424/project_18669661_o5xc3a.png';
   selectedProjectStatus: string | null = null;
 
   currentPage: number = 1;
@@ -47,12 +50,10 @@ export class ProjectsCreatedComponent extends BaseComponent implements OnInit, O
     { key: 'urgent_request', labelEn: 'Urgent Request', labelAr: 'طلب عاجل' },
   ];
 
-  private projectStatusOptionsDef = [
-    { value: 'proposal', labelEn: 'Proposal', labelAr: 'مقترح' },
-    { value: 'submitted', labelEn: 'Submitted', labelAr: 'مُرسل' },
-    { value: 'closed', labelEn: 'Closed', labelAr: 'مغلق' },
-    { value: 'cancelled', labelEn: 'Cancelled', labelAr: 'ملغي' },
-    { value: 'expired', labelEn: 'Expired', labelAr: 'منتهي' },
+  projectStatusOptions: StatusFilterOption<string>[] = [
+    { value: 'submitted', labelEn: 'Submitted', labelAr: 'مُرسل', iconClass: 'ki-send' },
+    { value: 'closed', labelEn: 'Closed', labelAr: 'مغلق', iconClass: 'ki-lock' },
+    { value: 'expired', labelEn: 'Expired', labelAr: 'منتهي', iconClass: 'ki-time' },
   ];
 
   constructor(
@@ -66,13 +67,6 @@ export class ProjectsCreatedComponent extends BaseComponent implements OnInit, O
 
   ngOnInit(): void {
     this.loadProjects(1);
-  }
-
-  get projectStatusDropdownOptions(): DropdownOption[] {
-    return this.projectStatusOptionsDef.map(o => ({
-      label: this.lang === 'ar' ? o.labelAr : o.labelEn,
-      value: o.value,
-    }));
   }
 
   loadProjects(page: number): void {
@@ -128,10 +122,8 @@ export class ProjectsCreatedComponent extends BaseComponent implements OnInit, O
 
   getStatusBadgeClass(status: string | null | undefined): string {
     switch ((status || '').toLowerCase()) {
-      case 'proposal': return 'badge-light-warning';
       case 'submitted': return 'badge-light-primary';
       case 'closed': return 'badge-light-success';
-      case 'cancelled': return 'badge-light-danger';
       case 'expired': return 'badge-light-danger';
       default: return 'badge-light-info';
     }
@@ -139,10 +131,8 @@ export class ProjectsCreatedComponent extends BaseComponent implements OnInit, O
 
   getStatusLabel(status: string | null | undefined): string {
     const labels: Record<string, { en: string; ar: string }> = {
-      proposal: { en: 'Proposal', ar: 'مقترح' },
       submitted: { en: 'Submitted', ar: 'مُرسل' },
       closed: { en: 'Closed', ar: 'مغلق' },
-      cancelled: { en: 'Cancelled', ar: 'ملغي' },
       expired: { en: 'Expired', ar: 'منتهي' },
     };
     const key = (status || '').toLowerCase();
@@ -155,7 +145,7 @@ export class ProjectsCreatedComponent extends BaseComponent implements OnInit, O
     if (!value) return '-';
     try {
       const d = new Date(value);
-      return d.toLocaleDateString(this.lang === 'ar' ? 'ar-EG' : 'en-US', {
+      return d.toLocaleDateString('en-US', {
         year: 'numeric', month: 'short', day: 'numeric'
       });
     } catch {

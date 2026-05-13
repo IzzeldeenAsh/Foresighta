@@ -1,8 +1,10 @@
 import { Component, Injector, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
-import { BehaviorSubject, catchError, finalize, forkJoin, of } from 'rxjs';
+import { BehaviorSubject, catchError, concatMap, finalize, forkJoin, of } from 'rxjs';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { ProfileService } from 'src/app/_fake/services/get-profile/get-profile.service';
+import { GuidelineDetail, GuidelinesService } from 'src/app/_fake/services/guidelines/guidelines.service';
 import { BaseComponent } from 'src/app/modules/base.component';
 import { environment } from 'src/environments/environment';
 import {
@@ -83,9 +85,19 @@ export class ProjectSettingsComponent extends BaseComponent implements OnInit {
   availableServices: ProjectServiceOption[] = [];
   errorMessage = '';
   servicesErrorMessage = '';
+  agreementErrorMessage = '';
+  projectServiceAgreement: GuidelineDetail | null = null;
+  projectServiceAgreementHtml: SafeHtml | null = null;
+  isAgreementLoading = false;
+  isAgreementDialogVisible = false;
+  showAgreementError = false;
+  isProjectStatusUpdating = false;
   settingsForm: FormGroup;
   private roles: string[] = [];
   private lastResults: ProjectAccountCheckResults = {};
+  private readonly hiddenServiceSlugs = new Set(['other']);
+  private initialProjectStatus = true;
+  private projectServiceAgreementAccepted = false;
 
   private readonly loadingSubject = new BehaviorSubject<boolean>(true);
   private readonly servicesLoadingSubject = new BehaviorSubject<boolean>(false);
@@ -99,7 +111,9 @@ export class ProjectSettingsComponent extends BaseComponent implements OnInit {
     private readonly fb: FormBuilder,
     private readonly projectSettingsService: ProjectSettingsService,
     private readonly profileService: ProfileService,
-    private readonly router: Router
+    private readonly router: Router,
+    private readonly guidelinesService: GuidelinesService,
+    private readonly sanitizer: DomSanitizer
   ) {
     super(injector);
 
@@ -110,6 +124,7 @@ export class ProjectSettingsComponent extends BaseComponent implements OnInit {
       services: [[], Validators.required],
       service_match_ai: [false],
       project_types: [[], Validators.required],
+      project_service_agreement: [false],
     });
   }
 
@@ -127,6 +142,7 @@ export class ProjectSettingsComponent extends BaseComponent implements OnInit {
 
       if (this.allChecksPassed) {
         this.loadServices();
+        this.loadProjectServiceAgreement();
       }
     });
     this.unsubscribe.push(langSub);
@@ -162,10 +178,76 @@ export class ProjectSettingsComponent extends BaseComponent implements OnInit {
     return this.settingsForm.get('services');
   }
 
+  get projectServiceAgreementControl() {
+    return this.settingsForm.get('project_service_agreement');
+  }
+
   toggleProjectStatus(): void {
+    if (this.isProjectStatusUpdating) {
+      return;
+    }
+
     const currentValue = !!this.settingsForm.get('project_status')?.value;
-    this.settingsForm.patchValue({ project_status: !currentValue });
-    this.settingsForm.markAsDirty();
+    const nextValue = !currentValue;
+    const shouldAcceptAgreement =
+      nextValue &&
+      !this.projectServiceAgreementAccepted &&
+      !!this.projectServiceAgreementControl?.value;
+
+    if (nextValue && !this.projectServiceAgreementAccepted && !this.projectServiceAgreementControl?.value) {
+      this.projectServiceAgreementControl?.markAsTouched();
+      this.showAgreementError = true;
+      this.showError(
+        '',
+        this.lang === 'ar'
+          ? 'يجب قبول اتفاقية خدمات المشاريع قبل استقبال العروض.'
+          : 'You must accept the project services agreement before receiving offers.'
+      );
+      return;
+    }
+
+    this.showAgreementError = false;
+    this.isProjectStatusUpdating = true;
+
+    const request$ = nextValue
+      ? shouldAcceptAgreement
+        ? this.projectSettingsService.acceptProjectServiceAgreement().pipe(
+            concatMap(() => this.projectSettingsService.activateReceivingProjectService())
+          )
+        : this.projectSettingsService.activateReceivingProjectService()
+      : this.projectSettingsService.deactivateReceivingProjectService();
+
+    const sub = request$
+      .pipe(finalize(() => (this.isProjectStatusUpdating = false)))
+      .subscribe({
+        next: () => {
+          this.settingsForm.patchValue({ project_status: nextValue }, { emitEvent: false });
+          this.settingsForm.get('project_status')?.markAsPristine();
+          this.initialProjectStatus = nextValue;
+
+          if (shouldAcceptAgreement) {
+            this.projectServiceAgreementAccepted = true;
+            this.projectServiceAgreementControl?.setValue(true, { emitEvent: false });
+            this.projectServiceAgreementControl?.markAsPristine();
+          }
+
+          this.showSuccess(
+            '',
+            nextValue
+              ? this.lang === 'ar'
+                ? 'تم تفعيل استقبال عروض المشاريع.'
+                : 'Receiving project offers activated.'
+              : this.lang === 'ar'
+                ? 'تم إيقاف استقبال عروض المشاريع.'
+                : 'Receiving project offers deactivated.'
+          );
+        },
+        error: (error) => {
+          this.showError('', this.extractErrorMessage(error));
+        },
+      });
+
+    this.unsubscribe.push(sub);
   }
 
   toggleProjectLanguage(language: 'english' | 'arabic'): void {
@@ -220,6 +302,12 @@ export class ProjectSettingsComponent extends BaseComponent implements OnInit {
   }
 
   submitProjectSettings(): void {
+    const wantsReceivingProjectServices = !!this.settingsForm.get('project_status')?.value;
+    const needsAgreement =
+      wantsReceivingProjectServices &&
+      !this.projectServiceAgreementAccepted &&
+      !this.projectServiceAgreementControl?.value;
+
     if (this.settingsForm.invalid) {
       this.settingsForm.markAllAsTouched();
       this.showError(
@@ -231,22 +319,70 @@ export class ProjectSettingsComponent extends BaseComponent implements OnInit {
       return;
     }
 
+    if (needsAgreement) {
+      this.projectServiceAgreementControl?.markAsTouched();
+      this.showAgreementError = true;
+      this.showError(
+        '',
+        this.lang === 'ar'
+          ? 'يجب قبول اتفاقية خدمات المشاريع قبل استقبال العروض.'
+          : 'You must accept the project services agreement before receiving offers.'
+      );
+      return;
+    }
+
     const payload: SyncProjectAccountPropertiesPayload = {
-      status: this.settingsForm.get('project_status')?.value ? 'active' : 'inactive',
       languages: this.mapProjectLanguagesForPayload(),
       hourly_rate: String(this.settingsForm.get('hourly_rate')?.value ?? '').trim(),
       services: this.getSelectedServices(),
       service_match_ai: !!this.settingsForm.get('service_match_ai')?.value,
       types: this.getSelectedProjectTypes(),
     };
+    const projectStatusChanged = wantsReceivingProjectServices !== this.initialProjectStatus;
+    const shouldAcceptAgreement =
+      wantsReceivingProjectServices &&
+      !this.projectServiceAgreementAccepted &&
+      !!this.projectServiceAgreementControl?.value;
 
     this.savingSubject.next(true);
 
     const sub = this.projectSettingsService
       .syncProjectAccountProperties(payload)
+      .pipe(
+        concatMap(() => {
+          if (projectStatusChanged && !wantsReceivingProjectServices) {
+            return this.projectSettingsService.deactivateReceivingProjectService();
+          }
+
+          if (shouldAcceptAgreement) {
+            return this.projectSettingsService.acceptProjectServiceAgreement().pipe(
+              concatMap(() =>
+                projectStatusChanged
+                  ? this.projectSettingsService.activateReceivingProjectService()
+                  : of(null)
+              )
+            );
+          }
+
+          if (projectStatusChanged && wantsReceivingProjectServices) {
+            return this.projectSettingsService.activateReceivingProjectService();
+          }
+
+          return of(null);
+        })
+      )
       .pipe(finalize(() => this.savingSubject.next(false)))
       .subscribe({
         next: () => {
+          this.initialProjectStatus = wantsReceivingProjectServices;
+          this.projectServiceAgreementAccepted =
+            this.projectServiceAgreementAccepted || shouldAcceptAgreement;
+          this.projectServiceAgreementControl?.setValue(
+            this.projectServiceAgreementAccepted ||
+            !!this.projectServiceAgreementControl?.value,
+            { emitEvent: false }
+          );
+          this.showAgreementError = false;
           this.settingsForm.markAsPristine();
           this.showSuccess(
             '',
@@ -305,7 +441,7 @@ export class ProjectSettingsComponent extends BaseComponent implements OnInit {
       .pipe(finalize(() => this.servicesLoadingSubject.next(false)))
       .subscribe({
         next: (services) => {
-          this.availableServices = services;
+          this.availableServices = this.filterVisibleServices(services);
         },
         error: (error) => {
           this.availableServices = [];
@@ -324,6 +460,8 @@ export class ProjectSettingsComponent extends BaseComponent implements OnInit {
   private loadProjectSettingsData(): void {
     this.servicesLoadingSubject.next(true);
     this.servicesErrorMessage = '';
+    this.isAgreementLoading = true;
+    this.agreementErrorMessage = '';
 
     const sub = forkJoin({
       services: this.projectSettingsService.getProjectServices().pipe(
@@ -341,17 +479,54 @@ export class ProjectSettingsComponent extends BaseComponent implements OnInit {
       properties: this.projectSettingsService.getProjectAccountProperties().pipe(
         catchError(() => of({} as ProjectAccountProperties))
       ),
+      agreement: this.guidelinesService.getCurrentGuidelineByType('project_service_agreement').pipe(
+        catchError((error) => {
+          this.agreementErrorMessage = this.extractErrorMessage(
+            error,
+            this.lang === 'ar'
+              ? 'تعذر تحميل اتفاقية خدمات المشاريع الآن.'
+              : 'Unable to load the project services agreement right now.'
+          );
+
+          return of(null as GuidelineDetail | null);
+        })
+      ),
     })
       .pipe(
         finalize(() => {
           this.servicesLoadingSubject.next(false);
+          this.isAgreementLoading = false;
           this.loadingSubject.next(false);
         })
       )
       .subscribe({
-        next: ({ services, properties }) => {
-          this.availableServices = services;
+        next: ({ services, properties, agreement }) => {
+          this.availableServices = this.filterVisibleServices(services);
+          this.setProjectServiceAgreement(agreement);
           this.patchSettingsForm(properties);
+        },
+      });
+
+    this.unsubscribe.push(sub);
+  }
+
+  private loadProjectServiceAgreement(): void {
+    this.isAgreementLoading = true;
+    this.agreementErrorMessage = '';
+
+    const sub = this.guidelinesService
+      .getCurrentGuidelineByType('project_service_agreement')
+      .pipe(finalize(() => (this.isAgreementLoading = false)))
+      .subscribe({
+        next: (agreement) => this.setProjectServiceAgreement(agreement),
+        error: (error) => {
+          this.setProjectServiceAgreement(null);
+          this.agreementErrorMessage = this.extractErrorMessage(
+            error,
+            this.lang === 'ar'
+              ? 'تعذر تحميل اتفاقية خدمات المشاريع الآن.'
+              : 'Unable to load the project services agreement right now.'
+          );
         },
       });
 
@@ -376,11 +551,7 @@ export class ProjectSettingsComponent extends BaseComponent implements OnInit {
       {
         key: 'publish_insights',
         title: this.lang === 'ar' ? 'نشر الرؤى' : 'Publish Insight',
-        details: [
-          this.lang === 'ar'
-            ? 'استوفِ شرط نشر الرؤى.'
-            : 'Meet the insight publishing requirement.',
-        ],
+        details: [this.getPublishInsightDetails(results)],
         route: '/app/add-knowledge/stepper',
         passed: !!results.publish_insights?.pass,
         insightRequirements: {
@@ -408,6 +579,17 @@ export class ProjectSettingsComponent extends BaseComponent implements OnInit {
         passed: !!results.whatsapp?.pass,
       },
     ];
+  }
+
+  private getPublishInsightDetails(results: ProjectAccountCheckResults): string {
+    const freeRequired = results.publish_insights?.required?.free ?? 0;
+    const paidRequired = results.publish_insights?.required?.paid ?? 0;
+
+    if (this.lang === 'ar') {
+      return `المطلوب: ${freeRequired} مجاني، ${paidRequired} مدفوع`;
+    }
+
+    return `Required insights: ${freeRequired} Free, ${paidRequired} Paid`;
   }
 
   private isProfileComplete(results: ProjectAccountCheckResults): boolean {
@@ -513,13 +695,33 @@ export class ProjectSettingsComponent extends BaseComponent implements OnInit {
     void this.router.navigateByUrl(route);
   }
 
+  openProjectServiceAgreementDialog(): void {
+    this.isAgreementDialogVisible = true;
+
+    if (!this.projectServiceAgreement && !this.isAgreementLoading) {
+      this.loadProjectServiceAgreement();
+    }
+  }
+
+  onAgreementCheckboxChange(): void {
+    this.showAgreementError = false;
+    this.projectServiceAgreementControl?.markAsTouched();
+    this.projectServiceAgreementControl?.markAsDirty();
+  }
+
   private patchSettingsForm(properties: ProjectAccountProperties): void {
     const serviceIds = (properties.services || [])
       .map((service) => (typeof service === 'number' ? service : service?.id))
-      .filter((id): id is number => typeof id === 'number');
+      .filter((id): id is number => typeof id === 'number')
+      .filter((id) => this.isVisibleServiceId(id));
+
+    const projectStatus = this.mapReceiveProjectServicesStatus(properties);
+    this.initialProjectStatus = projectStatus;
+    this.projectServiceAgreementAccepted =
+      projectStatus || this.isProjectServiceAgreementAccepted(properties);
 
     this.settingsForm.patchValue({
-      project_status: properties.status !== 'inactive',
+      project_status: projectStatus,
       project_languages: this.mapProjectLanguagesToSelection(properties.languages),
       hourly_rate:
         properties.hourly_rate == null || properties.hourly_rate === ''
@@ -528,10 +730,32 @@ export class ProjectSettingsComponent extends BaseComponent implements OnInit {
       services: serviceIds,
       service_match_ai: !!properties.service_match_ai,
       project_types: this.mapProjectTypesToSelection(properties.types),
+      project_service_agreement: this.projectServiceAgreementAccepted,
     });
 
     this.settingsForm.markAsPristine();
     this.settingsForm.markAsUntouched();
+  }
+
+  private setProjectServiceAgreement(agreement: GuidelineDetail | null): void {
+    this.projectServiceAgreement = agreement;
+    this.projectServiceAgreementHtml = agreement
+      ? this.sanitizer.bypassSecurityTrustHtml(agreement.guideline || '')
+      : null;
+  }
+
+  private mapReceiveProjectServicesStatus(properties: ProjectAccountProperties): boolean {
+    const status = properties.receive_project_services ?? properties.status;
+    return status !== 'inactive';
+  }
+
+  private isProjectServiceAgreementAccepted(properties: ProjectAccountProperties): boolean {
+    return !!(
+      properties.project_service_agreement_accepted ||
+      properties.project_service_agreement ||
+      properties.accept_agreement ||
+      properties.agreement
+    );
   }
 
   private getSelectedProjectLanguages(): Array<'english' | 'arabic'> {
@@ -543,7 +767,27 @@ export class ProjectSettingsComponent extends BaseComponent implements OnInit {
   }
 
   private getSelectedServices(): number[] {
-    return (this.servicesControl?.value || []) as number[];
+    const selectedServices = (this.servicesControl?.value || []) as number[];
+
+    if (!this.availableServices.length) {
+      return selectedServices;
+    }
+
+    return selectedServices.filter((id) => this.isVisibleServiceId(id));
+  }
+
+  private filterVisibleServices(services: ProjectServiceOption[]): ProjectServiceOption[] {
+    return services.filter(
+      (service) => !this.hiddenServiceSlugs.has((service.slug || '').toLowerCase())
+    );
+  }
+
+  private isVisibleServiceId(serviceId: number): boolean {
+    if (!this.availableServices.length) {
+      return true;
+    }
+
+    return this.availableServices.some((service) => service.id === serviceId);
   }
 
   private mapProjectLanguagesForPayload(): 'english' | 'arabic' | 'both' {

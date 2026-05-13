@@ -34,6 +34,7 @@ export class NotificationsNamesPipe implements PipeTransform {
     'client_meeting_insighter_postponed': { en: 'Session Postponed', ar: 'تم تأجيل الجلسة الاستشارية' },
     'client_meeting_reschedule': { en: 'Session Rescheduled', ar: 'تمت إعادة جدولة الجلسة الاستشارية' },
     'insighter_meeting_client_reschedule': { en: 'Session Rescheduled', ar: 'تمت إعادة جدولة الجلسة الاستشارية' },
+    'project_proposal_offer': { en: 'Project Proposal Offer', ar: 'عرض مقترح مشروع' },
     // Add any other keys from your first example if needed
     'declined': { en: 'Knowledge Declined', ar: 'رفض المعرفة' },
     'approved': { en: 'Knowledge Approved', ar: 'الموافقة على المعرفة' },

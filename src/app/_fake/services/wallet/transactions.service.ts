@@ -49,8 +49,20 @@ export interface Order {
   status: string;
   date: string;
   order_no: string;
-  invoice_no: string;
+  invoice_no?: string;
   orderable: Suborder;
+  payment?: PaymentInfo;
+  payments?: PaymentInfo[];
+}
+
+export interface PaymentInfo {
+  invoice_no?: string | null;
+  fulfillment_attempts?: unknown;
+  method?: string;
+  provider?: string | null;
+  amount?: number;
+  currency?: string;
+  status?: string;
 }
 
 export interface Company {
@@ -77,6 +89,7 @@ export interface Transaction {
   provider_fee: string;
   net_amount: string;
   order: Order;
+  payment?: PaymentInfo;
   insighter?: Insighter;
 }
 
@@ -148,7 +161,7 @@ export interface ChartDataResponse {
   providedIn: 'root'
 })
 export class TransactionsService {
-  private apiUrl = `https://api.insightabusiness.com/api/admin/fund/platform/transaction`;
+  private apiUrl = `https://api.foresighta.co/api/admin/fund/platform/transaction`;
   private balanceApiUrl = `${environment.apiBaseUrl}/admin/fund/platform/balance`;
   private listApiUrl = `${environment.apiBaseUrl}/admin/fund/platform/transaction/list`;
   private statisticsApiUrl = `${environment.apiBaseUrl}/admin/fund/platform/statistics`;

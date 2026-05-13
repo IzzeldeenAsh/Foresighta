@@ -1,33 +1,62 @@
-<div class="d-flex flex-column gap-5">
-  <app-page-header [titleEn]="'Project Offers'" [titleAr]="'عروض المشاريع'"
-    [subtitle]="lang === 'ar' ? 'تصفح وإدارة عروض المشاريع الخاصة بك.' : 'Browse and manage your project offers.'"
-    [lang]="lang">
+<div class="d-flex flex-column gap-10">
+  <app-page-header [titleEn]="'Projects'" [titleAr]="'المشاريع'"
+    [subtitle]="lang === 'ar' ? 'تابع عروض المشاريع والمشاريع المقبولة من مكان واحد.' : 'Manage project proposals and accepted work from one place.'"
+    [lang]="lang"
+    [showTabs]="true">
     <div slot="icon">
       <i class="ki-outline ki-abstract-26 fs-2x text-info"></i>
     </div>
+
+    <div slot="tabs" class="d-flex justify-content-between w-100">
+      <ul class="nav nav-stretch nav-line-tabs nav-line-tabs-2x border-transparent fs-5 fw-semibold flex-nowrap">
+        <li class="nav-item">
+          <a
+            class="nav-link text-active-primary pb-4 active"
+            [routerLink]="['/app/insighter-dashboard/project-offers']">
+            {{ lang === 'ar' ? 'عروض المشاريع' : 'Project Proposals' }}
+          </a>
+        </li>
+        <li class="nav-item">
+          <a
+            class="nav-link text-active-primary pb-4"
+            [routerLink]="['/app/insighter-dashboard/on-work-projects']">
+            {{ lang === 'ar' ? 'المشاريع الموافق عليها' : 'Accepted Projects' }}
+          </a>
+        </li>
+      </ul>
+    </div>
   </app-page-header>
 
-  <p-progressBar *ngIf="isLoading$ | async" mode="indeterminate" [style]="{ height: '3px' }">
-  </p-progressBar>
-  <div class="d-flex justify-content-between">
+  <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
 
     <div class="d-flex align-items-center  flex-wrap gap-3">
       <div class="po-filter">
-        <label class="po-filter__label">{{ lang === 'ar' ? 'حالة المشروع' : 'Project Status' }}</label>
-        <p-dropdown [options]="projectStatusDropdownOptions" [(ngModel)]="selectedProjectStatus" optionLabel="label"
-          optionValue="value" [showClear]="true" [placeholder]="lang === 'ar' ? 'كل الحالات' : 'All statuses'"
-          styleClass="po-filter__dropdown" panelStyleClass="po-filter__panel"
-          (onChange)="onProjectStatusChange($event.value)">
-        </p-dropdown>
-      </div>
-
-      <div class="po-filter">
         <label class="po-filter__label">{{ lang === 'ar' ? 'حالة الإجراء' : 'Action Status' }}</label>
-        <p-dropdown [options]="actionStatusDropdownOptions" [(ngModel)]="selectedActionStatus" optionLabel="label"
-          optionValue="value" [showClear]="true" [placeholder]="lang === 'ar' ? 'كل الحالات' : 'All statuses'"
-          styleClass="po-filter__dropdown" panelStyleClass="po-filter__panel"
-          (onChange)="onActionStatusChange($event.value)">
-        </p-dropdown>
+        <div class="po-filter-chips" role="group" [attr.aria-label]="lang === 'ar' ? 'تصفية حسب حالة الإجراء' : 'Filter by action status'">
+          <button type="button"
+            class="po-filter-chip po-filter-chip--all"
+            [class.active]="selectedActionStatus === null"
+            [attr.aria-pressed]="selectedActionStatus === null"
+            (click)="onActionStatusChange(null)">
+            <span class="po-filter-chip__icon">
+              <i class="ki-outline ki-abstract-26 fs-6"></i>
+            </span>
+            <span>{{ lang === 'ar' ? 'الكل' : 'All' }}</span>
+          </button>
+
+          <button type="button"
+            *ngFor="let option of actionStatusOptions"
+            class="po-filter-chip"
+            [ngClass]="'po-filter-chip--' + option.value"
+            [class.active]="selectedActionStatus === option.value"
+            [attr.aria-pressed]="selectedActionStatus === option.value"
+            (click)="onActionStatusChange(option.value)">
+            <span class="po-filter-chip__icon">
+              <i class="ki-outline fs-6" [ngClass]="option.iconClass"></i>
+            </span>
+            <span>{{ lang === 'ar' ? option.labelAr : option.labelEn }}</span>
+          </button>
+        </div>
       </div>
     </div>
 
@@ -45,6 +74,9 @@
     </div>
   </div>
 
+  <p-progressBar *ngIf="isLoading$ | async" mode="indeterminate" [style]="{ height: '3px' }">
+  </p-progressBar>
+
   <div *ngIf="!(isLoading$ | async) && offers.length === 0" class="po-empty">
     <i class="ki-outline ki-abstract-26 fs-3x text-info mb-4"></i>
     <h6 class="fw-semibold text-gray-800 mb-2">
@@ -55,7 +87,7 @@
     </p>
   </div>
 
-  <div *ngIf="offers.length > 0 && viewMode === 'grid'" class="row g-3">
+  <div *ngIf="offers.length > 0 && viewMode === 'grid'" class="row g-3 mt-4">
     <div class="col-12 col-md-6 col-xl-4" *ngFor="let offer of offers; trackBy: trackByOffer">
       <ng-container *ngTemplateOutlet="offerCard; context:{ $implicit: offer, layout: 'grid' }"></ng-container>
     </div>
@@ -78,8 +110,16 @@
         <tr *ngFor="let offer of offers; trackBy: trackByOffer" class="po-table__row">
           <td>
             <button type="button" class="po-table__project" (click)="openDrawer(offer)">
-              <span class="po-table__project-title">{{ offer.project.title }}</span>
-              <span class="po-table__project-summary">{{ getSummary(offer) }}</span>
+              <span class="po-table__project-image">
+                <img
+                  src="https://res.cloudinary.com/dsiku9ipv/image/upload/v1777637418/job-offer_8062313_lqbkuq.png"
+                  alt=""
+                  loading="lazy">
+              </span>
+              <span class="po-table__project-copy">
+                <span class="po-table__project-title">{{ offer.project.title }}</span>
+                <span class="po-table__project-summary">{{ getSummary(offer) }}</span>
+              </span>
             </button>
           </td>
 
@@ -173,7 +213,7 @@
       </div>
 
       <button type="button" class="po-view-button" (click)="$event.stopPropagation(); openDrawer(offer)">
-        <span>{{ lang === 'ar' ? 'عرض' : 'View' }}</span>
+        <span>{{ lang === 'ar' ? 'عرض التفاصيل' : 'View Details' }}</span>
         <i class="ki-outline po-view-button__icon" [ngClass]="lang === 'ar' ? 'ki-arrow-left' : 'ki-arrow-right'"></i>
       </button>
     </div>
@@ -263,7 +303,9 @@
                   <ng-container *ngTemplateOutlet="typeIcon; context:{ $implicit: offer.project.type }"></ng-container>
                   <span class="po-type__label">{{ getTypeLabel(offer.project.type) }}</span>
                 </div>
-                <span class="badge" [ngClass]="getStatusBadgeClass(offer)">{{ getStatusLabel(offer) }}</span>
+                <span class="badge" [ngClass]="getStatusBadgeClass(offer)">
+                  {{ getStatusLabel(offer) }}
+                </span>
               </div>
 
               <h3 class="po-drawer__title">{{ offer.project.title }}</h3>
@@ -303,6 +345,20 @@
             </div>
           </div>
 
+          <div class="po-drawer-tabs" role="tablist" [attr.aria-label]="lang === 'ar' ? 'تبويبات تفاصيل العرض' : 'Offer detail tabs'">
+            <button type="button"
+              *ngFor="let tab of getVisibleDrawerTabs(offer); trackBy: trackByDrawerTab"
+              class="po-drawer-tab"
+              role="tab"
+              [class.active]="activeDrawerTab === tab.value"
+              [attr.aria-selected]="activeDrawerTab === tab.value"
+              (click)="setDrawerTab(tab.value, offer)">
+              <span>{{ lang === 'ar' ? tab.labelAr : tab.labelEn }}</span>
+            </button>
+          </div>
+
+          <ng-container [ngSwitch]="activeDrawerTab">
+            <div *ngSwitchCase="'overview'" class="po-tab-panel">
           <section class="po-section" *ngIf="offer.project.service_prompt || offer.project.description">
             <p class="po-section__text" *ngIf="offer.project.service_prompt">{{ offer.project.service_prompt }}</p>
             <p class="po-section__text" *ngIf="offer.project.description">{{ offer.project.description }}</p>
@@ -364,6 +420,84 @@
               <div class="po-fact__body">
                 <div class="po-fact__label">{{ lang === 'ar' ? 'اللغة' : 'Language' }}</div>
                 <div class="po-fact__value">{{ getLanguageLabel(offer.project.language) }}</div>
+              </div>
+            </div>
+          </section>
+
+          <section class="po-section" *ngIf="offer.project.scopes?.length">
+            <div class="po-section__head">
+              <h6 class="po-section__title">{{ lang === 'ar' ? 'النطاقات' : 'Scopes' }}</h6>
+              <span class="po-section__eyebrow">{{ lang === 'ar' ? 'تفاصيل العمل' : 'Work Scope' }}</span>
+            </div>
+            <div class="po-scope-list">
+              <div class="po-detail-card po-detail-card--scope"
+                *ngFor="let scope of offer.project.scopes; trackBy: trackByScope">
+                <div class="po-detail-card__header">
+                  <span class="po-detail-card__icon">
+                    <i class="ki-outline ki-subtitle fs-4"></i>
+                  </span>
+                  <div class="po-detail-card__copy">
+                    <div class="po-detail-card__title">{{ getScopeLabel(scope) }}</div>
+                    <div class="po-detail-card__subtitle" *ngIf="getScopeDescription(scope)">
+                      {{ getScopeDescription(scope) }}
+                    </div>
+                  </div>
+                </div>
+
+                <div class="po-detail-card__body" *ngIf="getScopeChildren(scope).length || getScopeFiles(scope).length">
+                  <div class="po-file-list" *ngIf="getScopeFiles(scope).length">
+                    <button type="button" class="po-file-button"
+                      *ngFor="let file of getScopeFiles(scope); trackBy: trackByFile"
+                      [disabled]="isOpeningFile(file)" (click)="openProjectFile(file)">
+                      <i class="ki-outline fs-5"
+                        [ngClass]="isOpeningFile(file) ? 'ki-loading' : 'ki-file-down'"></i>
+                      <span>{{ isOpeningFile(file) ? (lang === 'ar' ? 'جارٍ الفتح...' : 'Opening...') : getProjectFileName(file) }}</span>
+                    </button>
+                  </div>
+
+                  <div class="po-scope-card__label" *ngIf="getScopeChildren(scope).length">
+                    {{ lang === 'ar' ? 'النطاقات الفرعية' : 'Sub-scopes' }}
+                  </div>
+                  <div class="po-scope-card__children" *ngIf="getScopeChildren(scope).length">
+                    <div class="po-scope-child" *ngFor="let child of getScopeChildren(scope); trackBy: trackByScope">
+                      <span class="po-scope-child__bullet"></span>
+                      <div class="po-scope-child__copy">
+                        <span class="po-scope-child__title">{{ getScopeLabel(child) }}</span>
+                        <span class="po-scope-child__description" *ngIf="getScopeDescription(child)">
+                          {{ getScopeDescription(child) }}
+                        </span>
+                        <div class="po-file-list po-file-list--nested" *ngIf="getScopeFiles(child).length">
+                          <button type="button" class="po-file-button"
+                            *ngFor="let file of getScopeFiles(child); trackBy: trackByFile"
+                            [disabled]="isOpeningFile(file)" (click)="openProjectFile(file)">
+                            <i class="ki-outline fs-5"
+                              [ngClass]="isOpeningFile(file) ? 'ki-loading' : 'ki-file-down'"></i>
+                            <span>{{ isOpeningFile(file) ? (lang === 'ar' ? 'جارٍ الفتح...' : 'Opening...') : getProjectFileName(file) }}</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="po-section" *ngIf="getRequestFiles(offer).length">
+            <div class="po-section__head">
+              <h6 class="po-section__title">{{ lang === 'ar' ? 'ملفات الطلب' : 'Request Files' }}</h6>
+              <span class="po-section__eyebrow">{{ lang === 'ar' ? 'مرفقات العميل' : 'Client Attachments' }}</span>
+            </div>
+            <div class="po-detail-card po-detail-card--files">
+              <div class="po-detail-card__body">
+                <div class="po-file-list">
+                  <button type="button" class="po-file-button"
+                    *ngFor="let file of getRequestFiles(offer); trackBy: trackByFile"
+                    [disabled]="isOpeningFile(file)" (click)="openProjectFile(file)">
+                    <i class="ki-outline fs-5" [ngClass]="isOpeningFile(file) ? 'ki-loading' : 'ki-file-down'"></i>
+                    <span>{{ isOpeningFile(file) ? (lang === 'ar' ? 'جارٍ الفتح...' : 'Opening...') : getProjectFileName(file) }}</span>
+                  </button>
+                </div>
               </div>
             </div>
           </section>
@@ -518,7 +652,7 @@
             </div>
           </section>
 
-          <section class="po-section" *ngIf="hasAddons(offer)">
+          <section class="po-section" *ngIf="hasAddons(offer) ">
             <div class="po-section__head">
               <h6 class="po-section__title">{{ lang === 'ar' ? 'الإضافات' : 'Add-ons' }}</h6>
               <span class="po-section__eyebrow">{{ lang === 'ar' ? 'عناصر داعمة' : 'Supporting Scope' }}</span>
@@ -591,6 +725,207 @@
               </div>
             </div>
           </section>
+            </div>
+
+            <section *ngSwitchCase="'documents'" class="po-section po-documents">
+              <div class="po-section__head">
+                <h6 class="po-section__title">{{ lang === 'ar' ? 'المستندات' : 'Documents' }}</h6>
+                <span class="po-section__eyebrow">{{ lang === 'ar' ? 'ملفات المقترح' : 'Proposal Files' }}</span>
+              </div>
+
+              <ng-container *ngIf="getAllProposalFiles(offer).length; else noProposalDocuments">
+                <div class="po-document-group" *ngIf="getProposalFiles(offer, 'general').length">
+                  <div class="po-document-group__head">
+                    <span class="po-document-group__icon"><i class="ki-outline ki-folder fs-5"></i></span>
+                    <div>
+                      <h6>{{ lang === 'ar' ? 'عام' : 'General' }}</h6>
+                      <span>{{ getProposalFiles(offer, 'general').length }} {{ lang === 'ar' ? 'ملف' : 'file(s)' }}</span>
+                    </div>
+                  </div>
+                  <div class="po-document-list">
+                    <button type="button" class="po-document-item"
+                      *ngFor="let file of getProposalFiles(offer, 'general'); trackBy: trackByFile"
+                      [disabled]="isOpeningFile(file)" (click)="openProjectFile(file)">
+                      <span class="po-document-item__icon">
+                        <i class="ki-outline fs-5" [ngClass]="isOpeningFile(file) ? 'ki-loading' : 'ki-file-down'"></i>
+                      </span>
+                      <span class="po-document-item__copy">
+                        <strong>{{ getProjectFileName(file) }}</strong>
+                        <small>{{ file.uploadBy || '-' }} &middot; {{ formatDate(file.upload_date) }}</small>
+                      </span>
+                    </button>
+                  </div>
+                </div>
+
+                <div class="po-document-group" *ngIf="getProposalFiles(offer, 'scopes').length">
+                  <div class="po-document-group__head">
+                    <span class="po-document-group__icon po-document-group__icon--scope"><i class="ki-outline ki-subtitle fs-5"></i></span>
+                    <div>
+                      <h6>{{ lang === 'ar' ? 'النطاقات' : 'Scopes' }}</h6>
+                      <span>{{ getProposalFiles(offer, 'scopes').length }} {{ lang === 'ar' ? 'ملف' : 'file(s)' }}</span>
+                    </div>
+                  </div>
+                  <div class="po-document-list">
+                    <button type="button" class="po-document-item"
+                      *ngFor="let file of getProposalFiles(offer, 'scopes'); trackBy: trackByFile"
+                      [disabled]="isOpeningFile(file)" (click)="openProjectFile(file)">
+                      <span class="po-document-item__icon">
+                        <i class="ki-outline fs-5" [ngClass]="isOpeningFile(file) ? 'ki-loading' : 'ki-file-down'"></i>
+                      </span>
+                      <span class="po-document-item__copy">
+                        <strong>{{ getProjectFileName(file) }}</strong>
+                        <small>
+                          <ng-container *ngIf="file.scope">{{ file.scope }} &middot; </ng-container>
+                          {{ file.uploadBy || '-' }} &middot; {{ formatDate(file.upload_date) }}
+                        </small>
+                      </span>
+                    </button>
+                  </div>
+                </div>
+
+                <div class="po-document-group" *ngIf="getProposalFiles(offer, 'offer').length">
+                  <div class="po-document-group__head">
+                    <span class="po-document-group__icon po-document-group__icon--offer"><i class="ki-outline ki-document fs-5"></i></span>
+                    <div>
+                      <h6>{{ lang === 'ar' ? 'العرض' : 'Offer' }}</h6>
+                      <span>{{ getProposalFiles(offer, 'offer').length }} {{ lang === 'ar' ? 'ملف' : 'file(s)' }}</span>
+                    </div>
+                  </div>
+                  <div class="po-document-list">
+                    <button type="button" class="po-document-item"
+                      *ngFor="let file of getProposalFiles(offer, 'offer'); trackBy: trackByFile"
+                      [disabled]="isOpeningFile(file)" (click)="openProjectFile(file)">
+                      <span class="po-document-item__icon">
+                        <i class="ki-outline fs-5" [ngClass]="isOpeningFile(file) ? 'ki-loading' : 'ki-file-down'"></i>
+                      </span>
+                      <span class="po-document-item__copy">
+                        <strong>{{ getProjectFileName(file) }}</strong>
+                        <small>{{ file.uploadBy || '-' }} &middot; {{ formatDate(file.upload_date) }}</small>
+                      </span>
+                    </button>
+                  </div>
+                </div>
+              </ng-container>
+
+              <ng-template #noProposalDocuments>
+                <div class="po-empty po-empty--compact">
+                  <i class="ki-outline ki-document fs-2x text-info mb-3"></i>
+                  <h6 class="fw-semibold text-gray-800 mb-2">
+                    {{ lang === 'ar' ? 'لا توجد مستندات' : 'No documents' }}
+                  </h6>
+                  <p class="text-gray-500 fs-7 mb-0">
+                    {{ lang === 'ar' ? 'لم يتم إرفاق ملفات لهذا المقترح.' : 'No proposal files are attached yet.' }}
+                  </p>
+                </div>
+              </ng-template>
+            </section>
+
+            <ng-container *ngSwitchCase="'offer'">
+              <section class="po-section po-offer-detail" *ngIf="offer.offer as submittedOffer">
+                <div class="po-section__head">
+                  <h6 class="po-section__title">{{ lang === 'ar' ? 'تفاصيل عرضي' : 'My Offer Details' }}</h6>
+                  <span class="po-section__eyebrow">{{ lang === 'ar' ? 'العرض المرسل' : 'Submitted Offer' }}</span>
+                </div>
+
+                <div class="po-detail-card po-detail-card--offer mt-4">
+                  <div class="po-detail-card__header">
+                    <span class="po-detail-card__icon">
+                      <i class="ki-outline ki-note-2 fs-4"></i>
+                    </span>
+                    <div class="po-detail-card__copy">
+                      <div class="po-detail-card__title">{{ lang === 'ar' ? 'خطاب العرض' : 'Cover Letter' }}</div>
+                      <div class="po-detail-card__subtitle">
+                        {{ lang === 'ar' ? 'النص الذي تم إرساله مع عرضك.' : 'The message sent with your offer.' }}
+                      </div>
+                    </div>
+                  </div>
+                  <div class="po-detail-card__body">
+                    <p class="po-section__text mb-0">{{ submittedOffer.cover_letter || '-' }}</p>
+                  </div>
+                </div>
+
+                <div class="po-detail-card po-detail-card--offer mt-4">
+                  <div class="po-detail-card__header">
+                    <span class="po-detail-card__icon">
+                      <i class="ki-outline ki-status fs-4"></i>
+                    </span>
+                    <div class="po-detail-card__copy">
+                      <div class="po-detail-card__title">{{ lang === 'ar' ? 'حالة العرض' : 'Offer Status' }}</div>
+                      <div class="po-detail-card__subtitle">{{ getOfferStatusLabel(submittedOffer.status) }}</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="po-document-group mt-4" *ngIf="getOfferFiles(offer).length">
+                  <div class="po-document-group__head">
+                    <span class="po-document-group__icon po-document-group__icon--offer"><i class="ki-outline ki-paper-clip fs-5"></i></span>
+                    <div>
+                      <h6>{{ lang === 'ar' ? 'مرفقات العرض' : 'Offer Attachments' }}</h6>
+                      <span>{{ getOfferFiles(offer).length }} {{ lang === 'ar' ? 'ملف' : 'file(s)' }}</span>
+                    </div>
+                  </div>
+                  <div class="po-document-list">
+                    <button type="button" class="po-document-item"
+                      *ngFor="let file of getOfferFiles(offer); trackBy: trackByFile"
+                      [disabled]="isOpeningFile(file)" (click)="openProjectFile(file)">
+                      <span class="po-document-item__icon">
+                        <i class="ki-outline fs-5" [ngClass]="isOpeningFile(file) ? 'ki-loading' : 'ki-file-down'"></i>
+                      </span>
+                      <span class="po-document-item__copy">
+                        <strong>{{ getProjectFileName(file) }}</strong>
+                        <small>{{ file.uploadBy || '-' }} &middot; {{ formatDate(file.upload_date) }}</small>
+                      </span>
+                    </button>
+                  </div>
+                </div>
+
+                <div class="po-offer-summary-grid mt-4">
+                  <div class="po-offer-summary-card po-offer-summary-card--price">
+                    <span class="po-offer-summary-card__icon">
+                      <i class="ki-outline ki-dollar fs-4"></i>
+                    </span>
+                    <span class="po-offer-summary-card__copy">
+                      <span class="po-offer-summary-card__label">{{ lang === 'ar' ? 'السعر المقترح' : 'Proposed Price' }}</span>
+                      <span class="po-offer-summary-card__value">${{ formatMoney(submittedOffer.proposed_price) }}</span>
+                    </span>
+                  </div>
+                  <div class="po-offer-summary-card po-offer-summary-card--hours">
+                    <span class="po-offer-summary-card__icon">
+                      <i class="ki-outline ki-time fs-4"></i>
+                    </span>
+                    <span class="po-offer-summary-card__copy">
+                      <span class="po-offer-summary-card__label">{{ lang === 'ar' ? 'الساعات المقدرة' : 'Estimated Hours' }}</span>
+                      <span class="po-offer-summary-card__value">{{ submittedOffer.estimated_hours || '-' }}</span>
+                    </span>
+                  </div>
+                  <div class="po-offer-summary-card po-offer-summary-card--down"
+                       *ngIf="shouldShowDownPayment(submittedOffer)">
+                    <span class="po-offer-summary-card__icon">
+                      <i class="ki-outline ki-wallet fs-4"></i>
+                    </span>
+                    <span class="po-offer-summary-card__copy">
+                      <span class="po-offer-summary-card__label">{{ lang === 'ar' ? 'الدفعة المقدمة' : 'Down Payment' }}</span>
+                      <span class="po-offer-summary-card__value">
+                        ${{ formatMoney(getDownPaymentAmount(submittedOffer)) }}
+                      </span>
+                    </span>
+                  </div>
+                  <div class="po-offer-summary-card po-offer-summary-card--final"
+                       *ngIf="shouldShowFinalPayment(submittedOffer)">
+                    <span class="po-offer-summary-card__icon">
+                      <i class="ki-outline ki-bank fs-4"></i>
+                    </span>
+                    <span class="po-offer-summary-card__copy">
+                      <span class="po-offer-summary-card__label">{{ lang === 'ar' ? 'الدفعة النهائية' : 'Final Payment' }}</span>
+                      <span class="po-offer-summary-card__value">
+                        ${{ formatMoney(getFinalPaymentAmount(submittedOffer)) }}
+                      </span>
+                    </span>
+                  </div>
+                </div>
+              </section>
+            </ng-container>
+          </ng-container>
         </div>
       </div>
 
@@ -605,17 +940,40 @@
             : 'Review the details, then send your proposal or ask the client for clarification.' }}
           </p>
 
-          <button type="button" class="btn btn-info w-100 mb-2" (click)="onSendProposal()">
-            <i class="ki-outline ki-send fs-6 me-1"></i>
-            {{ lang === 'ar' ? 'إرسال عرض' : 'Send Proposal' }}
+          <div *ngIf="shouldShowOfferTimer(offer)"
+               class="po-offer-timer"
+               [ngClass]="getOfferTimerClass(offer)"
+               [style.--po-timer-progress]="getOfferDeadlineProgress(offer) + '%'">
+            <div class="po-offer-timer__ring"
+                 [attr.aria-label]="lang === 'ar' ? 'الوقت المتبقي حتى انتهاء العرض' : 'Time remaining until offer deadline'">
+              <div class="po-offer-timer__core">
+                <strong>{{ getOfferTimerValue(offer) }}</strong>
+                <span>{{ getOfferTimerUnit(offer) }}</span>
+              </div>
+            </div>
+            <div class="po-offer-timer__copy">
+              <span class="po-offer-timer__label">{{ lang === 'ar' ? 'مهلة العرض' : 'Offer timeout' }}</span>
+              <strong>{{ getDeadlineLabel(offer) }}</strong>
+              <small>{{ getOfferTimerHint(offer) }}</small>
+            </div>
+          </div>
+
+          <button *ngIf="hasContractAction(offer)" type="button" class="btn btn-info w-100 mb-2" (click)="viewContract(offer)">
+            <i class="ki-outline ki-document fs-6 me-1"></i>
+            {{ lang === 'ar' ? 'عرض العقد' : 'View Contract' }}
           </button>
 
-          <button type="button" class="btn btn-outline btn-outline-info w-100" (click)="onAskClient()">
+          <button *ngIf="!hasContractAction(offer) && canSendOffer(offer)" type="button" class="btn btn-info w-100 mb-2" (click)="onSendProposal()">
+            <i class="ki-outline ki-send fs-6 me-1"></i>
+            {{ lang === 'ar' ? 'إرسال عرض' : 'Send Offer' }}
+          </button>
+
+          <button *ngIf="!hasContractAction(offer)" type="button" class="btn btn-outline btn-outline-info w-100" (click)="onAskClient()">
             <i class="ki-outline ki-messages fs-6 me-1"></i>
             {{ lang === 'ar' ? 'سؤال العميل' : 'Ask Client' }}
           </button>
 
-          <button *ngIf="canRejectOffer(offer)" type="button" class="btn btn-outline btn-outline-danger w-100 mt-2"
+          <button *ngIf="!hasContractAction(offer) && canRejectOffer(offer)" type="button" class="btn btn-outline btn-outline-danger w-100 mt-2"
             [disabled]="isRejectingSelectedOffer()" (click)="onRejectOffer()">
             <i class="ki-outline ki-cross fs-6 me-1"></i>
             {{ isRejectingSelectedOffer()
@@ -629,7 +987,9 @@
                 <tr>
                   <th scope="row">{{ lang === 'ar' ? 'الحالة' : 'Status' }}</th>
                   <td>
-                    <span class="badge" [ngClass]="getStatusBadgeClass(offer)">{{ getStatusLabel(offer) }}</span>
+                    <span class="badge" [ngClass]="getStatusBadgeClass(offer)">
+                      {{ getStatusLabel(offer) }}
+                    </span>
                   </td>
                 </tr>
                 <tr>

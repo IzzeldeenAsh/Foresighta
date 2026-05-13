@@ -5,6 +5,7 @@ import { MyOrdersService, Order, OrdersResponse } from './my-orders.service';
 import { OrderStatisticsService } from './order-statistics.service';
 import { Observable, catchError, of } from 'rxjs';
 import { ProfileService } from 'src/app/_fake/services/get-profile/get-profile.service';
+import * as OrderViewUtils from './utils/order-view.utils';
 
 @Component({
   selector: 'app-my-orders',
@@ -203,7 +204,7 @@ export class MyOrdersComponent extends BaseComponent implements OnInit {
 
   downloadInvoice(order: Order): void {
     // Open invoice in a new tab
-    const orderNumber = order.invoice_no || order.order_no;
+    const orderNumber = OrderViewUtils.getOrderInvoiceNo(order) || order.order_no;
     const url = this.router.serializeUrl(
       this.router.createUrlTree(['/app/invoice', orderNumber])
     );

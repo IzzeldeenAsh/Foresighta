@@ -32,6 +32,7 @@ export class NotificationsBgPipe implements PipeTransform {
       case 'approved':
       case 'download':
       case 'view':
+      case 'project_proposal_offer':
         return 'success';
       default:
         return 'info';

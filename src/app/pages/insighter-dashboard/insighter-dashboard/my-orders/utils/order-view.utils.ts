@@ -2,6 +2,37 @@ import { KnowledgeDocument, Orderable, Order, PaymentInfo } from '../my-orders.s
 
 type Language = 'ar' | 'en';
 
+type OrderPaymentFields = Pick<Order, 'payment' | 'payments' | 'invoice_no'>;
+
+export function getOrderPayments(order: OrderPaymentFields | null | undefined): PaymentInfo[] {
+  if (!order) {
+    return [];
+  }
+
+  if (Array.isArray(order.payments) && order.payments.length > 0) {
+    return order.payments.filter((payment): payment is PaymentInfo => Boolean(payment));
+  }
+
+  return order.payment ? [order.payment] : [];
+}
+
+export function getPrimaryPayment(order: OrderPaymentFields | null | undefined): PaymentInfo | null {
+  const payments = getOrderPayments(order);
+
+  if (payments.length === 0) {
+    return null;
+  }
+
+  return payments.find(payment => payment.status?.toLowerCase() === 'paid')
+    || payments.find(payment => Boolean(payment.invoice_no))
+    || payments[0];
+}
+
+export function getOrderInvoiceNo(order: OrderPaymentFields | null | undefined): string {
+  const paymentWithInvoice = getOrderPayments(order).find(payment => Boolean(payment.invoice_no));
+  return paymentWithInvoice?.invoice_no || order?.invoice_no || '';
+}
+
 export function getFileIconByExtension(fileExtension: string): string {
   const iconMap: Record<string, string> = {
     pdf: './assets/media/svg/new-files/pdf.svg',

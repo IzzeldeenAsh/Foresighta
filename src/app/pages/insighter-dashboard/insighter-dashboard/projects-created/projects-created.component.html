@@ -9,26 +9,35 @@
     </div>
   </app-page-header>
 
-  <p-progressBar
-    *ngIf="isLoading$ | async"
-    mode="indeterminate"
-    [style]="{ height: '3px' }">
-  </p-progressBar>
-
   <div class="d-flex justify-content-between align-items-end flex-wrap gap-3">
     <div class="d-flex align-items-center flex-wrap gap-3">
       <div class="pc-filter">
         <label class="pc-filter__label">{{ lang === 'ar' ? 'حالة المشروع' : 'Project Status' }}</label>
-        <p-dropdown
-          [options]="projectStatusDropdownOptions"
-          [(ngModel)]="selectedProjectStatus"
-          optionLabel="label"
-          optionValue="value"
-          [showClear]="true"
-          [placeholder]="lang === 'ar' ? 'كل الحالات' : 'All statuses'"
-          styleClass="pc-filter__dropdown"
-          (onChange)="onProjectStatusChange($event.value)">
-        </p-dropdown>
+        <div class="pc-filter-chips" role="group" [attr.aria-label]="lang === 'ar' ? 'تصفية حسب حالة المشروع' : 'Filter by project status'">
+          <button type="button"
+            class="pc-filter-chip pc-filter-chip--all"
+            [class.active]="selectedProjectStatus === null"
+            [attr.aria-pressed]="selectedProjectStatus === null"
+            (click)="onProjectStatusChange(null)">
+            <span class="pc-filter-chip__icon">
+              <i class="ki-outline ki-rocket fs-6"></i>
+            </span>
+            <span>{{ lang === 'ar' ? 'الكل' : 'All' }}</span>
+          </button>
+
+          <button type="button"
+            *ngFor="let option of projectStatusOptions"
+            class="pc-filter-chip"
+            [ngClass]="'pc-filter-chip--' + option.value"
+            [class.active]="selectedProjectStatus === option.value"
+            [attr.aria-pressed]="selectedProjectStatus === option.value"
+            (click)="onProjectStatusChange(option.value)">
+            <span class="pc-filter-chip__icon">
+              <i class="ki-outline fs-6" [ngClass]="option.iconClass"></i>
+            </span>
+            <span>{{ lang === 'ar' ? option.labelAr : option.labelEn }}</span>
+          </button>
+        </div>
       </div>
     </div>
 
@@ -50,6 +59,12 @@
     </div>
   </div>
 
+  <p-progressBar
+    *ngIf="isLoading$ | async"
+    mode="indeterminate"
+    [style]="{ height: '3px' }">
+  </p-progressBar>
+
   <div *ngIf="!(isLoading$ | async) && projects.length === 0" class="pc-empty">
     <i class="ki-outline ki-rocket fs-3x text-info mb-4"></i>
     <h6 class="fw-semibold text-gray-800 mb-2">
@@ -70,6 +85,7 @@
     <table class="table align-middle fs-6 pc-table">
       <thead>
         <tr class="text-start text-gray-500 fw-semibold fs-8 text-uppercase gs-0">
+          <th class="w-64px"></th>
           <th class="min-w-300px">{{ lang === 'ar' ? 'المشروع' : 'Project' }}</th>
           <th class="min-w-170px">{{ lang === 'ar' ? 'النوع' : 'Type' }}</th>
           <th class="min-w-180px">{{ lang === 'ar' ? 'الخدمة' : 'Service' }}</th>
@@ -80,6 +96,12 @@
       </thead>
       <tbody class="fw-semibold text-gray-600">
         <tr *ngFor="let project of projects; trackBy: trackByProject" class="pc-table__row">
+          <td>
+            <img class="pc-table__project-image"
+                 [src]="projectImageUrl"
+                 [alt]="lang === 'ar' ? 'أيقونة المشروع' : 'Project icon'">
+          </td>
+
           <td>
             <div class="pc-table__project">
               <span class="pc-table__project-title">{{ project.title }}</span>

@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Order, KnowledgeDocument } from './my-orders.service';
+import * as OrderViewUtils from './utils/order-view.utils';
 
 @Injectable({
   providedIn: 'root'
@@ -15,6 +16,7 @@ export class InvoiceGeneratorService {
       month: 'short',
       day: '2-digit'
     });
+    const invoiceNo = OrderViewUtils.getOrderInvoiceNo(order) || order.order_no;
 
     // Check if this is a meeting order or knowledge order
     const isMeetingOrder = order.service === 'meeting_service';
@@ -362,7 +364,7 @@ export class InvoiceGeneratorService {
                                  alt="Insighta Logo" class="logo-img"/>
                         </td>
                         <td class="logo-right">
-                            <div>${order.invoice_no || order.order_no}</div>
+                            <div>${invoiceNo}</div>
                             <div style="margin-top:6px;">${invoiceDate}</div>
                         </td>
                     </tr>
@@ -490,13 +492,15 @@ export class InvoiceGeneratorService {
 
   private getDisplayAddress(userProfile: any, order: Order): string {
     // For sold orders, use billing address from payment
-    if (order.user && order.payment?.billing_address) {
-      return this.formatBillingAddress(order.payment.billing_address);
+    const payment = OrderViewUtils.getPrimaryPayment(order);
+
+    if (order.user && payment?.billing_address) {
+      return this.formatBillingAddress(payment.billing_address);
     }
 
     // For purchased orders, use billing address if available, otherwise user's country
-    if (order.payment?.billing_address) {
-      return this.formatBillingAddress(order.payment.billing_address);
+    if (payment?.billing_address) {
+      return this.formatBillingAddress(payment.billing_address);
     }
 
     // Fallback to user's country

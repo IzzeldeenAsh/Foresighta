@@ -1,0 +1,131 @@
+<div class="icn-shell" [attr.dir]="lang === 'ar' ? 'rtl' : 'ltr'">
+  <p-progressBar
+    *ngIf="isLoadingContract"
+    mode="indeterminate"
+    [style]="{ height: '3px' }">
+  </p-progressBar>
+
+  <div class="icn-header">
+    <button type="button" class="icn-iconbtn" (click)="goBack()">
+      <i class="ki-outline fs-3" [ngClass]="getBackIcon()"></i>
+    </button>
+    <div class="icn-header__copy">
+      <span>{{ lang === 'ar' ? 'توقيع الخبير' : 'Insighter Signature' }}</span>
+      <strong>{{ lang === 'ar' ? 'عقد المشروع' : 'Project Contract' }}</strong>
+    </div>
+  </div>
+
+  <div *ngIf="errorMessage" class="alert alert-danger icn-alert">{{ errorMessage }}</div>
+  <div *ngIf="successMessage" class="icn-success-alert" role="status">
+    <span class="icn-success-alert__icon">
+      <i class="ki-solid ki-check fs-4"></i>
+    </span>
+    <span class="icn-success-alert__copy">
+      <strong>{{ lang === 'ar' ? 'نجاح' : 'Success' }}</strong>
+      <span>{{ successMessage }}</span>
+    </span>
+  </div>
+
+  <ng-container *ngIf="!isLoadingContract && contract as c">
+    <section *ngIf="!c.user_sign_at" class="icn-pending">
+      <span class="icn-pending__icon">
+        <i class="ki-outline ki-time fs-1"></i>
+      </span>
+      <div class="icn-pending__copy">
+        <span>{{ lang === 'ar' ? 'بانتظار العميل' : 'Waiting for client' }}</span>
+        <h3>{{ lang === 'ar' ? 'العقد بانتظار توقيع العميل' : 'Pending client signature' }}</h3>
+        <p>
+          {{ lang === 'ar'
+            ? 'لن يظهر محتوى العقد للخبير حتى يوقّع العميل أولاً.'
+            : 'The contract will not be shown to the insighter until the client signs it first.' }}
+        </p>
+      </div>
+    </section>
+
+    <ng-container *ngIf="c.user_sign_at">
+      <section class="icn-contract-panel">
+        <div class="icn-panel-head">
+          <div>
+            <span>{{ c.is_attach_type ? (lang === 'ar' ? 'عقد مخصص' : 'Custom Contract') : (lang === 'ar' ? 'عقد المنصة' : 'Platform Contract') }}</span>
+            <h3>{{ c.name || guideline?.name || (lang === 'ar' ? 'عقد خدمة مشروع' : 'Project Service Contract') }}</h3>
+          </div>
+          <span class="icn-status" [class.is-signed]="c.insighter_sign_at">
+            {{ c.insighter_sign_at ? (lang === 'ar' ? 'موقّع' : 'Signed') : (lang === 'ar' ? 'بانتظار توقيعك' : 'Awaiting your signature') }}
+          </span>
+        </div>
+
+        <div *ngIf="!c.is_attach_type" class="icn-agreement-wrap">
+          <div *ngIf="isLoadingGuideline" class="icn-loading">
+            <span class="spinner-border spinner-border-sm"></span>
+            {{ lang === 'ar' ? 'جاري تحميل العقد...' : 'Loading contract...' }}
+          </div>
+
+          <div *ngIf="!isLoadingGuideline && guidelineHtml" class="icn-agreement" [innerHTML]="guidelineHtml"></div>
+        </div>
+
+        <div *ngIf="c.is_attach_type" class="icn-file-wrap">
+          <ng-container *ngIf="c.file?.url; else missingFile">
+            <img
+              *ngIf="isImageFile(c.file)"
+              class="icn-file-preview icn-file-preview--image"
+              [src]="c.file?.url"
+              [alt]="getFileName(c.file)" />
+
+            <iframe
+              *ngIf="isPdfFile(c.file) && filePreviewUrl"
+              class="icn-file-preview icn-file-preview--pdf"
+              [src]="filePreviewUrl"
+              title="Contract file preview">
+            </iframe>
+
+            <div *ngIf="!isImageFile(c.file) && !isPdfFile(c.file)" class="icn-file-card">
+              <span class="icn-file-card__icon"><i class="ki-outline ki-document fs-1"></i></span>
+              <div class="icn-file-card__copy">
+                <strong>{{ getFileName(c.file) }}</strong>
+                <small>{{ lang === 'ar' ? 'افتح الملف لمراجعة العقد.' : 'Open the file to review the contract.' }}</small>
+              </div>
+            </div>
+
+            <button type="button" class="btn btn-outline btn-outline-info icn-open-file" (click)="openContractFile()">
+              <i class="ki-outline ki-exit-right-corner fs-6 me-1"></i>
+              {{ lang === 'ar' ? 'فتح ملف العقد' : 'Open Contract File' }}
+            </button>
+          </ng-container>
+
+          <ng-template #missingFile>
+            <div class="alert alert-warning mb-0">
+              {{ lang === 'ar' ? 'لم يتم العثور على ملف العقد.' : 'Contract file was not found.' }}
+            </div>
+          </ng-template>
+        </div>
+
+        <div class="icn-footer">
+          <span class="icn-note">
+            <i class="ki-outline" [ngClass]="c.insighter_sign_at ? 'ki-check-circle' : 'ki-information-5'"></i>
+            {{
+              c.insighter_sign_at
+                ? (lang === 'ar' ? 'تم توقيع العقد من طرفك.' : 'You have signed this contract.')
+                : (lang === 'ar' ? 'راجع العقد ثم أكّد توقيعك.' : 'Review the contract, then confirm your signature.')
+            }}
+          </span>
+
+          <button
+            type="button"
+            class="btn"
+            [ngClass]="c.insighter_sign_at ? 'btn-outline btn-outline-success icn-signed-btn' : 'btn-info'"
+            [disabled]="c.insighter_sign_at || isSigning"
+            (click)="signContract()">
+            <i class="ki-outline fs-6 me-1" [ngClass]="c.insighter_sign_at ? 'ki-check' : 'ki-pencil'"></i>
+            {{
+              c.insighter_sign_at
+                ? (lang === 'ar' ? 'تم التوقيع' : 'Signed')
+                : isSigning
+                  ? (lang === 'ar' ? 'جاري التوقيع...' : 'Signing...')
+                  : (lang === 'ar' ? 'توقيع العقد' : 'Sign Contract')
+            }}
+          </button>
+        </div>
+      </section>
+    </ng-container>
+  </ng-container>
+</div>

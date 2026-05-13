@@ -8,7 +8,8 @@ import {
   ProjectOffer,
   ProjectOfferActionResponse,
   ProjectOfferActionStatus,
-  ProjectOfferProjectStatus,
+  ProjectOfferFile,
+  ProjectOfferScope,
   ProjectOffersPaginatedResponse,
   ProjectOffersFilters,
   ProjectOffersService,
@@ -16,6 +17,7 @@ import {
 } from 'src/app/_fake/services/project-offers/project-offers.service';
 
 type ViewMode = 'grid' | 'list';
+type DrawerTab = 'overview' | 'documents' | 'offer';
 
 interface ProjectTypeMeta {
   key: ProjectOfferType;
@@ -27,11 +29,14 @@ interface StatusFilterOption<T> {
   value: T;
   labelEn: string;
   labelAr: string;
+  iconClass: string;
 }
 
-interface DropdownOption<T> {
-  label: string;
-  value: T;
+interface DrawerTabOption {
+  value: DrawerTab;
+  labelEn: string;
+  labelAr: string;
+  iconClass: string;
 }
 
 @Component({
@@ -43,8 +48,7 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
   isLoading$: Observable<boolean>;
 
   offers: ProjectOffer[] = [];
-  viewMode: ViewMode = 'grid';
-  selectedProjectStatus: ProjectOfferProjectStatus | null = null;
+  viewMode: ViewMode = 'list';
   selectedActionStatus: ProjectOfferActionStatus | null = null;
 
   currentPage: number = 1;
@@ -54,25 +58,31 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
 
   drawerVisible: boolean = false;
   selectedOffer: ProjectOffer | null = null;
+  drawerDetailsLoading: boolean = false;
+  drawerDetailsError: boolean = false;
+  activeDrawerTab: DrawerTab = 'overview';
   rejectingOfferUuid: string | null = null;
+  openingFileUuid: string | null = null;
+  markingViewedOfferUuids = new Set<string>();
+  currentTime: number = Date.now();
+  private deadlineTicker: ReturnType<typeof setInterval> | null = null;
+  private drawerDetailsRequestId = 0;
 
   projectTypeOptions: ProjectTypeMeta[] = [
     { key: 'ad_hoc', labelEn: 'Ad Hoc', labelAr: 'خاص' },
     { key: 'frame_work_agreement', labelEn: 'Framework Agreement', labelAr: 'اتفاقية إطارية' },
     { key: 'urgent_request', labelEn: 'Urgent Request', labelAr: 'طلب عاجل' },
   ];
-  projectStatusOptions: StatusFilterOption<ProjectOfferProjectStatus>[] = [
-    { value: 'invited', labelEn: 'Invited', labelAr: 'مدعو' },
-    { value: 'cancelled', labelEn: 'Cancelled', labelAr: 'ملغي' },
-    { value: 'submitted', labelEn: 'Submitted', labelAr: 'مُرسل' },
-    { value: 'closed', labelEn: 'Closed', labelAr: 'مغلق' },
-  ];
   actionStatusOptions: StatusFilterOption<ProjectOfferActionStatus>[] = [
-    { value: 'pending', labelEn: 'Pending', labelAr: 'قيد الانتظار' },
-    { value: 'viewed', labelEn: 'Viewed', labelAr: 'تمت المشاهدة' },
-    { value: 'offered', labelEn: 'Offered', labelAr: 'تم تقديم العرض' },
-    { value: 'declined', labelEn: 'Declined', labelAr: 'مرفوض' },
-    { value: 'expired', labelEn: 'Expired', labelAr: 'منتهي' },
+    { value: 'new', labelEn: 'New', labelAr: 'جديد', iconClass: 'ki-notification-on' },
+    { value: 'viewed', labelEn: 'Viewed', labelAr: 'تمت المشاهدة', iconClass: 'ki-eye' },
+    { value: 'offered', labelEn: 'Offered', labelAr: 'تم تقديم العرض', iconClass: 'ki-check-circle' },
+    { value: 'expired', labelEn: 'Expired', labelAr: 'منتهي', iconClass: 'ki-time' },
+  ];
+  drawerTabOptions: DrawerTabOption[] = [
+    { value: 'overview', labelEn: 'Overview', labelAr: 'نظرة عامة', iconClass: 'ki-element-7' },
+    { value: 'documents', labelEn: 'Documents', labelAr: 'المستندات', iconClass: 'ki-document' },
+    { value: 'offer', labelEn: 'Offer', labelAr: 'العرض', iconClass: 'ki-dollar' },
   ];
 
   constructor(
@@ -86,6 +96,9 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
 
   ngOnInit(): void {
     this.loadOffers(1);
+    this.deadlineTicker = setInterval(() => {
+      this.currentTime = Date.now();
+    }, 60_000);
   }
 
   loadOffers(page: number): void {
@@ -110,11 +123,6 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
     this.loadOffers(page);
   }
 
-  onProjectStatusChange(projectStatus: ProjectOfferProjectStatus | null): void {
-    this.selectedProjectStatus = projectStatus;
-    this.resetPaginationAndReload();
-  }
-
   onActionStatusChange(actionStatus: ProjectOfferActionStatus | null): void {
     this.selectedActionStatus = actionStatus;
     this.resetPaginationAndReload();
@@ -125,13 +133,46 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
   }
 
   openDrawer(offer: ProjectOffer): void {
-    this.selectedOffer = offer;
     this.drawerVisible = true;
+    this.selectedOffer = null;
+    this.drawerDetailsLoading = true;
+    this.drawerDetailsError = false;
+    this.activeDrawerTab = 'overview';
+
+    const requestId = ++this.drawerDetailsRequestId;
+    const detailsUuid = this.getProposalDetailsUuid(offer);
+
+    this.projectOffersService.getProposalDetails(detailsUuid)
+      .pipe(takeUntil(this.unsubscribe$))
+      .subscribe({
+        next: (details) => {
+          if (requestId !== this.drawerDetailsRequestId) {
+            return;
+          }
+
+          this.selectedOffer = this.mergeOfferDetails(offer, details);
+          this.drawerDetailsLoading = false;
+          this.markOfferAsViewed(this.selectedOffer);
+        },
+        error: (err) => {
+          if (requestId !== this.drawerDetailsRequestId) {
+            return;
+          }
+
+          this.drawerDetailsLoading = false;
+          this.drawerDetailsError = true;
+          this.handleServerErrors(err);
+        },
+      });
   }
 
   closeDrawer(): void {
     this.drawerVisible = false;
     this.selectedOffer = null;
+    this.drawerDetailsLoading = false;
+    this.drawerDetailsError = false;
+    this.activeDrawerTab = 'overview';
+    this.drawerDetailsRequestId++;
   }
 
   getTypeMeta(key: ProjectOfferType): ProjectTypeMeta | undefined {
@@ -141,9 +182,10 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
   getStatusBadgeClass(offer: ProjectOffer): string {
     const status = this.getResolvedStatus(offer);
     switch (status) {
-      case 'pending':
-      case 'invited':
       case 'viewed':
+        return 'badge-light-viewed';
+      case 'new':
+      case 'invited':
         return 'badge-light-warning';
       case 'accepted':
       case 'approved':
@@ -155,6 +197,7 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
       case 'expired':
         return 'badge-light-danger';
       case 'submitted':
+      case 'contract':
       case 'closed':
         return 'badge-light-primary';
       default:
@@ -165,7 +208,7 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
   getStatusLabel(offer: ProjectOffer): string {
     const status = this.getResolvedStatus(offer);
     const labels: { [k: string]: { en: string; ar: string } } = {
-      pending: { en: 'Pending', ar: 'قيد الانتظار' },
+      new: { en: 'New', ar: 'جديد' },
       invited: { en: 'Invited', ar: 'مدعو' },
       viewed: { en: 'Viewed', ar: 'تمت المشاهدة' },
       offered: { en: 'Offered', ar: 'تم تقديم العرض' },
@@ -175,11 +218,12 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
       declined: { en: 'Declined', ar: 'مرفوض' },
       cancelled: { en: 'Cancelled', ar: 'ملغي' },
       submitted: { en: 'Submitted', ar: 'مُرسل' },
+      contract: { en: 'Contract', ar: 'العقد' },
       closed: { en: 'Closed', ar: 'مغلق' },
       expired: { en: 'Expired', ar: 'منتهي' },
     };
     const match = labels[status];
-    if (!match) return status || '-';
+    if (!match) return this.humanizeValue(status) || '-';
     return this.lang === 'ar' ? match.ar : match.en;
   }
 
@@ -200,7 +244,7 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
     if (!value) return '-';
     try {
       const d = new Date(value);
-      return d.toLocaleDateString(this.lang === 'ar' ? 'ar-EG' : 'en-US', {
+      return d.toLocaleDateString('en-US', {
         year: 'numeric', month: 'short', day: 'numeric'
       });
     } catch {
@@ -215,6 +259,125 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
   getDeadlineLabel(offer: ProjectOffer): string {
     const date = offer.project?.deadline_offer || offer.project?.deadline;
     return this.formatDate(date);
+  }
+
+  getOfferDeadlineDate(offer: ProjectOffer | null | undefined): Date | null {
+    const value = offer?.project?.deadline_offer;
+    if (!value) {
+      return null;
+    }
+
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+
+  getOfferRemainingMs(offer: ProjectOffer | null | undefined): number {
+    const deadline = this.getOfferDeadlineDate(offer);
+    return deadline ? deadline.getTime() - this.currentTime : 0;
+  }
+
+  getOfferRemainingDays(offer: ProjectOffer | null | undefined): number {
+    const remainingMs = this.getOfferRemainingMs(offer);
+    if (remainingMs <= 0) {
+      return 0;
+    }
+
+    return Math.ceil(remainingMs / 86_400_000);
+  }
+
+  getOfferRemainingHours(offer: ProjectOffer | null | undefined): number {
+    const remainingMs = this.getOfferRemainingMs(offer);
+    if (remainingMs <= 0) {
+      return 0;
+    }
+
+    return Math.max(1, Math.ceil(remainingMs / 3_600_000));
+  }
+
+  getOfferTimerValue(offer: ProjectOffer | null | undefined): string {
+    const deadline = this.getOfferDeadlineDate(offer);
+    if (!deadline) {
+      return '-';
+    }
+
+    if (this.getOfferRemainingMs(offer) <= 0) {
+      return '0';
+    }
+
+    const days = this.getOfferRemainingDays(offer);
+    return days > 1 ? `${days}` : `${this.getOfferRemainingHours(offer)}`;
+  }
+
+  getOfferTimerUnit(offer: ProjectOffer | null | undefined): string {
+    if (!this.getOfferDeadlineDate(offer)) {
+      return this.lang === 'ar' ? 'غير محدد' : 'no date';
+    }
+
+    if (this.getOfferRemainingMs(offer) <= 0) {
+      return this.lang === 'ar' ? 'منتهي' : 'expired';
+    }
+
+    const days = this.getOfferRemainingDays(offer);
+    if (days > 1) {
+      return this.lang === 'ar' ? 'أيام متبقية' : 'days left';
+    }
+
+    return this.lang === 'ar' ? 'ساعات متبقية' : 'hours left';
+  }
+
+  getOfferTimerHint(offer: ProjectOffer | null | undefined): string {
+    const deadline = this.getOfferDeadlineDate(offer);
+    if (!deadline) {
+      return this.lang === 'ar' ? 'لم يتم تحديد موعد نهائي للعرض.' : 'No offer deadline has been set.';
+    }
+
+    if (this.getOfferRemainingMs(offer) <= 0) {
+      return this.lang === 'ar' ? 'انتهت مدة إرسال هذا العرض.' : 'This offer submission window has ended.';
+    }
+
+    return this.lang === 'ar'
+      ? `ينتهي في ${this.formatDate(deadline.toISOString())}`
+      : `Expires on ${this.formatDate(deadline.toISOString())}`;
+  }
+
+  getOfferDeadlineProgress(offer: ProjectOffer | null | undefined): number {
+    const remainingMs = this.getOfferRemainingMs(offer);
+    if (remainingMs <= 0) {
+      return 0;
+    }
+
+    const maxWindowMs = 14 * 86_400_000;
+    return Math.max(6, Math.min(100, Math.round((remainingMs / maxWindowMs) * 100)));
+  }
+
+  getOfferTimerClass(offer: ProjectOffer | null | undefined): string {
+    const remainingMs = this.getOfferRemainingMs(offer);
+    if (!this.getOfferDeadlineDate(offer)) {
+      return 'po-offer-timer--neutral';
+    }
+
+    if (remainingMs <= 0) {
+      return 'po-offer-timer--expired';
+    }
+
+    const days = this.getOfferRemainingDays(offer);
+    if (days <= 1) {
+      return 'po-offer-timer--danger';
+    }
+
+    if (days <= 3) {
+      return 'po-offer-timer--warning';
+    }
+
+    return 'po-offer-timer--healthy';
+  }
+
+  shouldShowOfferTimer(offer: ProjectOffer | null | undefined): boolean {
+    if (!offer) {
+      return false;
+    }
+
+    return this.getResolvedStatus(offer) !== 'offered';
   }
 
   getDrawerBackIcon(): string {
@@ -346,20 +509,6 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
     return '-';
   }
 
-  get projectStatusDropdownOptions(): DropdownOption<ProjectOfferProjectStatus>[] {
-    return this.projectStatusOptions.map(option => ({
-      label: this.lang === 'ar' ? option.labelAr : option.labelEn,
-      value: option.value,
-    }));
-  }
-
-  get actionStatusDropdownOptions(): DropdownOption<ProjectOfferActionStatus>[] {
-    return this.actionStatusOptions.map(option => ({
-      label: this.lang === 'ar' ? option.labelAr : option.labelEn,
-      value: option.value,
-    }));
-  }
-
   getBlockEntries(block: ProjectOfferBlock | null | undefined): Array<{ key: string; value: any }> {
     if (!block || typeof block !== 'object') {
       return [];
@@ -389,6 +538,121 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
       .filter(value => value !== '-');
   }
 
+  setDrawerTab(tab: DrawerTab, offer: ProjectOffer | null | undefined = this.selectedOffer): void {
+    if (tab === 'offer' && !this.hasSubmittedOffer(offer)) {
+      return;
+    }
+
+    this.activeDrawerTab = tab;
+  }
+
+  getVisibleDrawerTabs(offer: ProjectOffer | null | undefined): DrawerTabOption[] {
+    return this.drawerTabOptions.filter(tab => tab.value !== 'offer' || this.hasSubmittedOffer(offer));
+  }
+
+  hasSubmittedOffer(offer: ProjectOffer | null | undefined): boolean {
+    return !!offer?.offer;
+  }
+
+  getProposalFiles(
+    offer: ProjectOffer | null | undefined,
+    type: 'general' | 'scopes' | 'offer'
+  ): ProjectOfferFile[] {
+    const files = offer?.project?.file?.proposal?.[type];
+    return Array.isArray(files) ? files : [];
+  }
+
+  getAllProposalFiles(offer: ProjectOffer | null | undefined): ProjectOfferFile[] {
+    return [
+      ...this.getProposalFiles(offer, 'general'),
+      ...this.getProposalFiles(offer, 'scopes'),
+      ...this.getProposalFiles(offer, 'offer'),
+    ];
+  }
+
+  getOfferFiles(offer: ProjectOffer | null | undefined): ProjectOfferFile[] {
+    const files = offer?.offer?.files;
+    return Array.isArray(files) ? files : [];
+  }
+
+  getOfferStatusLabel(status: string | null | undefined): string {
+    return this.getMappedLabel(status, {
+      pending: { en: 'Pending', ar: 'قيد الانتظار' },
+      accepted: { en: 'Accepted', ar: 'مقبول' },
+      approved: { en: 'Approved', ar: 'موافق عليه' },
+      rejected: { en: 'Rejected', ar: 'مرفوض' },
+      declined: { en: 'Declined', ar: 'مرفوض' },
+      cancelled: { en: 'Cancelled', ar: 'ملغي' },
+    });
+  }
+
+  formatMoney(value: string | number | null | undefined): string {
+    if (value === null || value === undefined || value === '') {
+      return '-';
+    }
+
+    const numericValue = typeof value === 'number' ? value : Number(value);
+    if (Number.isNaN(numericValue)) {
+      return `${value}`;
+    }
+
+    return numericValue.toLocaleString('en-US', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    });
+  }
+
+  shouldShowDownPayment(offer: any): boolean {
+    const paymentPlan = this.normalizePaymentPlan(offer?.payment_plan);
+    if (paymentPlan) return paymentPlan === 'full_at_start' || paymentPlan === 'partial';
+
+    return this.hasPaymentAmount(offer?.down_payment);
+  }
+
+  shouldShowFinalPayment(offer: any): boolean {
+    const paymentPlan = this.normalizePaymentPlan(offer?.payment_plan);
+    if (paymentPlan) return paymentPlan === 'full_at_end' || paymentPlan === 'partial';
+
+    return this.hasPaymentAmount(offer?.final_price ?? offer?.final_payment);
+  }
+
+  getDownPaymentAmount(offer: any): string | number | null | undefined {
+    return this.normalizePaymentPlan(offer?.payment_plan) === 'full_at_start'
+      ? offer?.proposed_price
+      : offer?.down_payment;
+  }
+
+  getFinalPaymentAmount(offer: any): string | number | null | undefined {
+    return this.normalizePaymentPlan(offer?.payment_plan) === 'full_at_end'
+      ? offer?.proposed_price
+      : (offer?.final_price ?? offer?.final_payment);
+  }
+
+  private normalizePaymentPlan(value: unknown): string {
+    return String(value || '').trim().toLowerCase();
+  }
+
+  private hasPaymentAmount(value: string | number | null | undefined): boolean {
+    const numericValue = Number(value ?? 0);
+    return Number.isFinite(numericValue) && numericValue > 0;
+  }
+
+  formatPercentage(value: string | number | null | undefined): string {
+    if (value === null || value === undefined || value === '') {
+      return '-';
+    }
+
+    const numericValue = typeof value === 'number' ? value : Number(value);
+    if (Number.isNaN(numericValue)) {
+      return `${value}%`;
+    }
+
+    return `${numericValue.toLocaleString('en-US', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    })}%`;
+  }
+
   onSendProposal(): void {
     if (!this.selectedOffer) return;
 
@@ -402,6 +666,23 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
     }
 
     this.router.navigate(['/app/insighter-dashboard/project-offers/send-proposal', offerUuid]);
+  }
+
+  hasContractAction(offer: ProjectOffer | null | undefined): boolean {
+    return !!this.getContractUuid(offer);
+  }
+
+  viewContract(offer: ProjectOffer | null | undefined = this.selectedOffer): void {
+    const contractUuid = this.getContractUuid(offer);
+    if (!contractUuid) {
+      this.showError(
+        this.lang === 'ar' ? 'تعذر فتح العقد' : 'Cannot open contract',
+        this.lang === 'ar' ? 'لم يتم العثور على معرّف العقد.' : 'Contract identifier was not found.'
+      );
+      return;
+    }
+
+    this.router.navigate(['/app/insighter-dashboard/project-offers/contract', contractUuid]);
   }
 
   onAskClient(): void {
@@ -477,6 +758,74 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
     return !!(offer && offer.project?.components?.length);
   }
 
+  getScopeLabel(scope: ProjectOfferScope | null | undefined): string {
+    return this.getFormattedValue(scope?.scope);
+  }
+
+  getScopeDescription(scope: ProjectOfferScope | null | undefined): string {
+    return scope?.description || '';
+  }
+
+  getScopeChildren(scope: ProjectOfferScope | null | undefined): ProjectOfferScope[] {
+    const children = scope?.children;
+    return Array.isArray(children) ? children : [];
+  }
+
+  getScopeFiles(scope: ProjectOfferScope | null | undefined): ProjectOfferFile[] {
+    const files = scope?.files;
+    return Array.isArray(files) ? files : [];
+  }
+
+  getRequestFiles(offer: ProjectOffer | null | undefined): ProjectOfferFile[] {
+    const files = offer?.project?.request_files;
+    return Array.isArray(files) ? files : [];
+  }
+
+  getProjectFileName(file: ProjectOfferFile | null | undefined): string {
+    const rawName = file?.name || (file?.url || '').split('/').pop()?.split('?')[0];
+    return rawName ? decodeURIComponent(rawName) : (this.lang === 'ar' ? 'ملف' : 'File');
+  }
+
+  openProjectFile(file: ProjectOfferFile | null | undefined): void {
+    if (!file?.uuid) {
+      this.showError(
+        this.lang === 'ar' ? 'تعذر فتح الملف' : 'Cannot open file',
+        this.lang === 'ar' ? 'لم يتم العثور على معرّف الملف.' : 'File identifier was not found.'
+      );
+      return;
+    }
+
+    const fileWindow = window.open('', '_blank');
+    this.openingFileUuid = file.uuid;
+
+    this.projectOffersService.getProjectFileUrl(file.uuid)
+      .pipe(takeUntil(this.unsubscribe$))
+      .subscribe({
+        next: (url: string) => {
+          this.openingFileUuid = null;
+          if (!url) {
+            if (fileWindow) fileWindow.close();
+            this.showError(
+              this.lang === 'ar' ? 'تعذر فتح الملف' : 'Cannot open file',
+              this.lang === 'ar' ? 'لم يرجع الخادم رابط الملف.' : 'The server did not return a file URL.'
+            );
+            return;
+          }
+
+          if (fileWindow) {
+            fileWindow.location.href = url;
+          } else {
+            window.open(url, '_blank');
+          }
+        },
+        error: (err) => {
+          this.openingFileUuid = null;
+          if (fileWindow) fileWindow.close();
+          this.handleServerErrors(err);
+        },
+      });
+  }
+
   hasAddons(offer: ProjectOffer | null): boolean {
     return !!(offer && offer.project?.addons?.length);
   }
@@ -487,12 +836,24 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
     }
 
     const status = this.getResolvedStatus(offer);
-    return ['pending', 'viewed', 'offered'].includes(status);
+    return ['new', 'viewed'].includes(status);
+  }
+
+  canSendOffer(offer: ProjectOffer | null): boolean {
+    if (!offer?.uuid) {
+      return false;
+    }
+
+    return ['new', 'viewed'].includes(this.getResolvedStatus(offer));
   }
 
   isRejectingSelectedOffer(): boolean {
     return !!this.selectedOffer?.uuid
       && this.rejectingOfferUuid === this.selectedOffer.uuid;
+  }
+
+  isOpeningFile(file: ProjectOfferFile | null | undefined): boolean {
+    return !!file?.uuid && this.openingFileUuid === file.uuid;
   }
 
   trackByOffer(_: number, offer: ProjectOffer): string {
@@ -503,8 +864,20 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
     return value;
   }
 
+  trackByDrawerTab(_: number, tab: DrawerTabOption): DrawerTab {
+    return tab.value;
+  }
+
   trackByIndex(index: number): number {
     return index;
+  }
+
+  trackByScope(index: number, scope: ProjectOfferScope): string {
+    return `${scope?.scope || 'scope'}-${index}`;
+  }
+
+  trackByFile(_: number, file: ProjectOfferFile): string {
+    return file.uuid;
   }
 
   trackByEntry(_: number, entry: { key?: string; label?: string; value: any }): string {
@@ -551,7 +924,6 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
 
   private getActiveFilters(): ProjectOffersFilters {
     return {
-      project_status: this.selectedProjectStatus,
       action_status: this.selectedActionStatus,
     };
   }
@@ -560,6 +932,87 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
     this.currentPage = 1;
     this.first = 0;
     this.loadOffers(1);
+  }
+
+  private getProposalDetailsUuid(offer: ProjectOffer): string {
+    return offer.uuid || offer.project_proposal_uuid || '';
+  }
+
+  private getContractUuid(offer: ProjectOffer | null | undefined): string {
+    return offer?.contract_uuid || offer?.project?.contract_uuid || offer?.offer?.contract_uuid || '';
+  }
+
+  private mergeOfferDetails(summary: ProjectOffer, details: ProjectOffer): ProjectOffer {
+    return {
+      ...details,
+      uuid: summary.uuid || details.uuid,
+      status: details.status ?? summary.status,
+      action_status: summary.action_status ?? details.action_status,
+      proposal_no: details.proposal_no ?? summary.proposal_no,
+      project_proposal_uuid: details.project_proposal_uuid ?? summary.project_proposal_uuid,
+      contract_uuid: details.contract_uuid ?? summary.contract_uuid,
+      offer: details.offer ?? summary.offer,
+      project: {
+        ...details.project,
+        file: details.project?.file ?? summary.project?.file,
+        contract_uuid: details.project?.contract_uuid ?? summary.project?.contract_uuid ?? details.contract_uuid ?? summary.contract_uuid,
+      },
+    };
+  }
+
+  private markOfferAsViewed(offer: ProjectOffer): void {
+    const offerUuid = offer?.uuid;
+    const status = this.getResolvedStatus(offer);
+
+    if (!offerUuid || this.markingViewedOfferUuids.has(offerUuid) || !this.canMarkOfferAsViewed(status)) {
+      return;
+    }
+
+    this.markingViewedOfferUuids.add(offerUuid);
+
+    this.projectOffersService.markProjectAsViewed(offerUuid)
+      .pipe(takeUntil(this.unsubscribe$))
+      .subscribe({
+        next: () => {
+          this.updateOfferActionStatus(offerUuid, 'viewed');
+        },
+        error: () => {
+          this.markingViewedOfferUuids.delete(offerUuid);
+        },
+        complete: () => {
+          this.markingViewedOfferUuids.delete(offerUuid);
+        },
+      });
+  }
+
+  private updateOfferActionStatus(offerUuid: string, actionStatus: ProjectOfferActionStatus): void {
+    this.offers = this.offers.map(offer =>
+      offer.uuid === offerUuid
+        ? { ...offer, action_status: actionStatus }
+        : offer
+    );
+
+    if (this.selectedOffer?.uuid === offerUuid) {
+      this.selectedOffer = {
+        ...this.selectedOffer,
+        action_status: actionStatus,
+      };
+    }
+  }
+
+  private canMarkOfferAsViewed(status: string): boolean {
+    return ![
+      'viewed',
+      'offered',
+      'declined',
+      'expired',
+      'accepted',
+      'approved',
+      'rejected',
+      'cancelled',
+      'submitted',
+      'closed',
+    ].includes(status);
   }
 
   private getResolvedStatus(offer: ProjectOffer): string {
@@ -575,6 +1028,11 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
   }
 
   override ngOnDestroy(): void {
+    if (this.deadlineTicker) {
+      clearInterval(this.deadlineTicker);
+      this.deadlineTicker = null;
+    }
+
     super.ngOnDestroy();
   }
 }

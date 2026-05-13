@@ -9,6 +9,7 @@ import { ProfileService } from 'src/app/_fake/services/get-profile/get-profile.s
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 import { Router, ActivatedRoute } from '@angular/router';
+import * as OrderViewUtils from '../my-orders/utils/order-view.utils';
 
 @Component({
   selector: 'app-sales',
@@ -299,7 +300,7 @@ export class SalesComponent extends BaseComponent implements OnInit, OnDestroy, 
 
   onInvoiceDownload(order: Order): void {
     // Open invoice in a new tab
-    const orderNumber = order.invoice_no || order.order_no;
+    const orderNumber = OrderViewUtils.getOrderInvoiceNo(order) || order.order_no;
     const url = this.router.serializeUrl(
       this.router.createUrlTree(['/app/invoice', orderNumber])
     );

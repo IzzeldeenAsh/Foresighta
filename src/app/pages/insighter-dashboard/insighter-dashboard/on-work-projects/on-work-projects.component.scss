@@ -1,0 +1,149 @@
+.owp-contract-button {
+  white-space: nowrap;
+}
+
+.owp-signature-stack {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 190px;
+}
+
+.owp-signature-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-width: 150px;
+  min-height: 34px;
+  padding: 7px 12px;
+  border-radius: 8px;
+  border: 1px solid #e8eef6;
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.2;
+  white-space: nowrap;
+
+  i {
+    flex-shrink: 0;
+    font-size: 16px;
+  }
+
+  strong {
+    min-width: 0;
+    color: #334155;
+    font-weight: 800;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &--success {
+    border-color: #bbf7d0;
+    background: #f0fdf4;
+
+    i,
+    strong {
+      color: #15803d;
+    }
+  }
+
+  &--warning {
+    border-color: #fde68a;
+    background: #fffbeb;
+
+    i,
+    strong {
+      color: #b45309;
+    }
+  }
+
+  &--muted {
+    opacity: 0.72;
+  }
+}
+
+.po-view-button:disabled,
+.owp-contract-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.owp-contract-tab {
+  .p-progressbar {
+    margin-bottom: 16px;
+    border-radius: 999px;
+  }
+}
+
+.owp-contract-panel {
+  margin-top: 4px;
+}
+
+.owp-contract-status-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+
+  @media (max-width: 575px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.owp-contract-status {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  padding: 14px 16px;
+  border: 1px solid #e8eef6;
+  border-radius: 12px;
+  background: #f8fafc;
+
+  span {
+    color: #64748b;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    line-height: 1.2;
+    text-transform: uppercase;
+  }
+
+  strong {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    overflow-wrap: anywhere;
+    color: #0f172a;
+    font-size: 14px;
+    font-weight: 800;
+    line-height: 1.3;
+  }
+
+  &--signed {
+    border-color: #bbf7d0;
+    background: #f0fdf4;
+
+    span,
+    strong {
+      color: #15803d;
+    }
+
+    i {
+      color: #16a34a;
+      flex-shrink: 0;
+    }
+  }
+
+  &--warning {
+    border-color: #fde68a;
+    background: #fffbeb;
+
+    span,
+    strong,
+    i {
+      color: #b45309;
+    }
+  }
+}

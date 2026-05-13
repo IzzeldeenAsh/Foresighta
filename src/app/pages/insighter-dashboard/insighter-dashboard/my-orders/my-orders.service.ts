@@ -39,6 +39,8 @@ export interface PaymentInfo {
   amount: number;
   currency: string;
   status: string;
+  invoice_no?: string | null;
+  fulfillment_attempts?: unknown;
   provider_payment_method_type: string | null;
   provider_card_last_number: string | null;
   provider_card_brand: string | null;
@@ -86,8 +88,9 @@ export interface Order {
   date: string;
   order_no: string;
   user?: User;
-  invoice_no: string;
-  payment: PaymentInfo;
+  invoice_no?: string;
+  payment?: PaymentInfo;
+  payments?: PaymentInfo[];
   knowledge_download_id: string;
   orderable: Orderable;
 }
@@ -137,13 +140,13 @@ export interface InsighterStatisticsResponse {
   providedIn: 'root'
 })
 export class MyOrdersService {
-  private readonly API_URL = 'https://api.insightabusiness.com/api/account/order/knowledge';
-  private readonly MEETING_API_URL = 'https://api.insightabusiness.com/api/account/order/meeting';
-  private readonly COMPANY_KNOWLEDGE_API_URL = 'https://api.insightabusiness.com/api/company/order/knowledge';
-  private readonly INSIGHTER_KNOWLEDGE_API_URL = 'https://api.insightabusiness.com/api/insighter/order/knowledge';
-  private readonly COMPANY_MEETING_API_URL = 'https://api.insightabusiness.com/api/company/order/meeting';
-  private readonly INSIGHTER_MEETING_API_URL = 'https://api.insightabusiness.com/api/insighter/order/meeting';
-  private readonly INSIGHTER_STATISTICS_API_URL = 'https://api.insightabusiness.com/api/insighter/order/statistics';
+  private readonly API_URL = 'https://api.foresighta.co/api/account/order/knowledge';
+  private readonly MEETING_API_URL = 'https://api.foresighta.co/api/account/order/meeting';
+  private readonly COMPANY_KNOWLEDGE_API_URL = 'https://api.foresighta.co/api/company/order/knowledge';
+  private readonly INSIGHTER_KNOWLEDGE_API_URL = 'https://api.foresighta.co/api/insighter/order/knowledge';
+  private readonly COMPANY_MEETING_API_URL = 'https://api.foresighta.co/api/company/order/meeting';
+  private readonly INSIGHTER_MEETING_API_URL = 'https://api.foresighta.co/api/insighter/order/meeting';
+  private readonly INSIGHTER_STATISTICS_API_URL = 'https://api.foresighta.co/api/insighter/order/statistics';
 
   private isLoadingSubject = new BehaviorSubject<boolean>(false);
   public isLoading$ = this.isLoadingSubject.asObservable();

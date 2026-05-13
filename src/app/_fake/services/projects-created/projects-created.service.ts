@@ -17,6 +17,44 @@ export interface CreatedProjectBlock {
   [key: string]: any;
 }
 
+export interface CreatedProjectFile {
+  uuid: string;
+  url?: string | null;
+  [key: string]: any;
+}
+
+export interface CreatedProjectContract {
+  uuid: string | null;
+  user_sign_at: boolean;
+  insighter_sign_at: boolean;
+  is_attach_type: boolean;
+  status?: string | null;
+  file?: CreatedProjectFile | null;
+  guideline?: string | null;
+  name?: string | null;
+  [key: string]: any;
+}
+
+export interface CreatedProjectProposalFiles {
+  general: CreatedProjectFile[];
+  scopes: CreatedProjectFile[];
+  offer: CreatedProjectFile[];
+  [key: string]: CreatedProjectFile[];
+}
+
+export interface CreatedProjectFiles {
+  proposal: CreatedProjectProposalFiles;
+  [key: string]: any;
+}
+
+export interface CreatedProjectScope {
+  scope: string | null;
+  description?: string | null;
+  files?: CreatedProjectFile[];
+  children?: CreatedProjectScope[];
+  [key: string]: any;
+}
+
 export interface CreatedProject {
   uuid: string;
   title: string;
@@ -35,7 +73,13 @@ export interface CreatedProject {
   deadline: string | null;
   components: CreatedProjectBlock[];
   addons: CreatedProjectBlock[];
+  scopes: CreatedProjectScope[];
+  request_files: CreatedProjectFile[];
+  file: CreatedProjectFiles | null;
+  invited: CreatedProjectProposalInvite[];
   status?: string | null;
+  contract_uuid?: string | null;
+  contract?: CreatedProjectContract | null;
 }
 
 export interface CreatedProjectInvitedInsighterCountry {
@@ -62,11 +106,14 @@ export interface CreatedProjectInvitedInsighter {
 export interface CreatedProjectSubmittedOffer {
   uuid: string;
   proposed_price: string | number | null;
+  payment_plan?: string | null;
   down_payment: string | number | null;
   final_payment: string | number | null;
   estimated_hours: string | number | null;
   cover_letter: string | null;
   status: string | null;
+  files: CreatedProjectFile[];
+  contract_uuid?: string | null;
 }
 
 export interface CreatedProjectProposalInvite {
@@ -75,8 +122,53 @@ export interface CreatedProjectProposalInvite {
   submission_status: string | null;
   deadline_offer: string | null;
   total_matches: number | null;
+  match_score: number;
+  matches: Record<string, boolean | undefined>;
+  is_match_all: boolean;
+  is_match_before: boolean;
+  is_invited_before: boolean;
+  status: string | null;
   insighter: CreatedProjectInvitedInsighter | null;
   offer: CreatedProjectSubmittedOffer | null;
+}
+
+export interface CreatedProjectProposalMatchCountry {
+  id?: number | null;
+  name?: string | { en?: string; ar?: string } | null;
+  names?: { en?: string; ar?: string } | null;
+  flag?: string | null;
+}
+
+export interface CreatedProjectProposalMatchCompany {
+  uuid?: string | null;
+  id?: number | null;
+  legal_name?: string | null;
+  logo?: string | null;
+  verified?: boolean | null;
+}
+
+export interface CreatedProjectProposalMatchInsighter {
+  uuid: string;
+  name: string;
+  profile_photo_url: string | null;
+  roles: string[];
+  country?: CreatedProjectProposalMatchCountry | null;
+  company?: CreatedProjectProposalMatchCompany | null;
+}
+
+export interface CreatedProjectProposalMatch {
+  uuid: string;
+  insighter: CreatedProjectProposalMatchInsighter;
+  match_score: number;
+  matches: Record<string, boolean | undefined>;
+  is_match_all: boolean;
+  is_match_before: boolean;
+  status: string | null;
+}
+
+export interface SubmitRematchProposalPayload {
+  deadline_offer: string;
+  matches: string[];
 }
 
 export interface CreatedProjectsFilters {
@@ -144,6 +236,14 @@ export class ProjectsCreatedService {
     });
   }
 
+  private getFormDataHeaders(): HttpHeaders {
+    return new HttpHeaders({
+      'Accept': 'application/json',
+      'Accept-Language': this.currentLang,
+      'X-Timezone': Intl.DateTimeFormat().resolvedOptions().timeZone,
+    });
+  }
+
   getProjects(
     page: number = 1,
     filters: CreatedProjectsFilters = {}
@@ -177,13 +277,89 @@ export class ProjectsCreatedService {
     );
   }
 
-  getProjectProposalInvites(uuid: string): Observable<CreatedProjectProposalInvite[]> {
-    this.setLoading(true);
-
-    return this.http.get<any>(`${this.baseUrl}/proposal/submit-list/${uuid}`, {
+  getProjectFileUrl(fileUuid: string): Observable<string> {
+    return this.http.get<any>(`${environment.apiBaseUrl}/account/project/file/download/${fileUuid}`, {
       headers: this.getHeaders(),
     }).pipe(
-      map(response => this.mapProposalInvites(response)),
+      map(response => response?.file ?? response?.data?.url ?? response?.url ?? response?.data ?? ''),
+      catchError(error => throwError(() => error))
+    );
+  }
+
+  createProjectProposal(projectUuid: string): Observable<string> {
+    this.setLoading(true);
+
+    return this.http.post<any>(`${this.baseUrl}/proposal/new/${projectUuid}`, {}, {
+      headers: this.getHeaders(),
+    }).pipe(
+      map(response => {
+        const proposalUuid = this.extractUuidFromResponse(response);
+        if (!proposalUuid) {
+          throw new Error('proposal_uuid_missing');
+        }
+
+        return proposalUuid;
+      }),
+      catchError(error => throwError(() => error)),
+      finalize(() => this.setLoading(false))
+    );
+  }
+
+  getProjectProposalMatches(proposalUuid: string): Observable<CreatedProjectProposalMatch[]> {
+    this.setLoading(true);
+
+    return this.http.get<any>(`${this.baseUrl}/proposal/match/${proposalUuid}`, {
+      headers: this.getHeaders(),
+    }).pipe(
+      map(response => this.mapProposalMatches(response)),
+      catchError(error => throwError(() => error)),
+      finalize(() => this.setLoading(false))
+    );
+  }
+
+  submitRematchProposal(
+    proposalUuid: string,
+    payload: SubmitRematchProposalPayload
+  ): Observable<any> {
+    this.setLoading(true);
+
+    return this.http.post<any>(`${this.baseUrl}/proposal/submit/${proposalUuid}`, payload, {
+      headers: this.getHeaders(),
+    }).pipe(
+      catchError(error => throwError(() => error)),
+      finalize(() => this.setLoading(false))
+    );
+  }
+
+  acceptProposalOffer(offerUuid: string): Observable<any> {
+    this.setLoading(true);
+
+    return this.http.post<any>(`${this.baseUrl}/proposal/offer/accept/${offerUuid}`, {}, {
+      headers: this.getHeaders(),
+    }).pipe(
+      catchError(error => throwError(() => error)),
+      finalize(() => this.setLoading(false))
+    );
+  }
+
+  signProjectContract(contractUuid: string, payload: FormData): Observable<any> {
+    this.setLoading(true);
+
+    return this.http.post<any>(`${this.baseUrl}/contract/sign/${contractUuid}`, payload, {
+      headers: this.getFormDataHeaders(),
+    }).pipe(
+      catchError(error => throwError(() => error)),
+      finalize(() => this.setLoading(false))
+    );
+  }
+
+  getProjectContract(contractUuid: string): Observable<CreatedProjectContract> {
+    this.setLoading(true);
+
+    return this.http.get<any>(`${this.baseUrl}/contract/${contractUuid}`, {
+      headers: this.getHeaders(),
+    }).pipe(
+      map(response => this.mapProjectContract(response?.data ?? response)),
       catchError(error => throwError(() => error)),
       finalize(() => this.setLoading(false))
     );
@@ -219,24 +395,50 @@ export class ProjectsCreatedService {
       deadline: p?.deadline ?? null,
       components: this.sanitizeBlocks(p?.components),
       addons: this.sanitizeBlocks(p?.addons),
+      scopes: this.sanitizeScopes(p?.scopes),
+      request_files: this.sanitizeFiles(p?.request_files),
+      file: this.sanitizeProjectFiles(p?.file),
+      invited: this.mapProjectInvites(p?.invited),
       status: p?.status ?? null,
+      contract_uuid: p?.contract_uuid ?? p?.contract?.uuid ?? null,
+      contract: p?.contract && typeof p.contract === 'object' ? this.mapProjectContract(p.contract) : null,
     };
   }
 
-  private mapProposalInvites(response: any): CreatedProjectProposalInvite[] {
-    const groups = Array.isArray(response?.data) ? response.data : [];
+  private mapProjectContract(contract: any): CreatedProjectContract {
+    return {
+      ...(contract || {}),
+      uuid: contract?.uuid ?? contract?.contract_uuid ?? null,
+      user_sign_at: this.toBoolean(contract?.user_sign_at),
+      insighter_sign_at: this.toBoolean(contract?.insighter_sign_at),
+      is_attach_type: this.toBoolean(contract?.is_attach_type),
+      status: contract?.status ?? null,
+      file: contract?.file && typeof contract.file === 'object' ? contract.file : null,
+      guideline: contract?.guideline ?? contract?.contract?.guideline ?? null,
+      name: contract?.name ?? contract?.contract?.name ?? null,
+    };
+  }
 
-    return groups.flatMap((group: any) => {
-      const invited = Array.isArray(group?.invited) ? group.invited : [];
+  private mapProjectInvites(invited: any[] | null | undefined): CreatedProjectProposalInvite[] {
+    if (!Array.isArray(invited)) return [];
 
-      return invited.map((item: any) => ({
-        uuid: item?.uuid ?? '',
-        action_status: item?.action_status ?? null,
-        submission_status: group?.status ?? null,
-        deadline_offer: group?.deadline_offer ?? null,
-        total_matches: group?.total_matches ?? null,
+    return invited
+      .map((item: any) => ({
+        uuid: this.stringifyValue(item?.uuid ?? item?.id ?? item?.insighter?.uuid),
+        action_status: item?.action_status ?? item?.status ?? null,
+        submission_status: item?.submission_status ?? null,
+        deadline_offer: item?.deadline_offer ?? null,
+        total_matches: item?.total_matches ?? null,
+        match_score: this.normalizeMatchScore(item?.match_score),
+        matches: item?.matches && typeof item.matches === 'object' && !Array.isArray(item.matches)
+          ? item.matches
+          : {},
+        is_match_all: Boolean(item?.is_match_all ?? item?.is_match_all_properties),
+        is_match_before: Boolean(item?.is_match_before),
+        is_invited_before: Boolean(item?.is_invited_before),
+        status: item?.status ?? null,
         insighter: item?.insighter ? {
-          uuid: item.insighter?.uuid ?? '',
+          uuid: this.stringifyValue(item.insighter?.uuid),
           name: item.insighter?.name ?? null,
           profile_photo_url: item.insighter?.profile_photo_url ?? null,
           roles: Array.isArray(item.insighter?.roles) ? item.insighter.roles : [],
@@ -244,16 +446,102 @@ export class ProjectsCreatedService {
           company: item.insighter?.company ?? null,
         } : null,
         offer: item?.offer ? {
-          uuid: item.offer?.uuid ?? '',
+          uuid: this.stringifyValue(item.offer?.uuid),
           proposed_price: item.offer?.proposed_price ?? null,
+          payment_plan: item.offer?.payment_plan ?? null,
           down_payment: item.offer?.down_payment ?? null,
           final_payment: item.offer?.final_payment ?? null,
           estimated_hours: item.offer?.estimated_hours ?? null,
           cover_letter: item.offer?.cover_letter ?? null,
           status: item.offer?.status ?? null,
+          files: this.sanitizeFiles(item.offer?.files),
+          contract_uuid: item.offer?.contract_uuid ?? item?.contract_uuid ?? item?.contract?.uuid ?? null,
         } : null,
-      }));
-    });
+      }))
+      .filter((invite: CreatedProjectProposalInvite) => !!invite.uuid || !!invite.insighter?.uuid);
+  }
+
+  private mapProposalMatches(response: any): CreatedProjectProposalMatch[] {
+    const data = response?.data;
+    const matches = Array.isArray(data)
+      ? data
+      : Array.isArray(data?.matches)
+        ? data.matches
+        : [];
+
+    return matches
+      .map((item: any) => this.mapProposalMatch(item))
+      .filter((match: CreatedProjectProposalMatch) => !!match.uuid && !!match.insighter.uuid);
+  }
+
+  private mapProposalMatch(item: any): CreatedProjectProposalMatch {
+    const insighter = item?.insighter && typeof item.insighter === 'object'
+      ? item.insighter
+      : {};
+    const matchUuid = this.stringifyValue(item?.uuid ?? item?.match_uuid ?? item?.id ?? insighter?.uuid);
+
+    return {
+      uuid: matchUuid,
+      insighter: {
+        uuid: this.stringifyValue(insighter?.uuid),
+        name: this.stringifyValue(insighter?.name),
+        profile_photo_url: insighter?.profile_photo_url ?? null,
+        roles: Array.isArray(insighter?.roles) ? insighter.roles : [],
+        country: insighter?.country ?? null,
+        company: insighter?.company ?? null,
+      },
+      match_score: this.normalizeMatchScore(item?.match_score),
+      matches: item?.matches && typeof item.matches === 'object' && !Array.isArray(item.matches)
+        ? item.matches
+        : {},
+      is_match_all: Boolean(item?.is_match_all ?? item?.is_match_all_properties),
+      is_match_before: Boolean(item?.is_match_before),
+      status: item?.status ?? null,
+    };
+  }
+
+  private extractUuidFromResponse(response: any): string {
+    const candidates = [
+      response?.data?.uuid,
+      response?.data?.proposal_uuid,
+      response?.data?.project_proposal_uuid,
+      response?.data?.id,
+      response?.uuid,
+      response?.proposal_uuid,
+      response?.project_proposal_uuid,
+      response?.id,
+      response?.data,
+    ];
+
+    for (const candidate of candidates) {
+      if (candidate !== null && typeof candidate === 'object') continue;
+      const value = this.stringifyValue(candidate);
+      if (value) return value;
+    }
+
+    return '';
+  }
+
+  private normalizeMatchScore(value: any): number {
+    const score = Number(value);
+    if (!Number.isFinite(score)) return 0;
+    return Math.min(Math.max(score, 0), 1);
+  }
+
+  private stringifyValue(value: any): string {
+    if (value === null || value === undefined) return '';
+    return String(value).trim();
+  }
+
+  private toBoolean(value: any): boolean {
+    if (typeof value === 'boolean') return value;
+    if (typeof value === 'number') return value === 1;
+    if (typeof value === 'string') {
+      const normalized = value.trim().toLowerCase();
+      return ['1', 'true', 'yes'].includes(normalized);
+    }
+
+    return false;
   }
 
   private sanitizeBlocks(blocks: any[] | null | undefined): CreatedProjectBlock[] {
@@ -262,5 +550,50 @@ export class ProjectsCreatedService {
       if (!block || typeof block !== 'object' || Array.isArray(block)) return false;
       return Object.keys(block).length > 0;
     });
+  }
+
+  private sanitizeScopes(scopes: CreatedProjectScope[] | null | undefined): CreatedProjectScope[] {
+    if (!Array.isArray(scopes)) return [];
+
+    return scopes
+      .filter(scope => scope && typeof scope === 'object' && !Array.isArray(scope))
+      .map(scope => ({
+        ...scope,
+        scope: scope.scope ?? null,
+        description: scope.description ?? null,
+        files: this.sanitizeFiles(scope.files),
+        children: this.sanitizeScopes(scope.children),
+      }))
+      .filter(scope => !!scope.scope || !!scope.description || !!scope.files?.length || !!scope.children?.length);
+  }
+
+  private sanitizeFiles(files: CreatedProjectFile[] | null | undefined): CreatedProjectFile[] {
+    if (!Array.isArray(files)) return [];
+
+    return files
+      .filter(file => file && typeof file === 'object' && !Array.isArray(file))
+      .map(file => ({
+        ...file,
+        uuid: file.uuid ?? '',
+        url: file.url ?? null,
+      }))
+      .filter(file => !!file.uuid);
+  }
+
+  private sanitizeProjectFiles(file: any): CreatedProjectFiles | null {
+    if (!file || typeof file !== 'object' || Array.isArray(file)) return null;
+
+    const proposal = file.proposal && typeof file.proposal === 'object' && !Array.isArray(file.proposal)
+      ? file.proposal
+      : {};
+
+    return {
+      ...file,
+      proposal: {
+        general: this.sanitizeFiles(proposal.general),
+        scopes: this.sanitizeFiles(proposal.scopes),
+        offer: this.sanitizeFiles(proposal.offer),
+      },
+    };
   }
 }

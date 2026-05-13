@@ -46,7 +46,7 @@ const routes: Routes = [
     path: 'project-settings',
     component: ProjectSettingsPageComponent,
     canActivate: [RolesGuard],
-    data: { roles: ['insighter', 'company'] }
+    data: { roles: ['insighter', 'company', 'company-insighter'] }
   },
   {
     path: 'consulting-schedule',

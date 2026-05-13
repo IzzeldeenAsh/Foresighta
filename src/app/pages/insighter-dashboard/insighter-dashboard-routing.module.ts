@@ -93,6 +93,12 @@ const routes: Routes = [
         data: { roles: ['insighter', 'company', 'company-insighter'] }
       },
       {
+        path: 'on-work-projects',
+        loadChildren: () => import('./insighter-dashboard/on-work-projects/on-work-projects.module').then(m => m.OnWorkProjectsModule),
+        canActivate: [authGuard, RolesGuard],
+        data: { roles: ['insighter', 'company', 'company-insighter'] }
+      },
+      {
         path: 'projects-created',
         loadChildren: () => import('./insighter-dashboard/projects-created/projects-created.module').then(m => m.ProjectsCreatedModule),
         canActivate: [authGuard, RolesGuard],
