@@ -245,7 +245,7 @@ export class AuthService implements OnDestroy {
           "Authorization": `Bearer ${token}`,
         });
 
-        return this.http.get('https://api.foresighta.co/api/account/profile', { headers }).pipe(
+        return this.http.get('https://api.insightabusiness.com/api/account/profile', { headers }).pipe(
           map((profileResponse: any) => {
             const userData: UserType = {
               id: profileResponse.data.id,
@@ -336,7 +336,7 @@ export class AuthService implements OnDestroy {
       "Authorization": `Bearer ${token}`,
     });
 
-    return this.http.get('https://api.foresighta.co/api/account/profile', { headers }).pipe(
+    return this.http.get('https://api.insightabusiness.com/api/account/profile', { headers }).pipe(
       map((response: any) => {
         const userData: UserType = {
           id: response.data.id,
@@ -401,7 +401,7 @@ export class AuthService implements OnDestroy {
     });
 
     return this.http.post<any>(
-      'https://api.foresighta.co/api/account/logout',
+      'https://api.insightabusiness.com/api/account/logout',
       {},
       { headers }
     ).pipe(
@@ -443,7 +443,7 @@ export class AuthService implements OnDestroy {
       'Authorization': `Bearer ${token}`,
     });
 
-    return this.http.post('https://api.foresighta.co/api/account/email/resend', {}, { headers }).pipe(
+    return this.http.post('https://api.insightabusiness.com/api/account/email/resend', {}, { headers }).pipe(
       catchError((error) => this.handleError(error))
     );
   }
@@ -455,7 +455,7 @@ export class AuthService implements OnDestroy {
       'Accept-Language': this.currentLang
     });
 
-    return this.http.get('https://api.foresighta.co/api/auth/provider/google', {
+    return this.http.get('https://api.insightabusiness.com/api/auth/provider/google', {
       headers,
       responseType: 'text'
     });
@@ -467,7 +467,7 @@ export class AuthService implements OnDestroy {
       'Accept-Language': this.currentLang
     });
 
-    return this.http.get('https://api.foresighta.co/api/auth/provider/linkedin-openid', {
+    return this.http.get('https://api.insightabusiness.com/api/auth/provider/linkedin-openid', {
       headers,
       responseType: 'text'
     });

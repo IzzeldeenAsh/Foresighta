@@ -90,21 +90,30 @@
           <th class="min-w-170px">{{ lang === 'ar' ? 'النوع' : 'Type' }}</th>
           <th class="min-w-180px">{{ lang === 'ar' ? 'الخدمة' : 'Service' }}</th>
           <th class="min-w-150px">{{ lang === 'ar' ? 'الموعد النهائي' : 'Deadline' }}</th>
-          <th class="min-w-130px" *ngIf="projects[0]?.status !== null">{{ lang === 'ar' ? 'الحالة' : 'Status' }}</th>
+          <th class="min-w-130px" *ngIf="hasProjectStatus()">{{ lang === 'ar' ? 'الحالة' : 'Status' }}</th>
           <th class="w-120px"></th>
         </tr>
       </thead>
       <tbody class="fw-semibold text-gray-600">
-        <tr *ngFor="let project of projects; trackBy: trackByProject" class="pc-table__row">
+        <tr *ngFor="let project of projects; trackBy: trackByProject"
+            class="pc-table__row"
+            [class.pc-table__row--unread]="isClientUnread(project)"
+            role="button"
+            tabindex="0"
+            (click)="viewDetails(project)"
+            (keydown.enter)="viewDetails(project)"
+            (keydown.space)="$event.preventDefault(); viewDetails(project)">
           <td>
             <img class="pc-table__project-image"
-                 [src]="projectImageUrl"
+                 [src]="getProjectImageUrl(project)"
                  [alt]="lang === 'ar' ? 'أيقونة المشروع' : 'Project icon'">
           </td>
 
           <td>
             <div class="pc-table__project">
-              <span class="pc-table__project-title">{{ project.title }}</span>
+              <span class="pc-table__project-title">
+                {{ project.title }}
+              </span>
               <span class="pc-table__project-summary">{{ getSummary(project) }}</span>
             </div>
           </td>
@@ -126,9 +135,9 @@
 
           <td class="text-gray-800 fw-semibold">{{ formatDate(project.deadline) }}</td>
 
-          <td *ngIf="project.status !== null">
+          <td *ngIf="hasProjectStatus()">
             <span class="pc-status-badge" [ngClass]="getStatusBadgeClass(project.status)">
-              <span class="pc-status-badge__dot"></span>
+              <i class="ki-outline pc-status-badge__icon" [ngClass]="getStatusIconClass(project.status)"></i>
               {{ getStatusLabel(project.status) }}
             </span>
           </td>
@@ -136,7 +145,7 @@
           <td class="text-end">
             <button type="button"
                     class="btn btn-sm btn-light-info"
-                    (click)="viewDetails(project)">
+                    (click)="$event.stopPropagation(); viewDetails(project)">
               <i class="ki-outline ki-eye fs-6 me-1"></i>
               {{ lang === 'ar' ? 'التفاصيل' : 'View Details' }}
             </button>
@@ -171,7 +180,7 @@
       <span *ngIf="project.status"
             class="pc-status-badge"
             [ngClass]="getStatusBadgeClass(project.status)">
-        <span class="pc-status-badge__dot"></span>
+        <i class="ki-outline pc-status-badge__icon" [ngClass]="getStatusIconClass(project.status)"></i>
         {{ getStatusLabel(project.status) }}
       </span>
     </div>

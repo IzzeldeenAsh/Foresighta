@@ -49,6 +49,8 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
 
   offers: ProjectOffer[] = [];
   viewMode: ViewMode = 'list';
+  offerReadImageUrl = 'https://res.cloudinary.com/dsiku9ipv/image/upload/v1777637418/job-offer_8062313_lqbkuq.png';
+  offerUnreadImageUrl = 'https://res.cloudinary.com/dsiku9ipv/image/upload/v1779196244/job-offer_8062313_lqbkuq_belled_zx6gpr.png';
   selectedActionStatus: ProjectOfferActionStatus | null = null;
 
   currentPage: number = 1;
@@ -67,6 +69,7 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
   currentTime: number = Date.now();
   private deadlineTicker: ReturnType<typeof setInterval> | null = null;
   private drawerDetailsRequestId = 0;
+  private readonly defaultOfferDeadlineWindowMs = 14 * 86_400_000;
 
   projectTypeOptions: ProjectTypeMeta[] = [
     { key: 'ad_hoc', labelEn: 'Ad Hoc', labelAr: 'خاص' },
@@ -256,6 +259,14 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
     return offer.project?.service_prompt || offer.project?.description || '-';
   }
 
+  isInsighterUnread(offer: ProjectOffer): boolean {
+    return offer.project?.insighter_read_at === false;
+  }
+
+  getOfferImageUrl(offer: ProjectOffer): string {
+    return this.isInsighterUnread(offer) ? this.offerUnreadImageUrl : this.offerReadImageUrl;
+  }
+
   getDeadlineLabel(offer: ProjectOffer): string {
     const date = offer.project?.deadline_offer || offer.project?.deadline;
     return this.formatDate(date);
@@ -326,8 +337,7 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
   }
 
   getOfferTimerHint(offer: ProjectOffer | null | undefined): string {
-    const deadline = this.getOfferDeadlineDate(offer);
-    if (!deadline) {
+    if (!this.getOfferDeadlineDate(offer)) {
       return this.lang === 'ar' ? 'لم يتم تحديد موعد نهائي للعرض.' : 'No offer deadline has been set.';
     }
 
@@ -335,41 +345,90 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
       return this.lang === 'ar' ? 'انتهت مدة إرسال هذا العرض.' : 'This offer submission window has ended.';
     }
 
-    return this.lang === 'ar'
-      ? `ينتهي في ${this.formatDate(deadline.toISOString())}`
-      : `Expires on ${this.formatDate(deadline.toISOString())}`;
+    return '';
   }
 
   getOfferDeadlineProgress(offer: ProjectOffer | null | undefined): number {
-    const remainingMs = this.getOfferRemainingMs(offer);
-    if (remainingMs <= 0) {
+    const remainingRatio = this.getOfferRemainingRatio(offer);
+    if (remainingRatio <= 0) {
       return 0;
     }
 
-    const maxWindowMs = 14 * 86_400_000;
-    return Math.max(6, Math.min(100, Math.round((remainingMs / maxWindowMs) * 100)));
+    return Math.max(6, Math.min(100, Math.round(remainingRatio * 100)));
   }
 
   getOfferTimerClass(offer: ProjectOffer | null | undefined): string {
-    const remainingMs = this.getOfferRemainingMs(offer);
     if (!this.getOfferDeadlineDate(offer)) {
       return 'po-offer-timer--neutral';
     }
 
-    if (remainingMs <= 0) {
+    const elapsedRatio = this.getOfferElapsedRatio(offer);
+    if (elapsedRatio >= 1) {
       return 'po-offer-timer--expired';
     }
 
-    const days = this.getOfferRemainingDays(offer);
-    if (days <= 1) {
-      return 'po-offer-timer--danger';
+    if (elapsedRatio < 1 / 3) {
+      return 'po-offer-timer--healthy';
     }
 
-    if (days <= 3) {
+    if (elapsedRatio < 2 / 3) {
       return 'po-offer-timer--warning';
     }
 
-    return 'po-offer-timer--healthy';
+    return 'po-offer-timer--danger';
+  }
+
+  private getOfferRemainingRatio(offer: ProjectOffer | null | undefined): number {
+    const deadline = this.getOfferDeadlineDate(offer);
+    if (!deadline) {
+      return 0;
+    }
+
+    const windowMs = this.getOfferDeadlineWindowMs(offer, deadline);
+    if (windowMs <= 0) {
+      return 0;
+    }
+
+    return Math.max(0, Math.min(1, this.getOfferRemainingMs(offer) / windowMs));
+  }
+
+  private getOfferElapsedRatio(offer: ProjectOffer | null | undefined): number {
+    return Math.max(0, Math.min(1, 1 - this.getOfferRemainingRatio(offer)));
+  }
+
+  private getOfferDeadlineWindowMs(offer: ProjectOffer | null | undefined, deadline: Date): number {
+    const startDate = this.getOfferStartDate(offer);
+    if (startDate && startDate.getTime() < deadline.getTime()) {
+      return deadline.getTime() - startDate.getTime();
+    }
+
+    return this.defaultOfferDeadlineWindowMs;
+  }
+
+  private getOfferStartDate(offer: ProjectOffer | null | undefined): Date | null {
+    const candidates = [
+      offer?.invited_at,
+      offer?.created_at,
+      offer?.project?.created_at,
+    ];
+
+    for (const value of candidates) {
+      const date = this.parseDate(value);
+      if (date) {
+        return date;
+      }
+    }
+
+    return null;
+  }
+
+  private parseDate(value: string | null | undefined): Date | null {
+    if (!value) {
+      return null;
+    }
+
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? null : date;
   }
 
   shouldShowOfferTimer(offer: ProjectOffer | null | undefined): boolean {
@@ -954,6 +1013,9 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
       offer: details.offer ?? summary.offer,
       project: {
         ...details.project,
+        uuid: details.project?.uuid || summary.project?.uuid,
+        insighter_read_at: details.project?.insighter_read_at ?? summary.project?.insighter_read_at,
+        client_read_at: details.project?.client_read_at ?? summary.project?.client_read_at,
         file: details.project?.file ?? summary.project?.file,
         contract_uuid: details.project?.contract_uuid ?? summary.project?.contract_uuid ?? details.contract_uuid ?? summary.contract_uuid,
       },
@@ -962,19 +1024,19 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
 
   private markOfferAsViewed(offer: ProjectOffer): void {
     const offerUuid = offer?.uuid;
-    const status = this.getResolvedStatus(offer);
+    const projectUuid = offer?.project?.uuid;
 
-    if (!offerUuid || this.markingViewedOfferUuids.has(offerUuid) || !this.canMarkOfferAsViewed(status)) {
+    if (!offerUuid || !projectUuid || !this.isInsighterUnread(offer) || this.markingViewedOfferUuids.has(offerUuid)) {
       return;
     }
 
     this.markingViewedOfferUuids.add(offerUuid);
 
-    this.projectOffersService.markProjectAsViewed(offerUuid)
+    this.projectOffersService.markInsighterProjectAsRead(projectUuid)
       .pipe(takeUntil(this.unsubscribe$))
       .subscribe({
         next: () => {
-          this.updateOfferActionStatus(offerUuid, 'viewed');
+          this.updateOfferInsighterReadState(offerUuid, true);
         },
         error: () => {
           this.markingViewedOfferUuids.delete(offerUuid);
@@ -985,10 +1047,41 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
       });
   }
 
+  private updateOfferInsighterReadState(offerUuid: string, readState: boolean): void {
+    this.offers = this.offers.map(offer =>
+      offer.uuid === offerUuid
+        ? {
+          ...offer,
+          project: {
+            ...offer.project,
+            insighter_read_at: readState,
+          },
+        }
+        : offer
+    );
+
+    if (this.selectedOffer?.uuid === offerUuid) {
+      this.selectedOffer = {
+        ...this.selectedOffer,
+        project: {
+          ...this.selectedOffer.project,
+          insighter_read_at: readState,
+        },
+      };
+    }
+  }
+
   private updateOfferActionStatus(offerUuid: string, actionStatus: ProjectOfferActionStatus): void {
     this.offers = this.offers.map(offer =>
       offer.uuid === offerUuid
-        ? { ...offer, action_status: actionStatus }
+        ? {
+          ...offer,
+          action_status: actionStatus,
+          project: {
+            ...offer.project,
+            insighter_read_at: true,
+          },
+        }
         : offer
     );
 
@@ -996,6 +1089,10 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
       this.selectedOffer = {
         ...this.selectedOffer,
         action_status: actionStatus,
+        project: {
+          ...this.selectedOffer.project,
+          insighter_read_at: true,
+        },
       };
     }
   }

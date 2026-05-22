@@ -6,6 +6,21 @@ import { TranslationService } from 'src/app/modules/i18n/translation.service';
 import { environment } from 'src/environments/environment';
 
 export type CreatedProjectType = 'ad_hoc' | 'frame_work_agreement' | 'urgent_request' | string;
+export type CreatedProjectStatus =
+  | 'expired'
+  | 'cancelled'
+  | 'submitted'
+  | 'contract'
+  | 'payment'
+  | 'in_progress'
+  | 'in_review'
+  | 'closed'
+  | string;
+export type ProjectCheckoutPaymentMethod = 'manual' | 'provider';
+export type ProjectOrderPaymentPlan = 'full_payment' | 'down_payment' | 'final_payment' | string;
+export type ProjectFileUploadType = 'first_draft' | 'final_draft' | 'samples' | 'document' | 'other' | string;
+export type ProjectReviewSubmissionStatus = 'pending' | 'approved' | 'changes_requested' | string;
+export type ProjectReviewAction = 'approve' | 'request_change';
 
 export interface CreatedProjectService {
   id: number;
@@ -19,7 +34,14 @@ export interface CreatedProjectBlock {
 
 export interface CreatedProjectFile {
   uuid: string;
+  name?: string | null;
   url?: string | null;
+  identifier?: string | null;
+  second_identifier?: string | null;
+  uploadBy?: string | null;
+  uploaded_by?: string | null;
+  upload_date?: string | null;
+  scope?: string | null;
   [key: string]: any;
 }
 
@@ -28,10 +50,43 @@ export interface CreatedProjectContract {
   user_sign_at: boolean;
   insighter_sign_at: boolean;
   is_attach_type: boolean;
-  status?: string | null;
+  status?: CreatedProjectStatus | null;
   file?: CreatedProjectFile | null;
   guideline?: string | null;
+  rendered_guideline?: string | null;
+  language?: string | null;
+  court_country?: any;
   name?: string | null;
+  [key: string]: any;
+}
+
+export interface PrepareStandardProjectContractPayload {
+  contract_language: 'ar' | 'en';
+  court_country_id: number;
+}
+
+export interface CreatedProjectOrder {
+  uuid: string;
+  service?: string | null;
+  service_name?: string | null;
+  amount: number;
+  currency: string;
+  date?: string | null;
+  order_no?: string | null;
+  payments?: any[];
+  status?: string | null;
+  orderable?: any;
+  order_payment_plan?: ProjectOrderPaymentPlan | null;
+  payment_plan?: ProjectOrderPaymentPlan | null;
+  down_payment_amount?: number | null;
+  down_payment_percentage?: number | null;
+  down_payment?: number | null;
+  start_payment_amount?: number | null;
+  start_payment?: number | null;
+  start_amount?: number | null;
+  upfront_payment_amount?: number | null;
+  final_payment?: number | null;
+  final_payment_percentage?: number | null;
   [key: string]: any;
 }
 
@@ -44,6 +99,18 @@ export interface CreatedProjectProposalFiles {
 
 export interface CreatedProjectFiles {
   proposal: CreatedProjectProposalFiles;
+  project: CreatedProjectFile[];
+  [key: string]: any;
+}
+
+export interface ProjectReviewSubmission {
+  uuid: string;
+  type?: string | null;
+  status: ProjectReviewSubmissionStatus | null;
+  note: string | null;
+  request_at: string | null;
+  review_note: string | null;
+  reviewed_at: string | null;
   [key: string]: any;
 }
 
@@ -59,6 +126,7 @@ export interface CreatedProject {
   uuid: string;
   title: string;
   type: CreatedProjectType;
+  stage?: string | null;
   language: string | null;
   service: CreatedProjectService | null;
   service_prompt: string | null;
@@ -77,9 +145,13 @@ export interface CreatedProject {
   request_files: CreatedProjectFile[];
   file: CreatedProjectFiles | null;
   invited: CreatedProjectProposalInvite[];
-  status?: string | null;
+  insighter_read_at?: boolean | null;
+  client_read_at?: boolean | null;
+  status?: CreatedProjectStatus | null;
+  order?: CreatedProjectOrder | null;
   contract_uuid?: string | null;
   contract?: CreatedProjectContract | null;
+  can_rematch?: boolean;
 }
 
 export interface CreatedProjectInvitedInsighterCountry {
@@ -172,7 +244,7 @@ export interface SubmitRematchProposalPayload {
 }
 
 export interface CreatedProjectsFilters {
-  project_status?: string | null;
+  project_status?: CreatedProjectStatus | null;
 }
 
 interface PaginationLinks {
@@ -204,6 +276,7 @@ export interface CreatedProjectsPaginatedResponse {
 })
 export class ProjectsCreatedService {
   private readonly baseUrl = `${environment.apiBaseUrl}/account/project`;
+  private readonly projectOrderBaseUrl = `${environment.apiBaseUrl}/account/order/project`;
   private isLoadingSubject = new BehaviorSubject<boolean>(false);
   public isLoading$: Observable<boolean> = this.isLoadingSubject.asObservable();
   currentLang: string = 'en';
@@ -272,6 +345,70 @@ export class ProjectsCreatedService {
       headers: this.getHeaders(),
     }).pipe(
       map(response => this.mapProject(response?.data ?? response)),
+      catchError(error => throwError(() => error)),
+      finalize(() => this.setLoading(false))
+    );
+  }
+
+  markProjectAsRead(projectUuid: string): Observable<any> {
+    return this.http.put<any>(
+      `${this.baseUrl}/read/${projectUuid}`,
+      {},
+      { headers: this.getHeaders() }
+    ).pipe(
+      catchError(error => throwError(() => error))
+    );
+  }
+
+  uploadClientProjectFile(projectUuid: string, payload: FormData): Observable<any> {
+    this.setLoading(true);
+
+    return this.http.post<any>(
+      `${this.baseUrl}/file/upload/${projectUuid}`,
+      payload,
+      { headers: this.getFormDataHeaders() }
+    ).pipe(
+      catchError(error => throwError(() => error)),
+      finalize(() => this.setLoading(false))
+    );
+  }
+
+  getProjectReviewSubmissions(projectUuid: string): Observable<ProjectReviewSubmission[]> {
+    return this.http.get<any>(`${this.baseUrl}/review-submission/${projectUuid}`, {
+      headers: this.getHeaders(),
+    }).pipe(
+      map(response => this.mapReviewSubmissions(response)),
+      catchError(error => throwError(() => error))
+    );
+  }
+
+  respondToProjectReview(
+    reviewUuid: string,
+    payload: { action: ProjectReviewAction; review_note: string | null }
+  ): Observable<any> {
+    this.setLoading(true);
+
+    return this.http.post<any>(
+      `${this.baseUrl}/review-submission/action/${reviewUuid}`,
+      payload,
+      { headers: this.getHeaders() }
+    ).pipe(
+      catchError(error => throwError(() => error)),
+      finalize(() => this.setLoading(false))
+    );
+  }
+
+  checkoutProjectStart(
+    projectUuid: string,
+    paymentMethod: ProjectCheckoutPaymentMethod
+  ): Observable<any> {
+    this.setLoading(true);
+
+    return this.http.post<any>(
+      `${this.projectOrderBaseUrl}/checkout/start/${projectUuid}`,
+      { payment_method: paymentMethod },
+      { headers: this.getHeaders() }
+    ).pipe(
       catchError(error => throwError(() => error)),
       finalize(() => this.setLoading(false))
     );
@@ -353,6 +490,20 @@ export class ProjectsCreatedService {
     );
   }
 
+  prepareStandardProjectContract(
+    contractUuid: string,
+    payload: PrepareStandardProjectContractPayload
+  ): Observable<any> {
+    this.setLoading(true);
+
+    return this.http.post<any>(`${this.baseUrl}/contract/standard/prepare/${contractUuid}`, payload, {
+      headers: this.getHeaders(),
+    }).pipe(
+      catchError(error => throwError(() => error)),
+      finalize(() => this.setLoading(false))
+    );
+  }
+
   getProjectContract(contractUuid: string): Observable<CreatedProjectContract> {
     this.setLoading(true);
 
@@ -381,6 +532,7 @@ export class ProjectsCreatedService {
       uuid: p?.uuid ?? '',
       title: p?.title ?? '',
       type: p?.type ?? '',
+      stage: p?.stage ?? null,
       language: p?.language ?? null,
       service: p?.service ?? null,
       service_prompt: p?.service_prompt ?? null,
@@ -399,23 +551,69 @@ export class ProjectsCreatedService {
       request_files: this.sanitizeFiles(p?.request_files),
       file: this.sanitizeProjectFiles(p?.file),
       invited: this.mapProjectInvites(p?.invited),
+      insighter_read_at: this.toReadState(p?.insighter_read_at),
+      client_read_at: this.toReadState(p?.client_read_at),
       status: p?.status ?? null,
+      order: p?.order && typeof p.order === 'object' ? this.mapProjectOrder(p.order) : null,
       contract_uuid: p?.contract_uuid ?? p?.contract?.uuid ?? null,
       contract: p?.contract && typeof p.contract === 'object' ? this.mapProjectContract(p.contract) : null,
+      can_rematch: typeof p?.can_rematch === 'boolean' ? p.can_rematch : undefined,
+    };
+  }
+
+  private mapProjectOrder(order: any): CreatedProjectOrder {
+    return {
+      ...(order || {}),
+      uuid: this.stringifyValue(order?.uuid ?? order?.order_uuid),
+      service: order?.service ?? null,
+      service_name: order?.service_name ?? null,
+      amount: this.toNumber(order?.amount),
+      currency: this.stringifyValue(order?.currency) || 'USD',
+      date: order?.date ?? null,
+      order_no: order?.order_no ?? null,
+      payments: Array.isArray(order?.payments) ? order.payments : [],
+      status: order?.status ?? null,
+      orderable: order?.orderable ?? null,
+      order_payment_plan: order?.order_payment_plan ?? null,
+      payment_plan: order?.payment_plan ?? null,
+      down_payment_amount: this.toOptionalNumber(order?.down_payment_amount),
+      down_payment_percentage: this.toOptionalNumber(order?.down_payment_percentage),
+      down_payment: this.toOptionalNumber(order?.down_payment),
+      start_payment_amount: this.toOptionalNumber(order?.start_payment_amount),
+      start_payment: this.toOptionalNumber(order?.start_payment),
+      start_amount: this.toOptionalNumber(order?.start_amount),
+      upfront_payment_amount: this.toOptionalNumber(order?.upfront_payment_amount),
+      final_payment: this.toOptionalNumber(order?.final_payment),
+      final_payment_percentage: this.toOptionalNumber(order?.final_payment_percentage),
     };
   }
 
   private mapProjectContract(contract: any): CreatedProjectContract {
+    const nestedContract = contract?.contract && typeof contract.contract === 'object'
+      ? contract.contract
+      : null;
+    const renderedGuideline = contract?.rendered_guideline
+      ?? nestedContract?.rendered_guideline
+      ?? null;
+    const file = contract?.file && typeof contract.file === 'object'
+      ? contract.file
+      : nestedContract?.file && typeof nestedContract.file === 'object'
+        ? nestedContract.file
+        : null;
+
     return {
       ...(contract || {}),
-      uuid: contract?.uuid ?? contract?.contract_uuid ?? null,
-      user_sign_at: this.toBoolean(contract?.user_sign_at),
-      insighter_sign_at: this.toBoolean(contract?.insighter_sign_at),
-      is_attach_type: this.toBoolean(contract?.is_attach_type),
-      status: contract?.status ?? null,
-      file: contract?.file && typeof contract.file === 'object' ? contract.file : null,
-      guideline: contract?.guideline ?? contract?.contract?.guideline ?? null,
-      name: contract?.name ?? contract?.contract?.name ?? null,
+      uuid: nestedContract?.uuid ?? contract?.contract_uuid ?? contract?.uuid ?? null,
+      user_sign_at: this.toBoolean(contract?.user_sign_at ?? nestedContract?.user_sign_at),
+      insighter_sign_at: this.toBoolean(contract?.insighter_sign_at ?? nestedContract?.insighter_sign_at),
+      is_attach_type: this.toBoolean(contract?.is_attach_type ?? nestedContract?.is_attach_type),
+      status: contract?.status ?? nestedContract?.status ?? null,
+      file,
+      guideline: contract?.guideline ?? renderedGuideline ?? nestedContract?.guideline ?? null,
+      rendered_guideline: renderedGuideline,
+      language: contract?.language ?? contract?.contract_language ?? nestedContract?.language ?? null,
+      court_country: contract?.court_country ?? nestedContract?.court_country ?? null,
+      name: contract?.name ?? nestedContract?.name ?? null,
     };
   }
 
@@ -533,6 +731,17 @@ export class ProjectsCreatedService {
     return String(value).trim();
   }
 
+  private toNumber(value: any): number {
+    const numberValue = Number(value);
+    return Number.isFinite(numberValue) ? numberValue : 0;
+  }
+
+  private toOptionalNumber(value: any): number | null {
+    if (value === null || value === undefined || value === '') return null;
+    const numberValue = Number(value);
+    return Number.isFinite(numberValue) ? numberValue : null;
+  }
+
   private toBoolean(value: any): boolean {
     if (typeof value === 'boolean') return value;
     if (typeof value === 'number') return value === 1;
@@ -542,6 +751,19 @@ export class ProjectsCreatedService {
     }
 
     return false;
+  }
+
+  private toReadState(value: any): boolean | null {
+    if (value === null || value === undefined) return null;
+    if (typeof value === 'boolean') return value;
+    if (typeof value === 'number') return value === 1;
+    if (typeof value === 'string') {
+      const normalized = value.trim().toLowerCase();
+      if (!normalized || ['0', 'false', 'no', 'null'].includes(normalized)) return false;
+      return true;
+    }
+
+    return !!value;
   }
 
   private sanitizeBlocks(blocks: any[] | null | undefined): CreatedProjectBlock[] {
@@ -575,7 +797,14 @@ export class ProjectsCreatedService {
       .map(file => ({
         ...file,
         uuid: file.uuid ?? '',
+        name: file.name ?? null,
         url: file.url ?? null,
+        identifier: file.identifier ?? null,
+        second_identifier: file.second_identifier ?? null,
+        uploadBy: file.uploadBy ?? null,
+        uploaded_by: file.uploaded_by ?? null,
+        upload_date: file.upload_date ?? null,
+        scope: file.scope ?? null,
       }))
       .filter(file => !!file.uuid);
   }
@@ -594,6 +823,32 @@ export class ProjectsCreatedService {
         scopes: this.sanitizeFiles(proposal.scopes),
         offer: this.sanitizeFiles(proposal.offer),
       },
+      project: this.sanitizeFiles(file.project),
     };
+  }
+
+  private mapReviewSubmissions(response: any): ProjectReviewSubmission[] {
+    const data = response?.data;
+    const reviews = Array.isArray(data)
+      ? data
+      : Array.isArray(data?.reviews)
+        ? data.reviews
+        : Array.isArray(data?.review_submissions)
+          ? data.review_submissions
+          : [];
+
+    return reviews
+      .filter((review: any) => review && typeof review === 'object' && !Array.isArray(review))
+      .map((review: any) => ({
+        ...(review || {}),
+        uuid: review?.uuid ?? '',
+        type: review?.type ?? review?.second_identifier ?? review?.identifier ?? null,
+        status: review?.status ?? null,
+        note: review?.note ?? null,
+        request_at: review?.request_at ?? review?.requested_at ?? review?.created_at ?? null,
+        review_note: review?.review_note ?? null,
+        reviewed_at: review?.reviewed_at ?? null,
+      }))
+      .filter((review: ProjectReviewSubmission) => !!review.uuid);
   }
 }

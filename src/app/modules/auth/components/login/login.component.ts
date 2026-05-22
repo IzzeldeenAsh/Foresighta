@@ -321,7 +321,7 @@ export class LoginComponent extends BaseComponent implements OnInit, OnDestroy {
     const effectiveLang = this.selectedLang || 'en';
     this.cookieService.setPreferredLanguage(effectiveLang);
 
-    window.location.href = `http://localhost:3000/${effectiveLang}/dashboard`;
+    window.location.href = `https://insightabusiness.com/${effectiveLang}/dashboard`;
   }
 
   private setReturnUrlCookie(url: string): void {
@@ -428,7 +428,7 @@ export class LoginComponent extends BaseComponent implements OnInit, OnDestroy {
         'Accept': 'application/json',
         'Accept-Language': this.selectedLang || 'en',
       });
-      return this.http.post('https://api.foresighta.co/api/account/timezone/set',
+      return this.http.post('https://api.insightabusiness.com/api/account/timezone/set',
         { timezone: userTimezone },
         { headers }
       );

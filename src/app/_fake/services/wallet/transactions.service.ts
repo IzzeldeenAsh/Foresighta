@@ -161,7 +161,7 @@ export interface ChartDataResponse {
   providedIn: 'root'
 })
 export class TransactionsService {
-  private apiUrl = `https://api.foresighta.co/api/admin/fund/platform/transaction`;
+  private apiUrl = `https://api.insightabusiness.com/api/admin/fund/platform/transaction`;
   private balanceApiUrl = `${environment.apiBaseUrl}/admin/fund/platform/balance`;
   private listApiUrl = `${environment.apiBaseUrl}/admin/fund/platform/transaction/list`;
   private statisticsApiUrl = `${environment.apiBaseUrl}/admin/fund/platform/statistics`;

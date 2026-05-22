@@ -163,7 +163,7 @@ export class EmailReconfirmComponent extends BaseComponent implements OnInit, On
       if (userData.roles && (userData.roles.includes('admin') || userData.roles.includes('staff'))) {
         console.log('Redirecting admin/staff to dashboard');
         const effectiveLang = this.lang || 'en';
-        window.location.href = `http://localhost:3000/${effectiveLang}/dashboard`;
+        window.location.href = `https://insightabusiness.com/${effectiveLang}/dashboard`;
       } else {
         console.log('Redirecting regular user to main app');
         this.redirectToMainApp();

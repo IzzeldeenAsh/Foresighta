@@ -28,9 +28,9 @@ export interface Country {
   providedIn: 'root'
 })
 export class CountriesService {
-  private apiUrl = 'https://api.foresighta.co/api/common/setting/country/list';
-  private createApi = 'https://api.foresighta.co/api/admin/setting/country';
-  private updateDeleteApi = 'https://api.foresighta.co/api/admin/setting/country';
+  private apiUrl = 'https://api.insightabusiness.com/api/common/setting/country/list';
+  private createApi = 'https://api.insightabusiness.com/api/admin/setting/country';
+  private updateDeleteApi = 'https://api.insightabusiness.com/api/admin/setting/country';
   private isLoadingSubject = new BehaviorSubject<boolean>(false);
   public isLoading$: Observable<boolean> = this.isLoadingSubject.asObservable();
   currentLang: string = 'en';

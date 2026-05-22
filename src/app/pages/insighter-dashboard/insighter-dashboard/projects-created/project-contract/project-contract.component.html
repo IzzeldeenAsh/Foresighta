@@ -32,7 +32,7 @@
           class="pcn-option pcn-option--default"
           [class.is-active]="selectedMode === 'default'"
           (click)="selectMode('default')">
-          <span class="pcn-option__icon"><i class="ki-duotone ki-document fs-2"><span class="path1"></span><span class="path2"></span></i></span>
+          <span class="pcn-option__icon"><i class="ki-duotone ki-document fs-1"><span class="path1"></span><span class="path2"></span></i></span>
           <span class="pcn-option__copy">
             <strong>{{ lang === 'ar' ? 'عقد المنصة' : 'Platform Contract' }}</strong>
             <small>{{ lang === 'ar' ? 'اقرأ الاتفاقية الحالية ثم وقّع إلكترونياً.' : 'Read the current agreement, then sign electronically.' }}</small>
@@ -47,7 +47,7 @@
           class="pcn-option pcn-option--custom"
           [class.is-active]="selectedMode === 'custom'"
           (click)="selectMode('custom')">
-          <span class="pcn-option__icon pcn-option__icon--upload"><i class="ki-duotone ki-file-up fs-2"><span class="path1"></span><span class="path2"></span></i></span>
+          <span class="pcn-option__icon pcn-option__icon--upload"><i class="ki-duotone ki-file-up fs-1"><span class="path1"></span><span class="path2"></span></i></span>
           <span class="pcn-option__copy">
             <strong>{{ lang === 'ar' ? 'عقد مخصص' : 'Custom Contract' }}</strong>
             <small>{{ lang === 'ar' ? 'ارفع ملف العقد الخاص بهذا المشروع.' : 'Upload a contract file for this project.' }}</small>
@@ -59,26 +59,106 @@
       </div>
     </section>
 
-    <section *ngIf="selectedMode === 'default'" class="pcn-contract-panel">
+    <section *ngIf="selectedMode === 'default' && !hasPreparedStandardContract" class="pcn-contract-panel pcn-prepare-panel">
       <div class="pcn-panel-head">
         <div>
-          <span>{{ lang === 'ar' ? 'العقد الافتراضي' : 'Default Agreement' }}</span>
-          <h4>{{ guideline?.name || (lang === 'ar' ? 'عقد خدمة مشروع' : 'Project Service Contract') }}</h4>
+          <span>{{ lang === 'ar' ? 'إعداد عقد المنصة' : 'Prepare Platform Contract' }}</span>
+          <h4>{{ lang === 'ar' ? 'اختر لغة العقد وبلد المحكمة' : 'Select contract language and court country' }}</h4>
         </div>
-        <small *ngIf="guideline?.version">{{ lang === 'ar' ? 'الإصدار' : 'Version' }} {{ guideline?.version }}</small>
       </div>
 
-      <div *ngIf="isLoadingGuideline" class="pcn-loading">
+      <div class="pcn-prepare-steps">
+        <div class="pcn-prepare-step">
+          <span class="pcn-step-index">1</span>
+          <div class="pcn-step-body">
+            <label class="form-label required">
+              {{ lang === 'ar' ? 'لغة العقد' : 'Contract Language' }}
+            </label>
+
+            <div class="pcn-language-grid" role="group">
+              <button
+                *ngFor="let option of contractLanguageOptions"
+                type="button"
+                class="pcn-language-option"
+                [class.is-active]="contractLanguage === option.value"
+                (click)="selectContractLanguage(option.value)">
+                <span class="pcn-language-option__code">{{ option.value }}</span>
+                <span>{{ lang === 'ar' ? option.arLabel : option.label }}</span>
+                <i *ngIf="contractLanguage === option.value" class="ki-solid ki-check fs-5"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div *ngIf="contractLanguage" class="pcn-prepare-step">
+          <span class="pcn-step-index">2</span>
+          <div class="pcn-step-body">
+            <label class="form-label required">
+              {{ lang === 'ar' ? 'بلد المحكمة' : 'Court Country' }}
+            </label>
+
+            <app-country-dropdown
+              [countries]="courtCountries"
+              [(ngModel)]="selectedCourtCountryId"
+              name="courtCountry"
+              [placeholder]="lang === 'ar' ? 'اختر بلد المحكمة' : 'Select court country'"
+              [searchPlaceholder]="lang === 'ar' ? 'ابحث عن بلد...' : 'Search countries...'"
+              [enableSearch]="true"
+              [showClear]="true"
+              [lang]="lang"
+              [isInvalid]="false"
+              (countrySelected)="onCourtCountrySelected($event)"
+              (countryCleared)="onCourtCountryCleared()">
+            </app-country-dropdown>
+
+            <div *ngIf="isLoadingCountries" class="pcn-inline-loading">
+              <span class="spinner-border spinner-border-sm"></span>
+              {{ lang === 'ar' ? 'جاري تحميل البلدان...' : 'Loading countries...' }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="contractLanguage && selectedCourtCountryId" class="pcn-prepare-actions">
+        <button
+          type="button"
+          class="btn btn-info"
+          [disabled]="!canPrepareStandardContract"
+          (click)="prepareStandardContract()">
+          <span *ngIf="isPreparingContract" class="spinner-border spinner-border-sm me-2"></span>
+          <i *ngIf="!isPreparingContract" class="ki-outline ki-document fs-6 me-1"></i>
+          {{
+            isPreparingContract
+              ? (lang === 'ar' ? 'جاري إنشاء العقد...' : 'Generating contract...')
+              : (lang === 'ar' ? 'إنشاء العقد' : 'Generate Contract')
+          }}
+        </button>
+      </div>
+    </section>
+
+    <section *ngIf="selectedMode === 'default' && hasPreparedStandardContract" class="pcn-contract-panel">
+      <div class="pcn-panel-head">
+        <div>
+          <span>{{ lang === 'ar' ? 'عقد المنصة' : 'Platform Contract' }}</span>
+          <h4>{{ contractDisplayName }}</h4>
+        </div>
+        <div class="pcn-contract-meta">
+          <small *ngIf="selectedContractLanguageLabel">{{ selectedContractLanguageLabel }}</small>
+          <small *ngIf="selectedCourtCountryName">{{ selectedCourtCountryName }}</small>
+        </div>
+      </div>
+
+      <div *ngIf="isLoadingContract" class="pcn-loading">
         <span class="spinner-border spinner-border-sm"></span>
         {{ lang === 'ar' ? 'جاري تحميل العقد...' : 'Loading contract...' }}
       </div>
 
       <div
-        *ngIf="!isLoadingGuideline && guidelineHtml"
+        *ngIf="!isLoadingContract && contractHtml"
         #agreementContent
         class="pcn-agreement"
         (scroll)="onAgreementScroll()"
-        [innerHTML]="guidelineHtml">
+        [innerHTML]="contractHtml">
       </div>
 
       <div class="pcn-footer">

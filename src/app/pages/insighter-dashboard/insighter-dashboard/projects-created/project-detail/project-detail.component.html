@@ -91,6 +91,15 @@
                     (click)="setActiveTab('documents')">
               <span>{{ lang === 'ar' ? 'المستندات' : 'Documents' }}</span>
             </button>
+
+            <button type="button"
+                    class="pd-tab"
+                    role="tab"
+                    [class.active]="activeTab === 'reviews'"
+                    [attr.aria-selected]="activeTab === 'reviews'"
+                    (click)="setActiveTab('reviews')">
+              <span>{{ lang === 'ar' ? 'المراجعات' : 'Reviews' }}</span>
+            </button>
           </div>
 
           <ng-container *ngIf="activeTab === 'overview'">
@@ -405,6 +414,65 @@
           </ng-container>
 
           <ng-container *ngIf="activeTab === 'documents'">
+            <div class="pd-workspace-grid">
+              <form class="pd-workspace-panel" (ngSubmit)="submitProjectFileUpload()">
+                <div class="pd-workspace-panel__head">
+                  <span class="pd-workspace-panel__icon pd-workspace-panel__icon--upload">
+                    <i class="ki-outline ki-file-up fs-3"></i>
+                  </span>
+                  <div>
+                    <h6>{{ lang === 'ar' ? 'رفع ملفات' : 'Upload Files' }}</h6>
+                    <p>{{ lang === 'ar' ? 'شارك مستندات أو ملفات داعمة مع الخبير.' : 'Share documents or supporting files with the insighter.' }}</p>
+                  </div>
+                </div>
+
+                <label class="pd-workspace-field">
+                  <span>{{ lang === 'ar' ? 'اسم المجموعة' : 'File group name' }}</span>
+                  <input
+                    type="text"
+                    name="projectFileName"
+                    [(ngModel)]="projectFileName"
+                    [placeholder]="lang === 'ar' ? 'مثال: ملاحظات العميل' : 'Example: Client notes'">
+                </label>
+
+                <label class="pd-workspace-upload" for="pd-project-files">
+                  <i class="ki-outline ki-file-up fs-2"></i>
+                  <strong>{{ lang === 'ar' ? 'اختر الملفات' : 'Choose files' }}</strong>
+                  <span>{{ lang === 'ar' ? 'يمكنك اختيار أكثر من ملف' : 'You can attach multiple files' }}</span>
+                </label>
+                <input
+                  id="pd-project-files"
+                  class="pd-workspace-file-input"
+                  type="file"
+                  multiple
+                  (change)="onProjectFilesSelected($event)">
+
+                <div class="pd-workspace-selected" *ngIf="selectedProjectFiles.length">
+                  <div class="pd-workspace-selected__item" *ngFor="let file of selectedProjectFiles; let i = index">
+                    <span>
+                      <i class="ki-outline ki-file fs-5"></i>
+                      <span>
+                        <strong>{{ file.name }}</strong>
+                        <small>{{ formatFileSize(file) }}</small>
+                      </span>
+                    </span>
+                    <button type="button" (click)="removeSelectedProjectFile(i)" [attr.aria-label]="lang === 'ar' ? 'إزالة' : 'Remove'">
+                      <i class="ki-outline ki-cross fs-5"></i>
+                    </button>
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  class="btn btn-info w-100"
+                  [disabled]="projectFilesUploading || !projectFileName.trim() || !selectedProjectFiles.length">
+                  <span *ngIf="projectFilesUploading" class="spinner-border spinner-border-sm me-2"></span>
+                  {{ projectFilesUploading ? (lang === 'ar' ? 'جاري الرفع...' : 'Uploading...') : (lang === 'ar' ? 'رفع الملفات' : 'Upload Files') }}
+                </button>
+              </form>
+
+            </div>
+
             <section class="pd-documents" *ngIf="hasDocuments(p); else noDocuments">
               <div class="pd-document-group"
                    *ngFor="let group of getDocumentGroups(p); trackBy: trackByDocumentGroup">
@@ -470,6 +538,92 @@
             </ng-template>
           </ng-container>
 
+          <ng-container *ngIf="activeTab === 'reviews'">
+            <section class="pd-review-tab">
+              <p-progressBar
+                *ngIf="reviewSubmissionsLoading"
+                mode="indeterminate"
+                [style]="{ height: '3px' }">
+              </p-progressBar>
+
+              <div class="pd-review-stack" *ngIf="reviewSubmissions.length; else noReviewRequests">
+                <article
+                  class="pd-review-card"
+                  [class.pd-review-card--pending]="isReviewPending(review)"
+                  [class.pd-review-card--answered]="!isReviewPending(review)"
+                  *ngFor="let review of getSortedReviewSubmissions(); let i = index; trackBy: trackByReview">
+                  <div class="pd-review-card__tab">
+                    {{ lang === 'ar' ? 'مراجعة' : 'Review' }} {{ i + 1 }}
+                  </div>
+
+                  <div class="pd-review-card__panel">
+                    <div class="pd-review-card__head">
+                      <span class="pd-review-card__icon" aria-hidden="true">
+                        <i *ngIf="isReviewPending(review)" class="ki-outline ki-time"></i>
+                        <svg *ngIf="!isReviewPending(review)" viewBox="0 0 32 32" focusable="false">
+                          <path class="pd-review-card__paper"
+                                d="M9 4.5h9.4L25 11.1V23a4.5 4.5 0 0 1-4.5 4.5h-11A4.5 4.5 0 0 1 5 23V9a4.5 4.5 0 0 1 4-4.47Z"></path>
+                          <path class="pd-review-card__fold" d="M18.5 5v4.6a2 2 0 0 0 2 2H25"></path>
+                          <path class="pd-review-card__mark"
+                                d="m8.5 23.2 2.4 2.5 4.4-5.2"></path>
+                        </svg>
+                      </span>
+
+                      <div class="pd-review-card__title-group">
+                        <h3 class="pd-review-card__note">{{ getReviewMainText(review) }}</h3>
+                        <div class="pd-review-card__meta">
+                          <span>{{ getReviewType(review) ? getProjectFileTypeLabel(getReviewType(review)) : (lang === 'ar' ? 'طلب مراجعة' : 'Review request') }}</span>
+                          <span>{{ formatDate(review.request_at) }}</span>
+                          <span>{{ getReviewStatusLabel(review.status) }}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <p class="pd-review-card__response" *ngIf="!isReviewPending(review)">
+                      {{ getReviewResponseText(review) }}
+                      <small *ngIf="review.reviewed_at">{{ formatDate(review.reviewed_at) }}</small>
+                    </p>
+
+                    <div class="pd-review-compose" *ngIf="isReviewPending(review)">
+                      <textarea
+                        rows="4"
+                        [ngModel]="getReviewChangeNote(review.uuid)"
+                        (ngModelChange)="setReviewChangeNote(review.uuid, $event)"
+                        [ngModelOptions]="{ standalone: true }"
+                        [placeholder]="lang === 'ar' ? 'أضف تعليقك...' : 'Add your comment...'">
+                      </textarea>
+                      <div class="pd-review-compose__buttons">
+                        <button
+                          type="button"
+                          class="pd-review-compose__btn pd-review-compose__btn--changes"
+                          [disabled]="respondingReviewUuid === review.uuid"
+                          (click)="respondToReview(review, 'request_change')">
+                          <span *ngIf="respondingReviewUuid === review.uuid" class="spinner-border spinner-border-sm me-2"></span>
+                          {{ lang === 'ar' ? 'طلب تعديلات' : 'Request Changes' }}
+                        </button>
+                        <button
+                          type="button"
+                          class="pd-review-compose__btn pd-review-compose__btn--approve"
+                          [disabled]="respondingReviewUuid === review.uuid"
+                          (click)="respondToReview(review, 'approve')">
+                          <i class="ki-outline ki-check fs-6"></i>
+                          {{ lang === 'ar' ? 'اعتماد' : 'Approve' }}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </article>
+              </div>
+
+              <ng-template #noReviewRequests>
+                <div class="pd-workspace-empty">
+                  <i class="ki-outline ki-message-question fs-2"></i>
+                  <span>{{ lang === 'ar' ? 'لا توجد طلبات مراجعة بعد.' : 'No review requests yet.' }}</span>
+                </div>
+              </ng-template>
+            </section>
+          </ng-container>
+
         </div>
       </div>
 
@@ -480,12 +634,47 @@
             {{ lang === 'ar' ? 'إجراءات المشروع' : 'Project Actions' }}
           </div>
           <p class="pd-aside-card__hint">
-            {{ lang === 'ar'
-              ? (hasContractAction(p) ? 'تم قبول عرض لهذا المشروع. راجع العقد واختر طريقة التوقيع.' : 'راجع تفاصيل مشروعك أو ابدأ عملية مطابقة جديدة مع الخبراء.')
-              : (hasContractAction(p) ? 'An offer has been accepted for this project. Review the contract and choose how to sign.' : 'Review your project details or start a new matching process with experts.') }}
+            {{ getProjectActionsHint(p) }}
           </p>
 
-          <section class="pd-action-panel">
+          <section class="pd-payment-panel"
+                   *ngIf="shouldShowProjectPayment(p) && p.order as order"
+                   [hidden]="shouldShowProjectTimeline(p)">
+            <div class="pd-payment-panel__top">
+             
+              <div class="pd-payment-panel__copy">
+                <span>{{ lang === 'ar' ? 'الدفع مطلوب لبدء المشروع' : 'Payment required to start' }}</span>
+                <strong>{{ getProjectRequiredPaymentLabel(order) }}</strong>
+              </div>
+            </div>
+
+            <div class="pd-payment-panel__rows">
+              <div class="pd-payment-panel__row" *ngIf="order.order_no">
+                <span class="pd-payment-panel__row-icon pd-payment-panel__row-icon--order">
+                  <i class="ki-outline ki-barcode fs-6"></i>
+                </span>
+                <span class="pd-payment-panel__row-label">{{ lang === 'ar' ? 'رقم الطلب' : 'Order No.' }}</span>
+                <strong>{{ order.order_no }}</strong>
+              </div>
+              <div class="pd-payment-panel__row">
+                <span class="pd-payment-panel__row-icon pd-payment-panel__row-icon--total">
+                  <i class="ki-outline ki-dollar fs-6"></i>
+                </span>
+                <span class="pd-payment-panel__row-label">{{ lang === 'ar' ? 'إجمالي الطلب' : 'Order Total' }}</span>
+                <strong>{{ getProjectOrderTotalLabel(order) }}</strong>
+              </div>
+            </div>
+
+            <button type="button"
+                    class="btn btn-info w-100 pd-payment-panel__button"
+                    (click)="openProjectPaymentDialog()"
+                    [disabled]="projectCheckoutSubmitting">
+              <i class="ki-outline ki-credit-cart fs-6 me-1"></i>
+              {{ getProjectPaymentButtonLabel(order) }}
+            </button>
+          </section>
+
+          <section class="pd-action-panel" *ngIf="shouldShowInvitedInsightersPanel(p)">
             <div class="pd-action-panel__head">
               <div class="pd-action-panel__title">
                 {{ lang === 'ar' ? 'الخبراء المدعوون' : 'Invited Insighters' }}
@@ -561,59 +750,292 @@
             </ng-template>
           </section>
 
+          <section class="pd-contract-timeline mt-4"
+                   *ngIf="shouldShowProjectTimeline(p)">
+            <ng-container *ngIf="getContractStepState(p) as contractState">
+              <div class="pd-contract-timeline__list"
+                   [style.--pd-timeline-progress]="getWorkflowTimelineProgress(p)">
+                <div class="pd-timeline-step">
+                  <ng-container *ngIf="contractState === 'completed'; else activeContractCard">
+                    <div class="card border border-dashed d-flex flex-column p-6 gap-10 flex-grow-1 mb-2 me-4">
+                      <div class="d-flex flex-stack">
+                        <div class="d-flex flex-center h-40px w-40px flex-shrink-0 rounded-circle bg-gray-100 border border-gray-200">
+                          <i class="ki-outline ki-check-circle text-gray-600 lh-0 fs-2"></i>
+                        </div>
+                        <span class="rounded text-success fw-semibold fs-8 bg-light-success py-1 px-2 border border-success-clarity">
+                          {{ lang === 'ar' ? 'مكتمل' : 'Completed' }}
+                        </span>
+                      </div>
+                      <div class="d-flex flex-column">
+                        <span class="fs-base text-gray-500">
+                          {{ lang === 'ar' ? 'الخطوة' : 'Step' }} {{ getWorkflowStepNumber('contracting', p) }}
+                        </span>
+                        <span class="fs-6 fw-bold text-gray-800">{{ lang === 'ar' ? 'العقد' : 'Contracting' }}</span>
+                      </div>
+                    </div>
+                  </ng-container>
+                  <ng-template #activeContractCard>
+                    <div class="card border-0 d-flex flex-column p-6 gap-10 flex-grow-1 mb-2 me-4"
+                         style="background: linear-gradient(180deg, #1858FD 0%, #003FDE 100%)"
+                         data-bs-theme="light">
+                      <div class="d-flex flex-stack">
+                        <div class="d-flex flex-center h-40px w-40px flex-shrink-0 rounded-circle border border-light-clarity">
+                          <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" xml:space="preserve" width="32" height="32">
+                            <rect x="40" y="35" width="4" height="10" fill="#fff">
+                              <animateTransform attributeType="xml" attributeName="transform" type="translate" values="0 0; 0 20; 0 0" begin="0" dur="0.6s" repeatCount="indefinite"></animateTransform>
+                            </rect>
+                            <rect x="50" y="35" width="4" height="10" fill="#fff">
+                              <animateTransform attributeType="xml" attributeName="transform" type="translate" values="0 0; 0 20; 0 0" begin="0.2s" dur="0.6s" repeatCount="indefinite"></animateTransform>
+                            </rect>
+                            <rect x="60" y="35" width="4" height="10" fill="#fff">
+                              <animateTransform attributeType="xml" attributeName="transform" type="translate" values="0 0; 0 20; 0 0" begin="0.4s" dur="0.6s" repeatCount="indefinite"></animateTransform>
+                            </rect>
+                          </svg>
+                        </div>
+                        <span class="rounded text-white fw-semibold fs-8 bg-white bg-opacity-10 py-1 px-2 border border-light-clarity">
+                          {{ lang === 'ar' ? 'العقد' : 'Contracting' }}
+                        </span>
+                      </div>
+                      <div class="d-flex flex-column">
+                        <button *ngIf="contractState === 'waiting_user'"
+                                type="button"
+                                class="btn btn-sm fw-bold w-100 d-flex align-items-center justify-content-center gap-2 text-white pd-glass-btn"
+                                (click)="viewContract()">
+                          <i class="ki-outline ki-notepad-edit fs-6 text-white"></i>
+                          <span>{{ lang === 'ar' ? 'بانتظار توقيعك' : 'Waiting your sign' }}</span>
+                        </button>
+                        <span *ngIf="contractState === 'waiting_insighter'"
+                              class="fs-6 fw-bold text-white d-inline-flex align-items-center gap-2">
+                          <i class="ki-outline ki-time fs-5 text-white"></i>
+                          {{ lang === 'ar' ? 'بانتظار توقيع الخبير' : "Awaiting Insighter's Signature" }}
+                        </span>
+                      </div>
+                    </div>
+                  </ng-template>
+
+                  <ng-container *ngIf="contractState === 'completed'; else activeContractDot">
+                    <div class="pd-timeline-dot pd-timeline-dot--completed">
+                      <div></div>
+                    </div>
+                  </ng-container>
+                  <ng-template #activeContractDot>
+                    <div *ngIf="contractState === 'waiting_user'"
+                         class="pd-timeline-dot pd-timeline-dot--warning">
+                      <div></div>
+                    </div>
+                    <div *ngIf="contractState === 'waiting_insighter'"
+                         class="pd-timeline-dot pd-timeline-dot--active">
+                      <div></div>
+                    </div>
+                  </ng-template>
+                </div>
+
+                <div *ngIf="shouldShowCompletedDownPayment(p) && p.order as order"
+                     class="pd-timeline-step">
+                  <div class="card border border-dashed d-flex flex-column p-6 gap-8 flex-grow-1 mb-2 me-4">
+                    <div class="d-flex flex-stack">
+                      <div class="d-flex flex-center h-40px w-40px flex-shrink-0 rounded-circle bg-gray-100 border border-gray-200">
+                        <i class="ki-outline ki-credit-cart text-gray-600 lh-0 fs-2"></i>
+                      </div>
+                      <span class="rounded text-success fw-semibold fs-8 bg-light-success py-1 px-2 border border-success-clarity">
+                        {{ lang === 'ar' ? 'مكتمل' : 'Completed' }}
+                      </span>
+                    </div>
+                    <div class="d-flex flex-column gap-2">
+                      <span class="fs-base text-gray-500">
+                        {{ lang === 'ar' ? 'الخطوة' : 'Step' }} {{ getWorkflowStepNumber('down_payment', p) }}
+                      </span>
+                      <span class="fs-6 fw-bold text-gray-800">{{ lang === 'ar' ? 'الدفعة المقدمة' : 'Down Payment' }}</span>
+                      <span class="fs-8 text-gray-500">{{ getProjectDownPaymentLabel(order) }}</span>
+                    </div>
+                  </div>
+
+                  <div class="pd-timeline-dot pd-timeline-dot--completed">
+                    <div></div>
+                  </div>
+                </div>
+
+                <div *ngIf="shouldShowPendingReviewStep(p)"
+                     class="pd-timeline-step">
+                  <div class="card d-flex flex-column p-6 gap-8 flex-grow-1 mb-2 me-4 pd-workflow-card"
+                       [class.border]="!isFirstPendingWorkflowStep('review', p)"
+                       [class.border-dashed]="!isFirstPendingWorkflowStep('review', p)"
+                       [class.pd-workflow-card--pending]="!isFirstPendingWorkflowStep('review', p)"
+                       [class.pd-workflow-card--active]="isFirstPendingWorkflowStep('review', p)"
+                       [attr.data-bs-theme]="isFirstPendingWorkflowStep('review', p) ? 'light' : null">
+                    <div class="d-flex flex-stack">
+                      <div class="pd-workflow-card__icon">
+                        <ng-container *ngIf="isFirstPendingWorkflowStep('review', p); else pendingReviewIcon">
+                          <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" xml:space="preserve" width="32" height="32">
+                            <rect x="40" y="35" width="4" height="10" fill="#fff">
+                              <animateTransform attributeType="xml" attributeName="transform" type="translate" values="0 0; 0 20; 0 0" begin="0" dur="0.6s" repeatCount="indefinite"></animateTransform>
+                            </rect>
+                            <rect x="50" y="35" width="4" height="10" fill="#fff">
+                              <animateTransform attributeType="xml" attributeName="transform" type="translate" values="0 0; 0 20; 0 0" begin="0.2s" dur="0.6s" repeatCount="indefinite"></animateTransform>
+                            </rect>
+                            <rect x="60" y="35" width="4" height="10" fill="#fff">
+                              <animateTransform attributeType="xml" attributeName="transform" type="translate" values="0 0; 0 20; 0 0" begin="0.4s" dur="0.6s" repeatCount="indefinite"></animateTransform>
+                            </rect>
+                          </svg>
+                        </ng-container>
+                        <ng-template #pendingReviewIcon>
+                          <i class="ki-outline ki-check-square text-gray-600 lh-0 fs-2"></i>
+                        </ng-template>
+                      </div>
+                      <span class="rounded fw-semibold fs-8 py-1 px-2 border"
+                            [ngClass]="isFirstPendingWorkflowStep('review', p)
+                              ? 'text-white bg-white bg-opacity-10 border-light-clarity'
+                              : 'text-primary bg-light-primary border-primary-clarity'">
+                        {{ isFirstPendingWorkflowStep('review', p) ? (lang === 'ar' ? 'قيد التنفيذ' : 'In Progress') : (lang === 'ar' ? 'قيد الانتظار' : 'Pending') }}
+                      </span>
+                    </div>
+                    <div class="d-flex flex-column gap-3">
+                      <div class="d-flex flex-column gap-1">
+                        <span class="fs-base" [ngClass]="isFirstPendingWorkflowStep('review', p) ? 'text-white text-opacity-75' : 'text-gray-500'">
+                          {{ lang === 'ar' ? 'الخطوة' : 'Step' }} {{ getWorkflowStepNumber('review', p) }}
+                        </span>
+                        <span class="fs-6 fw-bold" [ngClass]="isFirstPendingWorkflowStep('review', p) ? 'text-white' : 'text-gray-800'">{{ lang === 'ar' ? 'مراجعة التسليم' : 'Review Submission' }}</span>
+                      </div>
+                      <button type="button"
+                              class="btn btn-sm fw-bold w-100 d-flex align-items-center justify-content-center gap-2"
+                              [ngClass]="isFirstPendingWorkflowStep('review', p) ? 'text-white pd-glass-btn' : 'btn-light-primary'"
+                              (click)="openReviewsTab()">
+                        <i class="ki-outline ki-eye fs-6" [ngClass]="isFirstPendingWorkflowStep('review', p) ? 'text-white' : ''"></i>
+                        <span>{{ lang === 'ar' ? 'فتح المراجعة' : 'Open Review' }}</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div class="pd-timeline-dot" [ngClass]="isFirstPendingWorkflowStep('review', p) ? 'pd-timeline-dot--active' : 'pd-timeline-dot--pending'">
+                    <div></div>
+                  </div>
+                </div>
+
+                <div *ngIf="shouldShowPendingFinalPayment(p) && p.order as order"
+                     class="pd-timeline-step">
+                  <div class="card d-flex flex-column p-6 gap-8 flex-grow-1 mb-2 me-4 pd-workflow-card"
+                       [class.border]="!isFirstPendingWorkflowStep('final_payment', p)"
+                       [class.border-dashed]="!isFirstPendingWorkflowStep('final_payment', p)"
+                       [class.pd-workflow-card--pending]="!isFirstPendingWorkflowStep('final_payment', p)"
+                       [class.pd-workflow-card--active]="isFirstPendingWorkflowStep('final_payment', p)"
+                       [attr.data-bs-theme]="isFirstPendingWorkflowStep('final_payment', p) ? 'light' : null">
+                    <div class="d-flex flex-stack">
+                      <div class="pd-workflow-card__icon">
+                        <ng-container *ngIf="isFirstPendingWorkflowStep('final_payment', p); else pendingFinalPaymentIcon">
+                          <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" xml:space="preserve" width="32" height="32">
+                            <rect x="40" y="35" width="4" height="10" fill="#fff">
+                              <animateTransform attributeType="xml" attributeName="transform" type="translate" values="0 0; 0 20; 0 0" begin="0" dur="0.6s" repeatCount="indefinite"></animateTransform>
+                            </rect>
+                            <rect x="50" y="35" width="4" height="10" fill="#fff">
+                              <animateTransform attributeType="xml" attributeName="transform" type="translate" values="0 0; 0 20; 0 0" begin="0.2s" dur="0.6s" repeatCount="indefinite"></animateTransform>
+                            </rect>
+                            <rect x="60" y="35" width="4" height="10" fill="#fff">
+                              <animateTransform attributeType="xml" attributeName="transform" type="translate" values="0 0; 0 20; 0 0" begin="0.4s" dur="0.6s" repeatCount="indefinite"></animateTransform>
+                            </rect>
+                          </svg>
+                        </ng-container>
+                        <ng-template #pendingFinalPaymentIcon>
+                          <i class="ki-outline ki-dollar text-gray-600 lh-0 fs-2"></i>
+                        </ng-template>
+                      </div>
+                      <span class="rounded fw-semibold fs-8 py-1 px-2 border"
+                            [ngClass]="isFirstPendingWorkflowStep('final_payment', p)
+                              ? 'text-white bg-white bg-opacity-10 border-light-clarity'
+                              : 'text-primary bg-light-primary border-primary-clarity'">
+                        {{ isFirstPendingWorkflowStep('final_payment', p) ? (lang === 'ar' ? 'قيد التنفيذ' : 'In Progress') : (lang === 'ar' ? 'قيد الانتظار' : 'Pending') }}
+                      </span>
+                    </div>
+                    <div class="d-flex flex-column gap-2">
+                      <span class="fs-base" [ngClass]="isFirstPendingWorkflowStep('final_payment', p) ? 'text-white text-opacity-75' : 'text-gray-500'">
+                        {{ lang === 'ar' ? 'الخطوة' : 'Step' }} {{ getWorkflowStepNumber('final_payment', p) }}
+                      </span>
+                      <span class="fs-6 fw-bold" [ngClass]="isFirstPendingWorkflowStep('final_payment', p) ? 'text-white' : 'text-gray-800'">{{ lang === 'ar' ? 'الدفعة النهائية' : 'Final Payment' }}</span>
+                      <span class="fs-8" [ngClass]="isFirstPendingWorkflowStep('final_payment', p) ? 'text-white text-opacity-75' : 'text-gray-500'">{{ getProjectFinalPaymentLabel(order) }}</span>
+                    </div>
+                  </div>
+
+                  <div class="pd-timeline-dot" [ngClass]="isFirstPendingWorkflowStep('final_payment', p) ? 'pd-timeline-dot--active' : 'pd-timeline-dot--pending'">
+                    <div></div>
+                  </div>
+                </div>
+
+                <div *ngIf="isPaymentStatusOnly(p) && p.order as order"
+                     class="pd-timeline-step">
+                  <div class="card border-0 d-flex flex-column p-6 gap-10 flex-grow-1 mb-2 me-4"
+                       style="background: linear-gradient(180deg, #1858FD 0%, #003FDE 100%)"
+                       data-bs-theme="light">
+                    <div class="d-flex flex-stack">
+                      <div class="d-flex flex-center h-40px w-40px flex-shrink-0 rounded-circle border border-light-clarity">
+                        <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" xml:space="preserve" width="32" height="32">
+                          <rect x="40" y="35" width="4" height="10" fill="#fff">
+                            <animateTransform attributeType="xml" attributeName="transform" type="translate" values="0 0; 0 20; 0 0" begin="0" dur="0.6s" repeatCount="indefinite"></animateTransform>
+                          </rect>
+                          <rect x="50" y="35" width="4" height="10" fill="#fff">
+                            <animateTransform attributeType="xml" attributeName="transform" type="translate" values="0 0; 0 20; 0 0" begin="0.2s" dur="0.6s" repeatCount="indefinite"></animateTransform>
+                          </rect>
+                          <rect x="60" y="35" width="4" height="10" fill="#fff">
+                            <animateTransform attributeType="xml" attributeName="transform" type="translate" values="0 0; 0 20; 0 0" begin="0.4s" dur="0.6s" repeatCount="indefinite"></animateTransform>
+                          </rect>
+                        </svg>
+                      </div>
+                      <span class="rounded text-white fw-semibold fs-8 bg-white bg-opacity-10 py-1 px-2 border border-light-clarity">
+                        {{ lang === 'ar' ? 'الدفع' : 'Payment' }}
+                      </span>
+                    </div>
+
+                    <div class="d-flex flex-column gap-3">
+                      <div class="d-flex flex-column">
+                        <span class="fs-8 text-white text-opacity-75">
+                          {{ lang === 'ar' ? 'المبلغ المطلوب لبدء المشروع' : 'Amount due to start your project' }}
+                        </span>
+                        <strong class="fs-2 fw-bold text-white">
+                          {{ getProjectRequiredPaymentLabel(order) }}
+                        </strong>
+                      </div>
+
+                      <button type="button"
+                              class="btn btn-sm fw-bold w-100 d-flex align-items-center justify-content-center gap-2 text-white pd-glass-btn"
+                              (click)="openProjectPaymentDialog()"
+                              [disabled]="projectCheckoutSubmitting">
+                        <i class="ki-outline ki-credit-cart fs-6 text-white"></i>
+                        <span>{{ getProjectPaymentButtonLabel(order) }}</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div class="pd-timeline-dot pd-timeline-dot--active">
+                    <div></div>
+                  </div>
+                </div>
+              </div>
+            </ng-container>
+          </section>
+
           <button type="button"
-                  *ngIf="hasContractAction(p)"
+                  *ngIf="hasContractAction(p) && !shouldShowProjectPayment(p) && !isContractingStatus(p) && !isProjectWorkStatus(p)"
                   class="btn btn-info w-100 mt-3 pd-contract-pulse"
                   (click)="viewContract()">
             <i class="ki-outline ki-document fs-6 me-1"></i>
             {{ lang === 'ar' ? 'عرض العقد' : 'View Contract' }}
           </button>
 
-          <button type="button"
-                  *ngIf="!hasContractAction(p)"
-                  class="btn btn-info w-100 mt-3"
-                  (click)="onRematch()"
-                  [disabled]="isRematchLoading || isSubmittingRematch">
-            <i class="ki-outline ki-arrows-circle fs-6 me-1"></i>
-            {{
-              rematchPhase === 'creating'
-                ? (lang === 'ar' ? 'جاري البدء...' : 'Starting...')
-                : (lang === 'ar' ? 'إعادة المطابقة' : 'Rematch')
-            }}
-          </button>
-
-          <div class="pd-aside-table-wrap">
-            <table class="pd-aside-table">
-              <tbody>
-                <tr *ngIf="p.status">
-                  <th scope="row">{{ lang === 'ar' ? 'الحالة' : 'Status' }}</th>
-                  <td>
-                    <span class="badge" [ngClass]="getStatusBadgeClass(p.status)">{{ getStatusLabel(p.status) }}</span>
-                  </td>
-                </tr>
-                <tr>
-                  <th scope="row">{{ lang === 'ar' ? 'الخدمة' : 'Service' }}</th>
-                  <td>{{ p.service?.name || '-' }}</td>
-                </tr>
-                <tr>
-                  <th scope="row">{{ lang === 'ar' ? 'نوع المشروع' : 'Project Type' }}</th>
-                  <td>{{ getTypeLabel(p.type) }}</td>
-                </tr>
-                <tr>
-                  <th scope="row">{{ lang === 'ar' ? 'الموعد النهائي' : 'Deadline' }}</th>
-                  <td>{{ formatDate(p.deadline) }}</td>
-                </tr>
-                <tr>
-                  <th scope="row">{{ lang === 'ar' ? 'لغة المشروع' : 'Project Language' }}</th>
-                  <td>{{ getLanguageLabel(p.language) }}</td>
-                </tr>
-                <tr *ngIf="p.insighter_preferred_type">
-                  <th scope="row">{{ lang === 'ar' ? 'نوع الخبير المفضل' : 'Preferred Insighter' }}</th>
-                  <td>{{ getFormattedValue(p.insighter_preferred_type) }}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+          <span *ngIf="!hasContractAction(p)"
+                class="d-block w-100 mt-3"
+                [pTooltip]="lang === 'ar' ? 'لا يمكنك إنشاء عرض جديد في هذه المرحلة. المشروع لم تنتهِ صلاحيته بعد، أو لا يزال هناك مستشارون مدعوون لم يقدّموا عرضًا بعد.' : 'You cannot create a new proposal at this stage. The project is not expired yet, or there are still invited insighters who have not provided an offer.'"
+                tooltipPosition="top"
+                [tooltipDisabled]="p.can_rematch !== false">
+            <button type="button"
+                    class="btn btn-info w-100"
+                    (click)="onRematch()"
+                    [disabled]="isRematchLoading || isSubmittingRematch || p.can_rematch === false">
+              <i class="ki-outline ki-arrows-circle fs-6 me-1"></i>
+              {{
+                rematchPhase === 'creating'
+                  ? (lang === 'ar' ? 'جاري البدء...' : 'Starting...')
+                  : (lang === 'ar' ? 'إعادة المطابقة' : 'Rematch')
+              }}
+            </button>
+          </span>
 
         </div>
       </aside>
@@ -621,6 +1043,114 @@
     </div>
   </ng-container>
 </div>
+
+<p-dialog
+  [(visible)]="projectPaymentDialogVisible"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [dismissableMask]="!projectCheckoutSubmitting"
+  [closable]="!projectCheckoutSubmitting"
+  appendTo="body"
+  [baseZIndex]="1250"
+  [style]="{ width: 'min(720px, calc(100vw - 32px))' }"
+  styleClass="pd-project-payment-dialog"
+  (onHide)="closeProjectPaymentDialog()">
+  <ng-template pTemplate="header">
+    <div class="pd-payment-dialog-header" [attr.dir]="lang === 'ar' ? 'rtl' : 'ltr'">
+      <h3>{{ lang === 'ar' ? 'طريقة الدفع' : 'Payment Method' }}</h3>
+    </div>
+  </ng-template>
+
+  <ng-container *ngIf="project as paymentProject">
+    <div class="pd-payment-dialog" [attr.dir]="lang === 'ar' ? 'rtl' : 'ltr'" *ngIf="paymentProject.order as order">
+      <div class="pd-payment-methods">
+        <button
+          type="button"
+          class="pd-payment-method"
+          [class.is-selected]="selectedProjectPaymentMethod === 'manual'"
+          [class.is-disabled]="!canUseProjectWallet(paymentProject)"
+          [disabled]="!canUseProjectWallet(paymentProject) || projectCheckoutSubmitting"
+          (click)="selectProjectPaymentMethod('manual')">
+          <span class="pd-payment-method__checkbox" aria-hidden="true"></span>
+          <span class="pd-payment-method__wallet-logo">
+            <img src="/assets/media/logos/custom-2.svg" alt="">
+          </span>
+          <span class="pd-payment-method__body">
+            <strong>{{ lang === 'ar' ? 'محفظة إنسايتا' : 'Insighta Wallet' }}</strong>
+            <small class="pd-payment-method__balance"
+                   [class.is-low]="!canUseProjectWallet(paymentProject)">
+              {{
+                lang === 'ar'
+                  ? 'الرصيد المتاح: '
+                  : 'Available Balance: '
+              }}
+              {{ getProjectWalletBalanceLabel() }}
+            </small>
+            <em *ngIf="!canUseProjectWallet(paymentProject)">
+              {{ lang === 'ar' ? 'الرصيد غير كافٍ أو غير متاح' : 'Insufficient or unavailable balance' }}
+            </em>
+          </span>
+        </button>
+
+        <button
+          type="button"
+          class="pd-payment-method"
+          [class.is-selected]="selectedProjectPaymentMethod === 'provider'"
+          [disabled]="projectCheckoutSubmitting"
+          (click)="selectProjectPaymentMethod('provider')">
+          <span class="pd-payment-method__checkbox" aria-hidden="true"></span>
+          <span class="pd-payment-brands" aria-hidden="true">
+            <span class="pd-payment-brand pd-payment-brand--visa">VISA</span>
+            <span class="pd-payment-brand pd-payment-brand--mastercard">
+              <i></i><i></i>
+            </span>
+            <span class="pd-payment-brand pd-payment-brand--google"><b>G</b> Pay</span>
+            <span class="pd-payment-brand pd-payment-brand--apple">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/f/fa/Apple_logo_black.svg?utm_source=commons.wikimedia.org&utm_campaign=index&utm_content=original" alt="">
+              Pay
+            </span>
+          </span>
+        </button>
+      </div>
+
+      <div class="pd-payment-total">
+        <span>{{ lang === 'ar' ? 'المبلغ الإجمالي للدفع الآن' : 'Total due now' }}</span>
+        <strong>{{ getProjectRequiredPaymentLabel(order) }}</strong>
+        <small>{{ getProjectPaymentPlanLabel(order) }} · {{ order.currency || 'USD' }}</small>
+      </div>
+
+      <div class="pd-payment-dialog__error" *ngIf="projectCheckoutError">
+        <i class="ki-outline ki-information-5 fs-5"></i>
+        <span>{{ projectCheckoutError }}</span>
+      </div>
+    </div>
+  </ng-container>
+
+  <ng-template pTemplate="footer">
+    <div class="pd-payment-dialog-footer" [attr.dir]="lang === 'ar' ? 'rtl' : 'ltr'" *ngIf="project?.order as order">
+      <button
+        type="button"
+        class="btn btn-light"
+        (click)="closeProjectPaymentDialog()"
+        [disabled]="projectCheckoutSubmitting">
+        {{ lang === 'ar' ? 'إلغاء' : 'Cancel' }}
+      </button>
+      <button
+        type="button"
+        class="btn btn-info"
+        (click)="submitProjectPayment()"
+        [disabled]="projectCheckoutSubmitting || !selectedProjectPaymentMethod">
+        <span *ngIf="projectCheckoutSubmitting" class="spinner-border spinner-border-sm me-2"></span>
+        {{
+          projectCheckoutSubmitting
+            ? (lang === 'ar' ? 'جاري المعالجة...' : 'Processing...')
+            : ((lang === 'ar' ? 'ادفع وابدأ المشروع ' : 'Pay and Start ') + getProjectRequiredPaymentLabel(order))
+        }}
+      </button>
+    </div>
+  </ng-template>
+</p-dialog>
 
 <p-dialog
   [(visible)]="rematchDialogVisible"
@@ -1057,7 +1587,7 @@
                   <i class="ki-outline ki-time fs-4"></i>
                 </span>
                 <span class="pd-proposal-drawer__stat-copy">
-                  <span class="pd-proposal-drawer__stat-label">{{ lang === 'ar' ? 'الساعات التقديرية' : 'Estimated Hours' }}</span>
+                  <span class="pd-proposal-drawer__stat-label">{{ lang === 'ar' ? 'الساعات التقديرية' : 'Working Hours' }}</span>
                   <span class="pd-proposal-drawer__stat-value">{{ getEstimatedHours(invite.offer?.estimated_hours) }}</span>
                 </span>
               </div>

@@ -5,6 +5,7 @@ import { takeUntil } from 'rxjs/operators';
 import { BaseComponent } from 'src/app/modules/base.component';
 import {
   CreatedProject,
+  CreatedProjectStatus,
   CreatedProjectType,
   CreatedProjectsFilters,
   CreatedProjectsPaginatedResponse,
@@ -36,8 +37,10 @@ export class ProjectsCreatedComponent extends BaseComponent implements OnInit, O
 
   projects: CreatedProject[] = [];
   viewMode: ViewMode = 'list';
-  projectImageUrl = 'https://res.cloudinary.com/dsiku9ipv/image/upload/v1778674424/project_18669661_o5xc3a.png';
-  selectedProjectStatus: string | null = null;
+  projectReadImageUrl = 'https://res.cloudinary.com/dsiku9ipv/image/upload/v1779196120/project_18669661_o5xc3a_copy_ue7w6e.jpg';
+  projectUnreadImageUrl = 'https://res.cloudinary.com/dsiku9ipv/image/upload/v1779196441/project_18669661_o5xc3a_codsdpy_qmneyt.png';
+  selectedProjectStatus: CreatedProjectStatus | null = null;
+  markingReadProjectUuids = new Set<string>();
 
   currentPage: number = 1;
   rows: number = 10;
@@ -50,10 +53,14 @@ export class ProjectsCreatedComponent extends BaseComponent implements OnInit, O
     { key: 'urgent_request', labelEn: 'Urgent Request', labelAr: 'طلب عاجل' },
   ];
 
-  projectStatusOptions: StatusFilterOption<string>[] = [
+  projectStatusOptions: StatusFilterOption<CreatedProjectStatus>[] = [
+    { value: 'expired', labelEn: 'Expired', labelAr: 'منتهي', iconClass: 'ki-timer' },
+    { value: 'cancelled', labelEn: 'Cancelled', labelAr: 'ملغي', iconClass: 'ki-cross-circle' },
     { value: 'submitted', labelEn: 'Submitted', labelAr: 'مُرسل', iconClass: 'ki-send' },
-    { value: 'closed', labelEn: 'Closed', labelAr: 'مغلق', iconClass: 'ki-lock' },
-    { value: 'expired', labelEn: 'Expired', labelAr: 'منتهي', iconClass: 'ki-time' },
+    { value: 'contract', labelEn: 'Contracting', labelAr: 'العقد', iconClass: 'ki-document' },
+    { value: 'payment', labelEn: 'Payment', labelAr: 'الدفع', iconClass: 'ki-wallet' },
+    { value: 'in_progress', labelEn: 'In Progress', labelAr: 'قيد التنفيذ', iconClass: 'ki-arrows-circle' },
+    { value: 'closed', labelEn: 'Closed', labelAr: 'مغلق', iconClass: 'ki-check-circle' },
   ];
 
   constructor(
@@ -94,7 +101,7 @@ export class ProjectsCreatedComponent extends BaseComponent implements OnInit, O
     this.loadProjects(page);
   }
 
-  onProjectStatusChange(status: string | null): void {
+  onProjectStatusChange(status: CreatedProjectStatus | null): void {
     this.selectedProjectStatus = status;
     this.currentPage = 1;
     this.first = 0;
@@ -106,6 +113,7 @@ export class ProjectsCreatedComponent extends BaseComponent implements OnInit, O
   }
 
   viewDetails(project: CreatedProject): void {
+    this.markProjectAsRead(project);
     this.router.navigate(['/app/insighter-dashboard/projects-created', project.uuid]);
   }
 
@@ -120,20 +128,45 @@ export class ProjectsCreatedComponent extends BaseComponent implements OnInit, O
     return this.lang === 'ar' ? meta.labelAr : meta.labelEn;
   }
 
-  getStatusBadgeClass(status: string | null | undefined): string {
+  hasProjectStatus(): boolean {
+    return this.projects.some(project => !!project.status);
+  }
+
+  getStatusBadgeClass(status: CreatedProjectStatus | null | undefined): string {
     switch ((status || '').toLowerCase()) {
-      case 'submitted': return 'badge-light-primary';
+      case 'submitted': return 'badge-light-submitted';
+      case 'contract': return 'badge-light-info';
+      case 'payment': return 'badge-light-warning';
+      case 'in_progress': return 'badge-light-progress';
       case 'closed': return 'badge-light-success';
-      case 'expired': return 'badge-light-danger';
+      case 'cancelled': return 'badge-light-cancelled';
+      case 'expired': return 'badge-light-expired';
       default: return 'badge-light-info';
     }
   }
 
-  getStatusLabel(status: string | null | undefined): string {
+  getStatusIconClass(status: CreatedProjectStatus | null | undefined): string {
+    switch ((status || '').toLowerCase()) {
+      case 'expired': return 'ki-timer';
+      case 'cancelled': return 'ki-cross-circle';
+      case 'submitted': return 'ki-send';
+      case 'contract': return 'ki-document';
+      case 'payment': return 'ki-wallet';
+      case 'in_progress': return 'ki-arrows-circle';
+      case 'closed': return 'ki-check-circle';
+      default: return 'ki-information-5';
+    }
+  }
+
+  getStatusLabel(status: CreatedProjectStatus | null | undefined): string {
     const labels: Record<string, { en: string; ar: string }> = {
-      submitted: { en: 'Submitted', ar: 'مُرسل' },
-      closed: { en: 'Closed', ar: 'مغلق' },
       expired: { en: 'Expired', ar: 'منتهي' },
+      cancelled: { en: 'Cancelled', ar: 'ملغي' },
+      submitted: { en: 'Submitted', ar: 'مُرسل' },
+      contract: { en: 'Contracting', ar: 'العقد' },
+      payment: { en: 'Payment', ar: 'الدفع' },
+      in_progress: { en: 'In Progress', ar: 'قيد التنفيذ' },
+      closed: { en: 'Closed', ar: 'مغلق' },
     };
     const key = (status || '').toLowerCase();
     const match = labels[key];
@@ -157,8 +190,41 @@ export class ProjectsCreatedComponent extends BaseComponent implements OnInit, O
     return project.service_prompt || project.description || '-';
   }
 
+  isClientUnread(project: CreatedProject): boolean {
+    return project.client_read_at === false;
+  }
+
+  getProjectImageUrl(project: CreatedProject): string {
+    return this.isClientUnread(project) ? this.projectUnreadImageUrl : this.projectReadImageUrl;
+  }
+
   trackByProject(_: number, p: CreatedProject): string {
     return p.uuid;
+  }
+
+  private markProjectAsRead(project: CreatedProject): void {
+    if (!project?.uuid || !this.isClientUnread(project) || this.markingReadProjectUuids.has(project.uuid)) {
+      return;
+    }
+
+    this.markingReadProjectUuids.add(project.uuid);
+
+    this.projectsCreatedService.markProjectAsRead(project.uuid)
+      .subscribe({
+        next: () => {
+          this.projects = this.projects.map(item =>
+            item.uuid === project.uuid
+              ? { ...item, client_read_at: true }
+              : item
+          );
+        },
+        error: () => {
+          this.markingReadProjectUuids.delete(project.uuid);
+        },
+        complete: () => {
+          this.markingReadProjectUuids.delete(project.uuid);
+        },
+      });
   }
 
   private handleServerErrors(error: any): void {

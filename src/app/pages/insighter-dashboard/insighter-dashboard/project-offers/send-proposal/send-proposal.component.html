@@ -184,51 +184,7 @@
               </div>
             </div>
 
-            <div class="sp-field">
-              <label class="sp-field__label">
-                {{ lang === 'ar' ? 'خطة الدفع' : 'Payment plan' }}
-              </label>
-              <div class="sp-plan-grid" role="radiogroup">
-                <button type="button" class="sp-plan-option" [class.is-active]="paymentPlan === 'partial'"
-                  [attr.aria-pressed]="paymentPlan === 'partial'" (click)="setPaymentPlan('partial')">
-                  <i class="ki-outline ki-percentage fs-5"></i>
-                  <span class="sp-plan-option__copy">
-                    <span class="sp-plan-option__title">
-                      {{ lang === 'ar' ? 'الأولى والنهائية' : 'First & Final' }}
-                    </span>
-                    <span class="sp-plan-option__sub">
-                      {{ lang === 'ar' ? 'خطة دفع' : 'Payment plan' }}
-                    </span>
-                  </span>
-                </button>
-                <button type="button" class="sp-plan-option" [class.is-active]="paymentPlan === 'full_at_start'"
-                  [attr.aria-pressed]="paymentPlan === 'full_at_start'" (click)="setPaymentPlan('full_at_start')">
-                  <i class="ki-outline ki-wallet fs-5"></i>
-                  <span class="sp-plan-option__copy">
-                    <span class="sp-plan-option__title">
-                      {{ lang === 'ar' ? 'الأولى' : 'First' }}
-                    </span>
-                    <span class="sp-plan-option__sub">
-                      {{ lang === 'ar' ? 'دفعة فقط' : 'Payment only' }}
-                    </span>
-                  </span>
-                </button>
-                <button type="button" class="sp-plan-option" [class.is-active]="paymentPlan === 'full_at_end'"
-                  [attr.aria-pressed]="paymentPlan === 'full_at_end'" (click)="setPaymentPlan('full_at_end')">
-                  <i class="ki-outline ki-calendar-tick fs-5"></i>
-                  <span class="sp-plan-option__copy">
-                    <span class="sp-plan-option__title">
-                      {{ lang === 'ar' ? 'النهائية' : 'Final' }}
-                    </span>
-                    <span class="sp-plan-option__sub">
-                      {{ lang === 'ar' ? 'دفعة فقط' : 'Payment only' }}
-                    </span>
-                  </span>
-                </button>
-              </div>
-            </div>
-
-            <ng-container *ngIf="paymentPlan === 'partial'">
+            <ng-container>
               <div class="sp-payment-grid">
                 <div class="sp-field">
                   <label class="sp-field__label" for="sp-first-payment-percentage">
@@ -268,15 +224,11 @@
               <div class="sp-field__hint sp-field__hint--danger"
                 *ngIf="shouldShowPaymentSplitError(firstPaymentPercentageModel, finalPaymentPercentageModel)">
                 {{ lang === 'ar'
-                ? 'يجب أن تكون كل نسبة بين 1 و99 وأن يكون المجموع 100%.'
-                : 'Each percentage must be between 1 and 99, and the total must be 100%.' }}
+                ? 'يجب أن تكون كل نسبة بين 0 و100 وأن يكون المجموع 100%.'
+                : 'Each percentage must be between 0 and 100, and the total must be 100%.' }}
               </div>
             </ng-container>
 
-            <div class="sp-plan-summary" *ngIf="paymentPlan !== 'partial'">
-              <span>{{ lang === 'ar' ? 'الدفعة الأولى' : 'First payment' }}: {{ downPaymentPercentageForPayload }}%</span>
-              <span>{{ lang === 'ar' ? 'الدفعة النهائية' : 'Final payment' }}: {{ finalPaymentPercentageForPayload }}%</span>
-            </div>
           </section>
 
           </div>

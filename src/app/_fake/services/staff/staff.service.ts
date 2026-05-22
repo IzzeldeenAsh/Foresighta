@@ -40,9 +40,9 @@ export interface Staff {
   providedIn: 'root'
 })
 export class StaffService {
-  private apiUrl = 'https://api.foresighta.co/api/admin/account/staff/list';
-  private createApi = 'https://api.foresighta.co/api/admin/account/staff';
-  private updateDeleteApi = 'https://api.foresighta.co/api/admin/account/staff';
+  private apiUrl = 'https://api.insightabusiness.com/api/admin/account/staff/list';
+  private createApi = 'https://api.insightabusiness.com/api/admin/account/staff';
+  private updateDeleteApi = 'https://api.insightabusiness.com/api/admin/account/staff';
   private isLoadingSubject = new BehaviorSubject<boolean>(false);
   public isLoading$: Observable<boolean> = this.isLoadingSubject.asObservable();
   currentLang: string = 'en';

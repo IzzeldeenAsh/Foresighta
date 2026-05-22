@@ -11,15 +11,15 @@ export const environment = {
 
   // Realtime (Pusher) configuration
   // Mirror NEXT_PUBLIC_* used in Next.js app when possible
-  pusherKey: (window as any)?.__env?.PUSHER_KEY || '41745ad5e299f4af9e36 ',
+  pusherKey: (window as any)?.__env?.PUSHER_KEY || '81566bb993a074e07d41 ',
   pusherCluster: (window as any)?.__env?.PUSHER_CLUSTER || 'eu',
-  pusherAuthEndpoint: (window as any)?.__env?.PUSHER_AUTH_ENDPOINT || 'https://api.foresighta.co/broadcasting/auth',
+  pusherAuthEndpoint: (window as any)?.__env?.PUSHER_AUTH_ENDPOINT || 'https://api.insightabusiness.com/broadcasting/auth',
 
   // API configuration for sharing authentication between domains
-  apiBaseUrl: 'https://api.foresighta.co/api',
+  apiBaseUrl: 'https://api.insightabusiness.com/api',
   appDomain: '.insightabusiness.com',
-  mainAppUrl: 'http://localhost:3000',
-  subAppUrl: 'http://localhost:4200',
+  mainAppUrl: 'https://insightabusiness.com',
+  subAppUrl: 'https://app.insightabusiness.com',
 
   // Cookie configuration
   cookieOptions: {

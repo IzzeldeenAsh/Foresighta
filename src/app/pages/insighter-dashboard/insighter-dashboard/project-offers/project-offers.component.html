@@ -107,17 +107,26 @@
       </thead>
 
       <tbody class="fw-semibold text-gray-600">
-        <tr *ngFor="let offer of offers; trackBy: trackByOffer" class="po-table__row">
+        <tr *ngFor="let offer of offers; trackBy: trackByOffer"
+            class="po-table__row"
+            [class.po-table__row--unread]="isInsighterUnread(offer)"
+            role="button"
+            tabindex="0"
+            (click)="openDrawer(offer)"
+            (keydown.enter)="openDrawer(offer)"
+            (keydown.space)="$event.preventDefault(); openDrawer(offer)">
           <td>
-            <button type="button" class="po-table__project" (click)="openDrawer(offer)">
+            <button type="button" class="po-table__project" (click)="$event.stopPropagation(); openDrawer(offer)">
               <span class="po-table__project-image">
                 <img
-                  src="https://res.cloudinary.com/dsiku9ipv/image/upload/v1777637418/job-offer_8062313_lqbkuq.png"
+                  [src]="getOfferImageUrl(offer)"
                   alt=""
                   loading="lazy">
               </span>
               <span class="po-table__project-copy">
-                <span class="po-table__project-title">{{ offer.project.title }}</span>
+                <span class="po-table__project-title">
+                  {{ offer.project.title }}
+                </span>
                 <span class="po-table__project-summary">{{ getSummary(offer) }}</span>
               </span>
             </button>
@@ -150,7 +159,7 @@
           </td>
 
           <td class="text-end">
-            <button type="button" class="po-table__action" (click)="openDrawer(offer)">
+            <button type="button" class="po-table__action" (click)="$event.stopPropagation(); openDrawer(offer)">
               <i class="ki-outline ki-eye fs-5"></i>
             </button>
           </td>
@@ -894,7 +903,7 @@
                       <i class="ki-outline ki-time fs-4"></i>
                     </span>
                     <span class="po-offer-summary-card__copy">
-                      <span class="po-offer-summary-card__label">{{ lang === 'ar' ? 'الساعات المقدرة' : 'Estimated Hours' }}</span>
+                      <span class="po-offer-summary-card__label">{{ lang === 'ar' ? 'الساعات المقدرة' : 'Working Hours' }}</span>
                       <span class="po-offer-summary-card__value">{{ submittedOffer.estimated_hours || '-' }}</span>
                     </span>
                   </div>
@@ -954,7 +963,9 @@
             <div class="po-offer-timer__copy">
               <span class="po-offer-timer__label">{{ lang === 'ar' ? 'مهلة العرض' : 'Offer timeout' }}</span>
               <strong>{{ getDeadlineLabel(offer) }}</strong>
-              <small>{{ getOfferTimerHint(offer) }}</small>
+              <ng-container *ngIf="getOfferTimerHint(offer) as offerTimerHint">
+                <small>{{ offerTimerHint }}</small>
+              </ng-container>
             </div>
           </div>
 
@@ -978,7 +989,7 @@
             <i class="ki-outline ki-cross fs-6 me-1"></i>
             {{ isRejectingSelectedOffer()
             ? (lang === 'ar' ? 'جاري الرفض...' : 'Rejecting...')
-            : (lang === 'ar' ? 'رفض العرض' : 'Reject Offer') }}
+            : (lang === 'ar' ? 'رفض العرض' : 'Not Interested') }}
           </button>
 
           <div class="po-aside-table-wrap">

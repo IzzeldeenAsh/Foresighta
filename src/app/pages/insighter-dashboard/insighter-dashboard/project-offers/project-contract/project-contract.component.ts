@@ -2,7 +2,7 @@ import { Component, Injector, OnInit } from '@angular/core';
 import { DomSanitizer, SafeHtml, SafeResourceUrl } from '@angular/platform-browser';
 import { ActivatedRoute, Router } from '@angular/router';
 import { finalize, takeUntil } from 'rxjs/operators';
-import { GuidelineDetail, GuidelinesService } from 'src/app/_fake/services/guidelines/guidelines.service';
+import Swal from 'sweetalert2';
 import {
   ProjectContract,
   ProjectContractFile,
@@ -18,11 +18,9 @@ import { BaseComponent } from 'src/app/modules/base.component';
 export class ProjectContractComponent extends BaseComponent implements OnInit {
   contractUuid = '';
   contract: ProjectContract | null = null;
-  guideline: GuidelineDetail | null = null;
-  guidelineHtml: SafeHtml | null = null;
+  contractHtml: SafeHtml | null = null;
   filePreviewUrl: SafeResourceUrl | null = null;
   isLoadingContract = false;
-  isLoadingGuideline = false;
   isSigning = false;
   errorMessage = '';
   successMessage = '';
@@ -33,7 +31,6 @@ export class ProjectContractComponent extends BaseComponent implements OnInit {
     private route: ActivatedRoute,
     private router: Router,
     private projectOffersService: ProjectOffersService,
-    private guidelinesService: GuidelinesService,
     private sanitizer: DomSanitizer,
   ) {
     super(injector);
@@ -60,16 +57,20 @@ export class ProjectContractComponent extends BaseComponent implements OnInit {
     this.router.navigateByUrl(this.returnUrl);
   }
 
-  signContract(): void {
-    if (!this.contractUuid || this.isSigning || !this.contract?.user_sign_at || this.contract.insighter_sign_at) {
+  async signContract(): Promise<void> {
+    const contractUuid = this.getActiveContractUuid();
+    if (!contractUuid || this.isSigning || !this.contract?.user_sign_at || this.contract.insighter_sign_at) {
       return;
     }
+
+    const confirmed = await this.confirmSignContract();
+    if (!confirmed) return;
 
     this.isSigning = true;
     this.errorMessage = '';
     this.successMessage = '';
 
-    this.projectOffersService.signProjectContract(this.contractUuid)
+    this.projectOffersService.signProjectContract(contractUuid)
       .pipe(
         takeUntil(this.unsubscribe$),
         finalize(() => (this.isSigning = false))
@@ -96,8 +97,61 @@ export class ProjectContractComponent extends BaseComponent implements OnInit {
       });
   }
 
+  private async confirmSignContract(): Promise<boolean> {
+    const result = await Swal.fire({
+      title: this.lang === 'ar' ? 'تأكيد توقيع العقد' : 'Confirm contract signature',
+      text: this.lang === 'ar'
+        ? 'هل أنت متأكد أنك تريد توقيع هذا العقد؟'
+        : 'Are you sure you want to sign this contract?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: this.lang === 'ar' ? 'نعم، وقّع العقد' : 'Yes, sign contract',
+      cancelButtonText: this.lang === 'ar' ? 'إلغاء' : 'Cancel',
+      reverseButtons: this.lang === 'ar',
+      buttonsStyling: false,
+      customClass: {
+        confirmButton: 'btn btn-info',
+        cancelButton: 'btn btn-light me-3',
+      },
+    });
+
+    return result.isConfirmed;
+  }
+
   getBackIcon(): string {
     return this.lang === 'ar' ? 'ki-arrow-right' : 'ki-arrow-left';
+  }
+
+  get contractDisplayName(): string {
+    return this.contract?.name
+      || (this.lang === 'ar' ? 'عقد خدمة مشروع' : 'Project Service Contract');
+  }
+
+  get selectedContractLanguageLabel(): string {
+    const language = this.normalizeContractLanguage(this.contract?.language || this.contract?.contract_language);
+    if (!language) return '';
+
+    if (language === 'ar') return this.lang === 'ar' ? 'العربية' : 'Arabic';
+    return this.lang === 'ar' ? 'الإنجليزية' : 'English';
+  }
+
+  get selectedCourtCountryName(): string {
+    const country = this.contract?.court_country;
+    if (!country) return '';
+
+    if (typeof country.name === 'object') {
+      return this.lang === 'ar'
+        ? country.name?.ar || country.name?.en || ''
+        : country.name?.en || country.name?.ar || '';
+    }
+
+    if (country.names) {
+      return this.lang === 'ar'
+        ? country.names?.ar || country.names?.en || ''
+        : country.names?.en || country.names?.ar || '';
+    }
+
+    return country.name || '';
   }
 
   getFileName(file: ProjectContractFile | null | undefined): string {
@@ -132,8 +186,7 @@ export class ProjectContractComponent extends BaseComponent implements OnInit {
     this.errorMessage = '';
     this.successMessage = '';
     this.contract = null;
-    this.guideline = null;
-    this.guidelineHtml = null;
+    this.contractHtml = null;
     this.filePreviewUrl = null;
 
     this.projectOffersService.getProjectContract(this.contractUuid)
@@ -144,6 +197,10 @@ export class ProjectContractComponent extends BaseComponent implements OnInit {
       .subscribe({
         next: contract => {
           this.contract = contract;
+          if (contract.uuid) {
+            this.contractUuid = contract.uuid;
+          }
+
           if (!contract.user_sign_at) return;
 
           if (contract.is_attach_type) {
@@ -151,12 +208,15 @@ export class ProjectContractComponent extends BaseComponent implements OnInit {
             return;
           }
 
-          if (contract.guideline) {
-            this.guidelineHtml = this.sanitizer.bypassSecurityTrustHtml(contract.guideline);
+          const contractBody = this.getContractBody(contract);
+          if (contractBody) {
+            this.contractHtml = this.sanitizer.bypassSecurityTrustHtml(contractBody);
             return;
           }
 
-          this.loadDefaultContract();
+          this.errorMessage = this.lang === 'ar'
+            ? 'لم يتم العثور على محتوى العقد.'
+            : 'Contract content was not found.';
         },
         error: err => {
           this.errorMessage = this.getServerErrorMessage(err);
@@ -168,25 +228,6 @@ export class ProjectContractComponent extends BaseComponent implements OnInit {
       });
   }
 
-  private loadDefaultContract(): void {
-    this.isLoadingGuideline = true;
-
-    this.guidelinesService.getCurrentGuidelineByType('contract')
-      .pipe(
-        takeUntil(this.unsubscribe$),
-        finalize(() => (this.isLoadingGuideline = false))
-      )
-      .subscribe({
-        next: guideline => {
-          this.guideline = guideline;
-          this.guidelineHtml = this.sanitizer.bypassSecurityTrustHtml(guideline.guideline || '');
-        },
-        error: err => {
-          this.errorMessage = this.getServerErrorMessage(err);
-        },
-      });
-  }
-
   private setFilePreview(file: ProjectContractFile | null): void {
     if (!file?.url) {
       this.filePreviewUrl = null;
@@ -194,6 +235,24 @@ export class ProjectContractComponent extends BaseComponent implements OnInit {
     }
 
     this.filePreviewUrl = this.sanitizer.bypassSecurityTrustResourceUrl(file.url);
+  }
+
+  private getContractBody(contract: ProjectContract): string {
+    return contract.rendered_guideline
+      || contract.guideline
+      || contract.contract?.rendered_guideline
+      || contract.contract?.guideline
+      || '';
+  }
+
+  private getActiveContractUuid(): string {
+    return this.contract?.uuid || this.contractUuid;
+  }
+
+  private normalizeContractLanguage(language: any): 'ar' | 'en' | null {
+    if (!language) return null;
+    const normalized = String(language).toLowerCase();
+    return normalized === 'ar' || normalized === 'en' ? normalized : null;
   }
 
   private getServerErrorMessage(error: any): string {

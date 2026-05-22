@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { NgModule } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { RouterModule, Routes } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { PaginatorModule } from 'primeng/paginator';
@@ -21,6 +22,7 @@ const routes: Routes = [
   declarations: [OnWorkProjectsComponent],
   imports: [
     CommonModule,
+    FormsModule,
     RouterModule.forChild(routes),
     TranslationModule,
     ProgressBarModule,

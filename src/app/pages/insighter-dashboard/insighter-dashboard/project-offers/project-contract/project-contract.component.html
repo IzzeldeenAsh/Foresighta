@@ -47,7 +47,11 @@
         <div class="icn-panel-head">
           <div>
             <span>{{ c.is_attach_type ? (lang === 'ar' ? 'عقد مخصص' : 'Custom Contract') : (lang === 'ar' ? 'عقد المنصة' : 'Platform Contract') }}</span>
-            <h3>{{ c.name || guideline?.name || (lang === 'ar' ? 'عقد خدمة مشروع' : 'Project Service Contract') }}</h3>
+            <h3>{{ contractDisplayName }}</h3>
+            <div *ngIf="!c.is_attach_type && (selectedContractLanguageLabel || selectedCourtCountryName)" class="icn-contract-meta">
+              <small *ngIf="selectedContractLanguageLabel">{{ selectedContractLanguageLabel }}</small>
+              <small *ngIf="selectedCourtCountryName">{{ selectedCourtCountryName }}</small>
+            </div>
           </div>
           <span class="icn-status" [class.is-signed]="c.insighter_sign_at">
             {{ c.insighter_sign_at ? (lang === 'ar' ? 'موقّع' : 'Signed') : (lang === 'ar' ? 'بانتظار توقيعك' : 'Awaiting your signature') }}
@@ -55,12 +59,7 @@
         </div>
 
         <div *ngIf="!c.is_attach_type" class="icn-agreement-wrap">
-          <div *ngIf="isLoadingGuideline" class="icn-loading">
-            <span class="spinner-border spinner-border-sm"></span>
-            {{ lang === 'ar' ? 'جاري تحميل العقد...' : 'Loading contract...' }}
-          </div>
-
-          <div *ngIf="!isLoadingGuideline && guidelineHtml" class="icn-agreement" [innerHTML]="guidelineHtml"></div>
+          <div *ngIf="contractHtml" class="icn-agreement" [innerHTML]="contractHtml"></div>
         </div>
 
         <div *ngIf="c.is_attach_type" class="icn-file-wrap">

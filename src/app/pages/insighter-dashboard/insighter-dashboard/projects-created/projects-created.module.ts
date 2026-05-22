@@ -8,6 +8,8 @@ import { PaginatorModule } from 'primeng/paginator';
 import { DropdownModule } from 'primeng/dropdown';
 import { SidebarModule } from 'primeng/sidebar';
 import { DialogModule } from 'primeng/dialog';
+import { TooltipModule } from 'primeng/tooltip';
+import { CountryDropdownComponent } from 'src/app/reusable-components/country-dropdown/country-dropdown.component';
 import { InsighterDashboardSharedModule } from '../shared/shared.module';
 import { ProjectsCreatedComponent } from './projects-created.component';
 import { ProjectDetailComponent } from './project-detail/project-detail.component';
@@ -44,6 +46,8 @@ const routes: Routes = [
     DropdownModule,
     SidebarModule,
     DialogModule,
+    TooltipModule,
+    CountryDropdownComponent,
     InsighterDashboardSharedModule,
   ]
 })

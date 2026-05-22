@@ -743,7 +743,7 @@ export class MyCompanyComponent extends BaseComponent implements OnInit {
 
   navigateToInsighterProfile(insighterId: string, verified: boolean): void {
     if(verified){
-      window.open(`http://localhost:3000/${this.lang}/profile/${insighterId}?entity=insighter`, '_blank');
+      window.open(`https://insightabusiness.com/${this.lang}/profile/${insighterId}?entity=insighter`, '_blank');
     }else{
       this.showError('Error', 'This insighter is not verified');
     }

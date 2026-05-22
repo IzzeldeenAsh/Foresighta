@@ -1,16 +1,19 @@
 import { Component, ElementRef, Injector, OnInit, ViewChild } from '@angular/core';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { ActivatedRoute, Router } from '@angular/router';
-import { finalize, takeUntil } from 'rxjs/operators';
-import { GuidelineDetail, GuidelinesService } from 'src/app/_fake/services/guidelines/guidelines.service';
+import { finalize, switchMap, takeUntil } from 'rxjs/operators';
+import Swal from 'sweetalert2';
+import { CountriesService, Country } from 'src/app/_fake/services/countries/countries.service';
 import {
   CreatedProjectContract,
   CreatedProject,
+  PrepareStandardProjectContractPayload,
   ProjectsCreatedService,
 } from 'src/app/_fake/services/projects-created/projects-created.service';
 import { BaseComponent } from 'src/app/modules/base.component';
 
 type ClientContractMode = 'default' | 'custom';
+type ContractLanguage = 'ar' | 'en';
 
 @Component({
   selector: 'app-project-contract',
@@ -21,13 +24,22 @@ export class ProjectContractComponent extends BaseComponent implements OnInit {
   @ViewChild('agreementContent') agreementContent?: ElementRef<HTMLElement>;
 
   project: CreatedProject | null = null;
+  contract: CreatedProjectContract | null = null;
   projectUuid = '';
   contractUuid = '';
   selectedMode: ClientContractMode | null = null;
-  guideline: GuidelineDetail | null = null;
-  guidelineHtml: SafeHtml | null = null;
+  contractHtml: SafeHtml | null = null;
+  contractLanguage: ContractLanguage | null = null;
+  readonly contractLanguageOptions: Array<{ label: string; value: ContractLanguage; arLabel: string }> = [
+    { label: 'English', value: 'en', arLabel: 'الإنجليزية' },
+    { label: 'Arabic', value: 'ar', arLabel: 'العربية' },
+  ];
+  courtCountries: Country[] = [];
+  selectedCourtCountryId: number | null = null;
   isLoadingProject = false;
-  isLoadingGuideline = false;
+  isLoadingContract = false;
+  isLoadingCountries = false;
+  isPreparingContract = false;
   isSubmitting = false;
   isContractSigned = false;
   canSignDefault = false;
@@ -40,7 +52,7 @@ export class ProjectContractComponent extends BaseComponent implements OnInit {
     private route: ActivatedRoute,
     private router: Router,
     private projectsCreatedService: ProjectsCreatedService,
-    private guidelinesService: GuidelinesService,
+    private countriesService: CountriesService,
     private sanitizer: DomSanitizer,
   ) {
     super(injector);
@@ -73,12 +85,69 @@ export class ProjectContractComponent extends BaseComponent implements OnInit {
     this.canSignDefault = false;
 
     if (mode === 'default') {
-      this.loadDefaultContract();
+      this.selectedFile = null;
+      this.ensureCountriesLoaded();
+      this.applyPreparedContractView(this.contract);
       return;
     }
 
-    this.guideline = null;
-    this.guidelineHtml = null;
+    this.contractHtml = null;
+  }
+
+  selectContractLanguage(language: ContractLanguage): void {
+    this.contractLanguage = language;
+    this.errorMessage = '';
+  }
+
+  onCourtCountrySelected(country: Country): void {
+    this.selectedCourtCountryId = country?.id || null;
+    this.errorMessage = '';
+  }
+
+  onCourtCountryCleared(): void {
+    this.selectedCourtCountryId = null;
+  }
+
+  prepareStandardContract(): void {
+    if (!this.contractUuid || !this.contractLanguage || !this.selectedCourtCountryId || this.isPreparingContract) {
+      return;
+    }
+
+    const payload: PrepareStandardProjectContractPayload = {
+      contract_language: this.contractLanguage,
+      court_country_id: this.selectedCourtCountryId,
+    };
+
+    this.isPreparingContract = true;
+    this.isLoadingContract = true;
+    this.errorMessage = '';
+    this.successMessage = '';
+    this.contractHtml = null;
+    this.canSignDefault = false;
+
+    this.projectsCreatedService.prepareStandardProjectContract(this.contractUuid, payload)
+      .pipe(
+        takeUntil(this.unsubscribe$),
+        switchMap(() => this.projectsCreatedService.getProjectContract(this.contractUuid)),
+        finalize(() => {
+          this.isPreparingContract = false;
+          this.isLoadingContract = false;
+        })
+      )
+      .subscribe({
+        next: contract => {
+          this.applyContractState(contract);
+          if (!this.contractHtml) {
+            this.errorMessage = this.lang === 'ar'
+              ? 'تم إعداد العقد، لكن لم يتم العثور على محتوى العقد.'
+              : 'The contract was prepared, but no contract content was returned.';
+          }
+        },
+        error: err => {
+          this.errorMessage = this.getServerErrorMessage(err);
+          this.handleServerErrors(err);
+        },
+      });
   }
 
   onAgreementScroll(): void {
@@ -91,8 +160,10 @@ export class ProjectContractComponent extends BaseComponent implements OnInit {
     this.errorMessage = '';
   }
 
-  signDefaultContract(): void {
-    if (!this.contractUuid || !this.canSignDefault || this.isSubmitting || this.isContractSigned) return;
+  async signDefaultContract(): Promise<void> {
+    if (!this.contractUuid || !this.contractHtml || !this.canSignDefault || this.isSubmitting || this.isContractSigned) return;
+    const confirmed = await this.confirmSignContract();
+    if (!confirmed) return;
 
     const formData = new FormData();
     formData.append('is_attach_type', '0');
@@ -101,7 +172,7 @@ export class ProjectContractComponent extends BaseComponent implements OnInit {
     this.submitContract(formData);
   }
 
-  signCustomContract(): void {
+  async signCustomContract(): Promise<void> {
     if (!this.contractUuid || this.isSubmitting || this.isContractSigned) return;
     if (!this.selectedFile) {
       this.errorMessage = this.lang === 'ar'
@@ -109,6 +180,9 @@ export class ProjectContractComponent extends BaseComponent implements OnInit {
         : 'Please upload the custom contract file.';
       return;
     }
+
+    const confirmed = await this.confirmSignContract();
+    if (!confirmed) return;
 
     const formData = new FormData();
     formData.append('is_attach_type', '1');
@@ -120,6 +194,50 @@ export class ProjectContractComponent extends BaseComponent implements OnInit {
 
   get canSubmitCustom(): boolean {
     return !!this.contractUuid && !!this.selectedFile && !this.isSubmitting && !this.isContractSigned;
+  }
+
+  get canPrepareStandardContract(): boolean {
+    return !!this.contractUuid
+      && !!this.contractLanguage
+      && !!this.selectedCourtCountryId
+      && !this.isPreparingContract
+      && !this.isContractSigned;
+  }
+
+  get hasPreparedStandardContract(): boolean {
+    return !!this.contractHtml;
+  }
+
+  get selectedContractLanguageLabel(): string {
+    const option = this.contractLanguageOptions.find(item => item.value === this.contractLanguage);
+    if (!option) return '';
+
+    return this.lang === 'ar' ? option.arLabel : option.label;
+  }
+
+  get selectedCourtCountryName(): string {
+    const country = this.courtCountries.find(item => item.id === this.selectedCourtCountryId);
+    if (country) {
+      return this.lang === 'ar' ? country.names?.ar || country.name : country.names?.en || country.name;
+    }
+
+    const contractCountry = this.contract?.court_country;
+    if (!contractCountry) return '';
+
+    if (typeof contractCountry.name === 'object') {
+      return this.lang === 'ar'
+        ? contractCountry.name?.ar || contractCountry.name?.en || ''
+        : contractCountry.name?.en || contractCountry.name?.ar || '';
+    }
+
+    return contractCountry.names
+      ? (this.lang === 'ar' ? contractCountry.names?.ar || contractCountry.names?.en : contractCountry.names?.en || contractCountry.names?.ar)
+      : contractCountry.name || '';
+  }
+
+  get contractDisplayName(): string {
+    return this.contract?.name
+      || (this.lang === 'ar' ? 'عقد خدمة مشروع' : 'Project Service Contract');
   }
 
   get contractUnavailableMessage(): string {
@@ -136,9 +254,14 @@ export class ProjectContractComponent extends BaseComponent implements OnInit {
     this.isLoadingProject = true;
     this.errorMessage = '';
     this.project = null;
+    this.contract = null;
     this.contractUuid = '';
     this.isContractSigned = false;
     this.selectedMode = null;
+    this.contractHtml = null;
+    this.contractLanguage = null;
+    this.selectedCourtCountryId = null;
+    this.canSignDefault = false;
 
     this.projectsCreatedService.getProject(this.projectUuid)
       .pipe(
@@ -148,7 +271,7 @@ export class ProjectContractComponent extends BaseComponent implements OnInit {
       .subscribe({
         next: project => {
           this.project = project;
-          this.contractUuid = project.contract_uuid || '';
+          this.contractUuid = project.contract?.uuid || project.contract_uuid || '';
           if (project.contract) {
             this.applyContractState(project.contract);
           }
@@ -172,48 +295,35 @@ export class ProjectContractComponent extends BaseComponent implements OnInit {
       .pipe(takeUntil(this.unsubscribe$))
       .subscribe({
         next: contract => this.applyContractState(contract),
-        error: () => {
-          // Some environments only include contract metadata in project/show.
-          // Signing remains available if the dedicated contract lookup is unavailable.
+        error: err => {
+          if (!this.contract) {
+            this.errorMessage = this.getServerErrorMessage(err);
+          }
         },
       });
   }
 
   private applyContractState(contract: CreatedProjectContract): void {
+    this.contract = contract;
     this.isContractSigned = contract.user_sign_at;
+    this.hydratePreparationFields(contract);
+
+    const hasContractBody = this.applyPreparedContractView(contract);
+    if (hasContractBody || this.isContractSigned) {
+      this.selectedMode = contract.is_attach_type ? 'custom' : 'default';
+    }
+
     if (!this.isContractSigned) return;
 
-    this.selectedMode = contract.is_attach_type ? 'custom' : 'default';
     this.successMessage = this.lang === 'ar'
       ? 'تم توقيع العقد من طرفك. بانتظار توقيع الخبير.'
       : 'You have signed this contract. Waiting for the insighter signature.';
 
-    if (this.selectedMode === 'default' && !this.guidelineHtml) {
-      this.loadDefaultContract();
+    if (!contract.is_attach_type && !hasContractBody) {
+      this.errorMessage = this.lang === 'ar'
+        ? 'لم يتم العثور على محتوى العقد.'
+        : 'Contract content was not found.';
     }
-  }
-
-  private loadDefaultContract(): void {
-    this.isLoadingGuideline = true;
-    this.errorMessage = '';
-    this.guideline = null;
-    this.guidelineHtml = null;
-
-    this.guidelinesService.getCurrentGuidelineByType('contract')
-      .pipe(
-        takeUntil(this.unsubscribe$),
-        finalize(() => (this.isLoadingGuideline = false))
-      )
-      .subscribe({
-        next: guideline => {
-          this.guideline = guideline;
-          this.guidelineHtml = this.sanitizer.bypassSecurityTrustHtml(guideline.guideline || '');
-          setTimeout(() => this.updateCanSignDefault());
-        },
-        error: err => {
-          this.errorMessage = this.getServerErrorMessage(err);
-        },
-      });
   }
 
   private submitContract(formData: FormData): void {
@@ -229,6 +339,9 @@ export class ProjectContractComponent extends BaseComponent implements OnInit {
       .subscribe({
         next: () => {
           this.isContractSigned = true;
+          this.contract = this.contract
+            ? { ...this.contract, user_sign_at: true }
+            : this.contract;
           this.successMessage = this.lang === 'ar'
             ? 'تم توقيع العقد بنجاح. بانتظار توقيع الخبير.'
             : 'Contract signed successfully. Waiting for the insighter signature.';
@@ -244,15 +357,115 @@ export class ProjectContractComponent extends BaseComponent implements OnInit {
       });
   }
 
+  private async confirmSignContract(): Promise<boolean> {
+    const result = await Swal.fire({
+      title: this.lang === 'ar' ? 'تأكيد توقيع العقد' : 'Confirm contract signature',
+      text: this.lang === 'ar'
+        ? 'هل أنت متأكد أنك تريد توقيع هذا العقد؟'
+        : 'Are you sure you want to sign this contract?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: this.lang === 'ar' ? 'نعم، وقّع العقد' : 'Yes, sign contract',
+      cancelButtonText: this.lang === 'ar' ? 'إلغاء' : 'Cancel',
+      reverseButtons: this.lang === 'ar',
+      buttonsStyling: false,
+      customClass: {
+        confirmButton: 'btn btn-info',
+        cancelButton: 'btn btn-light me-3',
+      },
+    });
+
+    return result.isConfirmed;
+  }
+
   private updateCanSignDefault(): void {
     const el = this.agreementContent?.nativeElement;
-    if (!el || this.isLoadingGuideline) {
+    if (!el || this.isLoadingContract || !this.contractHtml) {
       this.canSignDefault = false;
       return;
     }
 
     this.canSignDefault = el.scrollHeight <= el.clientHeight + 2
       || el.scrollTop + el.clientHeight >= el.scrollHeight - 4;
+  }
+
+  private ensureCountriesLoaded(): void {
+    if (this.courtCountries.length || this.isLoadingCountries) return;
+
+    this.isLoadingCountries = true;
+    this.countriesService.getCountries()
+      .pipe(
+        takeUntil(this.unsubscribe$),
+        finalize(() => (this.isLoadingCountries = false))
+      )
+      .subscribe({
+        next: countries => {
+          this.courtCountries = (countries || []).map(country => ({
+            ...country,
+            showFlag: true,
+          }));
+        },
+        error: err => {
+          this.errorMessage = this.getServerErrorMessage(err);
+        },
+      });
+  }
+
+  private applyPreparedContractView(contract: CreatedProjectContract | null): boolean {
+    if (!contract || contract.is_attach_type) {
+      this.contractHtml = null;
+      this.canSignDefault = false;
+      return false;
+    }
+
+    const html = this.getContractBody(contract);
+    if (!html) {
+      this.contractHtml = null;
+      this.canSignDefault = false;
+      return false;
+    }
+
+    this.contractHtml = this.sanitizer.bypassSecurityTrustHtml(html);
+    setTimeout(() => this.updateCanSignDefault());
+    return true;
+  }
+
+  private getContractBody(contract: CreatedProjectContract): string {
+    return contract.rendered_guideline
+      || contract.guideline
+      || contract.contract?.rendered_guideline
+      || contract.contract?.guideline
+      || '';
+  }
+
+  private hydratePreparationFields(contract: CreatedProjectContract): void {
+    const language = this.normalizeContractLanguage(
+      contract.language || contract.contract_language || contract.contract?.language
+    );
+    if (language) {
+      this.contractLanguage = language;
+    }
+
+    const courtCountryId = this.extractCourtCountryId(contract);
+    if (courtCountryId) {
+      this.selectedCourtCountryId = courtCountryId;
+    }
+  }
+
+  private normalizeContractLanguage(language: any): ContractLanguage | null {
+    if (!language) return null;
+    const normalized = String(language).toLowerCase();
+    return normalized === 'ar' || normalized === 'en' ? normalized : null;
+  }
+
+  private extractCourtCountryId(contract: CreatedProjectContract): number | null {
+    const rawId = contract.court_country_id
+      ?? contract.court_country?.id
+      ?? contract.contract?.court_country_id
+      ?? contract.contract?.court_country?.id;
+    const id = Number(rawId);
+
+    return Number.isFinite(id) && id > 0 ? id : null;
   }
 
   private getServerErrorMessage(error: any): string {

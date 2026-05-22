@@ -131,24 +131,52 @@
   }
 
   &--submitted {
-    --chip-color: #0d47a1;
-    --chip-bg: rgba(227, 242, 253, 0.9);
-    --chip-border: rgba(13, 71, 161, 0.2);
-    --chip-active-bg: #1565c0;
+    --chip-color: #1d4ed8;
+    --chip-bg: rgba(239, 246, 255, 0.92);
+    --chip-border: rgba(59, 130, 246, 0.22);
+    --chip-active-bg: #2563eb;
+  }
+
+  &--contract {
+    --chip-color: #075985;
+    --chip-bg: rgba(224, 242, 254, 0.9);
+    --chip-border: rgba(2, 132, 199, 0.2);
+    --chip-active-bg: #0284c7;
+  }
+
+  &--payment {
+    --chip-color: #8d5a00;
+    --chip-bg: rgba(255, 243, 205, 0.9);
+    --chip-border: rgba(217, 119, 6, 0.22);
+    --chip-active-bg: #d97706;
+  }
+
+  &--in_progress {
+    --chip-color: #5b21b6;
+    --chip-bg: rgba(245, 243, 255, 0.92);
+    --chip-border: rgba(124, 58, 237, 0.2);
+    --chip-active-bg: #7c3aed;
   }
 
   &--closed {
-    --chip-color: #065f46;
-    --chip-bg: rgba(236, 253, 245, 0.9);
-    --chip-border: rgba(5, 150, 105, 0.2);
+    --chip-color: #047857;
+    --chip-bg: rgba(236, 253, 245, 0.94);
+    --chip-border: rgba(16, 185, 129, 0.24);
     --chip-active-bg: #059669;
+  }
+
+  &--cancelled {
+    --chip-color: #9f1239;
+    --chip-bg: rgba(255, 241, 242, 0.94);
+    --chip-border: rgba(225, 29, 72, 0.24);
+    --chip-active-bg: #be123c;
   }
 
   &--expired {
     --chip-color: #7f1d1d;
-    --chip-bg: rgba(254, 242, 242, 0.9);
-    --chip-border: rgba(220, 38, 38, 0.2);
-    --chip-active-bg: #dc2626;
+    --chip-bg: rgba(254, 242, 242, 0.96);
+    --chip-border: rgba(153, 27, 27, 0.28);
+    --chip-active-bg: #991b1b;
   }
 }
 
@@ -198,6 +226,31 @@
     background: #fafafa;
   }
 
+  &__row {
+    cursor: pointer;
+  }
+
+  &__row:focus-visible {
+    outline: 2px solid rgba(21, 148, 243, 0.42);
+    outline-offset: -2px;
+  }
+
+  &__row--unread {
+    background: transparent;
+  }
+
+  &__row--unread .pc-table__project-title {
+    color: #1594f3;
+    font-weight: 700;
+  }
+
+  &__row--unread .pc-table__project-summary,
+  &__row--unread .pc-table__type,
+  &__row--unread .pc-table__service-cell {
+    color: #4aa8f5;
+    font-weight: 600;
+  }
+
   &__project-image {
     display: block;
     width: 45px;
@@ -212,9 +265,12 @@
   }
 
   &__project-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
     color: #1f2937;
     font-size: 14px;
-    font-weight: 600;
+    font-weight: 500;
     line-height: 1.45;
   }
 
@@ -280,19 +336,26 @@
   line-height: 1;
   box-shadow: inset 0 0 0 1px rgba(218, 226, 236, 0.92);
 
-  &__dot {
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
+  &__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    line-height: 1;
     flex-shrink: 0;
-    background: currentColor;
+    color: currentColor;
   }
 
   &.badge-light-warning { color: #8d5a00; background: rgba(255, 243, 205, 0.9); }
   &.badge-light-success { color: #1f7a3a; background: rgba(233, 247, 237, 0.92); }
   &.badge-light-danger  { color: #b42318; background: rgba(254, 241, 241, 0.94); }
+  &.badge-light-submitted { color: #1d4ed8; background: rgba(239, 246, 255, 0.94); }
+  &.badge-light-cancelled { color: #be123c; background: rgba(255, 241, 242, 0.94); }
+  &.badge-light-expired { color: #7f1d1d; background: rgba(254, 242, 242, 0.96); }
   &.badge-light-primary { color: #1a56db; background: rgba(235, 243, 255, 0.92); }
   &.badge-light-info    { color: #1065c8; background: rgba(233, 244, 255, 0.92); }
+  &.badge-light-gray    { color: #475569; background: rgba(248, 250, 252, 0.94); }
+  &.badge-light-progress { color: #6d28d9; background: rgba(245, 243, 255, 0.94); }
 }
 
 .pc-card {
