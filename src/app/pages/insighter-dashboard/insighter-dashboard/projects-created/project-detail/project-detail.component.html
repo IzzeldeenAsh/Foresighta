@@ -414,64 +414,17 @@
           </ng-container>
 
           <ng-container *ngIf="activeTab === 'documents'">
-            <div class="pd-workspace-grid">
-              <form class="pd-workspace-panel" (ngSubmit)="submitProjectFileUpload()">
-                <div class="pd-workspace-panel__head">
-                  <span class="pd-workspace-panel__icon pd-workspace-panel__icon--upload">
-                    <i class="ki-outline ki-file-up fs-3"></i>
-                  </span>
-                  <div>
-                    <h6>{{ lang === 'ar' ? 'رفع ملفات' : 'Upload Files' }}</h6>
-                    <p>{{ lang === 'ar' ? 'شارك مستندات أو ملفات داعمة مع الخبير.' : 'Share documents or supporting files with the insighter.' }}</p>
-                  </div>
-                </div>
-
-                <label class="pd-workspace-field">
-                  <span>{{ lang === 'ar' ? 'اسم المجموعة' : 'File group name' }}</span>
-                  <input
-                    type="text"
-                    name="projectFileName"
-                    [(ngModel)]="projectFileName"
-                    [placeholder]="lang === 'ar' ? 'مثال: ملاحظات العميل' : 'Example: Client notes'">
-                </label>
-
-                <label class="pd-workspace-upload" for="pd-project-files">
-                  <i class="ki-outline ki-file-up fs-2"></i>
-                  <strong>{{ lang === 'ar' ? 'اختر الملفات' : 'Choose files' }}</strong>
-                  <span>{{ lang === 'ar' ? 'يمكنك اختيار أكثر من ملف' : 'You can attach multiple files' }}</span>
-                </label>
-                <input
-                  id="pd-project-files"
-                  class="pd-workspace-file-input"
-                  type="file"
-                  multiple
-                  (change)="onProjectFilesSelected($event)">
-
-                <div class="pd-workspace-selected" *ngIf="selectedProjectFiles.length">
-                  <div class="pd-workspace-selected__item" *ngFor="let file of selectedProjectFiles; let i = index">
-                    <span>
-                      <i class="ki-outline ki-file fs-5"></i>
-                      <span>
-                        <strong>{{ file.name }}</strong>
-                        <small>{{ formatFileSize(file) }}</small>
-                      </span>
-                    </span>
-                    <button type="button" (click)="removeSelectedProjectFile(i)" [attr.aria-label]="lang === 'ar' ? 'إزالة' : 'Remove'">
-                      <i class="ki-outline ki-cross fs-5"></i>
-                    </button>
-                  </div>
-                </div>
-
-                <button
-                  type="submit"
-                  class="btn btn-info w-100"
-                  [disabled]="projectFilesUploading || !projectFileName.trim() || !selectedProjectFiles.length">
-                  <span *ngIf="projectFilesUploading" class="spinner-border spinner-border-sm me-2"></span>
-                  {{ projectFilesUploading ? (lang === 'ar' ? 'جاري الرفع...' : 'Uploading...') : (lang === 'ar' ? 'رفع الملفات' : 'Upload Files') }}
-                </button>
-              </form>
-
-            </div>
+            <button
+              type="button"
+              class="pd-document-add-card"
+              (click)="documentUploadDialogVisible = true">
+              <span class="pd-document-add-card__icon">
+                <i class="ki-outline ki-plus fs-2"></i>
+              </span>
+              <span class="pd-document-add-card__text">
+                {{ lang === 'ar' ? 'إضافة مستند' : 'Add document' }}
+              </span>
+            </button>
 
             <section class="pd-documents" *ngIf="hasDocuments(p); else noDocuments">
               <div class="pd-document-group"
@@ -536,6 +489,78 @@
                 <span>{{ lang === 'ar' ? 'لا توجد مستندات مرفقة بهذا المشروع.' : 'No documents are attached to this project.' }}</span>
               </div>
             </ng-template>
+
+            <p-dialog
+              [(visible)]="documentUploadDialogVisible"
+              [modal]="true"
+              [draggable]="false"
+              [resizable]="false"
+              [dismissableMask]="!projectFilesUploading"
+              appendTo="body"
+              styleClass="pd-document-upload-dialog"
+              [style]="{ width: 'min(560px, calc(100vw - 32px))' }"
+              [header]="lang === 'ar' ? 'إضافة مستند' : 'Add document'">
+              <form class="pd-workspace-panel pd-workspace-panel--modal" (ngSubmit)="submitProjectFileUpload()">
+                <div class="pd-workspace-panel__head">
+                  <span class="pd-workspace-panel__icon pd-workspace-panel__icon--upload">
+                    <i class="ki-outline ki-file-up fs-3"></i>
+                  </span>
+                  <div>
+                    <h6>{{ lang === 'ar' ? 'رفع ملفات' : 'Upload Files' }}</h6>
+                    <p>{{ lang === 'ar' ? 'شارك مستندات أو ملفات داعمة مع الخبير.' : 'Share documents or supporting files with the insighter.' }}</p>
+                  </div>
+                </div>
+
+                <label class="pd-workspace-field">
+                  <span>{{ lang === 'ar' ? 'اسم المجموعة' : 'File group name' }}</span>
+                  <input
+                    type="text"
+                    name="projectFileName"
+                    [(ngModel)]="projectFileName"
+                    [placeholder]="lang === 'ar' ? 'مثال: ملاحظات العميل' : 'Example: Client notes'">
+                </label>
+
+                <label class="pd-workspace-upload" for="pd-project-files">
+                  <i class="ki-outline ki-file-up fs-2"></i>
+                  <strong>{{ lang === 'ar' ? 'اختر الملفات' : 'Choose files' }}</strong>
+                  <span>{{ lang === 'ar' ? 'يمكنك اختيار أكثر من ملف' : 'You can attach multiple files' }}</span>
+                </label>
+                <input
+                  id="pd-project-files"
+                  class="pd-workspace-file-input"
+                  type="file"
+                  multiple
+                  (change)="onProjectFilesSelected($event)">
+
+                <div class="pd-workspace-selected" *ngIf="selectedProjectFiles.length">
+                  <div class="pd-workspace-selected__item" *ngFor="let file of selectedProjectFiles; let i = index">
+                    <span>
+                      <img
+                        class="pd-workspace-selected__icon"
+                        [src]="getSelectedFileIconPath(file)"
+                        [alt]="getSelectedFileExtension(file) || 'file'"
+                        loading="lazy"
+                        (error)="onFileIconLoadError($event)">
+                      <span>
+                        <strong>{{ file.name }}</strong>
+                        <small>{{ formatFileSize(file) }}</small>
+                      </span>
+                    </span>
+                    <button type="button" (click)="removeSelectedProjectFile(i)" [attr.aria-label]="lang === 'ar' ? 'إزالة' : 'Remove'">
+                      <i class="ki-outline ki-cross fs-5"></i>
+                    </button>
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  class="btn btn-info w-100"
+                  [disabled]="projectFilesUploading || !projectFileName.trim() || !selectedProjectFiles.length">
+                  <span *ngIf="projectFilesUploading" class="spinner-border spinner-border-sm me-2"></span>
+                  {{ projectFilesUploading ? (lang === 'ar' ? 'جاري الرفع...' : 'Uploading...') : (lang === 'ar' ? 'رفع الملفات' : 'Upload Files') }}
+                </button>
+              </form>
+            </p-dialog>
           </ng-container>
 
           <ng-container *ngIf="activeTab === 'reviews'">
@@ -559,14 +584,7 @@
                   <div class="pd-review-card__panel">
                     <div class="pd-review-card__head">
                       <span class="pd-review-card__icon" aria-hidden="true">
-                        <i *ngIf="isReviewPending(review)" class="ki-outline ki-time"></i>
-                        <svg *ngIf="!isReviewPending(review)" viewBox="0 0 32 32" focusable="false">
-                          <path class="pd-review-card__paper"
-                                d="M9 4.5h9.4L25 11.1V23a4.5 4.5 0 0 1-4.5 4.5h-11A4.5 4.5 0 0 1 5 23V9a4.5 4.5 0 0 1 4-4.47Z"></path>
-                          <path class="pd-review-card__fold" d="M18.5 5v4.6a2 2 0 0 0 2 2H25"></path>
-                          <path class="pd-review-card__mark"
-                                d="m8.5 23.2 2.4 2.5 4.4-5.2"></path>
-                        </svg>
+                        <i class="ki-outline" [ngClass]="getReviewStatusIconClass(review.status)"></i>
                       </span>
 
                       <div class="pd-review-card__title-group">
@@ -579,10 +597,14 @@
                       </div>
                     </div>
 
-                    <p class="pd-review-card__response" *ngIf="!isReviewPending(review)">
-                      {{ getReviewResponseText(review) }}
+                    <div class="pd-review-card__response" *ngIf="!isReviewPending(review)">
+                      <span class="pd-review-card__response-label">
+                        <i class="ki-outline ki-message-text-2 fs-6"></i>
+                        {{ lang === 'ar' ? 'ردك' : 'Your Reply' }}
+                      </span>
+                      <p>{{ getReviewResponseText(review) }}</p>
                       <small *ngIf="review.reviewed_at">{{ formatDate(review.reviewed_at) }}</small>
-                    </p>
+                    </div>
 
                     <div class="pd-review-compose" *ngIf="isReviewPending(review)">
                       <textarea
@@ -855,6 +877,41 @@
                   </div>
                 </div>
 
+                <div *ngIf="shouldShowAnsweredReviewStep(p)"
+                     class="pd-timeline-step">
+                  <div class="card border border-dashed d-flex flex-column p-6 gap-8 flex-grow-1 mb-2 me-4">
+                    <div class="d-flex flex-stack">
+                      <div class="d-flex flex-center h-40px w-40px flex-shrink-0 rounded-circle bg-gray-100 border border-gray-200">
+                        <i class="ki-outline lh-0 fs-2"
+                           [ngClass]="isWorkflowReviewApproved(p) ? 'ki-check-circle text-success' : 'ki-message-question text-warning'"></i>
+                      </div>
+                      <span class="rounded fw-semibold fs-8 py-1 px-2 border"
+                            [ngClass]="getWorkflowReviewStatusBadgeClass(p)">
+                        {{ getWorkflowReviewStatusLabel(p) }}
+                      </span>
+                    </div>
+                    <div class="d-flex flex-column gap-3">
+                      <div class="d-flex flex-column gap-1">
+                        <span class="fs-base text-gray-500">
+                          {{ lang === 'ar' ? 'الخطوة' : 'Step' }} {{ getWorkflowStepNumber('review', p) }}
+                        </span>
+                        <span class="fs-6 fw-bold text-gray-800">{{ lang === 'ar' ? 'مراجعة التسليم' : 'Review Submission' }}</span>
+                      </div>
+                      <button type="button"
+                              class="btn btn-sm fw-bold w-100 d-flex align-items-center justify-content-center gap-2 btn-light-primary"
+                              (click)="openReviewsTab()">
+                        <i class="ki-outline ki-eye fs-6"></i>
+                        <span>{{ lang === 'ar' ? 'فتح المراجعة' : 'Open Review' }}</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div class="pd-timeline-dot"
+                       [ngClass]="isWorkflowReviewApproved(p) ? 'pd-timeline-dot--completed' : 'pd-timeline-dot--warning'">
+                    <div></div>
+                  </div>
+                </div>
+
                 <div *ngIf="shouldShowPendingReviewStep(p)"
                      class="pd-timeline-step">
                   <div class="card d-flex flex-column p-6 gap-8 flex-grow-1 mb-2 me-4 pd-workflow-card"
@@ -911,54 +968,6 @@
                   </div>
                 </div>
 
-                <div *ngIf="shouldShowPendingFinalPayment(p) && p.order as order"
-                     class="pd-timeline-step">
-                  <div class="card d-flex flex-column p-6 gap-8 flex-grow-1 mb-2 me-4 pd-workflow-card"
-                       [class.border]="!isFirstPendingWorkflowStep('final_payment', p)"
-                       [class.border-dashed]="!isFirstPendingWorkflowStep('final_payment', p)"
-                       [class.pd-workflow-card--pending]="!isFirstPendingWorkflowStep('final_payment', p)"
-                       [class.pd-workflow-card--active]="isFirstPendingWorkflowStep('final_payment', p)"
-                       [attr.data-bs-theme]="isFirstPendingWorkflowStep('final_payment', p) ? 'light' : null">
-                    <div class="d-flex flex-stack">
-                      <div class="pd-workflow-card__icon">
-                        <ng-container *ngIf="isFirstPendingWorkflowStep('final_payment', p); else pendingFinalPaymentIcon">
-                          <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" xml:space="preserve" width="32" height="32">
-                            <rect x="40" y="35" width="4" height="10" fill="#fff">
-                              <animateTransform attributeType="xml" attributeName="transform" type="translate" values="0 0; 0 20; 0 0" begin="0" dur="0.6s" repeatCount="indefinite"></animateTransform>
-                            </rect>
-                            <rect x="50" y="35" width="4" height="10" fill="#fff">
-                              <animateTransform attributeType="xml" attributeName="transform" type="translate" values="0 0; 0 20; 0 0" begin="0.2s" dur="0.6s" repeatCount="indefinite"></animateTransform>
-                            </rect>
-                            <rect x="60" y="35" width="4" height="10" fill="#fff">
-                              <animateTransform attributeType="xml" attributeName="transform" type="translate" values="0 0; 0 20; 0 0" begin="0.4s" dur="0.6s" repeatCount="indefinite"></animateTransform>
-                            </rect>
-                          </svg>
-                        </ng-container>
-                        <ng-template #pendingFinalPaymentIcon>
-                          <i class="ki-outline ki-dollar text-gray-600 lh-0 fs-2"></i>
-                        </ng-template>
-                      </div>
-                      <span class="rounded fw-semibold fs-8 py-1 px-2 border"
-                            [ngClass]="isFirstPendingWorkflowStep('final_payment', p)
-                              ? 'text-white bg-white bg-opacity-10 border-light-clarity'
-                              : 'text-primary bg-light-primary border-primary-clarity'">
-                        {{ isFirstPendingWorkflowStep('final_payment', p) ? (lang === 'ar' ? 'قيد التنفيذ' : 'In Progress') : (lang === 'ar' ? 'قيد الانتظار' : 'Pending') }}
-                      </span>
-                    </div>
-                    <div class="d-flex flex-column gap-2">
-                      <span class="fs-base" [ngClass]="isFirstPendingWorkflowStep('final_payment', p) ? 'text-white text-opacity-75' : 'text-gray-500'">
-                        {{ lang === 'ar' ? 'الخطوة' : 'Step' }} {{ getWorkflowStepNumber('final_payment', p) }}
-                      </span>
-                      <span class="fs-6 fw-bold" [ngClass]="isFirstPendingWorkflowStep('final_payment', p) ? 'text-white' : 'text-gray-800'">{{ lang === 'ar' ? 'الدفعة النهائية' : 'Final Payment' }}</span>
-                      <span class="fs-8" [ngClass]="isFirstPendingWorkflowStep('final_payment', p) ? 'text-white text-opacity-75' : 'text-gray-500'">{{ getProjectFinalPaymentLabel(order) }}</span>
-                    </div>
-                  </div>
-
-                  <div class="pd-timeline-dot" [ngClass]="isFirstPendingWorkflowStep('final_payment', p) ? 'pd-timeline-dot--active' : 'pd-timeline-dot--pending'">
-                    <div></div>
-                  </div>
-                </div>
-
                 <div *ngIf="isPaymentStatusOnly(p) && p.order as order"
                      class="pd-timeline-step">
                   <div class="card border-0 d-flex flex-column p-6 gap-10 flex-grow-1 mb-2 me-4"
@@ -986,7 +995,7 @@
                     <div class="d-flex flex-column gap-3">
                       <div class="d-flex flex-column">
                         <span class="fs-8 text-white text-opacity-75">
-                          {{ lang === 'ar' ? 'المبلغ المطلوب لبدء المشروع' : 'Amount due to start your project' }}
+                          {{ getProjectPaymentDueCaption(p) }}
                         </span>
                         <strong class="fs-2 fw-bold text-white">
                           {{ getProjectRequiredPaymentLabel(order) }}
@@ -1007,12 +1016,134 @@
                     <div></div>
                   </div>
                 </div>
+
+                <div *ngIf="shouldShowPendingFinalPayment(p) && p.order as order"
+                     class="pd-timeline-step">
+                  <div class="card d-flex flex-column p-6 gap-8 flex-grow-1 mb-2 me-4 pd-workflow-card"
+                       [class.border]="!isFinalPaymentActiveWorkflowStep(p)"
+                       [class.border-dashed]="!isFinalPaymentActiveWorkflowStep(p)"
+                       [class.pd-workflow-card--pending]="!isFinalPaymentActiveWorkflowStep(p)"
+                       [class.pd-workflow-card--active]="isFinalPaymentActiveWorkflowStep(p)"
+                       [attr.data-bs-theme]="isFinalPaymentActiveWorkflowStep(p) ? 'light' : null">
+                    <div class="d-flex flex-stack">
+                      <div class="pd-workflow-card__icon">
+                        <ng-container *ngIf="isFinalPaymentActiveWorkflowStep(p); else pendingFinalPaymentIcon">
+                          <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" xml:space="preserve" width="32" height="32">
+                            <rect x="40" y="35" width="4" height="10" fill="#fff">
+                              <animateTransform attributeType="xml" attributeName="transform" type="translate" values="0 0; 0 20; 0 0" begin="0" dur="0.6s" repeatCount="indefinite"></animateTransform>
+                            </rect>
+                            <rect x="50" y="35" width="4" height="10" fill="#fff">
+                              <animateTransform attributeType="xml" attributeName="transform" type="translate" values="0 0; 0 20; 0 0" begin="0.2s" dur="0.6s" repeatCount="indefinite"></animateTransform>
+                            </rect>
+                            <rect x="60" y="35" width="4" height="10" fill="#fff">
+                              <animateTransform attributeType="xml" attributeName="transform" type="translate" values="0 0; 0 20; 0 0" begin="0.4s" dur="0.6s" repeatCount="indefinite"></animateTransform>
+                            </rect>
+                          </svg>
+                        </ng-container>
+                        <ng-template #pendingFinalPaymentIcon>
+                          <i class="ki-outline ki-dollar text-gray-600 lh-0 fs-2"></i>
+                        </ng-template>
+                      </div>
+                      <span class="rounded fw-semibold fs-8 py-1 px-2 border"
+                            [ngClass]="isFinalPaymentActiveWorkflowStep(p)
+                              ? 'text-white bg-white bg-opacity-10 border-light-clarity'
+                              : 'text-primary bg-light-primary border-primary-clarity'">
+                        {{ isFinalPaymentActiveWorkflowStep(p) ? (lang === 'ar' ? 'قيد التنفيذ' : 'In Progress') : (lang === 'ar' ? 'قيد الانتظار' : 'Pending') }}
+                      </span>
+                    </div>
+                    <div class="d-flex flex-column gap-2">
+                      <span class="fs-base" [ngClass]="isFinalPaymentActiveWorkflowStep(p) ? 'text-white text-opacity-75' : 'text-gray-500'">
+                        {{ lang === 'ar' ? 'الخطوة' : 'Step' }} {{ getWorkflowStepNumber('final_payment', p) }}
+                      </span>
+                      <span class="fs-6 fw-bold" [ngClass]="isFinalPaymentActiveWorkflowStep(p) ? 'text-white' : 'text-gray-800'">{{ lang === 'ar' ? 'الدفعة النهائية' : 'Final Payment' }}</span>
+                      <span class="fs-8" [ngClass]="isFinalPaymentActiveWorkflowStep(p) ? 'text-white text-opacity-75' : 'text-gray-500'">{{ getProjectFinalPaymentLabel(order) }}</span>
+                      <button type="button"
+                              *ngIf="isFinalPaymentActiveWorkflowStep(p)"
+                              class="btn btn-sm fw-bold w-100 d-flex align-items-center justify-content-center gap-2 text-white pd-glass-btn mt-2"
+                              (click)="openProjectPaymentDialog()"
+                              [disabled]="projectCheckoutSubmitting">
+                        <i class="ki-outline ki-credit-cart fs-6 text-white"></i>
+                        <span>{{ getProjectPaymentButtonLabel(order) }}</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div class="pd-timeline-dot" [ngClass]="isFinalPaymentActiveWorkflowStep(p) ? 'pd-timeline-dot--active' : 'pd-timeline-dot--pending'">
+                    <div></div>
+                  </div>
+                </div>
+
+                <div *ngIf="shouldShowCloseProjectPanel(p)"
+                     class="pd-timeline-step">
+                  <div class="card d-flex flex-column p-6 gap-8 flex-grow-1 mb-2 me-4 pd-workflow-card"
+                       [class.border]="!canCloseProject(p)"
+                       [class.border-dashed]="!canCloseProject(p)"
+                       [class.pd-workflow-card--pending]="!canCloseProject(p)"
+                       [class.pd-workflow-card--close-ready]="canCloseProject(p)"
+                       [attr.data-bs-theme]="canCloseProject(p) ? 'light' : null">
+                    <div class="d-flex flex-stack">
+                      <div class="pd-workflow-card__icon">
+                        <i class="ki-outline lh-0 fs-2"
+                           [ngClass]="canCloseProject(p) ? 'ki-check-circle text-white' : 'ki-lock-2 text-gray-600'"></i>
+                      </div>
+                      <span class="rounded fw-semibold fs-8 py-1 px-2 border"
+                            [ngClass]="canCloseProject(p)
+                              ? 'text-white bg-white bg-opacity-10 border-light-clarity'
+                              : 'text-warning bg-light-warning border-warning-clarity'">
+                        {{ canCloseProject(p) ? (lang === 'ar' ? 'جاهز' : 'Ready') : (lang === 'ar' ? 'مقفل' : 'Locked') }}
+                      </span>
+                    </div>
+
+                    <div class="d-flex flex-column gap-3">
+                      <div class="d-flex flex-column gap-1">
+                        <span class="fs-base" [ngClass]="canCloseProject(p) ? 'text-white text-opacity-75' : 'text-gray-500'">
+                          {{ lang === 'ar' ? 'الخطوة الأخيرة' : 'Final Step' }}
+                        </span>
+                        <span class="fs-6 fw-bold" [ngClass]="canCloseProject(p) ? 'text-white' : 'text-gray-800'">
+                          {{ lang === 'ar' ? 'إغلاق المشروع' : 'Close Project' }}
+                        </span>
+                        <span class="fs-8" [ngClass]="canCloseProject(p) ? 'text-white text-opacity-75' : 'text-gray-500'">
+                          {{
+                            canCloseProject(p)
+                              ? (lang === 'ar' ? 'الدفعة النهائية مكتملة ويمكن إغلاق المشروع.' : 'Final payment is complete and the project can be closed.')
+                              : getCloseProjectDisabledReason(p)
+                          }}
+                        </span>
+                      </div>
+
+                      <button type="button"
+                              class="btn btn-sm fw-bold w-100 d-flex align-items-center justify-content-center gap-2"
+                              [ngClass]="canCloseProject(p) ? 'text-white pd-glass-btn' : 'btn-light'"
+                              (click)="closeProject()"
+                              [disabled]="projectCloseSubmitting || !canCloseProject(p)">
+                        <span *ngIf="projectCloseSubmitting" class="spinner-border spinner-border-sm me-2"></span>
+                        <i *ngIf="!projectCloseSubmitting" class="ki-outline ki-check fs-6" [ngClass]="canCloseProject(p) ? 'text-white' : ''"></i>
+                        <span>
+                          {{
+                            projectCloseSubmitting
+                              ? (lang === 'ar' ? 'جاري الإغلاق...' : 'Closing...')
+                              : (lang === 'ar' ? 'إغلاق المشروع' : 'Close Project')
+                          }}
+                        </span>
+                      </button>
+
+                      <div class="pd-workflow-card__error" *ngIf="projectCloseError">
+                        <i class="ki-outline ki-information-5 fs-6"></i>
+                        <span>{{ projectCloseError }}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="pd-timeline-dot" [ngClass]="canCloseProject(p) ? 'pd-timeline-dot--completed' : 'pd-timeline-dot--pending'">
+                    <div></div>
+                  </div>
+                </div>
               </div>
             </ng-container>
           </section>
 
           <button type="button"
-                  *ngIf="hasContractAction(p) && !shouldShowProjectPayment(p) && !isContractingStatus(p) && !isProjectWorkStatus(p)"
+                  *ngIf="canViewContractAction(p) && !shouldShowProjectPayment(p) && !isContractingStatus(p) && !isProjectWorkStatus(p)"
                   class="btn btn-info w-100 mt-3 pd-contract-pulse"
                   (click)="viewContract()">
             <i class="ki-outline ki-document fs-6 me-1"></i>
@@ -1058,7 +1189,7 @@
   (onHide)="closeProjectPaymentDialog()">
   <ng-template pTemplate="header">
     <div class="pd-payment-dialog-header" [attr.dir]="lang === 'ar' ? 'rtl' : 'ltr'">
-      <h3>{{ lang === 'ar' ? 'طريقة الدفع' : 'Payment Method' }}</h3>
+      <h3>{{ isProjectFinalPaymentDue(project) ? (lang === 'ar' ? 'طريقة دفع الدفعة النهائية' : 'Final Payment Method') : (lang === 'ar' ? 'طريقة الدفع' : 'Payment Method') }}</h3>
     </div>
   </ng-template>
 
@@ -1145,7 +1276,9 @@
         {{
           projectCheckoutSubmitting
             ? (lang === 'ar' ? 'جاري المعالجة...' : 'Processing...')
-            : ((lang === 'ar' ? 'ادفع وابدأ المشروع ' : 'Pay and Start ') + getProjectRequiredPaymentLabel(order))
+            : (isProjectFinalPaymentDue(project)
+                ? ((lang === 'ar' ? 'ادفع الدفعة النهائية ' : 'Pay Final Payment ') + getProjectRequiredPaymentLabel(order))
+                : ((lang === 'ar' ? 'ادفع وابدأ المشروع ' : 'Pay and Start ') + getProjectRequiredPaymentLabel(order)))
         }}
       </button>
     </div>

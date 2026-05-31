@@ -57,9 +57,10 @@ export class ProjectsCreatedComponent extends BaseComponent implements OnInit, O
     { value: 'expired', labelEn: 'Expired', labelAr: 'منتهي', iconClass: 'ki-timer' },
     { value: 'cancelled', labelEn: 'Cancelled', labelAr: 'ملغي', iconClass: 'ki-cross-circle' },
     { value: 'submitted', labelEn: 'Submitted', labelAr: 'مُرسل', iconClass: 'ki-send' },
-    { value: 'contract', labelEn: 'Contracting', labelAr: 'العقد', iconClass: 'ki-document' },
+    { value: 'contracting', labelEn: 'Contracting', labelAr: 'العقد', iconClass: 'ki-document' },
     { value: 'payment', labelEn: 'Payment', labelAr: 'الدفع', iconClass: 'ki-wallet' },
     { value: 'in_progress', labelEn: 'In Progress', labelAr: 'قيد التنفيذ', iconClass: 'ki-arrows-circle' },
+    { value: 'in_review', labelEn: 'In Review', labelAr: 'قيد المراجعة', iconClass: 'ki-eye' },
     { value: 'closed', labelEn: 'Closed', labelAr: 'مغلق', iconClass: 'ki-check-circle' },
   ];
 
@@ -135,9 +136,11 @@ export class ProjectsCreatedComponent extends BaseComponent implements OnInit, O
   getStatusBadgeClass(status: CreatedProjectStatus | null | undefined): string {
     switch ((status || '').toLowerCase()) {
       case 'submitted': return 'badge-light-submitted';
-      case 'contract': return 'badge-light-info';
+      case 'contract':
+      case 'contracting': return 'badge-light-info';
       case 'payment': return 'badge-light-warning';
       case 'in_progress': return 'badge-light-progress';
+      case 'in_review': return 'badge-light-warning';
       case 'closed': return 'badge-light-success';
       case 'cancelled': return 'badge-light-cancelled';
       case 'expired': return 'badge-light-expired';
@@ -150,9 +153,11 @@ export class ProjectsCreatedComponent extends BaseComponent implements OnInit, O
       case 'expired': return 'ki-timer';
       case 'cancelled': return 'ki-cross-circle';
       case 'submitted': return 'ki-send';
-      case 'contract': return 'ki-document';
+      case 'contract':
+      case 'contracting': return 'ki-document';
       case 'payment': return 'ki-wallet';
       case 'in_progress': return 'ki-arrows-circle';
+      case 'in_review': return 'ki-eye';
       case 'closed': return 'ki-check-circle';
       default: return 'ki-information-5';
     }
@@ -164,13 +169,15 @@ export class ProjectsCreatedComponent extends BaseComponent implements OnInit, O
       cancelled: { en: 'Cancelled', ar: 'ملغي' },
       submitted: { en: 'Submitted', ar: 'مُرسل' },
       contract: { en: 'Contracting', ar: 'العقد' },
+      contracting: { en: 'Contracting', ar: 'العقد' },
       payment: { en: 'Payment', ar: 'الدفع' },
       in_progress: { en: 'In Progress', ar: 'قيد التنفيذ' },
+      in_review: { en: 'In Review', ar: 'قيد المراجعة' },
       closed: { en: 'Closed', ar: 'مغلق' },
     };
     const key = (status || '').toLowerCase();
     const match = labels[key];
-    if (!match) return status || '-';
+    if (!match) return this.humanizeValue(key) || '-';
     return this.lang === 'ar' ? match.ar : match.en;
   }
 

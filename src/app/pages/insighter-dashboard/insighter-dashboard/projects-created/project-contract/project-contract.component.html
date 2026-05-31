@@ -32,7 +32,12 @@
           class="pcn-option pcn-option--default"
           [class.is-active]="selectedMode === 'default'"
           (click)="selectMode('default')">
-          <span class="pcn-option__icon"><i class="ki-duotone ki-document fs-1"><span class="path1"></span><span class="path2"></span></i></span>
+          <span class="pcn-option__icon pcn-option__icon--image">
+            <img
+              src="https://res.cloudinary.com/dsiku9ipv/image/upload/v1779632604/agreement_13888040_3_qjj4dt.png"
+              alt=""
+              aria-hidden="true" />
+          </span>
           <span class="pcn-option__copy">
             <strong>{{ lang === 'ar' ? 'عقد المنصة' : 'Platform Contract' }}</strong>
             <small>{{ lang === 'ar' ? 'اقرأ الاتفاقية الحالية ثم وقّع إلكترونياً.' : 'Read the current agreement, then sign electronically.' }}</small>
@@ -47,7 +52,12 @@
           class="pcn-option pcn-option--custom"
           [class.is-active]="selectedMode === 'custom'"
           (click)="selectMode('custom')">
-          <span class="pcn-option__icon pcn-option__icon--upload"><i class="ki-duotone ki-file-up fs-1"><span class="path1"></span><span class="path2"></span></i></span>
+          <span class="pcn-option__icon pcn-option__icon--image">
+            <img
+              src="https://res.cloudinary.com/dsiku9ipv/image/upload/v1779632657/agreement_13888040_4_wtfd69.png"
+              alt=""
+              aria-hidden="true" />
+          </span>
           <span class="pcn-option__copy">
             <strong>{{ lang === 'ar' ? 'عقد مخصص' : 'Custom Contract' }}</strong>
             <small>{{ lang === 'ar' ? 'ارفع ملف العقد الخاص بهذا المشروع.' : 'Upload a contract file for this project.' }}</small>

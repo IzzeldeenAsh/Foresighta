@@ -47,6 +47,7 @@ interface DrawerTabOption {
 export class ProjectOffersComponent extends BaseComponent implements OnInit, OnDestroy {
   isLoading$: Observable<boolean>;
 
+  isDetailsPage = false;
   offers: ProjectOffer[] = [];
   viewMode: ViewMode = 'list';
   offerReadImageUrl = 'https://res.cloudinary.com/dsiku9ipv/image/upload/v1777637418/job-offer_8062313_lqbkuq.png';
@@ -136,6 +137,19 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
   }
 
   openDrawer(offer: ProjectOffer): void {
+    const detailsUuid = this.getProposalDetailsUuid(offer);
+    if (!detailsUuid) {
+      this.showError(
+        this.lang === 'ar' ? 'تعذر فتح التفاصيل' : 'Cannot open details',
+        this.lang === 'ar' ? 'لم يتم العثور على معرّف العرض.' : 'Offer identifier was not found.'
+      );
+      return;
+    }
+
+    this.router.navigate(['/app/insighter-dashboard/project-offers/details', detailsUuid]);
+  }
+
+  loadOfferDetails(offer: ProjectOffer): void {
     this.drawerVisible = true;
     this.selectedOffer = null;
     this.drawerDetailsLoading = true;

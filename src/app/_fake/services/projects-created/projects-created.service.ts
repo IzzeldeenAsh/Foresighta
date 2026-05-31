@@ -414,6 +414,35 @@ export class ProjectsCreatedService {
     );
   }
 
+  checkoutProjectEnd(
+    projectUuid: string,
+    paymentMethod: ProjectCheckoutPaymentMethod
+  ): Observable<any> {
+    this.setLoading(true);
+
+    return this.http.post<any>(
+      `${this.projectOrderBaseUrl}/checkout/end/${projectUuid}`,
+      { payment_method: paymentMethod },
+      { headers: this.getHeaders() }
+    ).pipe(
+      catchError(error => throwError(() => error)),
+      finalize(() => this.setLoading(false))
+    );
+  }
+
+  closeProject(projectUuid: string): Observable<any> {
+    this.setLoading(true);
+
+    return this.http.post<any>(
+      `${this.baseUrl}/close/${projectUuid}`,
+      {},
+      { headers: this.getHeaders() }
+    ).pipe(
+      catchError(error => throwError(() => error)),
+      finalize(() => this.setLoading(false))
+    );
+  }
+
   getProjectFileUrl(fileUuid: string): Observable<string> {
     return this.http.get<any>(`${environment.apiBaseUrl}/account/project/file/download/${fileUuid}`, {
       headers: this.getHeaders(),

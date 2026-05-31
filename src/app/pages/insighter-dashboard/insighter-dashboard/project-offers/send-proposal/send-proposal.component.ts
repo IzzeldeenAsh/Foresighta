@@ -43,8 +43,9 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
 
   get paymentPlan(): PaymentPlan {
     const first = Number(this.firstPaymentPercentage);
-    if (first === 0) return 'full_at_end';
-    if (first === 100) return 'full_at_start';
+    const final = Number(this.finalPaymentPercentage);
+    if (first === 0 && final === 100) return 'full_at_end';
+    if (first === 100 && final === 0) return 'full_at_start';
     return 'partial';
   }
 
@@ -442,6 +443,27 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
     return hasInteracted && this.isPaymentSplitInvalid();
   }
 
+  getPaymentSplitErrorMessage(): string {
+    const first = Number(this.firstPaymentPercentage);
+    const final = Number(this.finalPaymentPercentage);
+
+    if (first === 0 && final !== 100) {
+      return this.lang === 'ar'
+        ? 'عند جعل الدفعة المقدمة 0% يجب أن تكون الدفعة الأخيرة 100%.'
+        : 'When down payment is 0%, final payment must be 100%.';
+    }
+
+    if (final === 0 && first !== 100) {
+      return this.lang === 'ar'
+        ? 'عند جعل الدفعة الأخيرة 0% يجب أن تكون الدفعة المقدمة 100%.'
+        : 'When final payment is 0%, down payment must be 100%.';
+    }
+
+    return this.lang === 'ar'
+      ? 'يجب أن تكون كل نسبة بين 0 و100 وأن يكون المجموع 100%.'
+      : 'Each percentage must be between 0 and 100, and the total must be 100%.';
+  }
+
   // ---------- Internals ----------
 
   private buildProposalFormData(): FormData {
@@ -465,9 +487,18 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
   }
 
   private isPaymentSplitInvalid(): boolean {
-    return !this.isValidPercentage(this.firstPaymentPercentage)
-      || !this.isValidPercentage(this.finalPaymentPercentage)
-      || this.paymentSplitTotal !== 100;
+    if (!this.isValidPercentage(this.firstPaymentPercentage)
+      || !this.isValidPercentage(this.finalPaymentPercentage)) {
+      return true;
+    }
+
+    const first = Number(this.firstPaymentPercentage);
+    const final = Number(this.finalPaymentPercentage);
+
+    if (first === 0) return final !== 100;
+    if (final === 0) return first !== 100;
+
+    return this.paymentSplitTotal !== 100;
   }
 
   private isProposalFormInvalid(): boolean {

@@ -109,6 +109,7 @@ const PROJECT_FILE_GROUP_ORDER = ['first_draft', 'final_draft', 'samples', 'docu
 })
 export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
   isLoading$: Observable<boolean>;
+  isDetailsPage = false;
   projects: ProjectOffer[] = [];
   viewMode: ViewMode = 'list';
   drawerVisible = false;
@@ -126,6 +127,8 @@ export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
   projectFileType: ProjectFileUploadType = 'first_draft';
   selectedProjectFiles: File[] = [];
   projectFilesUploading = false;
+  documentUploadDialogVisible = false;
+  reviewRequestDialogVisible = false;
   reviewRequestType: ProjectReviewSubmissionType = 'first_draft';
   reviewRequestNote = '';
   reviewRequestSubmitting = false;
@@ -205,6 +208,19 @@ export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
   }
 
   openDrawer(project: ProjectOffer): void {
+    const projectUuid = this.getProjectUuid(project);
+    if (!projectUuid) {
+      this.showError(
+        this.lang === 'ar' ? 'تعذر فتح التفاصيل' : 'Cannot open details',
+        this.lang === 'ar' ? 'لم يتم العثور على معرّف المشروع.' : 'Project identifier was not found.'
+      );
+      return;
+    }
+
+    this.router.navigate(['/app/insighter-dashboard/on-work-projects/details', projectUuid]);
+  }
+
+  selectProject(project: ProjectOffer): void {
     this.selectedProject = project;
     this.drawerVisible = true;
     this.activeDrawerTab = 'overview';
@@ -503,6 +519,20 @@ export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
     }
   }
 
+  getReviewStatusIconClass(status: string | null | undefined): string {
+    switch (this.normalizeProjectFileType(status || '')) {
+      case 'approved':
+        return 'ki-check-circle';
+      case 'changes_requested':
+      case 'request_change':
+        return 'ki-message-question';
+      case 'pending':
+        return 'ki-send';
+      default:
+        return 'ki-document';
+    }
+  }
+
   getReviewType(review: ProjectReviewSubmission | null | undefined): string {
     return this.normalizeProjectFileType(
       review?.type
@@ -510,6 +540,27 @@ export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
       || review?.identifier
       || ''
     );
+  }
+
+  getReviewMainText(review: ProjectReviewSubmission | null | undefined): string {
+    const note = `${review?.note || ''}`.trim();
+    if (note) return note;
+
+    const type = this.getReviewType(review);
+    return type
+      ? this.getReviewTypeLabel(type)
+      : (this.lang === 'ar' ? 'طلب مراجعة' : 'Review request');
+  }
+
+  getReviewResponseText(review: ProjectReviewSubmission | null | undefined): string {
+    const response = `${review?.review_note || ''}`.trim();
+    if (response) return response;
+
+    return this.getReviewStatusLabel(review?.status);
+  }
+
+  isReviewPending(review: ProjectReviewSubmission | null | undefined): boolean {
+    return this.normalizeProjectFileType(review?.status || '') === 'pending';
   }
 
   hasPendingReviewForType(type: ProjectReviewSubmissionType = this.reviewRequestType): boolean {
@@ -579,6 +630,7 @@ export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
           );
           this.projectFileName = '';
           this.selectedProjectFiles = [];
+          this.documentUploadDialogVisible = false;
           this.loadInsighterProjectDetails(true);
         },
         error: err => this.handleServerErrors(err),
@@ -619,6 +671,7 @@ export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
               : 'The review request was sent to the client.'
           );
           this.reviewRequestNote = '';
+          this.reviewRequestDialogVisible = false;
           this.loadProjectReviewSubmissions(true);
         },
         error: err => this.handleServerErrors(err),
@@ -682,7 +735,7 @@ export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
   }
 
   getFileTypeIconPath(extension: string | null | undefined): string {
-    if (!extension) return 'assets/media/svg/files/default.svg';
+    if (!extension) return 'assets/media/svg/files/pdf.svg';
 
     const iconMap: Record<string, string> = {
       pdf: 'pdf',
@@ -699,7 +752,7 @@ export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
       svg: 'SVG',
     };
 
-    return `assets/media/svg/files/${iconMap[extension.toLowerCase()] || 'default'}.svg`;
+    return `assets/media/svg/files/${iconMap[extension.toLowerCase()] || 'pdf'}.svg`;
   }
 
   getProjectFileExtension(file: ProjectOfferFile | null | undefined): string {
@@ -708,6 +761,15 @@ export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
 
     const urlPath = (file?.url || '').split('?')[0];
     return urlPath.includes('.') ? (urlPath.split('.').pop() || '').toLowerCase() : '';
+  }
+
+  getSelectedFileExtension(file: File | null | undefined): string {
+    const name = file?.name || '';
+    return name.includes('.') ? (name.split('.').pop() || '').toLowerCase() : '';
+  }
+
+  getSelectedFileIconPath(file: File | null | undefined): string {
+    return this.getFileTypeIconPath(this.getSelectedFileExtension(file));
   }
 
   getCountryFlagPath(flag: string | null | undefined): string {
@@ -721,7 +783,7 @@ export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
 
   onFileIconLoadError(event: Event): void {
     const target = event.target as HTMLImageElement | null;
-    if (target) target.src = 'assets/media/svg/files/default.svg';
+    if (target) target.src = 'assets/media/svg/files/pdf.svg';
   }
 
   getContractStatusLabel(project: ProjectOffer | null | undefined = this.selectedProject): string {
@@ -1010,6 +1072,7 @@ export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
       this.projectFileType = 'first_draft';
       this.selectedProjectFiles = [];
       this.projectFilesUploading = false;
+      this.reviewRequestDialogVisible = false;
       this.reviewRequestType = 'first_draft';
       this.reviewRequestNote = '';
       this.reviewRequestSubmitting = false;

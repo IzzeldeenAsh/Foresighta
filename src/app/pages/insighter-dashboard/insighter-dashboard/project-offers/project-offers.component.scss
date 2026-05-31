@@ -883,6 +883,24 @@
   }
 }
 
+.po-details-page {
+  display: block;
+}
+
+.po-details-page .po-drawer__wrap {
+  min-height: calc(100dvh - 190px);
+  height: auto;
+  border: 1px solid var(--po-border);
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.po-details-page .po-drawer__main,
+.po-details-page .po-drawer__body,
+.po-details-page .po-drawer__aside {
+  overflow: visible;
+}
+
 .po-drawer__main {
   display: flex;
   flex-direction: column;

@@ -223,9 +223,7 @@
 
               <div class="sp-field__hint sp-field__hint--danger"
                 *ngIf="shouldShowPaymentSplitError(firstPaymentPercentageModel, finalPaymentPercentageModel)">
-                {{ lang === 'ar'
-                ? 'يجب أن تكون كل نسبة بين 0 و100 وأن يكون المجموع 100%.'
-                : 'Each percentage must be between 0 and 100, and the total must be 100%.' }}
+                {{ getPaymentSplitErrorMessage() }}
               </div>
             </ng-container>
 

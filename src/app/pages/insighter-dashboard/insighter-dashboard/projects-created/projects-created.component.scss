@@ -151,6 +151,13 @@
     --chip-active-bg: #d97706;
   }
 
+  &--in_review {
+    --chip-color: #8d5a00;
+    --chip-bg: rgba(255, 243, 205, 0.9);
+    --chip-border: rgba(217, 119, 6, 0.22);
+    --chip-active-bg: #d97706;
+  }
+
   &--in_progress {
     --chip-color: #5b21b6;
     --chip-bg: rgba(245, 243, 255, 0.92);

@@ -1,6 +1,7 @@
 import { Component, Injector, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { finalize, takeUntil, tap } from 'rxjs/operators';
+import Swal from 'sweetalert2';
 import { WalletService } from 'src/app/_fake/services/wallet/wallet.service';
 import { BaseComponent } from 'src/app/modules/base.component';
 import { environment } from 'src/environments/environment';
@@ -134,6 +135,8 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
   projectWalletBalance: number | null = null;
   isProjectWalletBalanceLoading = false;
   projectWalletBalanceLoadFailed = false;
+  projectCloseSubmitting = false;
+  projectCloseError: string | null = null;
   reviewSubmissions: ProjectReviewSubmission[] = [];
   reviewSubmissionsLoading = false;
   respondingReviewUuid: string | null = null;
@@ -142,6 +145,7 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
   projectFileType: ProjectFileUploadType = 'document';
   selectedProjectFiles: File[] = [];
   projectFilesUploading = false;
+  documentUploadDialogVisible = false;
 
   private rematchMatchDelayTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -446,6 +450,10 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
     return !!this.getProjectContractUuid(project) || this.normalizeValue(project?.status) === 'contract';
   }
 
+  canViewContractAction(project: CreatedProject | null = this.project): boolean {
+    return this.hasContractAction(project) && this.normalizeValue(project?.status) !== 'closed';
+  }
+
   isContractingStatus(project: CreatedProject | null = this.project): boolean {
     const status = this.normalizeValue(project?.status);
     return status === 'contracting' || status === 'contract';
@@ -506,6 +514,18 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
   }
 
   getProjectActionsHint(project: CreatedProject | null = this.project): string {
+    if (this.isProjectFinalPaymentDue(project)) {
+      return this.lang === 'ar'
+        ? 'ادفع الدفعة النهائية قبل إغلاق المشروع.'
+        : 'Pay the final payment before closing the project.';
+    }
+
+    if (this.canCloseProject(project)) {
+      return this.lang === 'ar'
+        ? 'اكتملت المدفوعات المطلوبة. يمكنك إغلاق المشروع.'
+        : 'Required payments are complete. You can close the project.';
+    }
+
     if (this.shouldShowProjectPayment(project)) {
       return this.lang === 'ar'
         ? 'اكتمل العقد. اختر طريقة الدفع المناسبة لبدء المشروع.'
@@ -524,19 +544,39 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
   }
 
   shouldShowProjectPayment(project: CreatedProject | null = this.project): boolean {
-    if (!project || this.isProjectFinalPaymentPlan(project.order)) return false;
+    if (!project || !this.getProjectCheckoutProjectUuid(project)) return false;
 
-    return this.isProjectPaymentStatus(project) && !!this.getProjectCheckoutProjectUuid(project);
+    if (this.isProjectFinalPaymentDue(project)) return true;
+    if (this.isProjectFinalPaymentPlan(project.order)) return false;
+
+    return this.isProjectPaymentStatus(project);
   }
 
   getProjectCheckoutProjectUuid(project: CreatedProject | null = this.project): string | undefined {
     return project?.uuid || undefined;
   }
 
-  getRequiredProjectPaymentAmount(order: CreatedProjectOrder | null | undefined): number {
+  getProjectWorkUuid(project: CreatedProject | null = this.project): string {
+    return this.stringifyValue(
+      (project?.order as any)?.orderable?.uuid
+        ?? (project?.order as any)?.project_uuid
+        ?? (project?.order as any)?.orderable_uuid
+        ?? (project as any)?.project_uuid
+        ?? project?.uuid
+    );
+  }
+
+  getRequiredProjectPaymentAmount(
+    order: CreatedProjectOrder | null | undefined,
+    project: CreatedProject | null = this.project
+  ): number {
     if (!order) return 0;
 
     const plan = this.getProjectOrderPaymentPlan(order);
+    if (this.isProjectFinalPaymentDue(project) || this.isProjectFinalPaymentPlan(order)) {
+      return this.getProjectFinalPaymentAmount(order);
+    }
+
     if (plan === 'down_payment' || plan === 'partial' || plan === 'partial_payment') {
       const directDownPayment = this.toOptionalNumber(order.down_payment_amount ?? order.down_payment);
       if (directDownPayment !== null) return directDownPayment;
@@ -582,13 +622,31 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
   }
 
   getProjectPaymentButtonLabel(order: CreatedProjectOrder | null | undefined): string {
+    if (this.isProjectFinalPaymentDue(this.project) || this.isProjectFinalPaymentPlan(order)) {
+      return this.lang === 'ar'
+        ? 'ادفع الدفعة النهائية'
+        : 'Pay Final Payment';
+    }
+
     if (this.isProjectDownPaymentDue(order)) {
       return this.lang === 'ar'
         ? 'ادفع الدفعة المقدمة'
-        : 'Pay Down Payment ';
+        : 'Pay Down Payment';
     }
 
     return this.lang === 'ar' ? 'ادفع لبدء المشروع' : 'Pay to Start Project';
+  }
+
+  getProjectPaymentDueCaption(project: CreatedProject | null = this.project): string {
+    if (this.isProjectFinalPaymentDue(project)) {
+      return this.lang === 'ar'
+        ? 'المبلغ المطلوب قبل إغلاق المشروع'
+        : 'Amount due before closing the project';
+    }
+
+    return this.lang === 'ar'
+      ? 'المبلغ المطلوب لبدء المشروع'
+      : 'Amount due to start your project';
   }
 
   shouldShowCompletedDownPayment(project: CreatedProject | null = this.project): boolean {
@@ -596,11 +654,25 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
   }
 
   shouldShowPendingReviewStep(project: CreatedProject | null = this.project): boolean {
-    return this.isProjectReviewStatus(project);
+    return this.getWorkflowReviewStatus(project) === 'pending';
+  }
+
+  shouldShowAnsweredReviewStep(project: CreatedProject | null = this.project): boolean {
+    const status = this.getWorkflowReviewStatus(project);
+    return status === 'approved' || status === 'changes_requested' || status === 'request_change';
+  }
+
+  shouldShowWorkflowReviewStep(project: CreatedProject | null = this.project): boolean {
+    return this.shouldShowPendingReviewStep(project) || this.shouldShowAnsweredReviewStep(project);
   }
 
   shouldShowPendingFinalPayment(project: CreatedProject | null = this.project): boolean {
-    if (!this.isProjectWorkStatus(project) || !project?.order) return false;
+    if (!project?.order) return false;
+    if (!this.isProjectWorkStatus(project) && !this.isPaymentStatusOnly(project)) return false;
+    if (this.isPaymentStatusOnly(project) && this.isProjectFinalPaymentPlan(project.order)) return false;
+
+    const reviewStatus = this.getWorkflowReviewStatus(project);
+    if (reviewStatus === 'changes_requested' || reviewStatus === 'request_change') return false;
 
     if ((project.order as any).has_outstanding_payment === false) return false;
     if ((project.order as any).has_outstanding_payment === true) return true;
@@ -613,6 +685,103 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
 
     const finalPaymentPercentage = this.toOptionalNumber(project.order.final_payment_percentage);
     return finalPaymentPercentage !== null && finalPaymentPercentage > 0;
+  }
+
+  isFinalPaymentActiveWorkflowStep(project: CreatedProject | null = this.project): boolean {
+    return !this.isPaymentStatusOnly(project) && this.isFirstPendingWorkflowStep('final_payment', project);
+  }
+
+  isProjectFinalPaymentDue(project: CreatedProject | null = this.project): boolean {
+    if (!project?.order || this.normalizeValue(project.status) === 'closed') return false;
+
+    if (this.isProjectPaymentStatus(project) && this.isProjectFinalPaymentPlan(project.order)) {
+      return true;
+    }
+
+    if (this.isProjectPaymentStatus(project)) return false;
+
+    return this.shouldShowPendingFinalPayment(project);
+  }
+
+  hasUnpaidFinalPayment(project: CreatedProject | null = this.project): boolean {
+    if (!project?.order || this.normalizeValue(project.status) === 'closed') return false;
+    if ((project.order as any).has_outstanding_payment === false) return false;
+    if ((project.order as any).has_outstanding_payment === true) return true;
+    if (this.isProjectFinalPaymentDue(project)) return true;
+
+    const plan = this.getProjectOrderPaymentPlan(project.order);
+    if (['partial', 'partial_payment', 'down_payment', 'final_payment', 'full_at_end'].includes(plan)) {
+      return this.getProjectFinalPaymentAmount(project.order) > 0;
+    }
+
+    return false;
+  }
+
+  shouldShowCloseProjectPanel(project: CreatedProject | null = this.project): boolean {
+    if (!project || ['closed', 'cancelled', 'expired'].includes(this.normalizeValue(project.status))) return false;
+    return this.isProjectWorkStatus(project) || this.isProjectPaymentStatus(project);
+  }
+
+  canCloseProject(project: CreatedProject | null = this.project): boolean {
+    return !!this.getProjectWorkUuid(project)
+      && this.shouldShowCloseProjectPanel(project)
+      && !this.hasUnpaidFinalPayment(project);
+  }
+
+  getCloseProjectDisabledReason(project: CreatedProject | null = this.project): string {
+    if (this.hasUnpaidFinalPayment(project)) {
+      return this.lang === 'ar'
+        ? 'يجب دفع الدفعة النهائية قبل إغلاق المشروع.'
+        : 'Final payment must be paid before closing the project.';
+    }
+
+    return this.lang === 'ar'
+      ? 'لا يمكن إغلاق المشروع في هذه المرحلة.'
+      : 'The project cannot be closed at this stage.';
+  }
+
+  closeProject(): void {
+    if (this.projectCloseSubmitting) return;
+
+    if (!this.canCloseProject(this.project)) {
+      this.projectCloseError = this.getCloseProjectDisabledReason(this.project);
+      this.showWarn(
+        this.lang === 'ar' ? 'لا يمكن إغلاق المشروع' : 'Cannot close project',
+        this.projectCloseError
+      );
+      return;
+    }
+
+    const projectUuid = this.getProjectWorkUuid(this.project);
+    this.projectCloseSubmitting = true;
+    this.projectCloseError = null;
+
+    this.projectsCreatedService.closeProject(projectUuid)
+      .pipe(
+        takeUntil(this.unsubscribe$),
+        finalize(() => (this.projectCloseSubmitting = false))
+      )
+      .subscribe({
+        next: () => {
+          this.showSuccess(
+            this.lang === 'ar' ? 'تم إغلاق المشروع' : 'Project closed',
+            this.lang === 'ar'
+              ? 'تم إغلاق المشروع بنجاح.'
+              : 'The project was closed successfully.'
+          );
+          this.refreshProjectDetails(this.project?.uuid || projectUuid);
+        },
+        error: err => {
+          this.projectCloseError = this.getServerErrorMessage(
+            err,
+            this.lang === 'ar' ? 'تعذر إغلاق المشروع.' : 'Failed to close project.'
+          );
+          this.showError(
+            this.lang === 'ar' ? 'تعذر إغلاق المشروع' : 'Close project failed',
+            this.projectCloseError
+          );
+        },
+      });
   }
 
   getProjectDownPaymentLabel(order: CreatedProjectOrder | null | undefined): string {
@@ -632,7 +801,7 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
     const steps: Array<'contracting' | 'down_payment' | 'review' | 'final_payment'> = ['contracting'];
 
     if (this.shouldShowCompletedDownPayment(project)) steps.push('down_payment');
-    if (this.shouldShowPendingReviewStep(project)) steps.push('review');
+    if (this.shouldShowWorkflowReviewStep(project)) steps.push('review');
     if (this.shouldShowPendingFinalPayment(project)) steps.push('final_payment');
 
     const index = steps.indexOf(step);
@@ -661,6 +830,32 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
     return `${progress}%`;
   }
 
+  getWorkflowReviewStatus(project: CreatedProject | null = this.project): string | null {
+    if (!this.isProjectReviewStatus(project)) return null;
+
+    const review = this.getWorkflowReviewSubmission();
+    if (!review) return 'pending';
+
+    return this.normalizeValue(review.status) || 'pending';
+  }
+
+  getWorkflowReviewStatusLabel(project: CreatedProject | null = this.project): string {
+    return this.getReviewStatusLabel(this.getWorkflowReviewStatus(project));
+  }
+
+  getWorkflowReviewStatusBadgeClass(project: CreatedProject | null = this.project): string {
+    const status = this.getWorkflowReviewStatus(project);
+    if (status === 'approved') return 'text-success bg-light-success border-success-clarity';
+    if (status === 'changes_requested' || status === 'request_change') {
+      return 'text-warning bg-light-warning border-warning-clarity';
+    }
+    return 'text-primary bg-light-primary border-primary-clarity';
+  }
+
+  isWorkflowReviewApproved(project: CreatedProject | null = this.project): boolean {
+    return this.getWorkflowReviewStatus(project) === 'approved';
+  }
+
   getProjectPaymentMethodLabel(method: ProjectCheckoutPaymentMethod): string {
     if (method === 'manual') {
       return this.lang === 'ar' ? 'محفظة إنسايتا' : 'Insighta Wallet';
@@ -687,13 +882,18 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
     return this.projectWalletBalance >= this.getRequiredProjectPaymentAmount(project.order);
   }
 
-  openProjectPaymentDialog(): void {
+  async openProjectPaymentDialog(): Promise<void> {
     if (!this.shouldShowProjectPayment(this.project)) {
       this.showError(
         this.lang === 'ar' ? 'تعذر بدء الدفع' : 'Cannot start payment',
         this.lang === 'ar' ? 'لم يتم العثور على طلب دفع صالح لهذا المشروع.' : 'A valid payment order was not found for this project.'
       );
       return;
+    }
+
+    if (this.isProjectFinalPaymentDue(this.project)) {
+      const confirmed = await this.confirmFinalProjectPayment();
+      if (!confirmed) return;
     }
 
     this.projectCheckoutError = null;
@@ -725,7 +925,10 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
   submitProjectPayment(): void {
     if (this.projectCheckoutSubmitting) return;
 
-    const projectUuid = this.project?.uuid || '';
+    const isFinalPayment = this.isProjectFinalPaymentDue(this.project);
+    const projectUuid = isFinalPayment
+      ? this.getProjectWorkUuid(this.project)
+      : this.getProjectCheckoutProjectUuid(this.project) || '';
     const paymentMethod = this.selectedProjectPaymentMethod;
 
     if (!projectUuid) {
@@ -752,13 +955,17 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
     this.projectCheckoutSubmitting = true;
     this.projectCheckoutError = null;
 
-    this.projectsCreatedService.checkoutProjectStart(projectUuid, paymentMethod)
+    const checkout$ = isFinalPayment
+      ? this.projectsCreatedService.checkoutProjectEnd(projectUuid, paymentMethod)
+      : this.projectsCreatedService.checkoutProjectStart(projectUuid, paymentMethod);
+
+    checkout$
       .pipe(
         takeUntil(this.unsubscribe$),
         finalize(() => (this.projectCheckoutSubmitting = false))
       )
       .subscribe({
-        next: response => this.handleProjectCheckoutResponse(response, paymentMethod, projectUuid),
+        next: response => this.handleProjectCheckoutResponse(response, paymentMethod, projectUuid, isFinalPayment),
         error: err => {
           this.projectCheckoutError = this.getServerErrorMessage(
             err,
@@ -786,7 +993,7 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
       case 'contract': return 'badge-light-info';
       case 'payment': return 'badge-light-warning';
       case 'in_progress': return 'badge-light-progress';
-      case 'in_review': return 'badge-light-primary';
+      case 'in_review': return 'badge-light-warning';
       case 'closed': return 'badge-light-success';
       case 'cancelled': return 'badge-light-cancelled';
       case 'expired': return 'badge-light-expired';
@@ -1280,6 +1487,20 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
     }
   }
 
+  getReviewStatusIconClass(status: string | null | undefined): string {
+    switch (this.normalizeValue(status)) {
+      case 'approved':
+        return 'ki-check-circle';
+      case 'changes_requested':
+      case 'request_change':
+        return 'ki-message-question';
+      case 'pending':
+        return 'ki-send';
+      default:
+        return 'ki-document';
+    }
+  }
+
   getReviewMainText(review: ProjectReviewSubmission | null | undefined): string {
     const note = `${review?.note || ''}`.trim();
     if (note) return note;
@@ -1301,6 +1522,23 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
     return this.normalizeValue(review?.status) === 'pending';
   }
 
+  getWorkflowReviewSubmission(): ProjectReviewSubmission | null {
+    if (!this.reviewSubmissions.length) return null;
+
+    const byLatestActivity = (a: ProjectReviewSubmission, b: ProjectReviewSubmission) => {
+      const aTime = this.getDateTime(a.reviewed_at || a.request_at);
+      const bTime = this.getDateTime(b.reviewed_at || b.request_at);
+      return bTime - aTime;
+    };
+
+    const pendingReviews = this.reviewSubmissions.filter(review => this.isReviewPending(review));
+    if (pendingReviews.length) {
+      return [...pendingReviews].sort(byLatestActivity)[0];
+    }
+
+    return [...this.reviewSubmissions].sort(byLatestActivity)[0] || null;
+  }
+
   getReviewChangeNote(reviewUuid: string | null | undefined): string {
     return reviewUuid ? (this.reviewChangeNotes[reviewUuid] || '') : '';
   }
@@ -1313,12 +1551,44 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
     };
   }
 
+  private applyReviewResponse(
+    review: ProjectReviewSubmission,
+    action: ProjectReviewAction,
+    reviewNote: string | null,
+  ): void {
+    const responseStatus = action === 'approve' ? 'approved' : 'changes_requested';
+    const reviewedAt = new Date().toISOString();
+    let updatedExistingReview = false;
+
+    this.reviewSubmissions = this.reviewSubmissions.map(item => {
+      if (item.uuid !== review.uuid) return item;
+      updatedExistingReview = true;
+      return {
+        ...item,
+        status: responseStatus,
+        review_note: reviewNote,
+        reviewed_at: item.reviewed_at || reviewedAt,
+      };
+    });
+
+    if (!updatedExistingReview) {
+      this.reviewSubmissions = [
+        ...this.reviewSubmissions,
+        {
+          ...review,
+          status: responseStatus,
+          review_note: reviewNote,
+          reviewed_at: review.reviewed_at || reviewedAt,
+        },
+      ];
+    }
+  }
+
   respondToReview(review: ProjectReviewSubmission, action: ProjectReviewAction): void {
     if (!review?.uuid || this.respondingReviewUuid) return;
 
-    const reviewNote = action === 'request_change'
-      ? this.getReviewChangeNote(review.uuid).trim()
-      : null;
+    const noteValue = this.getReviewChangeNote(review.uuid).trim();
+    const reviewNote = noteValue || null;
 
     if (action === 'request_change' && !reviewNote) {
       this.showError(
@@ -1342,6 +1612,7 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
       )
       .subscribe({
         next: () => {
+          this.applyReviewResponse(review, action, reviewNote);
           this.showSuccess(
             this.lang === 'ar' ? 'تم إرسال الرد' : 'Response sent',
             action === 'approve'
@@ -1351,6 +1622,7 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
           this.setReviewChangeNote(review.uuid, '');
           if (this.project?.uuid) {
             this.loadProjectReviewSubmissions(this.project.uuid, true);
+            this.refreshProjectSnapshot(this.project.uuid);
           }
         },
         error: err => this.handleServerErrors(err),
@@ -1408,6 +1680,7 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
           );
           this.projectFileName = '';
           this.selectedProjectFiles = [];
+          this.documentUploadDialogVisible = false;
           this.loadProject(projectUuid);
         },
         error: err => this.handleServerErrors(err),
@@ -1439,13 +1712,13 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
   }
 
   getFileTypeIconPath(extension: string | null | undefined): string {
-    if (!extension) return 'assets/media/svg/files/default.svg';
+    if (!extension) return 'assets/media/svg/files/pdf.svg';
     const iconMap: Record<string, string> = {
       pdf: 'pdf', doc: 'doc', docx: 'docx',
       ppt: 'ppt', pptx: 'ppt', csv: 'csv',
       xml: 'xml', xlsx: 'csv',
     };
-    return `assets/media/svg/files/${iconMap[extension.toLowerCase()] || 'default'}.svg`;
+    return `assets/media/svg/files/${iconMap[extension.toLowerCase()] || 'pdf'}.svg`;
   }
 
   onFlagLoadError(event: Event): void {
@@ -1455,7 +1728,7 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
 
   onFileIconLoadError(event: Event): void {
     const t = event.target as HTMLImageElement | null;
-    if (t) t.src = 'assets/media/svg/files/default.svg';
+    if (t) t.src = 'assets/media/svg/files/pdf.svg';
   }
 
   getComponent(key: string): any | null {
@@ -1592,6 +1865,15 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
     const name = this.getProjectFileName(file);
     const extension = name.includes('.') ? name.split('.').pop() : '';
     return extension || '';
+  }
+
+  getSelectedFileExtension(file: File | null | undefined): string {
+    const name = file?.name || '';
+    return name.includes('.') ? (name.split('.').pop() || '').toLowerCase() : '';
+  }
+
+  getSelectedFileIconPath(file: File | null | undefined): string {
+    return this.getFileTypeIconPath(this.getSelectedFileExtension(file));
   }
 
   getProjectFileUploader(file: CreatedProjectFile | null | undefined): string {
@@ -1808,6 +2090,27 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
     this.rematchMatchDelayTimer = null;
   }
 
+  private async confirmFinalProjectPayment(): Promise<boolean> {
+    const result = await Swal.fire({
+      title: this.lang === 'ar' ? 'تأكيد الدفعة النهائية' : 'Confirm final payment',
+      text: this.lang === 'ar'
+        ? 'تأكد من استلام الملفات النهائية قبل الدفع. سيتم إغلاق المشروع بعد إتمام الدفعة الأخيرة.'
+        : 'Make sure you have received the final files before paying. The project will close after the last payment is completed.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: this.lang === 'ar' ? 'نعم، تابع الدفع' : 'Yes, continue to pay',
+      cancelButtonText: this.lang === 'ar' ? 'إلغاء' : 'Cancel',
+      reverseButtons: this.lang === 'ar',
+      buttonsStyling: false,
+      customClass: {
+        confirmButton: 'btn btn-info',
+        cancelButton: 'btn btn-light me-3',
+      },
+    });
+
+    return result.isConfirmed;
+  }
+
   private loadProjectWalletBalance(project: CreatedProject | null = this.project): void {
     if (!this.shouldShowProjectPayment(project) || this.isProjectWalletBalanceLoading) return;
 
@@ -1840,7 +2143,8 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
   private handleProjectCheckoutResponse(
     response: any,
     paymentMethod: ProjectCheckoutPaymentMethod,
-    projectUuid: string
+    projectUuid: string,
+    isFinalPayment: boolean = false
   ): void {
     const responseData = this.extractCheckoutResponseData(response);
 
@@ -1872,10 +2176,14 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
     this.showSuccess(
       this.lang === 'ar' ? 'تم بدء الدفع' : 'Payment started',
       paymentMethod === 'manual'
-        ? (this.lang === 'ar' ? 'تم تنفيذ الدفع عبر المحفظة.' : 'The wallet payment was submitted successfully.')
+        ? (
+          isFinalPayment
+            ? (this.lang === 'ar' ? 'تم تنفيذ الدفعة النهائية عبر المحفظة.' : 'The final wallet payment was submitted successfully.')
+            : (this.lang === 'ar' ? 'تم تنفيذ الدفع عبر المحفظة.' : 'The wallet payment was submitted successfully.')
+        )
         : (this.lang === 'ar' ? 'تم بدء جلسة الدفع. سيتم تحديث تفاصيل المشروع.' : 'The payment session was started. Project details will refresh.')
     );
-    this.refreshProjectDetails(projectUuid);
+    this.refreshProjectDetails(this.project?.uuid || projectUuid);
   }
 
   private extractCheckoutResponseData(response: any): any {
@@ -1912,6 +2220,23 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
     this.loadProject(projectUuid);
   }
 
+  private refreshProjectSnapshot(projectUuid: string): void {
+    if (!projectUuid) return;
+
+    this.projectsCreatedService.getProject(projectUuid)
+      .pipe(takeUntil(this.unsubscribe$))
+      .subscribe({
+        next: project => {
+          this.project = project;
+          this.invitedInsighters = project.invited || [];
+          if (this.shouldShowProjectPayment(project)) {
+            this.loadProjectWalletBalance(project);
+          }
+        },
+        error: err => this.handleServerErrors(err),
+      });
+  }
+
   private resetProjectPaymentState(): void {
     this.projectPaymentDialogVisible = false;
     this.selectedProjectPaymentMethod = null;
@@ -1920,6 +2245,8 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
     this.projectWalletBalance = null;
     this.isProjectWalletBalanceLoading = false;
     this.projectWalletBalanceLoadFailed = false;
+    this.projectCloseSubmitting = false;
+    this.projectCloseError = null;
   }
 
   private isProjectPaymentStatus(project: CreatedProject | null | undefined): boolean {
@@ -1939,7 +2266,7 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
   private getWorkflowTotalSteps(project: CreatedProject | null = this.project): number {
     let totalSteps = 1;
     if (this.shouldShowCompletedDownPayment(project)) totalSteps += 1;
-    if (this.shouldShowPendingReviewStep(project)) totalSteps += 1;
+    if (this.shouldShowWorkflowReviewStep(project)) totalSteps += 1;
     if (this.shouldShowPendingFinalPayment(project)) totalSteps += 1;
     if (this.isPaymentStatusOnly(project)) totalSteps += 1;
     return totalSteps;
@@ -1948,6 +2275,7 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
   private getWorkflowCompletedSteps(project: CreatedProject | null = this.project): number {
     let completedSteps = this.getContractStepState(project) === 'completed' ? 1 : 0;
     if (this.shouldShowCompletedDownPayment(project)) completedSteps += 1;
+    if (this.shouldShowAnsweredReviewStep(project)) completedSteps += 1;
     return completedSteps;
   }
 

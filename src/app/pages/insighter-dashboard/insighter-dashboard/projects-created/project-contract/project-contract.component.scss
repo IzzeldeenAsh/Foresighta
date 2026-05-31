@@ -242,6 +242,18 @@
       color: #9f1239 !important;
     }
   }
+
+  &--image {
+    width: 86px;
+    height: 86px;
+
+    img {
+      display: block;
+      width: 86px;
+      height: 86px;
+      object-fit: contain;
+    }
+  }
 }
 
 .pcn-option__check {

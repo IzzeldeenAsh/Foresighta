@@ -1,4 +1,4 @@
-<div class="d-flex flex-column gap-10">
+<div *ngIf="!isDetailsPage" class="d-flex flex-column gap-10">
   <app-page-header [titleEn]="'Projects'" [titleAr]="'المشاريع'"
     [subtitle]="lang === 'ar' ? 'تابع عروض المشاريع والمشاريع المقبولة من مكان واحد.' : 'Manage project proposals and accepted work from one place.'"
     [lang]="lang"
@@ -291,10 +291,26 @@
   </span> -->
 </ng-template>
 
-<p-sidebar [(visible)]="drawerVisible" position="right" appendTo="body" [modal]="true" [dismissible]="true"
-  [blockScroll]="false" [baseZIndex]="1300" [showCloseIcon]="false" [style]="{ width: '66vw', maxWidth: '1200px' }"
-  styleClass="po-drawer" (onHide)="closeDrawer()">
+<div *ngIf="isDetailsPage" class="po-details-page">
+  <p-progressBar *ngIf="drawerDetailsLoading" mode="indeterminate" [style]="{ height: '3px' }"></p-progressBar>
+
+  <div *ngIf="!drawerDetailsLoading && drawerDetailsError" class="po-empty">
+    <i class="ki-outline ki-information-2 fs-3x text-warning mb-4"></i>
+    <h6 class="fw-semibold text-gray-800 mb-2">
+      {{ lang === 'ar' ? 'تعذر تحميل تفاصيل العرض' : 'Could not load offer details' }}
+    </h6>
+    <button type="button" class="btn btn-info mt-3" (click)="closeDrawer()">
+      <i class="ki-outline fs-6 me-1" [ngClass]="getDrawerBackIcon()"></i>
+      {{ lang === 'ar' ? 'العودة للعروض' : 'Back to offers' }}
+    </button>
+  </div>
+
   <ng-container *ngIf="selectedOffer as offer">
+    <ng-container *ngTemplateOutlet="offerDetailsContent; context: { $implicit: offer }"></ng-container>
+  </ng-container>
+</div>
+
+<ng-template #offerDetailsContent let-offer>
     <div class="po-drawer__wrap">
       <div class="po-drawer__main">
         <div class="po-drawer__topbar">
@@ -1025,5 +1041,12 @@
         </div>
       </aside>
     </div>
+</ng-template>
+
+<p-sidebar *ngIf="!isDetailsPage" [(visible)]="drawerVisible" position="right" appendTo="body" [modal]="true" [dismissible]="true"
+  [blockScroll]="false" [baseZIndex]="1300" [showCloseIcon]="false" [style]="{ width: '66vw', maxWidth: '1200px' }"
+  styleClass="po-drawer" (onHide)="closeDrawer()">
+  <ng-container *ngIf="selectedOffer as offer">
+    <ng-container *ngTemplateOutlet="offerDetailsContent; context: { $implicit: offer }"></ng-container>
   </ng-container>
 </p-sidebar>
