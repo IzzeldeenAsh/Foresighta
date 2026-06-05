@@ -21,6 +21,15 @@ export type ProjectOrderPaymentPlan = 'full_payment' | 'down_payment' | 'final_p
 export type ProjectFileUploadType = 'first_draft' | 'final_draft' | 'samples' | 'document' | 'other' | string;
 export type ProjectReviewSubmissionStatus = 'pending' | 'approved' | 'changes_requested' | string;
 export type ProjectReviewAction = 'approve' | 'request_change';
+export type ProjectReviewSubmissionPriorityValue = 'normal' | 'medium' | 'critical' | string;
+export type RematchOriginType = 'country' | 'region';
+export type RematchPreferredInsighterType = 'individual' | 'company' | 'either' | string;
+
+export interface ProjectReviewSubmissionPriority {
+  value: ProjectReviewSubmissionPriorityValue | null;
+  label: string | null;
+  color: string | null;
+}
 
 export interface CreatedProjectService {
   id: number;
@@ -42,6 +51,8 @@ export interface CreatedProjectFile {
   uploaded_by?: string | null;
   upload_date?: string | null;
   scope?: string | null;
+  is_read?: boolean | null;
+  read_at?: string | null;
   [key: string]: any;
 }
 
@@ -107,10 +118,14 @@ export interface ProjectReviewSubmission {
   uuid: string;
   type?: string | null;
   status: ProjectReviewSubmissionStatus | null;
+  priority: ProjectReviewSubmissionPriority;
   note: string | null;
   request_at: string | null;
   review_note: string | null;
   reviewed_at: string | null;
+  files?: CreatedProjectFile[];
+  is_read?: boolean | null;
+  read_at?: string | null;
   [key: string]: any;
 }
 
@@ -134,6 +149,11 @@ export interface CreatedProject {
   phase: string | null;
   business_type: string | null;
   insighter_preferred_type: string | null;
+  insighter_origin?: any;
+  insighter_min_years_experience?: string | number | null;
+  insighter_max_years_experience?: string | number | null;
+  company_min_team_size?: string | number | null;
+  company_max_team_size?: string | number | null;
   industry: any;
   description: string | null;
   budget_min: number | null;
@@ -145,13 +165,14 @@ export interface CreatedProject {
   request_files: CreatedProjectFile[];
   file: CreatedProjectFiles | null;
   invited: CreatedProjectProposalInvite[];
-  insighter_read_at?: boolean | null;
-  client_read_at?: boolean | null;
+  is_read?: boolean | null;
+  read_at?: string | null;
   status?: CreatedProjectStatus | null;
   order?: CreatedProjectOrder | null;
   contract_uuid?: string | null;
   contract?: CreatedProjectContract | null;
   can_rematch?: boolean;
+  matching_mode?: string | null;
 }
 
 export interface CreatedProjectInvitedInsighterCountry {
@@ -241,6 +262,24 @@ export interface CreatedProjectProposalMatch {
 export interface SubmitRematchProposalPayload {
   deadline_offer: string;
   matches: string[];
+}
+
+export interface RematchPropertiesPayload {
+  insighter_industry_id: string;
+  insighter_preferred_type: RematchPreferredInsighterType;
+  insighter_origin_id?: string;
+  insighter_origin_type?: RematchOriginType;
+  insighter_min_years_experience?: string | null;
+  insighter_max_years_experience?: string | null;
+  company_min_team_size?: string | null;
+  company_max_team_size?: string | null;
+  deadline?: string | null;
+}
+
+export interface ProjectSettingOption {
+  id: string;
+  label: string;
+  raw?: any;
 }
 
 export interface CreatedProjectsFilters {
@@ -360,6 +399,26 @@ export class ProjectsCreatedService {
     );
   }
 
+  markProjectFileAsRead(fileUuid: string): Observable<any> {
+    return this.http.put<any>(
+      `${this.baseUrl}/file/read/${fileUuid}`,
+      {},
+      { headers: this.getHeaders() }
+    ).pipe(
+      catchError(error => throwError(() => error))
+    );
+  }
+
+  markReviewSubmissionAsRead(reviewUuid: string): Observable<any> {
+    return this.http.put<any>(
+      `${this.baseUrl}/review-submission/read/${reviewUuid}`,
+      {},
+      { headers: this.getHeaders() }
+    ).pipe(
+      catchError(error => throwError(() => error))
+    );
+  }
+
   uploadClientProjectFile(projectUuid: string, payload: FormData): Observable<any> {
     this.setLoading(true);
 
@@ -471,6 +530,47 @@ export class ProjectsCreatedService {
     );
   }
 
+  syncRematchProperties(
+    projectUuid: string,
+    payload: RematchPropertiesPayload
+  ): Observable<any> {
+    this.setLoading(true);
+
+    return this.http.post<any>(`${this.baseUrl}/proposal/rematch/properties/${projectUuid}`, payload, {
+      headers: this.getHeaders(),
+    }).pipe(
+      catchError(error => throwError(() => error)),
+      finalize(() => this.setLoading(false))
+    );
+  }
+
+  getRematchIndustries(): Observable<ProjectSettingOption[]> {
+    return this.http.get<any>(`${environment.apiBaseUrl}/common/setting/industry/list`, {
+      headers: this.getHeaders(),
+    }).pipe(
+      map(response => this.mapSettingOptions(response)),
+      catchError(error => throwError(() => error))
+    );
+  }
+
+  getRematchCountries(): Observable<ProjectSettingOption[]> {
+    return this.http.get<any>(`${environment.apiBaseUrl}/common/setting/country/list`, {
+      headers: this.getHeaders(),
+    }).pipe(
+      map(response => this.mapSettingOptions(response)),
+      catchError(error => throwError(() => error))
+    );
+  }
+
+  getRematchRegions(): Observable<ProjectSettingOption[]> {
+    return this.http.get<any>(`${environment.apiBaseUrl}/common/setting/region/list`, {
+      headers: this.getHeaders(),
+    }).pipe(
+      map(response => this.mapSettingOptions(response)),
+      catchError(error => throwError(() => error))
+    );
+  }
+
   getProjectProposalMatches(proposalUuid: string): Observable<CreatedProjectProposalMatch[]> {
     this.setLoading(true);
 
@@ -569,6 +669,11 @@ export class ProjectsCreatedService {
       phase: p?.phase ?? null,
       business_type: p?.business_type ?? null,
       insighter_preferred_type: p?.insighter_preferred_type ?? null,
+      insighter_origin: p?.insighter_origin ?? null,
+      insighter_min_years_experience: p?.insighter_min_years_experience ?? null,
+      insighter_max_years_experience: p?.insighter_max_years_experience ?? null,
+      company_min_team_size: p?.company_min_team_size ?? null,
+      company_max_team_size: p?.company_max_team_size ?? null,
       industry: p?.industry ?? null,
       description: p?.description ?? null,
       budget_min: p?.budget_min ?? null,
@@ -580,13 +685,14 @@ export class ProjectsCreatedService {
       request_files: this.sanitizeFiles(p?.request_files),
       file: this.sanitizeProjectFiles(p?.file),
       invited: this.mapProjectInvites(p?.invited),
-      insighter_read_at: this.toReadState(p?.insighter_read_at),
-      client_read_at: this.toReadState(p?.client_read_at),
+      is_read: this.toReadState(p?.is_read),
+      read_at: p?.read_at ?? null,
       status: p?.status ?? null,
       order: p?.order && typeof p.order === 'object' ? this.mapProjectOrder(p.order) : null,
       contract_uuid: p?.contract_uuid ?? p?.contract?.uuid ?? null,
       contract: p?.contract && typeof p.contract === 'object' ? this.mapProjectContract(p.contract) : null,
       can_rematch: typeof p?.can_rematch === 'boolean' ? p.can_rematch : undefined,
+      matching_mode: p?.matching_mode ?? null,
     };
   }
 
@@ -727,6 +833,35 @@ export class ProjectsCreatedService {
     };
   }
 
+  private mapSettingOptions(response: any): ProjectSettingOption[] {
+    const data = Array.isArray(response)
+      ? response
+      : Array.isArray(response?.data)
+        ? response.data
+        : [];
+
+    return data
+      .map((item: any) => {
+        const id = this.stringifyValue(item?.id ?? item?.key ?? item?.uuid);
+        const label = this.getLocalizedOptionLabel(item);
+        return id && label ? { id, label, raw: item } : null;
+      })
+      .filter((option: ProjectSettingOption | null): option is ProjectSettingOption => !!option);
+  }
+
+  private getLocalizedOptionLabel(item: any): string {
+    const names = item?.names && typeof item.names === 'object' ? item.names : null;
+    const name = item?.name && typeof item.name === 'object' ? item.name : null;
+    const localized = names || name;
+    const plain = typeof item?.name === 'string' ? item.name : '';
+
+    if (this.currentLang === 'ar') {
+      return this.stringifyValue(localized?.ar ?? plain ?? localized?.en ?? item?.label);
+    }
+
+    return this.stringifyValue(localized?.en ?? plain ?? localized?.ar ?? item?.label);
+  }
+
   private extractUuidFromResponse(response: any): string {
     const candidates = [
       response?.data?.uuid,
@@ -834,6 +969,8 @@ export class ProjectsCreatedService {
         uploaded_by: file.uploaded_by ?? null,
         upload_date: file.upload_date ?? null,
         scope: file.scope ?? null,
+        is_read: this.toReadState(file.is_read),
+        read_at: file.read_at ?? null,
       }))
       .filter(file => !!file.uuid);
   }
@@ -873,11 +1010,39 @@ export class ProjectsCreatedService {
         uuid: review?.uuid ?? '',
         type: review?.type ?? review?.second_identifier ?? review?.identifier ?? null,
         status: review?.status ?? null,
+        priority: this.normalizeReviewPriority(review?.priority),
         note: review?.note ?? null,
         request_at: review?.request_at ?? review?.requested_at ?? review?.created_at ?? null,
         review_note: review?.review_note ?? null,
         reviewed_at: review?.reviewed_at ?? null,
+        files: this.sanitizeFiles(review?.files),
+        is_read: this.toReadState(review?.is_read),
+        read_at: review?.read_at ?? null,
       }))
       .filter((review: ProjectReviewSubmission) => !!review.uuid);
+  }
+
+  private normalizeReviewPriority(priority: any): ProjectReviewSubmissionPriority {
+    if (priority && typeof priority === 'object' && !Array.isArray(priority)) {
+      return {
+        value: priority.value ?? null,
+        label: priority.label ?? null,
+        color: priority.color ?? null,
+      };
+    }
+
+    return {
+      value: priority ?? null,
+      label: priority ? this.humanizeValue(priority) : null,
+      color: null,
+    };
+  }
+
+  private humanizeValue(value: any): string {
+    return `${value || ''}`
+      .replace(/_/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .replace(/\b\w/g, char => char.toUpperCase());
   }
 }

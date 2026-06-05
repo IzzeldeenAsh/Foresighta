@@ -643,6 +643,11 @@
 .pd-review-card {
   position: relative;
   padding-top: 46px;
+  cursor: default;
+
+  &--new {
+    cursor: pointer;
+  }
 
   &__tab {
     position: absolute;
@@ -660,6 +665,54 @@
     font-size: 15px;
     font-weight: 700;
     line-height: 1;
+  }
+
+  &__priority-ribbon {
+    position: absolute;
+    inset-inline-end: 0;
+    top: 8px;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 132px;
+    height: 30px;
+    padding: 0 16px;
+    border-radius: 6px 0 0 6px;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: 0;
+    text-transform: uppercase;
+    box-shadow: 0 10px 18px rgba(15, 23, 42, 0.16);
+
+    &::after {
+      content: '';
+      position: absolute;
+      inset-inline-end: 0;
+      bottom: -7px;
+      width: 0;
+      height: 0;
+      border-top: 7px solid rgba(15, 23, 42, 0.28);
+      border-inline-start: 7px solid transparent;
+    }
+
+    &--normal {
+      background: #16a34a;
+    }
+
+    &--medium {
+      background: #d97706;
+    }
+
+    &--critical {
+      background: #dc2626;
+    }
+
+    &--default {
+      background: #475569;
+    }
   }
 
   &__panel {
@@ -711,7 +764,9 @@
   }
 
   &__title-group {
+    flex: 1 1 auto;
     min-width: 0;
+    text-align: start;
   }
 
   &__note {
@@ -972,6 +1027,14 @@
       font-size: 14px;
     }
 
+    &__priority-ribbon {
+      top: 7px;
+      min-width: 126px;
+      height: 28px;
+      padding: 0 12px;
+      font-size: 10px;
+    }
+
     &__panel {
       gap: 16px;
       padding: 20px 16px;
@@ -1025,6 +1088,30 @@
     &__btn {
       flex: 1;
       padding: 0 14px;
+    }
+  }
+}
+
+:host-context([dir='rtl']) {
+  .pd-review-card {
+    &__panel {
+      border-radius: 8px 0 8px 8px;
+    }
+
+    &__priority-ribbon {
+      border-radius: 0 6px 6px 0;
+
+      &::after {
+        border-inline-start: 0;
+        border-inline-end: 7px solid transparent;
+      }
+    }
+
+    &__meta {
+      span + span::before {
+        margin-inline-end: 0;
+        margin-inline-start: 8px;
+      }
     }
   }
 }

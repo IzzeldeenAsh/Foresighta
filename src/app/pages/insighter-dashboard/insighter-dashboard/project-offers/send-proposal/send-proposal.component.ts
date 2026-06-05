@@ -374,11 +374,28 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
           } else {
             window.open(url, '_blank');
           }
+
+          this.markProjectFileAsRead(file);
         },
         error: (err) => {
           this.openingFileUuid = null;
           if (fileWindow) fileWindow.close();
           this.handleServerErrors(err);
+        },
+      });
+  }
+
+  private markProjectFileAsRead(file: ProjectOfferFile): void {
+    if (!file.uuid || file.is_read !== false) {
+      return;
+    }
+
+    this.projectOffersService.markProjectFileAsRead(file.uuid)
+      .pipe(takeUntil(this.unsubscribe$))
+      .subscribe({
+        next: () => {
+          file.is_read = true;
+          file.read_at = file.read_at ?? new Date().toISOString();
         },
       });
   }

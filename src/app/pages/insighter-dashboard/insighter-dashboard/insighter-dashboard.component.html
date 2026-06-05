@@ -73,7 +73,7 @@
       </div>
     </div>
 
-    <!-- <div class="mobile-section"
+    <div class="mobile-section"
       *ngIf="(isInsighter$ | async) || (isCompany$ | async) || (isCompanyInsighter$ | async) || (isClient$ | async)">
       <div class="mobile-section-title">{{ lang === 'ar' ? 'المشاريع' : 'Projects' }}</div>
       <div class="nav-item" [routerLink]="['project-offers']" routerLinkActive="active" *ngIf="!(isClient$ | async)"
@@ -104,7 +104,7 @@
         </div>
         <span>{{ lang === 'ar' ? 'إعدادات المشروع' : 'Project Settings' }}</span>
       </div>
-    </div> -->
+    </div>
     <div class="mobile-section">
       <div class="mobile-section-title">{{ lang === 'ar' ? 'السوق' : 'Marketplace' }}</div>
       <div class="nav-item" [routerLink]="['my-orders']" routerLinkActive="active" (click)="closeMobileSidebar()">
@@ -173,15 +173,15 @@
         <app-consulting-schedule-header
           *ngIf="isRouteActive('my-consulting-schedule')"></app-consulting-schedule-header>
         <app-account-settings-header *ngIf="isRouteActive('general-settings')"></app-account-settings-header>
-        <!-- <app-project-settings-header *ngIf="isRouteActive('project-settings')"></app-project-settings-header> -->
+        <app-project-settings-header *ngIf="isRouteActive('project-settings')"></app-project-settings-header>
         <app-payment-settings-header *ngIf="isRouteActive('payment-settings')"></app-payment-settings-header>
         <app-consulting-schedule-header *ngIf="isRouteActive('consulting-schedule')"></app-consulting-schedule-header>
         <app-wallet-statistics
           *ngIf="isRouteActive('wallet') && !((isCompanyInsighter$ | async))"></app-wallet-statistics>
         <app-sales-statistics *ngIf="isRouteActive('sales')"></app-sales-statistics>
-        <!-- <app-project-offers-statistics
+        <app-project-offers-statistics
           *ngIf="isRouteActive('project-offers') || isRouteActive('on-work-projects')"></app-project-offers-statistics>
-        <app-projects-created-statistics *ngIf="isRouteActive('projects-created')"></app-projects-created-statistics> -->
+        <app-projects-created-statistics *ngIf="isRouteActive('projects-created')"></app-projects-created-statistics>
         <app-company-statistics
           *ngIf="isRouteActive('my-company-settings') && (hasCompanyRole$ | async)"></app-company-statistics>
         <app-read-later-statistics *ngIf="isRouteActive('notification-settings')"></app-read-later-statistics>
@@ -320,7 +320,7 @@
                 </div>
               </div>
 
-              <!-- <div class="p-card navigation-card"
+              <div class="p-card navigation-card"
                 *ngIf="(isInsighter$ | async) || (isCompany$ | async) || (isCompanyInsighter$ | async) || (isClient$ | async)">
                 <div class="p-card-header" *ngIf="!isNavCollapsed">
                   <h3>{{ lang === 'ar' ? 'المشاريع' : 'Projects' }}</h3>
@@ -374,7 +374,7 @@
                     </div>
                   </div>
                 </div>
-              </div> -->
+              </div>
 
               <div class="p-card navigation-card">
                 <div class="p-card-header" *ngIf="!isNavCollapsed">

@@ -4,6 +4,7 @@ import { Order } from '../../my-orders/my-orders.service';
 import * as OrderViewUtils from '../../my-orders/utils/order-view.utils';
 
 type Language = 'ar' | 'en';
+type SalesListMode = 'knowledge' | 'project';
 
 @Component({
   selector: 'app-sold-knowledge-details',
@@ -19,6 +20,7 @@ export class SoldKnowledgeDetailsComponent {
   @Input() isSalesLoading$!: Observable<boolean>;
   @Input() selectedInsighterUuid: string | null = null;
   @Input() roles: string[] = [];
+  @Input() mode: SalesListMode = 'knowledge';
 
   @Output() salesPageChange = new EventEmitter<number>();
   @Output() orderSelected = new EventEmitter<Order>();
@@ -30,7 +32,11 @@ export class SoldKnowledgeDetailsComponent {
   readonly utils = OrderViewUtils;
 
   get shouldShowInsighterFilter(): boolean {
-    return this.roles.includes('company');
+    return this.mode === 'knowledge' && this.roles.includes('company');
+  }
+
+  get isProjectMode(): boolean {
+    return this.mode === 'project';
   }
 
   onSalesPageChange(event: any): void {

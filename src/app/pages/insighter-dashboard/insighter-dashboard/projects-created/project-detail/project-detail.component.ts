@@ -1,6 +1,7 @@
 import { Component, Injector, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { finalize, takeUntil, tap } from 'rxjs/operators';
+import { BehaviorSubject, forkJoin, Observable } from 'rxjs';
+import { finalize, map, shareReplay, switchMap, takeUntil, tap } from 'rxjs/operators';
 import Swal from 'sweetalert2';
 import { WalletService } from 'src/app/_fake/services/wallet/wallet.service';
 import { BaseComponent } from 'src/app/modules/base.component';
@@ -18,14 +19,26 @@ import {
   CreatedProjectType,
   ProjectCheckoutPaymentMethod,
   ProjectFileUploadType,
+  ProjectSettingOption,
   ProjectReviewAction,
   ProjectReviewSubmission,
   ProjectsCreatedService,
+  RematchOriginType,
+  RematchPreferredInsighterType,
+  RematchPropertiesPayload,
   SubmitRematchProposalPayload,
 } from 'src/app/_fake/services/projects-created/projects-created.service';
 
-type ProjectDetailTab = 'overview' | 'documents' | 'reviews';
-type RematchWizardStep = 'matches' | 'deadline';
+type ProjectDetailTab = 'overview' | 'documents' | 'reviews' | 'discussion';
+type RematchWizardStep =
+  | 'industry'
+  | 'preferred-type'
+  | 'origin'
+  | 'experience'
+  | 'team-size'
+  | 'project-deadline'
+  | 'matches'
+  | 'deadline';
 type RematchPhase = 'idle' | 'creating' | 'loading' | 'ready' | 'empty' | 'error' | 'submitting';
 
 interface ProjectDocumentGroup {
@@ -47,6 +60,24 @@ interface MatchCriteriaEntry {
   key: string;
   label: string;
   matched: boolean;
+}
+
+interface RematchStepItem {
+  id: RematchWizardStep;
+  labelEn: string;
+  labelAr: string;
+}
+
+interface SpecificRematchPropertiesForm {
+  insighter_industry_id: string;
+  insighter_preferred_type: RematchPreferredInsighterType | '';
+  insighter_origin_type: RematchOriginType;
+  insighter_origin_id: string;
+  insighter_min_years_experience: string;
+  insighter_max_years_experience: string;
+  company_min_team_size: string;
+  company_max_team_size: string;
+  deadline: string;
 }
 
 const MATCH_CRITERIA_LABELS: Record<string, { en: string; ar: string }> = {
@@ -127,6 +158,12 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
   includePreviousInvited = false;
   deadlineOfferDate = '';
   rematchError: string | null = null;
+  isSpecificRematchFlow = false;
+  rematchOptionsLoading = false;
+  rematchIndustryOptions: ProjectSettingOption[] = [];
+  rematchCountryOptions: ProjectSettingOption[] = [];
+  rematchRegionOptions: ProjectSettingOption[] = [];
+  specificRematchProperties: SpecificRematchPropertiesForm = this.createSpecificRematchPropertiesForm();
   expandedMatchIds = new Set<string>();
   projectPaymentDialogVisible = false;
   selectedProjectPaymentMethod: ProjectCheckoutPaymentMethod | null = null;
@@ -141,6 +178,15 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
   reviewSubmissionsLoading = false;
   respondingReviewUuid: string | null = null;
   reviewChangeNotes: Record<string, string> = {};
+  private documentFilesSubject = new BehaviorSubject<CreatedProjectFile[]>([]);
+  private reviewSubmissionsSubject = new BehaviorSubject<ProjectReviewSubmission[]>([]);
+  private reviewSubmissionsRequest$: Observable<ProjectReviewSubmission[]> | null = null;
+  unreadDocumentsCount$: Observable<number> = this.documentFilesSubject.pipe(
+    map(files => this.countUnreadItems(files))
+  );
+  unreadReviewSubmissionsCount$: Observable<number> = this.reviewSubmissionsSubject.pipe(
+    map(reviews => this.countUnreadItems(reviews))
+  );
   projectFileName = '';
   projectFileType: ProjectFileUploadType = 'document';
   selectedProjectFiles: File[] = [];
@@ -195,6 +241,17 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
     this.resetRematchState();
     this.closeProposalDrawer();
     this.deadlineOfferDate = this.defaultOfferExpiryDate(this.project.type);
+
+    if (this.isSpecificProject(this.project)) {
+      this.isSpecificRematchFlow = true;
+      this.specificRematchProperties = this.createSpecificRematchPropertiesForm();
+      this.rematchStep = 'industry';
+      this.rematchPhase = 'ready';
+      this.rematchDialogVisible = true;
+      this.loadSpecificRematchOptions();
+      return;
+    }
+
     this.rematchPhase = 'creating';
 
     this.projectsCreatedService.createProjectProposal(this.project.uuid)
@@ -253,6 +310,64 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
     return this.rematchPhase === 'ready' && this.selectedRematchCount > 0;
   }
 
+  get rematchStepItems(): RematchStepItem[] {
+    const matchSteps: RematchStepItem[] = [
+      { id: 'matches', labelEn: 'Select users', labelAr: 'اختيار الخبراء' },
+      { id: 'deadline', labelEn: 'Offer deadline', labelAr: 'تاريخ العرض' },
+    ];
+
+    if (!this.isSpecificRematchFlow) return matchSteps;
+
+    const propertySteps: RematchStepItem[] = [
+      { id: 'industry', labelEn: 'Industry', labelAr: 'القطاع' },
+      { id: 'preferred-type', labelEn: 'Insighter type', labelAr: 'نوع الخبير' },
+      { id: 'origin', labelEn: 'Origin', labelAr: 'البلد' },
+    ];
+
+    const preferredType = this.normalizeValue(this.specificRematchProperties.insighter_preferred_type);
+    if (preferredType === 'individual') {
+      propertySteps.push({ id: 'experience', labelEn: 'Experience', labelAr: 'الخبرة' });
+    } else if (preferredType === 'company') {
+      propertySteps.push({ id: 'team-size', labelEn: 'Team size', labelAr: 'حجم الفريق' });
+    }
+
+    propertySteps.push({ id: 'project-deadline', labelEn: 'Project deadline', labelAr: 'موعد المشروع' });
+    return [...propertySteps, ...matchSteps];
+  }
+
+  get canContinueSpecificRematchStep(): boolean {
+    if (!this.isSpecificRematchFlow || this.isRematchLoading || this.rematchOptionsLoading) return false;
+
+    switch (this.rematchStep) {
+      case 'industry':
+        return !!this.specificRematchProperties.insighter_industry_id;
+      case 'preferred-type':
+        return !!this.specificRematchProperties.insighter_preferred_type;
+      case 'origin':
+        return !!this.specificRematchProperties.insighter_origin_id;
+      case 'experience':
+        return !this.getSpecificRematchExperienceError();
+      case 'team-size':
+        return !this.getSpecificRematchTeamSizeError();
+      case 'project-deadline':
+        return !!this.specificRematchProperties.deadline
+          && !this.getSpecificProjectDeadlineError();
+      default:
+        return false;
+    }
+  }
+
+  get rematchOriginOptions(): ProjectSettingOption[] {
+    return this.specificRematchProperties.insighter_origin_type === 'region'
+      ? this.rematchRegionOptions
+      : this.rematchCountryOptions;
+  }
+
+  get specificRematchValidationError(): string | null {
+    if (!this.isSpecificRematchFlow) return null;
+    return this.getSpecificRematchStepError(this.rematchStep);
+  }
+
   get isRematchUrgentProject(): boolean {
     return this.normalizeProjectType(this.project?.type || null) === 'urgent_request';
   }
@@ -306,6 +421,131 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
     if (this.isSubmittingRematch) return;
     this.rematchError = null;
     this.rematchStep = 'matches';
+  }
+
+  continueSpecificRematchStep(): void {
+    if (!this.isSpecificRematchFlow || !this.canContinueSpecificRematchStep) {
+      this.rematchError = this.specificRematchValidationError;
+      return;
+    }
+
+    this.rematchError = null;
+
+    switch (this.rematchStep) {
+      case 'industry':
+        this.rematchStep = 'preferred-type';
+        return;
+      case 'preferred-type':
+        this.rematchStep = 'origin';
+        return;
+      case 'origin':
+        this.rematchStep = this.getNextSpecificRematchCriteriaStep();
+        return;
+      case 'experience':
+      case 'team-size':
+        this.rematchStep = 'project-deadline';
+        return;
+      case 'project-deadline':
+        this.saveSpecificRematchPropertiesAndCreateProposal();
+        return;
+      default:
+        return;
+    }
+  }
+
+  goBackInRematchWizard(): void {
+    if (this.isSubmittingRematch || this.isRematchLoading) return;
+
+    const steps = this.rematchStepItems;
+    const index = steps.findIndex(step => step.id === this.rematchStep);
+    if (index > 0) {
+      this.rematchStep = steps[index - 1].id;
+      this.rematchError = null;
+      return;
+    }
+
+    this.closeRematchWizard();
+  }
+
+  isRematchStepComplete(stepId: RematchWizardStep): boolean {
+    const steps = this.rematchStepItems;
+    const currentIndex = steps.findIndex(step => step.id === this.rematchStep);
+    const stepIndex = steps.findIndex(step => step.id === stepId);
+    return currentIndex > stepIndex && stepIndex >= 0;
+  }
+
+  getRematchStepLabel(step: RematchStepItem): string {
+    return this.lang === 'ar' ? step.labelAr : step.labelEn;
+  }
+
+  selectSpecificPreferredType(value: RematchPreferredInsighterType): void {
+    this.specificRematchProperties.insighter_preferred_type = value;
+    this.specificRematchProperties.insighter_min_years_experience = '';
+    this.specificRematchProperties.insighter_max_years_experience = '';
+    this.specificRematchProperties.company_min_team_size = '';
+    this.specificRematchProperties.company_max_team_size = '';
+    this.rematchError = null;
+  }
+
+  selectSpecificOriginType(value: RematchOriginType): void {
+    if (this.specificRematchProperties.insighter_origin_type === value) return;
+    this.specificRematchProperties.insighter_origin_type = value;
+    this.specificRematchProperties.insighter_origin_id = '';
+    this.rematchError = null;
+  }
+
+  skipSpecificOrigin(): void {
+    if (this.rematchStep !== 'origin' || this.isRematchLoading) return;
+    this.specificRematchProperties.insighter_origin_id = '';
+    this.rematchError = null;
+    this.rematchStep = this.getNextSpecificRematchCriteriaStep();
+  }
+
+  getRematchOptionFlagPath(option: ProjectSettingOption | null | undefined): string {
+    const flag = this.stringifyValue(option?.raw?.flag);
+    if (!flag) return '';
+    return this.getCountryFlagPath(flag.replace(/\.svg$/i, ''));
+  }
+
+  saveSpecificRematchPropertiesAndCreateProposal(): void {
+    const projectUuid = this.project?.uuid || '';
+    if (!projectUuid || this.isRematchLoading) return;
+
+    const validationError = this.getSpecificRematchPayloadError();
+    if (validationError) {
+      this.rematchError = validationError;
+      return;
+    }
+
+    const payload = this.buildSpecificRematchPayload();
+    this.rematchPhase = 'creating';
+    this.rematchError = null;
+
+    this.projectsCreatedService.syncRematchProperties(projectUuid, payload)
+      .pipe(
+        switchMap(() => this.projectsCreatedService.createProjectProposal(projectUuid)),
+        takeUntil(this.unsubscribe$)
+      )
+      .subscribe({
+        next: (proposalUuid: string) => {
+          this.rematchProposalUuid = proposalUuid;
+          this.rematchStep = 'matches';
+          this.waitThenLoadRematchMatches(proposalUuid);
+        },
+        error: (err) => {
+          this.rematchPhase = 'ready';
+          this.rematchError = this.getServerErrorMessage(
+            err,
+            this.lang === 'ar'
+              ? 'تعذر حفظ معايير إعادة المطابقة.'
+              : 'Failed to save rematch criteria.'
+          );
+          this.showError(
+            this.lang === 'ar' ? 'حدث خطأ' : 'An error occurred',
+            this.rematchError
+          );
+        },
+      });
   }
 
   submitRematchProposal(): void {
@@ -381,7 +621,7 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
 
   setActiveTab(tab: ProjectDetailTab): void {
     this.activeTab = tab;
-    if (tab === 'reviews' && this.project?.uuid && !this.reviewSubmissions.length) {
+    if (tab === 'reviews' && this.project?.uuid) {
       this.loadProjectReviewSubmissions(this.project.uuid);
     }
   }
@@ -475,8 +715,15 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
     return this.normalizeValue(project?.status) === 'payment';
   }
 
+  isProjectClosed(project: CreatedProject | null = this.project): boolean {
+    return this.normalizeValue(project?.status) === 'closed';
+  }
+
   shouldShowProjectTimeline(project: CreatedProject | null = this.project): boolean {
-    return this.isContractingStatus(project) || this.isPaymentStatusOnly(project) || this.isProjectWorkStatus(project);
+    return this.isContractingStatus(project)
+      || this.isPaymentStatusOnly(project)
+      || this.isProjectWorkStatus(project)
+      || this.isProjectClosed(project);
   }
 
   getContractSignatureState(
@@ -492,7 +739,7 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
   getContractStepState(
     project: CreatedProject | null = this.project,
   ): 'waiting_user' | 'waiting_insighter' | 'completed' {
-    if (this.isPaymentStatusOnly(project) || this.isProjectWorkStatus(project)) return 'completed';
+    if (this.isPaymentStatusOnly(project) || this.isProjectWorkStatus(project) || this.isProjectClosed(project)) return 'completed';
     return this.getContractSignatureState(project) ?? 'waiting_user';
   }
 
@@ -514,6 +761,12 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
   }
 
   getProjectActionsHint(project: CreatedProject | null = this.project): string {
+    if (this.isProjectClosed(project)) {
+      return this.lang === 'ar'
+        ? 'تم إكمال هذا المشروع وإغلاقه. هذه نظرة عامة على المراحل المكتملة.'
+        : 'This project has been completed and closed. Here is an overview of the completed stages.';
+    }
+
     if (this.isProjectFinalPaymentDue(project)) {
       return this.lang === 'ar'
         ? 'ادفع الدفعة النهائية قبل إغلاق المشروع.'
@@ -650,7 +903,8 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
   }
 
   shouldShowCompletedDownPayment(project: CreatedProject | null = this.project): boolean {
-    return this.isProjectWorkStatus(project) && this.isProjectDownPaymentDue(project?.order);
+    return (this.isProjectWorkStatus(project) || this.isProjectClosed(project))
+      && this.isProjectDownPaymentDue(project?.order);
   }
 
   shouldShowPendingReviewStep(project: CreatedProject | null = this.project): boolean {
@@ -677,13 +931,23 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
     if ((project.order as any).has_outstanding_payment === false) return false;
     if ((project.order as any).has_outstanding_payment === true) return true;
 
-    const plan = this.getProjectOrderPaymentPlan(project.order);
+    return this.orderHasFinalPaymentComponent(project.order);
+  }
+
+  shouldShowClosedFinalPayment(project: CreatedProject | null = this.project): boolean {
+    return this.isProjectClosed(project) && this.orderHasFinalPaymentComponent(project?.order);
+  }
+
+  private orderHasFinalPaymentComponent(order: CreatedProjectOrder | null | undefined): boolean {
+    if (!order) return false;
+
+    const plan = this.getProjectOrderPaymentPlan(order);
     if (['partial', 'partial_payment', 'down_payment', 'final_payment', 'full_at_end'].includes(plan)) return true;
 
-    const finalPayment = this.toOptionalNumber(project.order.final_payment);
+    const finalPayment = this.toOptionalNumber(order.final_payment);
     if (finalPayment !== null && finalPayment > 0) return true;
 
-    const finalPaymentPercentage = this.toOptionalNumber(project.order.final_payment_percentage);
+    const finalPaymentPercentage = this.toOptionalNumber(order.final_payment_percentage);
     return finalPaymentPercentage !== null && finalPaymentPercentage > 0;
   }
 
@@ -802,7 +1066,7 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
 
     if (this.shouldShowCompletedDownPayment(project)) steps.push('down_payment');
     if (this.shouldShowWorkflowReviewStep(project)) steps.push('review');
-    if (this.shouldShowPendingFinalPayment(project)) steps.push('final_payment');
+    if (this.shouldShowPendingFinalPayment(project) || this.shouldShowClosedFinalPayment(project)) steps.push('final_payment');
 
     const index = steps.indexOf(step);
     return index >= 0 ? index + 1 : steps.length + 1;
@@ -821,6 +1085,8 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
   }
 
   getWorkflowTimelineProgress(project: CreatedProject | null = this.project): string {
+    if (this.isProjectClosed(project)) return '100%';
+
     const totalSteps = this.getWorkflowTotalSteps(project);
     if (totalSteps <= 1) return '0%';
 
@@ -831,6 +1097,11 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
   }
 
   getWorkflowReviewStatus(project: CreatedProject | null = this.project): string | null {
+    if (this.isProjectClosed(project)) {
+      // A closed project's work was approved; surface the review step as completed.
+      return this.getWorkflowReviewSubmission() ? 'approved' : null;
+    }
+
     if (!this.isProjectReviewStatus(project)) return null;
 
     const review = this.getWorkflowReviewSubmission();
@@ -1416,6 +1687,28 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
     return this.getInviteActionStatus(invite) === 'offered' && !!invite?.offer;
   }
 
+  canStartRematch(project: CreatedProject | null = this.project): boolean {
+    if (!project) return false;
+
+    if (this.isSpecificProject(project)) {
+      return project.can_rematch === true || this.hasSpecificRematchTrigger(project);
+    }
+
+    return project.can_rematch !== false;
+  }
+
+  getRematchDisabledReason(project: CreatedProject | null = this.project): string {
+    if (this.isSpecificProject(project)) {
+      return this.lang === 'ar'
+        ? 'يمكن إعادة المطابقة بعد انتهاء صلاحية العرض أو بعد أن يرسل الخبير عرضًا.'
+        : 'Rematch becomes available after the offer expires or the invited insighter sends an offer.';
+    }
+
+    return this.lang === 'ar'
+      ? 'لا يمكنك إنشاء عرض جديد في هذه المرحلة. المشروع لم تنتهِ صلاحيته بعد، أو لا يزال هناك مستشارون مدعوون لم يقدّموا عرضًا بعد.'
+      : 'You cannot create a new proposal at this stage. The project is not expired yet, or there are still invited insighters who have not provided an offer.';
+  }
+
   getOfferFiles(invite: CreatedProjectProposalInvite | null): CreatedProjectFile[] {
     const files = invite?.offer?.files;
     return Array.isArray(files) ? files : [];
@@ -1443,12 +1736,42 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
     };
 
     return [...this.reviewSubmissions].sort((a, b) => {
+      const aPriorityRank = this.getReviewPriorityRank(a);
+      const bPriorityRank = this.getReviewPriorityRank(b);
+      if (aPriorityRank !== bPriorityRank) return aPriorityRank - bPriorityRank;
+
       const aRank = statusRank[this.normalizeValue(a.status)] ?? 9;
       const bRank = statusRank[this.normalizeValue(b.status)] ?? 9;
       if (aRank !== bRank) return aRank - bRank;
 
       return this.getDateTime(b.request_at) - this.getDateTime(a.request_at);
     });
+  }
+
+  getReviewPriorityValue(review: ProjectReviewSubmission | null | undefined): string {
+    return this.normalizeReviewPriorityValue(review?.priority?.value);
+  }
+
+  getReviewPriorityLabel(review: ProjectReviewSubmission | null | undefined): string {
+    const priority = review?.priority;
+    const value = this.getReviewPriorityValue(review);
+    const labels: Record<string, { en: string; ar: string }> = {
+      normal: { en: 'Normal', ar: 'عادي' },
+      medium: { en: 'Medium', ar: 'متوسط' },
+      critical: { en: 'Critical', ar: 'حرج' },
+    };
+    const prefix = this.lang === 'ar' ? 'الأولوية' : 'Priority';
+    const label = priority?.label || (labels[value] ? (this.lang === 'ar' ? labels[value].ar : labels[value].en) : this.humanizeValue(value));
+
+    return label ? `${prefix}: ${label}` : prefix;
+  }
+
+  getReviewPriorityClass(review: ProjectReviewSubmission | null | undefined): string {
+    const value = this.getReviewPriorityValue(review);
+    if (['normal', 'medium', 'critical'].includes(value)) {
+      return `pd-review-card__priority-ribbon--${value}`;
+    }
+    return 'pd-review-card__priority-ribbon--default';
   }
 
   getReviewType(review: ProjectReviewSubmission | null | undefined): string {
@@ -1915,11 +2238,29 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
           } else {
             window.open(url, '_blank');
           }
+
+          this.markProjectFileAsRead(file);
         },
         error: (err) => {
           this.openingFileUuid = null;
           if (fileWindow) fileWindow.close();
           this.handleServerErrors(err);
+        },
+      });
+  }
+
+  private markProjectFileAsRead(file: CreatedProjectFile): void {
+    if (!file.uuid || file.is_read !== false) {
+      return;
+    }
+
+    this.projectsCreatedService.markProjectFileAsRead(file.uuid)
+      .pipe(takeUntil(this.unsubscribe$))
+      .subscribe({
+        next: () => {
+          file.is_read = true;
+          file.read_at = file.read_at ?? new Date().toISOString();
+          this.documentFilesSubject.next([...this.documentFilesSubject.value]);
         },
       });
   }
@@ -1963,11 +2304,22 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
     return option.value;
   }
 
+  isUnreadFile(file: CreatedProjectFile | null | undefined): boolean {
+    return file?.is_read === false;
+  }
+
+  isUnreadReview(review: ProjectReviewSubmission | null | undefined): boolean {
+    return review?.is_read === false;
+  }
+
   private loadProject(uuid: string): void {
     this.project = null;
     this.invitedInsighters = [];
     this.reviewSubmissions = [];
     this.reviewChangeNotes = {};
+    this.documentFilesSubject.next([]);
+    this.reviewSubmissionsSubject.next([]);
+    this.reviewSubmissionsRequest$ = null;
     this.closeProposalDrawer();
     this.resetRematchState();
     this.resetProjectPaymentState();
@@ -1978,10 +2330,14 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
         tap(project => {
           this.project = project;
           this.invitedInsighters = project.invited || [];
+          this.documentFilesSubject.next(this.collectProjectDocumentFiles(project));
+          this.primeReviewSubmissionStats(project.uuid);
           if (this.shouldShowProjectPayment(project)) {
             this.loadProjectWalletBalance(project);
           }
-          this.loadProjectReviewSubmissions(project.uuid);
+          if (this.activeTab === 'reviews') {
+            this.loadProjectReviewSubmissions(project.uuid);
+          }
         })
       )
       .subscribe({
@@ -1996,7 +2352,7 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
 
     this.reviewSubmissionsLoading = true;
 
-    this.projectsCreatedService.getProjectReviewSubmissions(projectUuid)
+    this.getReviewSubmissionsRequest(projectUuid)
       .pipe(
         takeUntil(this.unsubscribe$),
         finalize(() => (this.reviewSubmissionsLoading = false))
@@ -2004,6 +2360,7 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
       .subscribe({
         next: reviews => {
           this.reviewSubmissions = reviews;
+          this.reviewSubmissionsSubject.next(reviews);
           this.reviewChangeNotes = reviews.reduce<Record<string, string>>((notes, review) => {
             notes[review.uuid] = notes[review.uuid] || '';
             return notes;
@@ -2011,6 +2368,219 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
         },
         error: err => this.handleServerErrors(err),
       });
+  }
+
+  private primeReviewSubmissionStats(projectUuid: string): void {
+    this.getReviewSubmissionsRequest(projectUuid)
+      .pipe(takeUntil(this.unsubscribe$))
+      .subscribe({
+        next: reviews => this.reviewSubmissionsSubject.next(reviews),
+        error: () => this.reviewSubmissionsSubject.next([]),
+      });
+  }
+
+  private getReviewSubmissionsRequest(projectUuid: string): Observable<ProjectReviewSubmission[]> {
+    if (!this.reviewSubmissionsRequest$) {
+      this.reviewSubmissionsRequest$ = this.projectsCreatedService.getProjectReviewSubmissions(projectUuid).pipe(
+        shareReplay({ bufferSize: 1, refCount: true })
+      );
+    }
+
+    return this.reviewSubmissionsRequest$;
+  }
+
+  markReviewSubmissionAsRead(review: ProjectReviewSubmission): void {
+    if (!review.uuid || review.is_read !== false) {
+      return;
+    }
+
+    this.projectsCreatedService.markReviewSubmissionAsRead(review.uuid)
+      .pipe(takeUntil(this.unsubscribe$))
+      .subscribe({
+        next: () => {
+          review.is_read = true;
+          review.read_at = review.read_at ?? new Date().toISOString();
+          this.reviewSubmissionsSubject.next([...this.reviewSubmissions]);
+        },
+      });
+  }
+
+  private loadSpecificRematchOptions(): void {
+    if (this.rematchIndustryOptions.length && this.rematchCountryOptions.length && this.rematchRegionOptions.length) {
+      return;
+    }
+
+    this.rematchOptionsLoading = true;
+
+    forkJoin({
+      industries: this.projectsCreatedService.getRematchIndustries(),
+      countries: this.projectsCreatedService.getRematchCountries(),
+      regions: this.projectsCreatedService.getRematchRegions(),
+    })
+      .pipe(
+        takeUntil(this.unsubscribe$),
+        finalize(() => (this.rematchOptionsLoading = false))
+      )
+      .subscribe({
+        next: options => {
+          this.rematchIndustryOptions = options.industries;
+          this.rematchCountryOptions = options.countries;
+          this.rematchRegionOptions = options.regions;
+        },
+        error: err => {
+          this.rematchError = this.getServerErrorMessage(
+            err,
+            this.lang === 'ar'
+              ? 'تعذر تحميل خيارات إعادة المطابقة.'
+              : 'Failed to load rematch options.'
+          );
+          this.showError(
+            this.lang === 'ar' ? 'حدث خطأ' : 'An error occurred',
+            this.rematchError
+          );
+        },
+      });
+  }
+
+  private createSpecificRematchPropertiesForm(): SpecificRematchPropertiesForm {
+    return {
+      insighter_industry_id: '',
+      insighter_preferred_type: '',
+      insighter_origin_type: 'country',
+      insighter_origin_id: '',
+      insighter_min_years_experience: '',
+      insighter_max_years_experience: '',
+      company_min_team_size: '',
+      company_max_team_size: '',
+      deadline: '',
+    };
+  }
+
+  private getNextSpecificRematchCriteriaStep(): RematchWizardStep {
+    const preferredType = this.normalizeValue(this.specificRematchProperties.insighter_preferred_type);
+    if (preferredType === 'individual') return 'experience';
+    if (preferredType === 'company') return 'team-size';
+    return 'project-deadline';
+  }
+
+  private buildSpecificRematchPayload(): RematchPropertiesPayload {
+    const form = this.specificRematchProperties;
+    const preferredType = this.normalizeValue(form.insighter_preferred_type) as RematchPreferredInsighterType;
+    const payload: RematchPropertiesPayload = {
+      insighter_industry_id: form.insighter_industry_id,
+      insighter_preferred_type: preferredType,
+      deadline: form.deadline ? this.formatDeadlineOffer(form.deadline) : null,
+    };
+
+    if (form.insighter_origin_id) {
+      payload.insighter_origin_id = form.insighter_origin_id;
+      payload.insighter_origin_type = form.insighter_origin_type;
+    }
+
+    if (preferredType === 'individual') {
+      payload.insighter_min_years_experience = form.insighter_min_years_experience || null;
+      payload.insighter_max_years_experience = form.insighter_max_years_experience || null;
+    }
+
+    if (preferredType === 'company') {
+      payload.company_min_team_size = form.company_min_team_size || null;
+      payload.company_max_team_size = form.company_max_team_size || null;
+    }
+
+    return payload;
+  }
+
+  private getSpecificRematchPayloadError(): string | null {
+    const steps = this.rematchStepItems.filter(step => !['matches', 'deadline'].includes(step.id));
+    for (const step of steps) {
+      const error = this.getSpecificRematchStepError(step.id);
+      if (error) return error;
+    }
+
+    return null;
+  }
+
+  private getSpecificRematchStepError(step: RematchWizardStep): string | null {
+    const form = this.specificRematchProperties;
+
+    switch (step) {
+      case 'industry':
+        return form.insighter_industry_id ? null : (
+          this.lang === 'ar' ? 'يرجى اختيار قطاع الخبير.' : 'Please select the insighter industry.'
+        );
+      case 'preferred-type':
+        return form.insighter_preferred_type ? null : (
+          this.lang === 'ar' ? 'يرجى اختيار نوع الخبير.' : 'Please select the insighter type.'
+        );
+      case 'origin':
+        return null;
+      case 'experience':
+        return this.getSpecificRematchExperienceError();
+      case 'team-size':
+        return this.getSpecificRematchTeamSizeError();
+      case 'project-deadline':
+        return this.getSpecificProjectDeadlineError();
+      default:
+        return null;
+    }
+  }
+
+  private getSpecificRematchExperienceError(): string | null {
+    const min = this.toOptionalNumber(this.specificRematchProperties.insighter_min_years_experience);
+    const max = this.toOptionalNumber(this.specificRematchProperties.insighter_max_years_experience);
+    if (min !== null && max !== null && min > max) {
+      return this.lang === 'ar'
+        ? 'يجب أن تكون سنوات الخبرة الدنيا أقل من أو تساوي الحد الأعلى.'
+        : 'Minimum experience must be less than or equal to maximum experience.';
+    }
+
+    return null;
+  }
+
+  private getSpecificRematchTeamSizeError(): string | null {
+    const min = this.toOptionalNumber(this.specificRematchProperties.company_min_team_size);
+    const max = this.toOptionalNumber(this.specificRematchProperties.company_max_team_size);
+    if (min !== null && max !== null && min > max) {
+      return this.lang === 'ar'
+        ? 'يجب أن يكون الحد الأدنى لحجم الفريق أقل من أو يساوي الحد الأعلى.'
+        : 'Minimum team size must be less than or equal to maximum team size.';
+    }
+
+    return null;
+  }
+
+  private getSpecificProjectDeadlineError(): string | null {
+    const deadline = this.specificRematchProperties.deadline;
+    if (!deadline) {
+      return this.lang === 'ar' ? 'يرجى اختيار موعد المشروع.' : 'Please select the project deadline.';
+    }
+
+    if (deadline < this.todayDateString) {
+      return this.lang === 'ar' ? 'لا يمكن أن يكون موعد المشروع في الماضي.' : 'Project deadline cannot be in the past.';
+    }
+
+    return null;
+  }
+
+  private isSpecificProject(project: CreatedProject | null | undefined): boolean {
+    return this.normalizeValue(project?.matching_mode) === 'specific';
+  }
+
+  private hasSpecificRematchTrigger(project: CreatedProject): boolean {
+    return (project.invited || []).some(invite => this.hasInviteOffer(invite) || this.isInviteOfferExpired(invite));
+  }
+
+  private hasInviteOffer(invite: CreatedProjectProposalInvite | null): boolean {
+    if (!invite) return false;
+    if (!!invite.offer?.uuid) return true;
+    return ['offered', 'submitted'].includes(this.getInviteActionStatus(invite))
+      || ['offered', 'submitted'].includes(this.getInviteStatus(invite));
+  }
+
+  private isInviteOfferExpired(invite: CreatedProjectProposalInvite | null): boolean {
+    if (!invite?.deadline_offer) return false;
+    const deadlineTime = this.getDateTime(invite.deadline_offer);
+    return deadlineTime > 0 && deadlineTime < Date.now();
   }
 
   private waitThenLoadRematchMatches(proposalUuid: string): void {
@@ -2081,6 +2651,9 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
     this.includePreviousInvited = false;
     this.deadlineOfferDate = '';
     this.rematchError = null;
+    this.isSpecificRematchFlow = false;
+    this.rematchOptionsLoading = false;
+    this.specificRematchProperties = this.createSpecificRematchPropertiesForm();
     this.expandedMatchIds = new Set<string>();
   }
 
@@ -2443,8 +3016,36 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
     return String(value || '').trim().toLowerCase();
   }
 
+  private normalizeReviewPriorityValue(value: unknown): string {
+    return this.normalizeValue(value).replace(/[-\s]+/g, '_');
+  }
+
+  private getReviewPriorityRank(review: ProjectReviewSubmission | null | undefined): number {
+    const priorityRank: Record<string, number> = {
+      critical: 0,
+      medium: 1,
+      normal: 2,
+    };
+
+    return priorityRank[this.getReviewPriorityValue(review)] ?? 9;
+  }
+
   private getDateTime(value: string | null | undefined): number {
     if (!value) return 0;
+    const normalized = value.trim();
+    const deadlineMatch = normalized.match(/^(\d{2})-(\d{2})-(\d{4})(?:\s+(\d{2}):(\d{2}):(\d{2}))?$/);
+    if (deadlineMatch) {
+      const [, dd, mm, yyyy, hh = '00', mi = '00', ss = '00'] = deadlineMatch;
+      return new Date(
+        Number(yyyy),
+        Number(mm) - 1,
+        Number(dd),
+        Number(hh),
+        Number(mi),
+        Number(ss)
+      ).getTime();
+    }
+
     const date = new Date(value);
     return Number.isNaN(date.getTime()) ? 0 : date.getTime();
   }
@@ -2495,6 +3096,19 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
     }, []);
   }
 
+  private collectProjectDocumentFiles(project: CreatedProject): CreatedProjectFile[] {
+    return this.uniqueFiles(
+      this.getDocumentGroups(project).reduce<CreatedProjectFile[]>(
+        (files, group) => [...files, ...group.files],
+        []
+      )
+    );
+  }
+
+  private countUnreadItems(items: Array<{ is_read?: boolean | null }>): number {
+    return items.reduce((total, item) => total + (item.is_read === false ? 1 : 0), 0);
+  }
+
   private uniqueFiles(files: CreatedProjectFile[]): CreatedProjectFile[] {
     const seen = new Set<string>();
 
@@ -2507,6 +3121,8 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
 
   override ngOnDestroy(): void {
     this.clearRematchMatchDelay();
+    this.documentFilesSubject.complete();
+    this.reviewSubmissionsSubject.complete();
     super.ngOnDestroy();
   }
 }

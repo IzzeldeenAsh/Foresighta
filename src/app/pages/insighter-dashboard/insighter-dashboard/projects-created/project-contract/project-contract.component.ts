@@ -204,6 +204,14 @@ export class ProjectContractComponent extends BaseComponent implements OnInit {
       && !this.isContractSigned;
   }
 
+  get selectedFileIcon(): string {
+    if (!this.selectedFile?.name) {
+      return '';
+    }
+
+    return this.getFileIconByExtension(this.getFileExtension(this.selectedFile.name));
+  }
+
   get hasPreparedStandardContract(): boolean {
     return !!this.contractHtml;
   }
@@ -436,6 +444,23 @@ export class ProjectContractComponent extends BaseComponent implements OnInit {
       || contract.contract?.rendered_guideline
       || contract.contract?.guideline
       || '';
+  }
+
+  private getFileExtension(filename: string): string {
+    return filename.split('.').pop()?.toLowerCase() || '';
+  }
+
+  private getFileIconByExtension(extension: string): string {
+    const iconMap: Record<string, string> = {
+      pdf: './assets/media/svg/new-files/pdf.svg',
+      doc: './assets/media/svg/new-files/doc.svg',
+      docx: './assets/media/svg/new-files/docx.svg',
+      jpg: './assets/media/svg/new-files/jpg.svg',
+      jpeg: './assets/media/svg/new-files/jpg.svg',
+      png: './assets/media/svg/new-files/jpg.svg',
+    };
+
+    return iconMap[extension] || './assets/media/svg/files/default.svg';
   }
 
   private hydratePreparationFields(contract: CreatedProjectContract): void {

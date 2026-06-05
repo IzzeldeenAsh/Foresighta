@@ -43,6 +43,13 @@
           {{ lang === 'ar' ? "الجلسات الاستشارية" : 'Sessions' }}
         </a>
       </li>
+      <li class="nav-item">
+        <a class="nav-link text-active-primary pb-4"
+          [class.active]="activeTab === 'project'"
+          (click)="setActiveTab('project')">
+          {{ lang === 'ar' ? 'المشاريع' : 'Projects' }}
+        </a>
+      </li>
     </ul>
   </div>
 </app-page-header>
@@ -66,6 +73,9 @@
               </ng-container>
               <ng-container *ngIf="activeTab === 'meeting'">
                 ${{ stats?.meeting_purchased_amount || 0 }}
+              </ng-container>
+              <ng-container *ngIf="activeTab === 'project'">
+                -
               </ng-container>
             </span>
             <span class="text-muted fw-semibold fs-8">
@@ -111,6 +121,23 @@
       (orderSelected)="openOrderDetails($event)"
       (invoiceDownload)="downloadInvoice($event)"
       (navigateToDownloads)="navigateToDownloads($event)"
+      (copyOrderNo)="copyOrderNo($event)">
+    </app-knowledge-orders>
+  </ng-container>
+
+  <!-- Project Orders Tab -->
+  <ng-container *ngIf="activeTab === 'project'">
+    <app-knowledge-orders
+      [lang]="currentLang"
+      [mode]="'project'"
+      [orders$]="projectOrders$"
+      [totalPages$]="projectTotalPages$"
+      [currentPage]="currentProjectPage"
+      [isLoading$]="isProjectLoading$"
+      [clientBaseUrl]="clientBaseUrl"
+      (pageChange)="onProjectPageChange($event)"
+      (orderSelected)="openOrderDetails($event)"
+      (invoiceDownload)="downloadInvoice($event)"
       (copyOrderNo)="copyOrderNo($event)">
     </app-knowledge-orders>
   </ng-container>

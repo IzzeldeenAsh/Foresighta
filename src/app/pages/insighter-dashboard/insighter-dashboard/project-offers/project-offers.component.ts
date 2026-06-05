@@ -17,7 +17,7 @@ import {
 } from 'src/app/_fake/services/project-offers/project-offers.service';
 
 type ViewMode = 'grid' | 'list';
-type DrawerTab = 'overview' | 'documents' | 'offer';
+export type DrawerTab = 'overview' | 'documents' | 'offer' | 'discussion';
 
 interface ProjectTypeMeta {
   key: ProjectOfferType;
@@ -86,6 +86,7 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
   drawerTabOptions: DrawerTabOption[] = [
     { value: 'overview', labelEn: 'Overview', labelAr: 'نظرة عامة', iconClass: 'ki-element-7' },
     { value: 'documents', labelEn: 'Documents', labelAr: 'المستندات', iconClass: 'ki-document' },
+    { value: 'discussion', labelEn: 'Discussion', labelAr: 'النقاش', iconClass: 'ki-messages' },
     { value: 'offer', labelEn: 'Offer', labelAr: 'العرض', iconClass: 'ki-dollar' },
   ];
 
@@ -169,6 +170,7 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
 
           this.selectedOffer = this.mergeOfferDetails(offer, details);
           this.drawerDetailsLoading = false;
+          this.setDrawerTab(this.getInitialDrawerTab(this.selectedOffer), this.selectedOffer);
           this.markOfferAsViewed(this.selectedOffer);
         },
         error: (err) => {
@@ -197,7 +199,7 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
   }
 
   getStatusBadgeClass(offer: ProjectOffer): string {
-    const status = this.getResolvedStatus(offer);
+    const status = this.getDisplayStatus(offer);
     switch (status) {
       case 'viewed':
         return 'badge-light-viewed';
@@ -212,6 +214,7 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
       case 'declined':
       case 'cancelled':
       case 'expired':
+      case 'not_selected':
         return 'badge-light-danger';
       case 'submitted':
       case 'contract':
@@ -223,7 +226,7 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
   }
 
   getStatusLabel(offer: ProjectOffer): string {
-    const status = this.getResolvedStatus(offer);
+    const status = this.getDisplayStatus(offer);
     const labels: { [k: string]: { en: string; ar: string } } = {
       new: { en: 'New', ar: 'جديد' },
       invited: { en: 'Invited', ar: 'مدعو' },
@@ -238,6 +241,7 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
       contract: { en: 'Contract', ar: 'العقد' },
       closed: { en: 'Closed', ar: 'مغلق' },
       expired: { en: 'Expired', ar: 'منتهي' },
+      not_selected: { en: 'Not Selected', ar: 'غير مختار' },
     };
     const match = labels[status];
     if (!match) return this.humanizeValue(status) || '-';
@@ -274,11 +278,15 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
   }
 
   isInsighterUnread(offer: ProjectOffer): boolean {
-    return offer.project?.insighter_read_at === false;
+    return offer.project?.is_read === false;
   }
 
   getOfferImageUrl(offer: ProjectOffer): string {
     return this.isInsighterUnread(offer) ? this.offerUnreadImageUrl : this.offerReadImageUrl;
+  }
+
+  isUnreadFile(file: ProjectOfferFile | null | undefined): boolean {
+    return file?.is_read === false;
   }
 
   getDeadlineLabel(offer: ProjectOffer): string {
@@ -421,8 +429,8 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
 
   private getOfferStartDate(offer: ProjectOffer | null | undefined): Date | null {
     const candidates = [
-      offer?.invited_at,
       offer?.created_at,
+      offer?.invited_at,
       offer?.project?.created_at,
     ];
 
@@ -441,7 +449,10 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
       return null;
     }
 
-    const date = new Date(value);
+    const normalizedValue = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(value)
+      ? value.replace(' ', 'T')
+      : value;
+    const date = new Date(normalizedValue);
     return Number.isNaN(date.getTime()) ? null : date;
   }
 
@@ -611,17 +622,27 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
       .filter(value => value !== '-');
   }
 
-  setDrawerTab(tab: DrawerTab, offer: ProjectOffer | null | undefined = this.selectedOffer): void {
+  setDrawerTab(tab: DrawerTab, offer: ProjectOffer | null | undefined = this.selectedOffer, syncUrl = true): void {
     if (tab === 'offer' && !this.hasSubmittedOffer(offer)) {
       return;
     }
 
     this.activeDrawerTab = tab;
+
+    if (syncUrl) {
+      this.onDrawerTabChanged(tab);
+    }
   }
 
   getVisibleDrawerTabs(offer: ProjectOffer | null | undefined): DrawerTabOption[] {
     return this.drawerTabOptions.filter(tab => tab.value !== 'offer' || this.hasSubmittedOffer(offer));
   }
+
+  protected getInitialDrawerTab(_: ProjectOffer | null | undefined): DrawerTab {
+    return 'overview';
+  }
+
+  protected onDrawerTabChanged(_: DrawerTab): void {}
 
   hasSubmittedOffer(offer: ProjectOffer | null | undefined): boolean {
     return !!offer?.offer;
@@ -656,7 +677,35 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
       rejected: { en: 'Rejected', ar: 'مرفوض' },
       declined: { en: 'Declined', ar: 'مرفوض' },
       cancelled: { en: 'Cancelled', ar: 'ملغي' },
+      not_selected: { en: 'Not Selected', ar: 'غير مختار' },
     });
+  }
+
+  getOfferStatusBadgeClass(status: string | null | undefined): string {
+    switch ((status || '').toLowerCase()) {
+      case 'accepted':
+      case 'approved':
+      case 'selected':
+        return 'badge-light-success';
+      case 'rejected':
+      case 'declined':
+      case 'cancelled':
+      case 'not_selected':
+        return 'badge-light-danger';
+      case 'pending':
+      default:
+        return 'badge-light-warning';
+    }
+  }
+
+  isOfferNotSelected(offer: ProjectOffer | null | undefined): boolean {
+    return (offer?.offer?.status || '').toLowerCase() === 'not_selected';
+  }
+
+  getDiscussionDisabledMessage(): string {
+    return this.lang === 'ar'
+      ? 'لم يتم اختيار عرضك لهذا المشروع. يمكنك مراجعة المحادثة فقط.'
+      : 'Your offer was not selected for this project. You can review the discussion only.';
   }
 
   formatMoney(value: string | number | null | undefined): string {
@@ -890,11 +939,28 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
           } else {
             window.open(url, '_blank');
           }
+
+          this.markProjectFileAsRead(file);
         },
         error: (err) => {
           this.openingFileUuid = null;
           if (fileWindow) fileWindow.close();
           this.handleServerErrors(err);
+        },
+      });
+  }
+
+  private markProjectFileAsRead(file: ProjectOfferFile): void {
+    if (!file.uuid || file.is_read !== false) {
+      return;
+    }
+
+    this.projectOffersService.markProjectFileAsRead(file.uuid)
+      .pipe(takeUntil(this.unsubscribe$))
+      .subscribe({
+        next: () => {
+          file.is_read = true;
+          file.read_at = file.read_at ?? new Date().toISOString();
         },
       });
   }
@@ -1021,6 +1087,9 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
       uuid: summary.uuid || details.uuid,
       status: details.status ?? summary.status,
       action_status: summary.action_status ?? details.action_status,
+      created_at: details.created_at ?? summary.created_at,
+      updated_at: details.updated_at ?? summary.updated_at,
+      invited_at: details.invited_at ?? summary.invited_at,
       proposal_no: details.proposal_no ?? summary.proposal_no,
       project_proposal_uuid: details.project_proposal_uuid ?? summary.project_proposal_uuid,
       contract_uuid: details.contract_uuid ?? summary.contract_uuid,
@@ -1028,8 +1097,10 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
       project: {
         ...details.project,
         uuid: details.project?.uuid || summary.project?.uuid,
-        insighter_read_at: details.project?.insighter_read_at ?? summary.project?.insighter_read_at,
-        client_read_at: details.project?.client_read_at ?? summary.project?.client_read_at,
+        is_read: details.project?.is_read ?? summary.project?.is_read,
+        read_at: details.project?.read_at ?? summary.project?.read_at,
+        created_at: details.project?.created_at ?? summary.project?.created_at,
+        updated_at: details.project?.updated_at ?? summary.project?.updated_at,
         file: details.project?.file ?? summary.project?.file,
         contract_uuid: details.project?.contract_uuid ?? summary.project?.contract_uuid ?? details.contract_uuid ?? summary.contract_uuid,
       },
@@ -1068,7 +1139,8 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
           ...offer,
           project: {
             ...offer.project,
-            insighter_read_at: readState,
+            is_read: readState,
+            read_at: readState ? (offer.project?.read_at ?? new Date().toISOString()) : null,
           },
         }
         : offer
@@ -1079,7 +1151,8 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
         ...this.selectedOffer,
         project: {
           ...this.selectedOffer.project,
-          insighter_read_at: readState,
+          is_read: readState,
+          read_at: readState ? (this.selectedOffer.project?.read_at ?? new Date().toISOString()) : null,
         },
       };
     }
@@ -1093,7 +1166,8 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
           action_status: actionStatus,
           project: {
             ...offer.project,
-            insighter_read_at: true,
+            is_read: true,
+            read_at: offer.project?.read_at ?? new Date().toISOString(),
           },
         }
         : offer
@@ -1105,7 +1179,8 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
         action_status: actionStatus,
         project: {
           ...this.selectedOffer.project,
-          insighter_read_at: true,
+          is_read: true,
+          read_at: this.selectedOffer.project?.read_at ?? new Date().toISOString(),
         },
       };
     }
@@ -1128,6 +1203,10 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
 
   private getResolvedStatus(offer: ProjectOffer): string {
     return (offer?.action_status || offer?.status || '').toLowerCase();
+  }
+
+  private getDisplayStatus(offer: ProjectOffer): string {
+    return (offer?.offer?.status || this.getResolvedStatus(offer) || '').toLowerCase();
   }
 
   private humanizeValue(value: string): string {

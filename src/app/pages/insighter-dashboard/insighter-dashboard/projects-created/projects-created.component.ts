@@ -1,4 +1,4 @@
-import { Component, Injector, OnDestroy, OnInit } from '@angular/core';
+import { Component, HostListener, Injector, OnDestroy, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { Observable } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
@@ -37,6 +37,7 @@ export class ProjectsCreatedComponent extends BaseComponent implements OnInit, O
 
   projects: CreatedProject[] = [];
   viewMode: ViewMode = 'list';
+  private hasUserSelectedViewMode = false;
   projectReadImageUrl = 'https://res.cloudinary.com/dsiku9ipv/image/upload/v1779196120/project_18669661_o5xc3a_copy_ue7w6e.jpg';
   projectUnreadImageUrl = 'https://res.cloudinary.com/dsiku9ipv/image/upload/v1779196441/project_18669661_o5xc3a_codsdpy_qmneyt.png';
   selectedProjectStatus: CreatedProjectStatus | null = null;
@@ -54,6 +55,7 @@ export class ProjectsCreatedComponent extends BaseComponent implements OnInit, O
   ];
 
   projectStatusOptions: StatusFilterOption<CreatedProjectStatus>[] = [
+    { value: 'draft', labelEn: 'Draft', labelAr: 'مسودة', iconClass: 'ki-notepad-edit' },
     { value: 'expired', labelEn: 'Expired', labelAr: 'منتهي', iconClass: 'ki-timer' },
     { value: 'cancelled', labelEn: 'Cancelled', labelAr: 'ملغي', iconClass: 'ki-cross-circle' },
     { value: 'submitted', labelEn: 'Submitted', labelAr: 'مُرسل', iconClass: 'ki-send' },
@@ -74,7 +76,13 @@ export class ProjectsCreatedComponent extends BaseComponent implements OnInit, O
   }
 
   ngOnInit(): void {
+    this.syncResponsiveViewMode();
     this.loadProjects(1);
+  }
+
+  @HostListener('window:resize')
+  onWindowResize(): void {
+    this.syncResponsiveViewMode();
   }
 
   loadProjects(page: number): void {
@@ -110,6 +118,7 @@ export class ProjectsCreatedComponent extends BaseComponent implements OnInit, O
   }
 
   setViewMode(mode: ViewMode): void {
+    this.hasUserSelectedViewMode = true;
     this.viewMode = mode;
   }
 
@@ -135,6 +144,7 @@ export class ProjectsCreatedComponent extends BaseComponent implements OnInit, O
 
   getStatusBadgeClass(status: CreatedProjectStatus | null | undefined): string {
     switch ((status || '').toLowerCase()) {
+      case 'draft': return 'badge-light-draft';
       case 'submitted': return 'badge-light-submitted';
       case 'contract':
       case 'contracting': return 'badge-light-info';
@@ -150,6 +160,7 @@ export class ProjectsCreatedComponent extends BaseComponent implements OnInit, O
 
   getStatusIconClass(status: CreatedProjectStatus | null | undefined): string {
     switch ((status || '').toLowerCase()) {
+      case 'draft': return 'ki-notepad-edit';
       case 'expired': return 'ki-timer';
       case 'cancelled': return 'ki-cross-circle';
       case 'submitted': return 'ki-send';
@@ -165,6 +176,7 @@ export class ProjectsCreatedComponent extends BaseComponent implements OnInit, O
 
   getStatusLabel(status: CreatedProjectStatus | null | undefined): string {
     const labels: Record<string, { en: string; ar: string }> = {
+      draft: { en: 'Draft', ar: 'مسودة' },
       expired: { en: 'Expired', ar: 'منتهي' },
       cancelled: { en: 'Cancelled', ar: 'ملغي' },
       submitted: { en: 'Submitted', ar: 'مُرسل' },
@@ -198,7 +210,7 @@ export class ProjectsCreatedComponent extends BaseComponent implements OnInit, O
   }
 
   isClientUnread(project: CreatedProject): boolean {
-    return project.client_read_at === false;
+    return project.is_read === false;
   }
 
   getProjectImageUrl(project: CreatedProject): string {
@@ -221,7 +233,7 @@ export class ProjectsCreatedComponent extends BaseComponent implements OnInit, O
         next: () => {
           this.projects = this.projects.map(item =>
             item.uuid === project.uuid
-              ? { ...item, client_read_at: true }
+              ? { ...item, is_read: true, read_at: item.read_at ?? new Date().toISOString() }
               : item
           );
         },
@@ -259,6 +271,14 @@ export class ProjectsCreatedComponent extends BaseComponent implements OnInit, O
       .replace(/\s+/g, ' ')
       .trim()
       .replace(/\b\w/g, l => l.toUpperCase());
+  }
+
+  private syncResponsiveViewMode(): void {
+    if (this.hasUserSelectedViewMode || typeof window === 'undefined') {
+      return;
+    }
+
+    this.viewMode = window.innerWidth <= 767 ? 'grid' : 'list';
   }
 
   override ngOnDestroy(): void {

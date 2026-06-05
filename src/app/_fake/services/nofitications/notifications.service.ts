@@ -20,6 +20,9 @@ export interface Notification {
   tap?: string;
   sub_type_value?: string;
   category?: string;
+  // Pusher event name (e.g. 'project.client.closed'). Only present for realtime
+  // notifications captured from the channel; absent for REST-fetched ones.
+  event_name?: string;
 }
 
 

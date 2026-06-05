@@ -845,6 +845,19 @@ export class PrimengHeaderComponent implements OnInit, OnDestroy {
       const channel = this.pusherClient.subscribePrivateUser(userId, token, currentLocale);
       this.notificationChannel = channel;
 
+      // 🔍 DEBUG: log EVERY event that arrives on this channel, regardless of name.
+      // Useful for discovering new backend events (e.g. 'project.client.closed')
+      // before they're added to the `events` array below.
+      try {
+        (channel as any).bind_global((eventName: string, data: any) => {
+          // eslint-disable-next-line no-console
+          console.log('[Pusher][channel event]', eventName, data);
+        });
+      } catch (e) {
+        // eslint-disable-next-line no-console
+        console.warn('[Pusher] Failed to bind channel global handler', e);
+      }
+
       // Surface auth issues explicitly (otherwise it feels like "Pusher doesn't work")
       channel.bind('pusher:subscription_succeeded', () => {
         // eslint-disable-next-line no-console
@@ -884,7 +897,19 @@ export class PrimengHeaderComponent implements OnInit, OnDestroy {
         'meeting.insighter_meeting_reminder',
         'meeting.insighter_meeting_client_new',
         'requests.action',
-        'requests'
+        'requests',
+        // Project notifications
+        'project.proposal.offer',
+        'project.match.invited',
+        'project.client.closed',
+        'project.insighter.closed',
+        'project.client.contract',
+        'project.insighter.contract',
+        'project.review.submission',
+        'project.review.submission.reviewed',
+        'project.file.uploaded',
+        'project.service.started',
+        'order.project'
       ];
       events.forEach(evt => {
         channel.bind(evt, (data: any) => {
@@ -893,7 +918,7 @@ export class PrimengHeaderComponent implements OnInit, OnDestroy {
 
           // Pusher callbacks can run outside Angular's zone -> UI won't update unless we re-enter.
           this.ngZone.run(() => {
-            const mapped = this.mapEventToNotification(data);
+            const mapped = this.mapEventToNotification(data, evt);
             // Prepend to local list
             this.notifications = [mapped, ...this.notifications];
             // Update unread count (new events are unread)
@@ -909,7 +934,7 @@ export class PrimengHeaderComponent implements OnInit, OnDestroy {
     }
   }
 
-  private mapEventToNotification(data: any): Notification {
+  private mapEventToNotification(data: any, eventName?: string): Notification {
     return {
       id: data?.id ?? `evt-${Date.now()}`,
       message: data?.message ?? '',
@@ -919,11 +944,13 @@ export class PrimengHeaderComponent implements OnInit, OnDestroy {
       request_id: data?.request_id ?? 0,
       param: data?.param ?? null,
       sub_type: data?.sub_type ?? 'info',
+      sub_type_value: data?.sub_type_value,
       redirect_page: !!data?.redirect_page,
       read_at: undefined,
       sub_page: data?.sub_page,
       tap: data?.tap,
       category: data?.category,
+      event_name: eventName,
     };
   }
 }

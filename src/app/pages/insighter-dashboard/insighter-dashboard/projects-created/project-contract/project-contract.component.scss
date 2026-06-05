@@ -549,6 +549,18 @@
   i {
     color: #fff !important;
   }
+
+  img {
+    display: block;
+    width: 52px;
+    height: 52px;
+    object-fit: contain;
+  }
+
+  &--file {
+    border-radius: 12px;
+    background: #fff;
+  }
 }
 
 .pcn-upload__copy {

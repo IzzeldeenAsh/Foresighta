@@ -11,6 +11,13 @@ export type ProjectOfferActionStatus = 'pending' | 'viewed' | 'offered' | 'decli
 export type ProjectFileUploadType = 'first_draft' | 'final_draft' | 'samples' | 'document' | 'other' | string;
 export type ProjectReviewSubmissionType = 'first_draft' | 'final_draft' | 'session_completed' | string;
 export type ProjectReviewSubmissionStatus = 'pending' | 'approved' | 'changes_requested' | string;
+export type ProjectReviewSubmissionPriorityValue = 'normal' | 'medium' | 'critical' | string;
+
+export interface ProjectReviewSubmissionPriority {
+  value: ProjectReviewSubmissionPriorityValue | null;
+  label: string | null;
+  color: string | null;
+}
 
 export interface ProjectOffersFilters {
   action_status?: ProjectOfferActionStatus | null;
@@ -42,6 +49,8 @@ export interface ProjectOfferFile {
   uploaded_by?: string | null;
   upload_date?: string | null;
   scope?: string | null;
+  is_read?: boolean | null;
+  read_at?: string | null;
   [key: string]: any;
 }
 
@@ -114,8 +123,8 @@ export interface ProjectOffer {
     deadline: string | null;
     created_at?: string | null;
     updated_at?: string | null;
-    insighter_read_at?: boolean | null;
-    client_read_at?: boolean | null;
+    is_read?: boolean | null;
+    read_at?: string | null;
     components: ProjectOfferBlock[];
     addons: ProjectOfferBlock[];
     scopes: ProjectOfferScope[];
@@ -158,10 +167,14 @@ export interface ProjectReviewSubmission {
   uuid: string;
   type?: ProjectReviewSubmissionType | null;
   status: ProjectReviewSubmissionStatus | null;
+  priority: ProjectReviewSubmissionPriority;
   note: string | null;
   request_at: string | null;
   review_note: string | null;
   reviewed_at: string | null;
+  files?: ProjectOfferFile[];
+  is_read?: boolean | null;
+  read_at?: string | null;
   [key: string]: any;
 }
 
@@ -220,8 +233,8 @@ interface ApiProjectOffer {
       deadline: string | null;
       created_at?: string | null;
       updated_at?: string | null;
-      insighter_read_at?: any;
-      client_read_at?: any;
+      is_read?: any;
+      read_at?: string | null;
       components: ProjectOfferBlock[];
       addons: ProjectOfferBlock[];
         scopes?: ProjectOfferScope[] | null;
@@ -632,7 +645,7 @@ export class ProjectOffersService {
 
   requestProjectReview(
     projectUuid: string,
-    payload: { type: ProjectReviewSubmissionType; note: string }
+    payload: { type: ProjectReviewSubmissionType; priority: ProjectReviewSubmissionPriorityValue; note: string }
   ): Observable<any> {
     this.setLoading(true);
 
@@ -681,6 +694,26 @@ export class ProjectOffersService {
   markInsighterProjectAsRead(projectUuid: string): Observable<any> {
     return this.http.put<any>(
       `${environment.apiBaseUrl}/insighter/project/read/${projectUuid}`,
+      {},
+      { headers: this.getHeaders() }
+    ).pipe(
+      catchError(error => throwError(() => error))
+    );
+  }
+
+  markProjectFileAsRead(fileUuid: string): Observable<any> {
+    return this.http.put<any>(
+      `${environment.apiBaseUrl}/insighter/project/file/read/${fileUuid}`,
+      {},
+      { headers: this.getHeaders() }
+    ).pipe(
+      catchError(error => throwError(() => error))
+    );
+  }
+
+  markReviewSubmissionAsRead(reviewUuid: string): Observable<any> {
+    return this.http.put<any>(
+      `${environment.apiBaseUrl}/insighter/project/review-submission/read/${reviewUuid}`,
       {},
       { headers: this.getHeaders() }
     ).pipe(
@@ -766,7 +799,7 @@ export class ProjectOffersService {
   }
 
   getProjectFileUrl(fileUuid: string): Observable<string> {
-    return this.http.get<any>(`${environment.apiBaseUrl}/account/project/file/download/${fileUuid}`, {
+    return this.http.get<any>(`${environment.apiBaseUrl}/insighter/project/file/download/${fileUuid}`, {
       headers: this.getHeaders(),
     }).pipe(
       map(response => response?.file ?? response?.data?.file ?? response?.data?.url ?? response?.url ?? ''),
@@ -787,11 +820,18 @@ export class ProjectOffersService {
     const synthetic: ApiProjectOffer = {
       uuid: root?.uuid ?? '',
       action_status: root?.action_status ?? null,
+      created_at: root?.created_at ?? null,
+      updated_at: root?.updated_at ?? null,
+      invited_at: root?.invited_at ?? null,
+      contract_uuid: root?.contract_uuid ?? null,
       project_proposal: {
         uuid: root?.uuid ?? '',
         proposal_no: root?.proposal_no ?? null,
         status: root?.status ?? null,
         deadline_offer: root?.deadline_offer ?? null,
+        created_at: root?.created_at ?? null,
+        updated_at: root?.updated_at ?? null,
+        contract_uuid: root?.contract_uuid ?? null,
         project: root?.project ?? null,
       },
       offer: root?.offer ?? null,
@@ -935,8 +975,8 @@ export class ProjectOffersService {
         deadline: project?.deadline ?? null,
         created_at: project?.created_at ?? null,
         updated_at: project?.updated_at ?? null,
-        insighter_read_at: this.toReadState(project?.insighter_read_at),
-        client_read_at: this.toReadState(project?.client_read_at),
+        is_read: this.toReadState(project?.is_read),
+        read_at: project?.read_at ?? null,
         components: this.sanitizeBlocks(project?.components),
         addons: this.sanitizeBlocks(project?.addons),
         scopes: this.sanitizeScopes(project?.scopes),
@@ -993,8 +1033,8 @@ export class ProjectOffersService {
         deadline: project?.deadline ?? null,
         created_at: project?.created_at ?? null,
         updated_at: project?.updated_at ?? null,
-        insighter_read_at: this.toReadState(project?.insighter_read_at),
-        client_read_at: this.toReadState(project?.client_read_at),
+        is_read: this.toReadState(project?.is_read),
+        read_at: project?.read_at ?? null,
         components: this.sanitizeBlocks(project?.components),
         addons: this.sanitizeBlocks(project?.addons),
         scopes: this.sanitizeScopes(project?.scopes),
@@ -1084,6 +1124,8 @@ export class ProjectOffersService {
         uploaded_by: file.uploaded_by ?? null,
         upload_date: file.upload_date ?? null,
         scope: file.scope ?? null,
+        is_read: this.toReadState(file.is_read),
+        read_at: file.read_at ?? null,
       }))
       .filter(file => !!file.uuid);
   }
@@ -1119,12 +1161,40 @@ export class ProjectOffersService {
         uuid: review?.uuid ?? '',
         type: review?.type ?? review?.second_identifier ?? review?.identifier ?? null,
         status: review?.status ?? null,
+        priority: this.normalizeReviewPriority(review?.priority),
         note: review?.note ?? null,
         request_at: review?.request_at ?? review?.requested_at ?? review?.created_at ?? null,
         review_note: review?.review_note ?? null,
         reviewed_at: review?.reviewed_at ?? null,
+        files: this.sanitizeFiles(review?.files),
+        is_read: this.toReadState(review?.is_read),
+        read_at: review?.read_at ?? null,
       }))
       .filter((review: ProjectReviewSubmission) => !!review.uuid);
+  }
+
+  private normalizeReviewPriority(priority: any): ProjectReviewSubmissionPriority {
+    if (priority && typeof priority === 'object' && !Array.isArray(priority)) {
+      return {
+        value: priority.value ?? null,
+        label: priority.label ?? null,
+        color: priority.color ?? null,
+      };
+    }
+
+    return {
+      value: priority ?? null,
+      label: priority ? this.humanizeValue(priority) : null,
+      color: null,
+    };
+  }
+
+  private humanizeValue(value: any): string {
+    return `${value || ''}`
+      .replace(/_/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .replace(/\b\w/g, char => char.toUpperCase());
   }
 
   private toBoolean(value: any): boolean {

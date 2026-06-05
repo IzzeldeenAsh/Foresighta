@@ -1,7 +1,7 @@
 import { Component, Injector, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
-import { Observable } from 'rxjs';
-import { finalize, takeUntil } from 'rxjs/operators';
+import { BehaviorSubject, Observable } from 'rxjs';
+import { finalize, map, shareReplay, takeUntil } from 'rxjs/operators';
 import {
   ProjectContract,
   ProjectFileUploadType,
@@ -12,12 +12,13 @@ import {
   ProjectOfferScope,
   ProjectOfferType,
   ProjectReviewSubmission,
+  ProjectReviewSubmissionPriorityValue,
   ProjectReviewSubmissionType,
 } from 'src/app/_fake/services/project-offers/project-offers.service';
 import { BaseComponent } from 'src/app/modules/base.component';
 
 type ViewMode = 'grid' | 'list';
-type DrawerTab = 'overview' | 'documents' | 'reviews' | 'contract';
+export type DrawerTab = 'overview' | 'documents' | 'reviews' | 'discussion' | 'contract';
 
 interface ProjectFileTypeOption {
   value: ProjectFileUploadType;
@@ -27,6 +28,12 @@ interface ProjectFileTypeOption {
 
 interface ProjectReviewTypeOption {
   value: ProjectReviewSubmissionType;
+  labelEn: string;
+  labelAr: string;
+}
+
+interface ProjectReviewPriorityOption {
+  value: ProjectReviewSubmissionPriorityValue;
   labelEn: string;
   labelAr: string;
 }
@@ -123,6 +130,16 @@ export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
   projectDetailsError = false;
   reviewSubmissionsLoading = false;
   reviewSubmissions: ProjectReviewSubmission[] = [];
+  private documentFilesSubject = new BehaviorSubject<ProjectOfferFile[]>([]);
+  private reviewSubmissionsSubject = new BehaviorSubject<ProjectReviewSubmission[]>([]);
+  private projectDetailsRequest$: Observable<ProjectOffer> | null = null;
+  private reviewSubmissionsRequest$: Observable<ProjectReviewSubmission[]> | null = null;
+  unreadDocumentsCount$: Observable<number> = this.documentFilesSubject.pipe(
+    map(files => this.countUnreadItems(files))
+  );
+  unreadReviewSubmissionsCount$: Observable<number> = this.reviewSubmissionsSubject.pipe(
+    map(reviews => this.countUnreadItems(reviews))
+  );
   projectFileName = '';
   projectFileType: ProjectFileUploadType = 'first_draft';
   selectedProjectFiles: File[] = [];
@@ -130,6 +147,7 @@ export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
   documentUploadDialogVisible = false;
   reviewRequestDialogVisible = false;
   reviewRequestType: ProjectReviewSubmissionType = 'first_draft';
+  reviewRequestPriority: ProjectReviewSubmissionPriorityValue = 'normal';
   reviewRequestNote = '';
   reviewRequestSubmitting = false;
 
@@ -153,6 +171,7 @@ export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
     { value: 'overview', labelEn: 'Overview', labelAr: 'نظرة عامة' },
     { value: 'documents', labelEn: 'Documents', labelAr: 'المستندات' },
     { value: 'reviews', labelEn: 'Review Request', labelAr: 'طلب المراجعة' },
+    { value: 'discussion', labelEn: 'Discussion', labelAr: 'النقاش' },
     { value: 'contract', labelEn: 'Contract', labelAr: 'العقد' },
   ];
   projectFileTypeOptions: ProjectFileTypeOption[] = [
@@ -166,6 +185,11 @@ export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
     { value: 'first_draft', labelEn: 'First Draft', labelAr: 'المسودة الأولى' },
     { value: 'final_draft', labelEn: 'Final Draft', labelAr: 'المسودة النهائية' },
     { value: 'session_completed', labelEn: 'Session Completed', labelAr: 'اكتمال الجلسة' },
+  ];
+  reviewPriorityOptions: ProjectReviewPriorityOption[] = [
+    { value: 'normal', labelEn: 'Normal', labelAr: 'عادي' },
+    { value: 'medium', labelEn: 'Medium', labelAr: 'متوسط' },
+    { value: 'critical', labelEn: 'Critical', labelAr: 'حرج' },
   ];
 
   constructor(
@@ -226,6 +250,8 @@ export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
     this.activeDrawerTab = 'overview';
     this.setEmbeddedContractDetails(project);
     this.resetDocumentsWorkspace();
+    this.resetUnreadStatsStreams();
+    this.primeUnreadStats();
   }
 
   closeDrawer(): void {
@@ -237,9 +263,10 @@ export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
     this.contractDetailsRequestId++;
     this.projectDetailsRequestId++;
     this.reviewSubmissionsRequestId++;
+    this.resetUnreadStatsStreams();
   }
 
-  setDrawerTab(tab: DrawerTab): void {
+  setDrawerTab(tab: DrawerTab, syncUrl = true): void {
     this.activeDrawerTab = tab;
 
     if (tab === 'contract') {
@@ -248,6 +275,10 @@ export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
       this.loadDocumentsWorkspace();
     } else if (tab === 'reviews') {
       this.loadReviewWorkspace();
+    }
+
+    if (syncUrl) {
+      this.onDrawerTabChanged(tab);
     }
   }
 
@@ -484,12 +515,38 @@ export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
     };
 
     return [...this.reviewSubmissions].sort((a, b) => {
+      const aPriorityRank = this.getReviewPriorityRank(a);
+      const bPriorityRank = this.getReviewPriorityRank(b);
+      if (aPriorityRank !== bPriorityRank) return aPriorityRank - bPriorityRank;
+
       const aRank = statusRank[this.normalizeProjectFileType(a.status || '')] ?? 9;
       const bRank = statusRank[this.normalizeProjectFileType(b.status || '')] ?? 9;
       if (aRank !== bRank) return aRank - bRank;
 
       return this.getDateTime(b.request_at) - this.getDateTime(a.request_at);
     });
+  }
+
+  getReviewPriorityValue(review: ProjectReviewSubmission | null | undefined): string {
+    return this.normalizeProjectFileType(review?.priority?.value || '');
+  }
+
+  getReviewPriorityLabel(review: ProjectReviewSubmission | null | undefined): string {
+    const priority = review?.priority;
+    const value = this.getReviewPriorityValue(review);
+    const option = this.reviewPriorityOptions.find(item => item.value === value);
+    const prefix = this.lang === 'ar' ? 'الأولوية' : 'Priority';
+    const label = priority?.label || (option ? (this.lang === 'ar' ? option.labelAr : option.labelEn) : this.humanizeValue(value));
+
+    return label ? `${prefix}: ${label}` : prefix;
+  }
+
+  getReviewPriorityClass(review: ProjectReviewSubmission | null | undefined): string {
+    const value = this.getReviewPriorityValue(review);
+    if (['normal', 'medium', 'critical'].includes(value)) {
+      return `pd-review-card__priority-ribbon--${value}`;
+    }
+    return 'pd-review-card__priority-ribbon--default';
   }
 
   getReviewStatusLabel(status: string | null | undefined): string {
@@ -656,6 +713,7 @@ export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
     this.reviewRequestSubmitting = true;
     this.projectOffersService.requestProjectReview(projectUuid, {
       type: this.reviewRequestType,
+      priority: this.reviewRequestPriority,
       note,
     })
       .pipe(
@@ -670,6 +728,7 @@ export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
               ? 'تم إرسال طلب المراجعة إلى العميل.'
               : 'The review request was sent to the client.'
           );
+          this.reviewRequestPriority = 'normal';
           this.reviewRequestNote = '';
           this.reviewRequestDialogVisible = false;
           this.loadProjectReviewSubmissions(true);
@@ -721,11 +780,29 @@ export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
           } else {
             window.open(url, '_blank');
           }
+
+          this.markProjectFileAsRead(file);
         },
         error: (err) => {
           this.openingFileUuid = null;
           if (fileWindow) fileWindow.close();
           this.handleServerErrors(err);
+        },
+      });
+  }
+
+  private markProjectFileAsRead(file: ProjectOfferFile): void {
+    if (!file.uuid || file.is_read !== false) {
+      return;
+    }
+
+    this.projectOffersService.markProjectFileAsRead(file.uuid)
+      .pipe(takeUntil(this.unsubscribe$))
+      .subscribe({
+        next: () => {
+          file.is_read = true;
+          file.read_at = file.read_at ?? new Date().toISOString();
+          this.documentFilesSubject.next([...this.documentFilesSubject.value]);
         },
       });
   }
@@ -958,6 +1035,18 @@ export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
     return option.value;
   }
 
+  trackByReviewPriorityOption(_: number, option: ProjectReviewPriorityOption): ProjectReviewSubmissionPriorityValue {
+    return option.value;
+  }
+
+  isUnreadFile(file: ProjectOfferFile | null | undefined): boolean {
+    return file?.is_read === false;
+  }
+
+  isUnreadReview(review: ProjectReviewSubmission | null | undefined): boolean {
+    return review?.is_read === false;
+  }
+
   private loadContractDetails(project: ProjectOffer | null | undefined = this.selectedProject): void {
     const contractUuid = this.getContractUuid(project);
     if (!contractUuid || this.contractDetailsLoading) return;
@@ -1007,7 +1096,7 @@ export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
     this.projectDetailsLoading = true;
     this.projectDetailsError = false;
 
-    this.projectOffersService.getInsighterProjectDetails(projectUuid)
+    this.getProjectDetailsRequest(projectUuid)
       .pipe(takeUntil(this.unsubscribe$))
       .subscribe({
         next: project => {
@@ -1015,8 +1104,15 @@ export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
           this.selectedProject = project;
           this.replaceProjectInList(project);
           this.setEmbeddedContractDetails(project);
+          this.documentFilesSubject.next(this.collectProjectDocumentFiles(project));
           this.loadedProjectDetailsUuid = projectUuid;
           this.projectDetailsLoading = false;
+
+          if (this.activeDrawerTab === 'contract') {
+            this.loadContractDetails(project);
+          } else if (this.activeDrawerTab === 'reviews') {
+            this.loadProjectReviewSubmissions();
+          }
         },
         error: err => {
           if (requestId !== this.projectDetailsRequestId) return;
@@ -1027,6 +1123,8 @@ export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
       });
   }
 
+  protected onDrawerTabChanged(_: DrawerTab): void {}
+
   private loadProjectReviewSubmissions(force = false): void {
     const projectUuid = this.getProjectUuid(this.selectedProject);
     if (!projectUuid || this.reviewSubmissionsLoading) return;
@@ -1035,12 +1133,13 @@ export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
     const requestId = ++this.reviewSubmissionsRequestId;
     this.reviewSubmissionsLoading = true;
 
-    this.projectOffersService.getProjectReviewSubmissions(projectUuid)
+    this.getReviewSubmissionsRequest(projectUuid)
       .pipe(takeUntil(this.unsubscribe$))
       .subscribe({
         next: reviews => {
           if (requestId !== this.reviewSubmissionsRequestId) return;
           this.reviewSubmissions = reviews;
+          this.reviewSubmissionsSubject.next(reviews);
           this.loadedReviewProjectUuid = projectUuid;
           this.reviewSubmissionsLoading = false;
         },
@@ -1050,6 +1149,74 @@ export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
           this.handleServerErrors(err);
         },
       });
+  }
+
+  markReviewSubmissionAsRead(review: ProjectReviewSubmission): void {
+    if (!review.uuid || review.is_read !== false) {
+      return;
+    }
+
+    this.projectOffersService.markReviewSubmissionAsRead(review.uuid)
+      .pipe(takeUntil(this.unsubscribe$))
+      .subscribe({
+        next: () => {
+          review.is_read = true;
+          review.read_at = review.read_at ?? new Date().toISOString();
+          this.reviewSubmissionsSubject.next([...this.reviewSubmissions]);
+        },
+      });
+  }
+
+  private primeUnreadStats(): void {
+    const projectUuid = this.getProjectUuid(this.selectedProject);
+    if (!projectUuid) return;
+
+    this.getProjectDetailsRequest(projectUuid)
+      .pipe(takeUntil(this.unsubscribe$))
+      .subscribe({
+        next: project => {
+          this.selectedProject = project;
+          this.replaceProjectInList(project);
+          this.setEmbeddedContractDetails(project);
+          this.loadedProjectDetailsUuid = projectUuid;
+          this.documentFilesSubject.next(this.collectProjectDocumentFiles(project));
+        },
+        error: () => this.documentFilesSubject.next([]),
+      });
+
+    this.getReviewSubmissionsRequest(projectUuid)
+      .pipe(takeUntil(this.unsubscribe$))
+      .subscribe({
+        next: reviews => this.reviewSubmissionsSubject.next(reviews),
+        error: () => this.reviewSubmissionsSubject.next([]),
+      });
+  }
+
+  private getProjectDetailsRequest(projectUuid: string): Observable<ProjectOffer> {
+    if (!this.projectDetailsRequest$) {
+      this.projectDetailsRequest$ = this.projectOffersService.getInsighterProjectDetails(projectUuid).pipe(
+        shareReplay({ bufferSize: 1, refCount: true })
+      );
+    }
+
+    return this.projectDetailsRequest$;
+  }
+
+  private getReviewSubmissionsRequest(projectUuid: string): Observable<ProjectReviewSubmission[]> {
+    if (!this.reviewSubmissionsRequest$) {
+      this.reviewSubmissionsRequest$ = this.projectOffersService.getProjectReviewSubmissions(projectUuid).pipe(
+        shareReplay({ bufferSize: 1, refCount: true })
+      );
+    }
+
+    return this.reviewSubmissionsRequest$;
+  }
+
+  private resetUnreadStatsStreams(): void {
+    this.documentFilesSubject.next([]);
+    this.reviewSubmissionsSubject.next([]);
+    this.projectDetailsRequest$ = null;
+    this.reviewSubmissionsRequest$ = null;
   }
 
   private resetContractDetails(): void {
@@ -1074,9 +1241,41 @@ export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
       this.projectFilesUploading = false;
       this.reviewRequestDialogVisible = false;
       this.reviewRequestType = 'first_draft';
+      this.reviewRequestPriority = 'normal';
       this.reviewRequestNote = '';
       this.reviewRequestSubmitting = false;
     }
+  }
+
+  private collectProjectDocumentFiles(project: ProjectOffer): ProjectOfferFile[] {
+    return this.uniqueFiles([
+      ...this.getProjectDeliveryFiles(project),
+      ...this.getAllProposalFiles(project),
+      ...this.getRequestFiles(project),
+      ...this.collectScopeFiles(project.project.scopes || []),
+    ]);
+  }
+
+  private collectScopeFiles(scopes: ProjectOfferScope[]): ProjectOfferFile[] {
+    return scopes.reduce<ProjectOfferFile[]>((files, scope) => {
+      files.push(...this.getScopeFiles(scope));
+      files.push(...this.collectScopeFiles(this.getScopeChildren(scope)));
+      return files;
+    }, []);
+  }
+
+  private uniqueFiles(files: ProjectOfferFile[]): ProjectOfferFile[] {
+    const seen = new Set<string>();
+
+    return files.filter(file => {
+      if (!file?.uuid || seen.has(file.uuid)) return false;
+      seen.add(file.uuid);
+      return true;
+    });
+  }
+
+  private countUnreadItems(items: Array<{ is_read?: boolean | null }>): number {
+    return items.reduce((total, item) => total + (item.is_read === false ? 1 : 0), 0);
   }
 
   private replaceProjectInList(project: ProjectOffer): void {
@@ -1136,6 +1335,16 @@ export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
 
   private normalizeProjectFileType(value: string): string {
     return (value || '').trim().toLowerCase().replace(/[-\s]+/g, '_');
+  }
+
+  private getReviewPriorityRank(review: ProjectReviewSubmission | null | undefined): number {
+    const priorityRank: Record<string, number> = {
+      critical: 0,
+      medium: 1,
+      normal: 2,
+    };
+
+    return priorityRank[this.getReviewPriorityValue(review)] ?? 9;
   }
 
   private getDateTime(value: string | null | undefined): number {

@@ -1,0 +1,109 @@
+<div class="discussion-card" [attr.dir]="lang === 'ar' ? 'rtl' : 'ltr'">
+  <div class="discussion-card__body" #messagesScroller>
+    <div *ngIf="isLoading" class="discussion-state">
+      <span class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></span>
+      <span>{{ lang === 'ar' ? 'جار تحميل المحادثة...' : 'Loading discussion...' }}</span>
+    </div>
+
+    <div *ngIf="!isLoading && !normalizedProjectUuid" class="discussion-state discussion-state--empty">
+      <i class="ki-outline ki-information-2 fs-2x text-gray-400"></i>
+      <span>{{ lang === 'ar' ? 'لا يوجد معرّف مشروع لعرض المحادثة.' : 'Project identifier is not available for discussion.' }}</span>
+    </div>
+
+    <div *ngIf="!isLoading && normalizedProjectUuid && loadFailed" class="discussion-state discussion-state--empty">
+      <i class="ki-outline ki-information-2 fs-2x text-gray-400"></i>
+      <span>{{ lang === 'ar' ? 'تعذر تحميل المحادثة.' : 'Discussion could not be loaded.' }}</span>
+      <button type="button" class="btn btn-light-primary btn-sm" (click)="loadMessages()">
+        {{ lang === 'ar' ? 'إعادة المحاولة' : 'Retry' }}
+      </button>
+    </div>
+
+    <div *ngIf="!isLoading && normalizedProjectUuid && !loadFailed && messages.length === 0"
+         class="discussion-state discussion-state--empty">
+      <i class="ki-outline ki-messages fs-2x text-gray-400"></i>
+      <span>{{ lang === 'ar' ? 'لا توجد رسائل بعد.' : 'No messages yet.' }}</span>
+    </div>
+
+    <ng-container *ngIf="!isLoading && !loadFailed">
+      <div
+        *ngFor="let message of messages; trackBy: trackByMessage"
+        class="discussion-message"
+        [class.discussion-message--own]="isOwnMessage(message)">
+        <div class="discussion-message__wrap">
+          <div class="discussion-message__meta">
+            <ng-container *ngIf="!isOwnMessage(message)">
+              <ng-container *ngTemplateOutlet="avatarTpl; context: { $implicit: message }"></ng-container>
+            </ng-container>
+
+            <div class="discussion-message__details">
+              <ng-container *ngIf="getProfileUrl(message) as profileUrl; else plainSender">
+                <a class="discussion-message__sender" [href]="profileUrl" target="_blank" rel="noopener">
+                  {{ getSenderLabel(message) }}
+                </a>
+              </ng-container>
+              <ng-template #plainSender>
+                <span class="discussion-message__sender">{{ getSenderLabel(message) }}</span>
+              </ng-template>
+              <span class="discussion-message__time">{{ getRelativeTime(message.date) }}</span>
+            </div>
+
+            <ng-container *ngIf="isOwnMessage(message)">
+              <ng-container *ngTemplateOutlet="avatarTpl; context: { $implicit: message }"></ng-container>
+            </ng-container>
+          </div>
+
+          <div class="discussion-message__bubble">
+            {{ message.body }}
+          </div>
+        </div>
+      </div>
+    </ng-container>
+  </div>
+
+  <div class="discussion-card__footer" *ngIf="canSend; else discussionReadOnly">
+    <textarea
+      class="discussion-input"
+      rows="2"
+      [(ngModel)]="draft"
+      [disabled]="isSending || !normalizedProjectUuid || !canSend"
+      [placeholder]="lang === 'ar' ? 'اكتب رسالة' : 'Type a message'"
+      (keydown)="onMessageKeydown($event)">
+    </textarea>
+
+    <div class="discussion-actions">
+      <button
+        type="button"
+        class="btn btn-primary discussion-send"
+        [disabled]="isSending || !draft.trim() || !normalizedProjectUuid"
+        (click)="sendMessage()">
+        <span *ngIf="isSending" class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
+        {{ lang === 'ar' ? 'إرسال' : 'Send' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<ng-template #discussionReadOnly>
+  <div class="discussion-card__footer discussion-card__footer--readonly">
+    <span class="badge discussion-readonly-badge" [ngClass]="disabledBadgeClass">
+      {{ disabledBadgeLabel || (lang === 'ar' ? 'للقراءة فقط' : 'Read only') }}
+    </span>
+    <span class="discussion-readonly-message">
+      {{ disabledMessage || (lang === 'ar' ? 'يمكنك مراجعة المحادثة فقط.' : 'You can review this discussion only.') }}
+    </span>
+  </div>
+</ng-template>
+
+<ng-template #avatarTpl let-message>
+  <span class="discussion-avatar" [class.discussion-avatar--own]="isOwnMessage(message)">
+    <img
+      *ngIf="message.profile_photo_url"
+      [src]="message.profile_photo_url"
+      [alt]="getSenderLabel(message)"
+      loading="lazy"
+      (error)="onAvatarError(message)">
+    <span *ngIf="!message.profile_photo_url" class="discussion-avatar__initials">
+      {{ getInitials(getSenderLabel(message)) }}
+    </span>
+  </span>
+</ng-template>

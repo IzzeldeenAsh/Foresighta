@@ -37,6 +37,9 @@ export class InvoiceViewerComponent extends BaseComponent implements OnInit, OnD
   serviceRows: Array<{name: string, amount: number}> = [];
   subtotal = 0;
   isMeetingOrder = false;
+  isProjectOrder = false;
+  projectTitle = '';
+  projectNo = '';
   meetingTitle = '';
   meetingDetails: Array<{label: string, value: string}> = [];
   knowledgePackages: Array<{title: string, documents: any[], totalPrice: number}> = [];
@@ -74,6 +77,7 @@ export class InvoiceViewerComponent extends BaseComponent implements OnInit, OnD
 
     // Process service items
     this.isMeetingOrder = this.invoiceData.service === 'meeting_service';
+    this.isProjectOrder = this.invoiceData.service === 'project_service';
     this.serviceRows = [];
     this.subtotal = this.invoiceData.amount;
 
@@ -92,6 +96,14 @@ export class InvoiceViewerComponent extends BaseComponent implements OnInit, OnD
           amount: this.invoiceData.amount
         });
       }
+    } else if (this.isProjectOrder) {
+      const project = this.invoiceData.orderable?.project;
+      this.projectTitle = project?.title || this.invoiceData.order_no;
+      this.projectNo = project?.project_no || '';
+      this.serviceRows.push({
+        name: this.projectNo ? `${this.projectTitle} (${this.projectNo})` : this.projectTitle,
+        amount: this.invoiceData.amount
+      });
     } else {
       // Handle knowledge orders - Group by knowledge package
       const knowledgePackagesMap = new Map<string, {documents: any[], totalPrice: number}>();

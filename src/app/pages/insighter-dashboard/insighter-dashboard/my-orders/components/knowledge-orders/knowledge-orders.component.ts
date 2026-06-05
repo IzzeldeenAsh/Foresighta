@@ -4,6 +4,7 @@ import { Order } from '../../my-orders.service';
 import * as OrderViewUtils from '../../utils/order-view.utils';
 
 type Language = 'ar' | 'en';
+type OrderListMode = 'knowledge' | 'project';
 
 
 @Component({
@@ -19,6 +20,7 @@ export class KnowledgeOrdersComponent {
   @Input() currentPage = 1;
   @Input() isLoading$!: Observable<boolean>;
   @Input() clientBaseUrl: string = 'https://insightabusiness.com';
+  @Input() mode: OrderListMode = 'knowledge';
 
 
   @Output() pageChange = new EventEmitter<number>();
@@ -53,7 +55,11 @@ export class KnowledgeOrdersComponent {
   }
 
   getInsighterInitials(insighter: any): string {
-    return (insighter.name?.split(' ')[0]?.charAt(0) || '') + (insighter.name?.split(' ')[1]?.charAt(0) || '');
+    return (insighter?.name?.split(' ')[0]?.charAt(0) || '') + (insighter?.name?.split(' ')[1]?.charAt(0) || '');
+  }
+
+  get isProjectMode(): boolean {
+    return this.mode === 'project';
   }
 
 }

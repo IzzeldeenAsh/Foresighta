@@ -74,7 +74,7 @@
           <table class="services" cellpadding="0" cellspacing="0">
             <thead>
             <tr>
-              <th style="width:70%;">{{ isMeetingOrder ? 'Sessions' : 'Insights' }}</th>
+              <th style="width:70%;">{{ isMeetingOrder ? 'Sessions' : (isProjectOrder ? 'Projects' : 'Insights') }}</th>
               <th style="width:30%; text-align:right;">Amount</th>
             </tr>
             </thead>
@@ -92,7 +92,20 @@
                 </tr>
               </ng-container>
 
-              <ng-container *ngIf="!isMeetingOrder">
+              <ng-container *ngIf="isProjectOrder">
+                <tr>
+                  <td class="knowledge-item" style="padding-top:8px;">{{ projectTitle }}</td>
+                  <td class="amount" style="padding-top:8px;">${{ invoiceData.amount.toFixed(2) }}</td>
+                </tr>
+                <tr *ngIf="projectNo">
+                  <td class="sub-item">
+                    &nbsp;&nbsp;&nbsp;&nbsp;• Project No: {{ projectNo }}
+                  </td>
+                  <td class="amount sub-item-amount">-</td>
+                </tr>
+              </ng-container>
+
+              <ng-container *ngIf="!isMeetingOrder && !isProjectOrder">
                 <ng-container *ngFor="let package of knowledgePackages">
                   <tr>
                     <td class="knowledge-item" style="padding-top:8px;">{{ package.title }}</td>

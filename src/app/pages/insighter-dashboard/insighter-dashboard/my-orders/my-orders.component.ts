@@ -14,7 +14,7 @@ import * as OrderViewUtils from './utils/order-view.utils';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class MyOrdersComponent extends BaseComponent implements OnInit {
-  activeTab: 'knowledge' | 'meeting' = 'knowledge';
+  activeTab: 'knowledge' | 'meeting' | 'project' = 'knowledge';
   
   orders$: Observable<Order[]> = of([]);
   totalPages$: Observable<number> = of(0);
@@ -27,6 +27,10 @@ export class MyOrdersComponent extends BaseComponent implements OnInit {
   currentMeetingPage = 1;
   selectedMeetingOrder: Order | null = null;
   showMeetingOrderDetails = false;
+
+  projectOrders$: Observable<Order[]> = of([]);
+  projectTotalPages$: Observable<number> = of(0);
+  currentProjectPage = 1;
 
   roles: string[] = [];
   private rolesLoaded = false;
@@ -55,6 +59,10 @@ export class MyOrdersComponent extends BaseComponent implements OnInit {
     return this.myOrdersService.isMeetingLoading$;
   }
 
+  get isProjectLoading$() {
+    return this.myOrdersService.isProjectLoading$;
+  }
+
 
   get canViewSalesTabs(): boolean {
     return this.roles.includes('company') || this.roles.includes('insighter') || this.roles.includes('company-insighter');
@@ -68,9 +76,10 @@ export class MyOrdersComponent extends BaseComponent implements OnInit {
     this.getRoles();
     this.loadOrders();
     this.loadMeetingOrders();
+    this.loadProjectOrders();
   }
 
-  setActiveTab(tab: 'knowledge' | 'meeting'): void {
+  setActiveTab(tab: 'knowledge' | 'meeting' | 'project'): void {
     this.activeTab = tab;
   }
 
@@ -109,12 +118,33 @@ export class MyOrdersComponent extends BaseComponent implements OnInit {
     });
   }
 
+  loadProjectOrders(page: number = 1): void {
+    this.currentProjectPage = page;
+    this.myOrdersService.getProjectOrders(page).pipe(
+      catchError((error) => {
+        this.handleServerErrors(error);
+        return of({
+          data: [],
+          links: { first: '', last: '', prev: null, next: null },
+          meta: { current_page: 1, from: 0, last_page: 1, links: [], path: '', per_page: 10, to: 0, total: 0 }
+        } as OrdersResponse);
+      })
+    ).subscribe(response => {
+      this.projectOrders$ = of(response.data);
+      this.projectTotalPages$ = of(response.meta.last_page);
+    });
+  }
+
   onPageChange(page: number): void {
     this.loadOrders(page);
   }
 
   onMeetingPageChange(page: number): void {
     this.loadMeetingOrders(page);
+  }
+
+  onProjectPageChange(page: number): void {
+    this.loadProjectOrders(page);
   }
 
 

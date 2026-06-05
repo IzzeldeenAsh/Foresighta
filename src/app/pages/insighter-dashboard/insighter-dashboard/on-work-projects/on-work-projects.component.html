@@ -313,6 +313,26 @@
               [attr.aria-selected]="activeDrawerTab === tab.value"
               (click)="setDrawerTab(tab.value)">
               <span>{{ lang === 'ar' ? tab.labelAr : tab.labelEn }}</span>
+              <ng-container *ngIf="tab.value === 'documents'">
+                <ng-container *ngIf="unreadDocumentsCount$ | async as unreadDocumentsCount">
+                  <span
+                    *ngIf="unreadDocumentsCount > 0"
+                    class="po-tab-badge"
+                    [attr.aria-label]="lang === 'ar' ? 'مستندات غير مقروءة' : 'Unread documents'">
+                    {{ unreadDocumentsCount }}
+                  </span>
+                </ng-container>
+              </ng-container>
+              <ng-container *ngIf="tab.value === 'reviews'">
+                <ng-container *ngIf="unreadReviewSubmissionsCount$ | async as unreadReviewSubmissionsCount">
+                  <span
+                    *ngIf="unreadReviewSubmissionsCount > 0"
+                    class="po-tab-badge"
+                    [attr.aria-label]="lang === 'ar' ? 'طلبات مراجعة غير مقروءة' : 'Unread review requests'">
+                    {{ unreadReviewSubmissionsCount }}
+                  </span>
+                </ng-container>
+              </ng-container>
             </button>
           </div>
 
@@ -642,9 +662,13 @@
                     <button
                       type="button"
                       class="po-document-item"
+                      [class.po-document-item--new]="isUnreadFile(file)"
                       *ngFor="let file of group.files; trackBy: trackByFile"
                       [disabled]="isOpeningFile(file)"
                       (click)="openProjectFile(file)">
+                      <span class="po-new-ribbon" *ngIf="isUnreadFile(file)">
+                        {{ lang === 'ar' ? 'جديد' : 'New' }}
+                      </span>
                       <span class="po-document-item__icon">
                         <img
                           [src]="getFileTypeIconPath(getProjectFileExtension(file))"
@@ -676,7 +700,10 @@
                     </div>
                   </div>
                   <div class="po-document-list">
-                    <button type="button" class="po-document-item" *ngFor="let file of getProposalFiles(project, 'general'); trackBy: trackByFile" [disabled]="isOpeningFile(file)" (click)="openProjectFile(file)">
+                    <button type="button" class="po-document-item" [class.po-document-item--new]="isUnreadFile(file)" *ngFor="let file of getProposalFiles(project, 'general'); trackBy: trackByFile" [disabled]="isOpeningFile(file)" (click)="openProjectFile(file)">
+                      <span class="po-new-ribbon" *ngIf="isUnreadFile(file)">
+                        {{ lang === 'ar' ? 'جديد' : 'New' }}
+                      </span>
                       <span class="po-document-item__icon">
                         <i *ngIf="isOpeningFile(file)" class="ki-outline ki-loading fs-5"></i>
                         <img
@@ -703,7 +730,10 @@
                     </div>
                   </div>
                   <div class="po-document-list">
-                    <button type="button" class="po-document-item" *ngFor="let file of getProposalFiles(project, 'scopes'); trackBy: trackByFile" [disabled]="isOpeningFile(file)" (click)="openProjectFile(file)">
+                    <button type="button" class="po-document-item" [class.po-document-item--new]="isUnreadFile(file)" *ngFor="let file of getProposalFiles(project, 'scopes'); trackBy: trackByFile" [disabled]="isOpeningFile(file)" (click)="openProjectFile(file)">
+                      <span class="po-new-ribbon" *ngIf="isUnreadFile(file)">
+                        {{ lang === 'ar' ? 'جديد' : 'New' }}
+                      </span>
                       <span class="po-document-item__icon">
                         <i *ngIf="isOpeningFile(file)" class="ki-outline ki-loading fs-5"></i>
                         <img
@@ -730,7 +760,10 @@
                     </div>
                   </div>
                   <div class="po-document-list">
-                    <button type="button" class="po-document-item" *ngFor="let file of getProposalFiles(project, 'offer'); trackBy: trackByFile" [disabled]="isOpeningFile(file)" (click)="openProjectFile(file)">
+                    <button type="button" class="po-document-item" [class.po-document-item--new]="isUnreadFile(file)" *ngFor="let file of getProposalFiles(project, 'offer'); trackBy: trackByFile" [disabled]="isOpeningFile(file)" (click)="openProjectFile(file)">
+                      <span class="po-new-ribbon" *ngIf="isUnreadFile(file)">
+                        {{ lang === 'ar' ? 'جديد' : 'New' }}
+                      </span>
                       <span class="po-document-item__icon">
                         <i *ngIf="isOpeningFile(file)" class="ki-outline ki-loading fs-5"></i>
                         <img
@@ -757,7 +790,10 @@
                     </div>
                   </div>
                   <div class="po-document-list">
-                    <button type="button" class="po-document-item" *ngFor="let file of getRequestFiles(project); trackBy: trackByFile" [disabled]="isOpeningFile(file)" (click)="openProjectFile(file)">
+                    <button type="button" class="po-document-item" [class.po-document-item--new]="isUnreadFile(file)" *ngFor="let file of getRequestFiles(project); trackBy: trackByFile" [disabled]="isOpeningFile(file)" (click)="openProjectFile(file)">
+                      <span class="po-new-ribbon" *ngIf="isUnreadFile(file)">
+                        {{ lang === 'ar' ? 'جديد' : 'New' }}
+                      </span>
                       <span class="po-document-item__icon">
                         <i *ngIf="isOpeningFile(file)" class="ki-outline ki-loading fs-5"></i>
                         <img
@@ -902,9 +938,20 @@
                     class="pd-review-card"
                     [class.pd-review-card--pending]="isReviewPending(review)"
                     [class.pd-review-card--answered]="!isReviewPending(review)"
+                    [class.pd-review-card--new]="isUnreadReview(review)"
+                    (click)="markReviewSubmissionAsRead(review)"
                     *ngFor="let review of getSortedReviewSubmissions(); let i = index; trackBy: trackByReview">
+                    <span class="po-new-ribbon po-new-ribbon--review" *ngIf="isUnreadReview(review)">
+                      {{ lang === 'ar' ? 'جديد' : 'New' }}
+                    </span>
                     <div class="pd-review-card__tab">
                       {{ lang === 'ar' ? 'مراجعة' : 'Review' }} {{ i + 1 }}
+                    </div>
+                    <div
+                      class="pd-review-card__priority-ribbon"
+                      [ngClass]="getReviewPriorityClass(review)"
+                      *ngIf="getReviewPriorityValue(review)">
+                      {{ getReviewPriorityLabel(review) }}
                     </div>
 
                     <div class="pd-review-card__panel">
@@ -982,6 +1029,17 @@
                     </select>
                   </label>
 
+                  <label class="owp-review-type-select owp-review-type-select--modal">
+                    <span>{{ lang === 'ar' ? 'الأولوية' : 'Priority' }}</span>
+                    <select name="reviewRequestPriority" [(ngModel)]="reviewRequestPriority">
+                      <option
+                        *ngFor="let option of reviewPriorityOptions; trackBy: trackByReviewPriorityOption"
+                        [ngValue]="option.value">
+                        {{ lang === 'ar' ? option.labelAr : option.labelEn }}
+                      </option>
+                    </select>
+                  </label>
+
                   <div class="owp-inline-alert" *ngIf="hasPendingReviewForType(reviewRequestType)">
                     <i class="ki-outline ki-time fs-5"></i>
                     <span>{{ lang === 'ar' ? 'يوجد طلب مراجعة معلق لهذا النوع.' : 'A pending review already exists for this type.' }}</span>
@@ -1008,6 +1066,13 @@
                 </form>
               </p-dialog>
             </section>
+
+            <ng-container *ngSwitchCase="'discussion'">
+              <app-project-discussion
+                [projectUuid]="project.project.uuid || project.uuid || null"
+                context="insighter">
+              </app-project-discussion>
+            </ng-container>
 
             <section *ngSwitchCase="'contract'" class="po-section owp-contract-tab">
               <div class="po-section__head">

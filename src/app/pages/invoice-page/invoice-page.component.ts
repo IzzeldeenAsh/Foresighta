@@ -54,8 +54,10 @@ export class InvoicePageComponent extends BaseComponent implements OnInit {
         type OrderSources = {
           orders: Observable<OrdersResponse>;
           meetingOrders: Observable<OrdersResponse>;
+          projectOrders: Observable<OrdersResponse>;
           salesKnowledgeOrders?: Observable<OrdersResponse>;
           salesMeetingOrders?: Observable<OrdersResponse>;
+          salesProjectOrders?: Observable<OrdersResponse>;
         };
 
         // Create a fallback empty OrdersResponse
@@ -85,6 +87,9 @@ export class InvoicePageComponent extends BaseComponent implements OnInit {
           ),
           meetingOrders: this.myOrdersService.getMeetingOrders(1).pipe(
             catchError(() => of(emptyOrdersResponse))
+          ),
+          projectOrders: this.myOrdersService.getProjectOrders(1).pipe(
+            catchError(() => of(emptyOrdersResponse))
           )
         };
 
@@ -96,14 +101,19 @@ export class InvoicePageComponent extends BaseComponent implements OnInit {
           orderSources.salesMeetingOrders = this.myOrdersService.getSalesMeetingOrders(1, salesRole).pipe(
             catchError(() => of(emptyOrdersResponse))
           );
+          orderSources.salesProjectOrders = this.myOrdersService.getSalesProjectOrders(1, salesRole).pipe(
+            catchError(() => of(emptyOrdersResponse))
+          );
         }
 
         forkJoin(orderSources).subscribe({
           next: (result) => {
             const orders = result.orders;
             const meetingOrders = result.meetingOrders;
+            const projectOrders = result.projectOrders;
             const salesKnowledgeOrders = result.salesKnowledgeOrders || emptyOrdersResponse;
             const salesMeetingOrders = result.salesMeetingOrders || emptyOrdersResponse;
+            const salesProjectOrders = result.salesProjectOrders || emptyOrdersResponse;
 
             // Find the order by order number in all order types
             let foundOrder: Order | undefined = orders.data.find((order: Order) =>
@@ -112,6 +122,12 @@ export class InvoicePageComponent extends BaseComponent implements OnInit {
 
             if (!foundOrder) {
               foundOrder = meetingOrders.data.find((order: Order) =>
+                this.orderMatchesIdentifier(order, orderNo)
+              );
+            }
+
+            if (!foundOrder) {
+              foundOrder = projectOrders.data.find((order: Order) =>
                 this.orderMatchesIdentifier(order, orderNo)
               );
             }
@@ -128,10 +144,20 @@ export class InvoicePageComponent extends BaseComponent implements OnInit {
               );
             }
 
+            if (!foundOrder && !isClient) {
+              foundOrder = salesProjectOrders.data.find((order: Order) =>
+                this.orderMatchesIdentifier(order, orderNo)
+              );
+            }
+
             if (foundOrder) {
               // Determine if this is a purchased order (current user bought it) or sold order (current user sold it)
-              const isPurchasedOrder = orders.data.some((o: Order) => o.uuid === foundOrder!.uuid) || meetingOrders.data.some((o: Order) => o.uuid === foundOrder!.uuid);
-              const isSoldOrder = !isClient && (salesKnowledgeOrders.data.some((o: Order) => o.uuid === foundOrder!.uuid) || salesMeetingOrders.data.some((o: Order) => o.uuid === foundOrder!.uuid));
+              const isPurchasedOrder = orders.data.some((o: Order) => o.uuid === foundOrder!.uuid)
+                || meetingOrders.data.some((o: Order) => o.uuid === foundOrder!.uuid)
+                || projectOrders.data.some((o: Order) => o.uuid === foundOrder!.uuid);
+              const isSoldOrder = !isClient && (salesKnowledgeOrders.data.some((o: Order) => o.uuid === foundOrder!.uuid)
+                || salesMeetingOrders.data.some((o: Order) => o.uuid === foundOrder!.uuid)
+                || salesProjectOrders.data.some((o: Order) => o.uuid === foundOrder!.uuid));
 
               let billToProfile: {
                 first_name: string;

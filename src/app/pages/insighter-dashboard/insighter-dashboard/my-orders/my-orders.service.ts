@@ -25,11 +25,20 @@ export interface MeetingBooking {
   insighter?: User;
 }
 
+export interface ProjectOrder {
+  title?: string;
+  project_no?: string;
+  description?: string;
+  is_read?: boolean;
+  read_at?: string | null;
+}
+
 export interface Orderable {
-  knowledge: Knowledge[];
-  knowledge_documents: KnowledgeDocument[][];
-  knowledge_download_id: string;
+  knowledge?: Knowledge[];
+  knowledge_documents?: KnowledgeDocument[][];
+  knowledge_download_id?: string;
   meeting_booking?: MeetingBooking;
+  project?: ProjectOrder;
   insighter?: User;
 }
 
@@ -142,10 +151,13 @@ export interface InsighterStatisticsResponse {
 export class MyOrdersService {
   private readonly API_URL = 'https://api.insightabusiness.com/api/account/order/knowledge';
   private readonly MEETING_API_URL = 'https://api.insightabusiness.com/api/account/order/meeting';
+  private readonly PROJECT_API_URL = 'https://api.insightabusiness.com/api/account/order/project';
   private readonly COMPANY_KNOWLEDGE_API_URL = 'https://api.insightabusiness.com/api/company/order/knowledge';
   private readonly INSIGHTER_KNOWLEDGE_API_URL = 'https://api.insightabusiness.com/api/insighter/order/knowledge';
   private readonly COMPANY_MEETING_API_URL = 'https://api.insightabusiness.com/api/company/order/meeting';
   private readonly INSIGHTER_MEETING_API_URL = 'https://api.insightabusiness.com/api/insighter/order/meeting';
+  private readonly COMPANY_PROJECT_API_URL = 'https://api.insightabusiness.com/api/company/order/project';
+  private readonly INSIGHTER_PROJECT_API_URL = 'https://api.insightabusiness.com/api/insighter/order/project';
   private readonly INSIGHTER_STATISTICS_API_URL = 'https://api.insightabusiness.com/api/insighter/order/statistics';
 
   private isLoadingSubject = new BehaviorSubject<boolean>(false);
@@ -154,11 +166,17 @@ export class MyOrdersService {
   private isMeetingLoadingSubject = new BehaviorSubject<boolean>(false);
   public isMeetingLoading$ = this.isMeetingLoadingSubject.asObservable();
 
+  private isProjectLoadingSubject = new BehaviorSubject<boolean>(false);
+  public isProjectLoading$ = this.isProjectLoadingSubject.asObservable();
+
   private isSalesLoadingSubject = new BehaviorSubject<boolean>(false);
   public isSalesLoading$ = this.isSalesLoadingSubject.asObservable();
 
   private isMeetingSalesLoadingSubject = new BehaviorSubject<boolean>(false);
   public isMeetingSalesLoading$ = this.isMeetingSalesLoadingSubject.asObservable();
+
+  private isProjectSalesLoadingSubject = new BehaviorSubject<boolean>(false);
+  public isProjectSalesLoading$ = this.isProjectSalesLoadingSubject.asObservable();
 
   private currentLang: string = 'en';
 
@@ -187,12 +205,20 @@ export class MyOrdersService {
     this.isMeetingLoadingSubject.next(loading);
   }
 
+  private setProjectLoading(loading: boolean): void {
+    this.isProjectLoadingSubject.next(loading);
+  }
+
   private setSalesLoading(loading: boolean): void {
     this.isSalesLoadingSubject.next(loading);
   }
 
   private setMeetingSalesLoading(loading: boolean): void {
     this.isMeetingSalesLoadingSubject.next(loading);
+  }
+
+  private setProjectSalesLoading(loading: boolean): void {
+    this.isProjectSalesLoadingSubject.next(loading);
   }
 
   private getHeaders(): HttpHeaders {
@@ -233,6 +259,18 @@ export class MyOrdersService {
     );
   }
 
+  getProjectOrders(page: number = 1): Observable<OrdersResponse> {
+    const url = `${this.PROJECT_API_URL}?page=${page}&per_page=5`;
+    const headers = this.getHeaders();
+
+    this.setProjectLoading(true);
+    return this.http.get<OrdersResponse>(url, { headers }).pipe(
+      map((response) => response),
+      catchError(error => this.handleError(error)),
+      finalize(() => this.setProjectLoading(false))
+    );
+  }
+
   getSalesKnowledgeOrders(page: number = 1, role: 'company' | 'insighter', insighterUuid?: string): Observable<OrdersResponse> {
     const baseUrl = role === 'company' ? this.COMPANY_KNOWLEDGE_API_URL : this.INSIGHTER_KNOWLEDGE_API_URL;
     let url = `${baseUrl}?page=${page}&per_page=5`;
@@ -266,6 +304,24 @@ export class MyOrdersService {
       map((response) => response),
       catchError(error => this.handleError(error)),
       finalize(() => this.setMeetingSalesLoading(false))
+    );
+  }
+
+  getSalesProjectOrders(page: number = 1, role: 'company' | 'insighter', insighterUuid?: string): Observable<OrdersResponse> {
+    const baseUrl = role === 'company' ? this.COMPANY_PROJECT_API_URL : this.INSIGHTER_PROJECT_API_URL;
+    let url = `${baseUrl}?page=${page}&per_page=5`;
+
+    if (insighterUuid) {
+      url += `&insighter_uuid=${insighterUuid}`;
+    }
+
+    const headers = this.getHeaders();
+
+    this.setProjectSalesLoading(true);
+    return this.http.get<OrdersResponse>(url, { headers }).pipe(
+      map((response) => response),
+      catchError(error => this.handleError(error)),
+      finalize(() => this.setProjectSalesLoading(false))
     );
   }
 

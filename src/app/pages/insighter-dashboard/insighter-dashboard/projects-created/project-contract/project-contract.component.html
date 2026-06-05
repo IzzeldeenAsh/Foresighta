@@ -220,7 +220,15 @@
           type="file"
           accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
           (change)="onFileSelected($event)" />
-        <span class="pcn-upload__icon"><i class="ki-outline ki-file-up fs-1"></i></span>
+        <span class="pcn-upload__icon" [class.pcn-upload__icon--file]="selectedFile">
+          <img
+            *ngIf="selectedFileIcon; else uploadIcon"
+            [src]="selectedFileIcon"
+            [alt]="selectedFile?.name || 'file'" />
+          <ng-template #uploadIcon>
+            <i class="ki-outline ki-file-up fs-1"></i>
+          </ng-template>
+        </span>
         <span class="pcn-upload__copy">
           <strong>
             {{ selectedFile?.name || (lang === 'ar' ? 'اختر ملف العقد' : 'Choose contract file') }}

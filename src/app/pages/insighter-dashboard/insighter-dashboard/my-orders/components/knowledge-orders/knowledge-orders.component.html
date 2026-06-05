@@ -81,7 +81,7 @@
                     <div *ngIf="!order.orderable?.insighter?.company?.logo && !order.orderable?.insighter?.profile_photo_url"
                          class="symbol-label bg-light-info rounded-circle d-flex align-items-center justify-content-center">
                       <span class="text-info fw-bold fs-8">
-                        {{ getInsighterInitials(order.orderable.insighter) }}
+                        {{ getInsighterInitials(order.orderable?.insighter) }}
                       </span>
                     </div>
                   </div>
@@ -146,8 +146,8 @@
           </div>
 
           <!-- Knowledge Items -->
-          <div *ngIf="order.orderable" class="mb-3">
-            <div *ngFor="let knowledge of order.orderable.knowledge" class="mb-2">
+          <div *ngIf="order.orderable && !isProjectMode" class="mb-3">
+            <div *ngFor="let knowledge of order.orderable.knowledge || []" class="mb-2">
               <div class="d-flex align-items-center ">
                 <div >
                   <a 
@@ -169,7 +169,7 @@
               </div>
               
               <!-- Documents Preview -->
-              <div *ngIf="order.orderable.knowledge_documents && order.orderable.knowledge_documents.length > 0" class="mt-2">
+              <div *ngIf="order.orderable.knowledge_documents?.length" class="mt-2">
                 <div class="d-flex flex-wrap pt-2 gap-2">
                   <div *ngFor="let extension of utils.getUniqueExtensions(order.orderable)" class="position-relative d-inline-block mb-2">
                     <img
@@ -187,6 +187,26 @@
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+
+          <!-- Project Item -->
+          <div *ngIf="isProjectMode && order.orderable?.project" class="mb-3">
+            <div class="d-flex flex-column gap-2">
+              <a class="text-info text-decoration-none fw-bold fs-6">
+                {{ utils.getProjectTitle(order, lang) }}
+              </a>
+              <div class="d-flex flex-wrap gap-2">
+                <span *ngIf="utils.getProjectNo(order)" class="badge badge-light-info">
+                  {{ utils.getProjectNo(order) }}
+                </span>
+                <span class="badge badge-light-primary">
+                  {{ lang === 'ar' ? 'مشروع' : 'Project' }}
+                </span>
+              </div>
+              <p *ngIf="utils.getProjectDescription(order)" class="text-muted fs-7 mb-0">
+                {{ utils.getProjectDescription(order) }}
+              </p>
             </div>
           </div>
 
@@ -222,9 +242,11 @@
                 
             </div>
           </div>
-          <h5 class="mb-3">{{ lang === 'ar' ? 'لا توجد مشتريات' : 'No Orders Found' }}</h5>
+          <h5 class="mb-3">
+            {{ isProjectMode ? (lang === 'ar' ? 'لا توجد طلبات مشاريع' : 'No Project Orders Found') : (lang === 'ar' ? 'لا توجد مشتريات' : 'No Orders Found') }}
+          </h5>
           <p class="text-muted">
-            {{ lang === 'ar' ? 'لم تقم بأي طلبات بعد' : 'You haven\'t placed any orders yet.' }}
+            {{ isProjectMode ? (lang === 'ar' ? 'لم تقم بأي طلبات مشاريع بعد' : 'You have not placed any project orders yet.') : (lang === 'ar' ? 'لم تقم بأي طلبات بعد' : 'You haven\'t placed any orders yet.') }}
           </p>
         </div>
     </div>

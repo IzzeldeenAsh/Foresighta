@@ -52,17 +52,17 @@
                   <i (click)="copyOrder(order.order_no)" class="ki-outline ki-copy fs-6 cursor-pointer"></i>
                 </div>
                 <!-- Insighter Information -->
-                <div class="d-flex align-items-center flex-wrap mb-1" *ngIf="order.orderable.insighter">
+                <div class="d-flex align-items-center flex-wrap mb-1" *ngIf="order.orderable?.insighter as insighter">
                   <div class="symbol symbol-25px me-2">
-                    <img *ngIf="order.orderable.insighter.profile_photo_url"
-                         [src]="order.orderable.insighter.profile_photo_url"
-                         [alt]="order.orderable.insighter.name"
+                    <img *ngIf="insighter.profile_photo_url"
+                         [src]="insighter.profile_photo_url"
+                         [alt]="insighter.name"
                          class="symbol-label rounded-circle"
                          style="object-fit: cover; object-position: top;">
-                    <div *ngIf="!order.orderable.insighter.profile_photo_url"
+                    <div *ngIf="!insighter.profile_photo_url"
                          class="symbol-label bg-light-info rounded-circle d-flex align-items-center justify-content-center">
                       <span class="text-info fw-bold fs-8">
-                        {{ getInsighterInitials(order.orderable.insighter) }}
+                        {{ getInsighterInitials(insighter) }}
                       </span>
                     </div>
 
@@ -70,14 +70,14 @@
                       <img [src]="order.user?.company?.logo" [alt]="order.user?.company?.legal_name" class="symbol-label rounded-circle" style="width: 17px; height: 25px; object-fit: cover; object-position: top;">
                     </ng-container>
                   </div>
-                  <a *ngIf="order.orderable.insighter.uuid; else justInsighterName"
-                     [href]="'https://insightabusiness.com/' + lang + '/profile/' + order.orderable.insighter.uuid + '?entity=insighter'"
+                  <a *ngIf="insighter.uuid; else justInsighterName"
+                     [href]="'https://insightabusiness.com/' + lang + '/profile/' + insighter.uuid + '?entity=insighter'"
                      target="_blank"
                      class="text-info text-decoration-none fs-7 me-2">
-                    {{ order.orderable.insighter.name }}
+                    {{ insighter.name }}
                   </a>
                   <ng-template #justInsighterName>
-                    <span class="text-muted fs-7 me-2">{{ order.orderable.insighter.name }}</span>
+                    <span class="text-muted fs-7 me-2">{{ insighter.name }}</span>
                   </ng-template>
                   <span class="badge badge-light-success ms-auto ms-md-2 mb-0">
                     {{ lang === 'ar' ? 'خبير' : 'Insighter' }}
@@ -105,8 +105,8 @@
           </div>
 
           <!-- Knowledge Items -->
-          <div *ngIf="order.orderable" class="mb-5">
-            <div *ngFor="let knowledge of order.orderable.knowledge" class="mb-4">
+          <div *ngIf="order.orderable && !isProjectMode" class="mb-5">
+            <div *ngFor="let knowledge of order.orderable.knowledge || []" class="mb-4">
               <div class="d-flex align-items-center ">
                 <div >
                   <a
@@ -117,7 +117,7 @@
               </div>
 
               <!-- Documents Preview -->
-              <div *ngIf="order.orderable.knowledge_documents && order.orderable.knowledge_documents.length > 0" class="mt-4">
+              <div *ngIf="order.orderable.knowledge_documents?.length" class="mt-4">
                 <div class="d-flex flex-wrap pt-3 gap-4">
                   <div *ngFor="let extension of utils.getUniqueExtensions(order.orderable)" class="position-relative d-inline-block">
                     <img
@@ -134,6 +134,26 @@
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+
+          <!-- Project Item -->
+          <div *ngIf="isProjectMode && order.orderable?.project" class="mb-5">
+            <div class="d-flex flex-column gap-2">
+              <a class="text-info text-decoration-none fw-bold fs-6">
+                {{ utils.getProjectTitle(order, lang) }}
+              </a>
+              <div class="d-flex flex-wrap gap-2">
+                <span *ngIf="utils.getProjectNo(order)" class="badge badge-light-info">
+                  {{ utils.getProjectNo(order) }}
+                </span>
+                <span class="badge badge-light-primary">
+                  {{ lang === 'ar' ? 'مشروع' : 'Project' }}
+                </span>
+              </div>
+              <p *ngIf="utils.getProjectDescription(order)" class="text-muted fs-7 mb-0">
+                {{ utils.getProjectDescription(order) }}
+              </p>
             </div>
           </div>
 
@@ -161,9 +181,11 @@
           <i class="ki-outline ki-chart-line fs-2 text-success"></i>
         </div>
       </div>
-      <h5 class="mb-3">{{ lang === 'ar' ? "لا توجد مبيعات" : 'No Sales Orders Found' }}</h5>
+      <h5 class="mb-3">
+        {{ isProjectMode ? (lang === 'ar' ? 'لا توجد مبيعات مشاريع' : 'No Project Sales Found') : (lang === 'ar' ? "لا توجد مبيعات" : 'No Sales Orders Found') }}
+      </h5>
       <p class="text-muted">
-        {{ lang === 'ar' ? 'لم تقم بأي مبيعات بعد' : 'You have no sales orders yet.' }}
+        {{ isProjectMode ? (lang === 'ar' ? 'لا توجد طلبات مشاريع مباعة بعد' : 'You have no project sales yet.') : (lang === 'ar' ? 'لم تقم بأي مبيعات بعد' : 'You have no sales orders yet.') }}
       </p>
     </div>
   </div>

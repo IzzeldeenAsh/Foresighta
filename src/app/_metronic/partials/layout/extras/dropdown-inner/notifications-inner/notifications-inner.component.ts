@@ -242,6 +242,12 @@ export class NotificationsInnerComponent extends BaseComponent implements OnInit
 
   // Separate navigation logic to make it cleaner
   private handleNotificationNavigation(notification: Notification): void {
+    // Project notifications: route by Pusher event name (precise for realtime),
+    // with a sub_type/role fallback for REST-fetched ones. Returns true if handled.
+    if (this.tryHandleProjectNotification(notification)) {
+      return;
+    }
+
     if (notification.sub_type === 'project_proposal_offer') {
       const targetUrl = '/app/insighter-dashboard/project-offers';
       const currentUrl = this.router.url;
@@ -333,6 +339,113 @@ export class NotificationsInnerComponent extends BaseComponent implements OnInit
         }
       });
     }
+  }
+
+  // Navigate only if we're not already on the target URL.
+  private navigateTo(url: string): void {
+    if (this.router.url !== url) {
+      this.router.navigateByUrl(url);
+    }
+  }
+
+  /**
+   * Routes project-related notifications. Returns true if handled.
+   *
+   * `notification.param` carries the routing id, which differs per event:
+   *   - proposal.uuid  -> project-offers/details/:uuid
+   *   - project.uuid   -> on-work-projects/details/:uuid (insighter side)
+   *                       or projects-created/:uuid (client side)
+   *   - order id (int) -> sales (left to the generic `type === 'order'` branch)
+   *
+   * Realtime notifications carry `event_name` (exact). REST-fetched ones don't,
+   * so we fall back to `sub_type` + the user's role where client/insighter share
+   * the same sub_type (project_closed, project, project_file_uploaded).
+   */
+  private tryHandleProjectNotification(n: Notification): boolean {
+    const param = n.param;
+    const insighterBase = '/app/insighter-dashboard/on-work-projects';
+    const clientBase = '/app/insighter-dashboard/projects-created';
+    const offersBase = '/app/insighter-dashboard/project-offers';
+
+    // 1) Precise routing by Pusher event name (realtime).
+    switch (n.event_name) {
+      // Insighter receives, param = proposal.uuid
+      case 'project.match.invited':
+        this.navigateTo(param ? `${offersBase}/details/${param}` : offersBase);
+        return true;
+
+      // Client receives, param = proposal.uuid (no client proposal-detail route -> list)
+      case 'project.proposal.offer':
+        this.navigateTo(clientBase);
+        return true;
+
+      // Insighter receives, param = project.uuid
+      case 'project.insighter.closed':
+      case 'project.insighter.contract':
+      case 'project.review.submission.reviewed':
+        this.navigateTo(param ? `${insighterBase}/details/${param}` : insighterBase);
+        return true;
+
+      // Client receives, param = project.uuid
+      case 'project.client.closed':
+      case 'project.client.contract':
+      case 'project.review.submission':
+        this.navigateTo(param ? `${clientBase}/${param}` : clientBase);
+        return true;
+
+      // Insighter receives, param = orderable id (int) -> list page
+      case 'project.service.started':
+        this.navigateTo(insighterBase);
+        return true;
+
+      // param = order id (int) -> handled by the generic `type === 'order'` branch
+      case 'order.project':
+        return false;
+
+      // Sent to whoever did NOT upload the file -> decide by role
+      case 'project.file.uploaded':
+        this.navigateByProjectRole(param, insighterBase, clientBase);
+        return true;
+    }
+
+    // 2) REST fallback (no event_name): distinguish by sub_type; use role where ambiguous.
+    switch (n.sub_type) {
+      case 'project_proposal':                    // match.invited (insighter), proposal.uuid
+        this.navigateTo(param ? `${offersBase}/details/${param}` : offersBase);
+        return true;
+      case 'project_review_submission':           // client, project.uuid
+        this.navigateTo(param ? `${clientBase}/${param}` : clientBase);
+        return true;
+      case 'project_review_submission_reviewed':  // insighter, project.uuid
+        this.navigateTo(param ? `${insighterBase}/details/${param}` : insighterBase);
+        return true;
+      case 'project_service':                     // service.started (insighter), orderable id
+        this.navigateTo(insighterBase);
+        return true;
+      case 'project_closed':                      // client OR insighter, project.uuid -> role
+      case 'project':                             // contract: client OR insighter, project.uuid -> role
+      case 'project_file_uploaded':               // either side, project.uuid -> role
+        this.navigateByProjectRole(param, insighterBase, clientBase);
+        return true;
+    }
+
+    return false;
+  }
+
+  // Resolve client vs insighter destination by the user's role.
+  private navigateByProjectRole(param: any, insighterBase: string, clientBase: string): void {
+    this.profileService.getProfile().subscribe(user => {
+      const roles: string[] = user?.roles ?? [];
+      const isInsighter =
+        roles.includes('insighter') ||
+        roles.includes('company') ||
+        roles.includes('company-insighter');
+      if (isInsighter) {
+        this.navigateTo(param ? `${insighterBase}/details/${param}` : insighterBase);
+      } else {
+        this.navigateTo(param ? `${clientBase}/${param}` : clientBase);
+      }
+    });
   }
 
   // if(notification.type === 'meeting'){

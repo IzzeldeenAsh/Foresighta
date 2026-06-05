@@ -39,6 +39,30 @@
       </div>
     </div>
 
+    <!-- Payment Breakdown -->
+    <div *ngIf="utils.getOrderPayments(order).length > 1" class="payment-breakdown bg-light rounded-3 border p-4 mb-4">
+      <div class="mb-3">
+        <h6 class="fw-bold text-dark mb-0">{{ lang === 'ar' ? 'الدفعات' : 'Payments' }}</h6>
+      </div>
+      <div class="d-flex flex-column gap-3">
+        <div *ngFor="let payment of utils.getOrderPayments(order); let i = index" class="bg-white rounded border p-3">
+          <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap">
+            <div>
+              <div class="fw-bold text-dark mb-1">
+                {{ lang === 'ar' ? 'دفعة' : 'Payment' }} #{{ i + 1 }}
+              </div>
+              <div class="text-muted fs-7">{{ utils.getPaymentMethodDisplay(payment, lang) }}</div>
+              <div *ngIf="payment.invoice_no" class="text-muted fs-8">{{ payment.invoice_no }}</div>
+            </div>
+            <div class="text-end">
+              <div class="fw-bold text-dark">{{ payment.amount === 0 ? (lang === 'ar' ? 'مجاني' : 'Free') : '$' + payment.amount }}</div>
+              <span [ngClass]="utils.getStatusBadgeClass(payment.status || '')">{{ payment.status || '-' }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Client Information -->
     <div *ngIf="order.user" class="client-info bg-light rounded-3 border p-4 mb-4">
       <div class="mb-3">
@@ -171,20 +195,39 @@
       </div>
     </div>
 
+    <!-- Project Details -->
+    <div *ngIf="order.orderable?.project" class="knowledge-details bg-light rounded-3 border p-4 mb-4">
+      <div class="mb-3">
+        <h6 class="fw-bold text-dark mb-0">{{ lang === 'ar' ? 'المشروع' : 'Project' }}</h6>
+      </div>
+      <h6 class="fw-semibold text-info mb-3">{{ utils.getProjectTitle(order, lang) }}</h6>
+      <div class="d-flex flex-wrap gap-2 mb-3">
+        <span *ngIf="utils.getProjectNo(order)" class="badge badge-light-info">
+          {{ utils.getProjectNo(order) }}
+        </span>
+        <span class="badge badge-light-primary">
+          {{ lang === 'ar' ? 'طلب مشروع' : 'Project Order' }}
+        </span>
+      </div>
+      <p *ngIf="utils.getProjectDescription(order)" class="text-muted fs-7 mb-0">
+        {{ utils.getProjectDescription(order) }}
+      </p>
+    </div>
+
     <!-- Knowledge Items -->
-    <div *ngIf="order.orderable" class="knowledge-details bg-light rounded-3 border p-4">
+    <div *ngIf="order.orderable?.knowledge?.length" class="knowledge-details bg-light rounded-3 border p-4">
       <div class="mb-3">
         <h6 class="fw-bold text-dark mb-0">{{ lang === 'ar' ? "المستند المباع" : 'Knowledge Items' }}</h6>
       </div>
 
-      <div *ngFor="let knowledge of order.orderable.knowledge" class="knowledge-item mb-4">
+      <div *ngFor="let knowledge of order.orderable.knowledge || []" class="knowledge-item mb-4">
         <h6 class="fw-semibold text-info mb-3">{{ knowledge.title }}</h6>
 
         <!-- Documents -->
-        <div *ngIf="order.orderable.knowledge_documents && order.orderable.knowledge_documents.length > 0">
+        <div *ngIf="order.orderable.knowledge_documents?.length">
           <div class="fs-7 text-muted mb-2">{{ lang === 'ar' ? 'المستندات:' : 'Documents:' }}</div>
           <div class="row g-2">
-            <ng-container *ngFor="let docGroup of order.orderable.knowledge_documents">
+            <ng-container *ngFor="let docGroup of order.orderable.knowledge_documents || []">
               <div *ngFor="let doc of docGroup" class="col-md-12">
                 <div class="document-card bg-white rounded border p-3">
                   <div class="d-flex align-items-center">

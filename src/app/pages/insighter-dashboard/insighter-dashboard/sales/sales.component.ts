@@ -63,7 +63,7 @@ export class SalesComponent extends BaseComponent implements OnInit, OnDestroy, 
   isInsighter = false;
 
   // Tab management
-  activeTab: 'analytics' | 'sold-details' | 'sold-meetings' = 'analytics';
+  activeTab: 'analytics' | 'sold-details' | 'sold-meetings' | 'sold-projects' = 'analytics';
 
   // Sold knowledge data
   soldOrders$ = new BehaviorSubject<Order[]>([]);
@@ -76,6 +76,12 @@ export class SalesComponent extends BaseComponent implements OnInit, OnDestroy, 
   soldMeetingTotalPages$ = new BehaviorSubject<number>(0);
   currentSoldMeetingPage = 1;
   isSoldMeetingLoading$ = new BehaviorSubject<boolean>(false);
+
+  // Sold project data
+  soldProjectOrders$ = new BehaviorSubject<Order[]>([]);
+  soldProjectTotalPages$ = new BehaviorSubject<number>(0);
+  currentSoldProjectPage = 1;
+  isSoldProjectLoading$ = new BehaviorSubject<boolean>(false);
 
   selectedInsighterUuid: string | null = null;
   roles: string[] = [];
@@ -113,6 +119,10 @@ export class SalesComponent extends BaseComponent implements OnInit, OnDestroy, 
     return lang === 'ar'
       ? shortLabels[option.value]?.ar || option.labelAr
       : shortLabels[option.value]?.en || option.label;
+  }
+
+  get canViewProjectSalesTab(): boolean {
+    return this.isCompany || this.isInsighter || this.roles.includes('company-insighter');
   }
 
   constructor(
@@ -216,14 +226,19 @@ export class SalesComponent extends BaseComponent implements OnInit, OnDestroy, 
     });
   }
 
-  setActiveTab(tab: 'analytics' | 'sold-details' | 'sold-meetings'): void {
+  setActiveTab(tab: 'analytics' | 'sold-details' | 'sold-meetings' | 'sold-projects'): void {
+    if (tab === 'sold-projects' && !this.canViewProjectSalesTab) {
+      return;
+    }
+
     this.activeTab = tab;
 
     // Update URL with tab parameter
     const tabNumbers = {
       'analytics': 1,
       'sold-details': 2,
-      'sold-meetings': 3
+      'sold-meetings': 3,
+      'sold-projects': 4
     };
 
     this.router.navigate([], {
@@ -237,6 +252,9 @@ export class SalesComponent extends BaseComponent implements OnInit, OnDestroy, 
     }
     if (tab === 'sold-meetings' && this.soldMeetingOrders$.value.length === 0) {
       this.loadSoldMeetingOrders();
+    }
+    if (tab === 'sold-projects' && this.soldProjectOrders$.value.length === 0) {
+      this.loadSoldProjectOrders();
     }
   }
 
@@ -276,6 +294,24 @@ export class SalesComponent extends BaseComponent implements OnInit, OnDestroy, 
       });
   }
 
+  private loadSoldProjectOrders(): void {
+    this.isSoldProjectLoading$.next(true);
+    const role = this.isCompany ? 'company' : 'insighter';
+    this.myOrdersService.getSalesProjectOrders(this.currentSoldProjectPage, role, this.selectedInsighterUuid || undefined)
+      .pipe(takeUntil(this.unsubscribe$))
+      .subscribe({
+        next: (response) => {
+          this.soldProjectOrders$.next(response.data);
+          this.soldProjectTotalPages$.next(response.meta.last_page);
+          this.isSoldProjectLoading$.next(false);
+        },
+        error: (error) => {
+          this.handleServerErrors(error);
+          this.isSoldProjectLoading$.next(false);
+        }
+      });
+  }
+
   onSoldPageChange(page: number): void {
     this.currentSoldPage = page;
     this.loadSoldOrders();
@@ -286,8 +322,13 @@ export class SalesComponent extends BaseComponent implements OnInit, OnDestroy, 
     this.loadSoldMeetingOrders();
   }
 
+  onSoldProjectPageChange(page: number): void {
+    this.currentSoldProjectPage = page;
+    this.loadSoldProjectOrders();
+  }
+
   onOrderSelected(order: Order): void {
-    if (this.activeTab === 'sold-details') {
+    if (this.activeTab === 'sold-details' || this.activeTab === 'sold-projects') {
       // Show knowledge order details dialog
       this.selectedOrderForDialog = order;
       this.showOrderDetailsDialog = true;
@@ -330,11 +371,15 @@ export class SalesComponent extends BaseComponent implements OnInit, OnDestroy, 
     this.selectedInsighterUuid = insighterUuid;
     this.currentSoldPage = 1;
     this.currentSoldMeetingPage = 1;
+    this.currentSoldProjectPage = 1;
     if (this.activeTab === 'sold-details') {
       this.loadSoldOrders();
     }
     if (this.activeTab === 'sold-meetings') {
       this.loadSoldMeetingOrders();
+    }
+    if (this.activeTab === 'sold-projects') {
+      this.loadSoldProjectOrders();
     }
   }
 
@@ -1085,14 +1130,19 @@ export class SalesComponent extends BaseComponent implements OnInit, OnDestroy, 
     this.route.queryParams.subscribe(params => {
       const tabParam = params['tab'];
       if (tabParam) {
-        const tabMap: { [key: string]: 'analytics' | 'sold-details' | 'sold-meetings' } = {
+        const tabMap: { [key: string]: 'analytics' | 'sold-details' | 'sold-meetings' | 'sold-projects' } = {
           '1': 'analytics',
           '2': 'sold-details',
-          '3': 'sold-meetings'
+          '3': 'sold-meetings',
+          '4': 'sold-projects'
         };
 
         const newTab = tabMap[tabParam];
         if (newTab && newTab !== this.activeTab) {
+          if (newTab === 'sold-projects' && !this.canViewProjectSalesTab) {
+            return;
+          }
+
           this.activeTab = newTab;
 
           if (newTab === 'sold-details' && this.soldOrders$.value.length === 0) {
@@ -1100,6 +1150,9 @@ export class SalesComponent extends BaseComponent implements OnInit, OnDestroy, 
           }
           if (newTab === 'sold-meetings' && this.soldMeetingOrders$.value.length === 0) {
             this.loadSoldMeetingOrders();
+          }
+          if (newTab === 'sold-projects' && this.soldProjectOrders$.value.length === 0) {
+            this.loadSoldProjectOrders();
           }
         }
       }

@@ -90,6 +90,14 @@
                     [attr.aria-selected]="activeTab === 'documents'"
                     (click)="setActiveTab('documents')">
               <span>{{ lang === 'ar' ? 'المستندات' : 'Documents' }}</span>
+              <ng-container *ngIf="unreadDocumentsCount$ | async as unreadDocumentsCount">
+                <span
+                  *ngIf="unreadDocumentsCount > 0"
+                  class="pd-tab-badge"
+                  [attr.aria-label]="lang === 'ar' ? 'مستندات غير مقروءة' : 'Unread documents'">
+                  {{ unreadDocumentsCount }}
+                </span>
+              </ng-container>
             </button>
 
             <button type="button"
@@ -99,6 +107,23 @@
                     [attr.aria-selected]="activeTab === 'reviews'"
                     (click)="setActiveTab('reviews')">
               <span>{{ lang === 'ar' ? 'المراجعات' : 'Reviews' }}</span>
+              <ng-container *ngIf="unreadReviewSubmissionsCount$ | async as unreadReviewSubmissionsCount">
+                <span
+                  *ngIf="unreadReviewSubmissionsCount > 0"
+                  class="pd-tab-badge"
+                  [attr.aria-label]="lang === 'ar' ? 'مراجعات غير مقروءة' : 'Unread reviews'">
+                  {{ unreadReviewSubmissionsCount }}
+                </span>
+              </ng-container>
+            </button>
+
+            <button type="button"
+                    class="pd-tab"
+                    role="tab"
+                    [class.active]="activeTab === 'discussion'"
+                    [attr.aria-selected]="activeTab === 'discussion'"
+                    (click)="setActiveTab('discussion')">
+              <span>{{ lang === 'ar' ? 'النقاش' : 'Discussion' }}</span>
             </button>
           </div>
 
@@ -178,11 +203,15 @@
           </section>
 
           <!-- Scopes -->
-          <section class="pd-section" *ngIf="p.scopes?.length">
-            <div class="pd-section__head">
+          <details class="pd-section pd-section--accordion" *ngIf="p.scopes?.length">
+            <summary class="pd-section__head pd-section__summary">
+              <span class="pd-section__title-icon" aria-hidden="true"><i class="pi pi-list"></i></span>
               <h6 class="pd-section__title">{{ lang === 'ar' ? 'النطاقات' : 'Scopes' }}</h6>
               <span class="pd-section__eyebrow">{{ lang === 'ar' ? 'تفاصيل العمل' : 'Work Scope' }}</span>
-            </div>
+              <span class="pd-section__chevron" aria-hidden="true">
+                <i class="pi pi-chevron-down"></i>
+              </span>
+            </summary>
 
             <div class="pd-scope-list">
               <div class="pd-detail-card pd-detail-card--scope"
@@ -217,14 +246,18 @@
                 </div>
               </div>
             </div>
-          </section>
+          </details>
 
           <!-- Deliverable Stages -->
-          <section class="pd-section" *ngIf="getComponent('deliverable-stage') as deliverableStage">
-            <div class="pd-section__head">
+          <details class="pd-section pd-section--accordion" *ngIf="getComponent('deliverable-stage') as deliverableStage">
+            <summary class="pd-section__head pd-section__summary">
+              <span class="pd-section__title-icon" aria-hidden="true"><i class="pi pi-file"></i></span>
               <h6 class="pd-section__title">{{ lang === 'ar' ? 'مراحل التسليم' : 'Deliverable Stages' }}</h6>
               <span class="pd-section__eyebrow">{{ lang === 'ar' ? 'خطة التسليم' : 'Delivery Timeline' }}</span>
-            </div>
+              <span class="pd-section__chevron" aria-hidden="true">
+                <i class="pi pi-chevron-down"></i>
+              </span>
+            </summary>
             <div class="pd-stage-grid">
               <div class="pd-stage-card" *ngIf="deliverableStage.first_draft as firstDraft">
                 <div class="pd-stage-card__head">
@@ -296,14 +329,18 @@
                 </div>
               </div>
             </div>
-          </section>
+          </details>
 
           <!-- Target Market -->
-          <section class="pd-section" *ngIf="getComponent('target-market') as targetMarket">
-            <div class="pd-section__head">
+          <details class="pd-section pd-section--accordion" *ngIf="getComponent('target-market') as targetMarket">
+            <summary class="pd-section__head pd-section__summary">
+              <span class="pd-section__title-icon" aria-hidden="true"><i class="pi pi-map-marker"></i></span>
               <h6 class="pd-section__title">{{ lang === 'ar' ? 'السوق المستهدف' : 'Target Market' }}</h6>
               <span class="pd-section__eyebrow">{{ lang === 'ar' ? 'النطاق الجغرافي' : 'Geographic Reach' }}</span>
-            </div>
+              <span class="pd-section__chevron" aria-hidden="true">
+                <i class="pi pi-chevron-down"></i>
+              </span>
+            </summary>
             <div class="pd-detail-card">
               <div class="pd-detail-card__header">
                 <span class="pd-detail-card__icon"><i class="ki-outline ki-geolocation fs-4"></i></span>
@@ -328,14 +365,18 @@
                 </div>
               </div>
             </div>
-          </section>
+          </details>
 
           <!-- Data Sources -->
-          <section class="pd-section" *ngIf="getComponent('data-sources-expected') as dataSources">
-            <div class="pd-section__head">
+          <details class="pd-section pd-section--accordion" *ngIf="getComponent('data-sources-expected') as dataSources">
+            <summary class="pd-section__head pd-section__summary">
+              <span class="pd-section__title-icon" aria-hidden="true"><i class="pi pi-database"></i></span>
               <h6 class="pd-section__title">{{ lang === 'ar' ? 'مصادر البيانات' : 'Data Sources' }}</h6>
               <span class="pd-section__eyebrow">{{ lang === 'ar' ? 'منهجية البحث' : 'Research Inputs' }}</span>
-            </div>
+              <span class="pd-section__chevron" aria-hidden="true">
+                <i class="pi pi-chevron-down"></i>
+              </span>
+            </summary>
             <div class="pd-detail-card">
               <div class="pd-detail-card__header">
                 <span class="pd-detail-card__icon"><i class="ki-outline ki-abstract-39 fs-4"></i></span>
@@ -352,14 +393,18 @@
                 </div>
               </div>
             </div>
-          </section>
+          </details>
 
           <!-- Add-ons -->
-          <section class="pd-section" *ngIf="hasAddons()">
-            <div class="pd-section__head">
+          <details class="pd-section pd-section--accordion" *ngIf="hasAddons()">
+            <summary class="pd-section__head pd-section__summary">
+              <span class="pd-section__title-icon" aria-hidden="true"><i class="pi pi-plus-circle"></i></span>
               <h6 class="pd-section__title">{{ lang === 'ar' ? 'الإضافات' : 'Add-ons' }}</h6>
               <span class="pd-section__eyebrow">{{ lang === 'ar' ? 'عناصر داعمة' : 'Supporting Scope' }}</span>
-            </div>
+              <span class="pd-section__chevron" aria-hidden="true">
+                <i class="pi pi-chevron-down"></i>
+              </span>
+            </summary>
             <div class="pd-addon-grid">
               <div class="pd-addon-card" *ngIf="getAddon('kickoff-meeting') as kickoff">
                 <div class="pd-addon-card__head">
@@ -410,7 +455,7 @@
                 </div>
               </div>
             </div>
-          </section>
+          </details>
           </ng-container>
 
           <ng-container *ngIf="activeTab === 'documents'">
@@ -442,9 +487,13 @@
                 <div class="pd-document-list">
                   <button type="button"
                           class="pd-document-card"
+                          [class.pd-document-card--new]="isUnreadFile(file)"
                           *ngFor="let file of group.files; trackBy: trackByFile"
                           [disabled]="isOpeningFile(file)"
                           (click)="openProjectFile(file)">
+                    <span class="pd-new-ribbon" *ngIf="isUnreadFile(file)">
+                      {{ lang === 'ar' ? 'جديد' : 'New' }}
+                    </span>
                     <img class="pd-document-card__icon"
                          [src]="getFileTypeIconPath(getProjectFileExtension(file))"
                          [alt]="getProjectFileExtension(file) || 'file'"
@@ -576,9 +625,20 @@
                   class="pd-review-card"
                   [class.pd-review-card--pending]="isReviewPending(review)"
                   [class.pd-review-card--answered]="!isReviewPending(review)"
+                  [class.pd-review-card--new]="isUnreadReview(review)"
+                  (click)="markReviewSubmissionAsRead(review)"
                   *ngFor="let review of getSortedReviewSubmissions(); let i = index; trackBy: trackByReview">
+                  <span class="pd-new-ribbon pd-new-ribbon--review" *ngIf="isUnreadReview(review)">
+                    {{ lang === 'ar' ? 'جديد' : 'New' }}
+                  </span>
                   <div class="pd-review-card__tab">
                     {{ lang === 'ar' ? 'مراجعة' : 'Review' }} {{ i + 1 }}
+                  </div>
+                  <div
+                    class="pd-review-card__priority-ribbon"
+                    [ngClass]="getReviewPriorityClass(review)"
+                    *ngIf="getReviewPriorityValue(review)">
+                    {{ getReviewPriorityLabel(review) }}
                   </div>
 
                   <div class="pd-review-card__panel">
@@ -644,6 +704,13 @@
                 </div>
               </ng-template>
             </section>
+          </ng-container>
+
+          <ng-container *ngIf="activeTab === 'discussion'">
+            <app-project-discussion
+              [projectUuid]="p.uuid"
+              context="client">
+            </app-project-discussion>
           </ng-container>
 
         </div>
@@ -1073,6 +1140,60 @@
                   </div>
                 </div>
 
+                <div *ngIf="shouldShowClosedFinalPayment(p) && p.order as order"
+                     class="pd-timeline-step">
+                  <div class="card border border-dashed d-flex flex-column p-6 gap-8 flex-grow-1 mb-2 me-4">
+                    <div class="d-flex flex-stack">
+                      <div class="d-flex flex-center h-40px w-40px flex-shrink-0 rounded-circle bg-gray-100 border border-gray-200">
+                        <i class="ki-outline ki-dollar text-gray-600 lh-0 fs-2"></i>
+                      </div>
+                      <span class="rounded text-success fw-semibold fs-8 bg-light-success py-1 px-2 border border-success-clarity">
+                        {{ lang === 'ar' ? 'مكتمل' : 'Completed' }}
+                      </span>
+                    </div>
+                    <div class="d-flex flex-column gap-2">
+                      <span class="fs-base text-gray-500">
+                        {{ lang === 'ar' ? 'الخطوة' : 'Step' }} {{ getWorkflowStepNumber('final_payment', p) }}
+                      </span>
+                      <span class="fs-6 fw-bold text-gray-800">{{ lang === 'ar' ? 'الدفعة النهائية' : 'Final Payment' }}</span>
+                      <span class="fs-8 text-gray-500">{{ getProjectFinalPaymentLabel(order) }}</span>
+                    </div>
+                  </div>
+
+                  <div class="pd-timeline-dot pd-timeline-dot--completed">
+                    <div></div>
+                  </div>
+                </div>
+
+                <div *ngIf="isProjectClosed(p)"
+                     class="pd-timeline-step">
+                  <div class="card border border-dashed d-flex flex-column p-6 gap-8 flex-grow-1 mb-2 me-4">
+                    <div class="d-flex flex-stack">
+                      <div class="d-flex flex-center h-40px w-40px flex-shrink-0 rounded-circle bg-gray-100 border border-gray-200">
+                        <i class="ki-outline ki-check-circle text-success lh-0 fs-2"></i>
+                      </div>
+                      <span class="rounded text-success fw-semibold fs-8 bg-light-success py-1 px-2 border border-success-clarity">
+                        {{ lang === 'ar' ? 'مكتمل' : 'Completed' }}
+                      </span>
+                    </div>
+                    <div class="d-flex flex-column gap-1">
+                      <span class="fs-base text-gray-500">
+                        {{ lang === 'ar' ? 'الخطوة الأخيرة' : 'Final Step' }}
+                      </span>
+                      <span class="fs-6 fw-bold text-gray-800">
+                        {{ lang === 'ar' ? 'تم إغلاق المشروع' : 'Project Closed' }}
+                      </span>
+                      <span class="fs-8 text-gray-500">
+                        {{ lang === 'ar' ? 'اكتمل هذا المشروع وتم إغلاقه.' : 'This project has been completed and closed.' }}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div class="pd-timeline-dot pd-timeline-dot--completed">
+                    <div></div>
+                  </div>
+                </div>
+
                 <div *ngIf="shouldShowCloseProjectPanel(p)"
                      class="pd-timeline-step">
                   <div class="card d-flex flex-column p-6 gap-8 flex-grow-1 mb-2 me-4 pd-workflow-card"
@@ -1152,13 +1273,13 @@
 
           <span *ngIf="!hasContractAction(p)"
                 class="d-block w-100 mt-3"
-                [pTooltip]="lang === 'ar' ? 'لا يمكنك إنشاء عرض جديد في هذه المرحلة. المشروع لم تنتهِ صلاحيته بعد، أو لا يزال هناك مستشارون مدعوون لم يقدّموا عرضًا بعد.' : 'You cannot create a new proposal at this stage. The project is not expired yet, or there are still invited insighters who have not provided an offer.'"
+                [pTooltip]="getRematchDisabledReason(p)"
                 tooltipPosition="top"
-                [tooltipDisabled]="p.can_rematch !== false">
+                [tooltipDisabled]="canStartRematch(p)">
             <button type="button"
                     class="btn btn-info w-100"
                     (click)="onRematch()"
-                    [disabled]="isRematchLoading || isSubmittingRematch || p.can_rematch === false">
+                    [disabled]="isRematchLoading || isSubmittingRematch || !canStartRematch(p)">
               <i class="ki-outline ki-arrows-circle fs-6 me-1"></i>
               {{
                 rematchPhase === 'creating'
@@ -1313,14 +1434,243 @@
 
   <div class="pd-rematch" [attr.dir]="lang === 'ar' ? 'rtl' : 'ltr'">
     <div class="pd-rematch-steps">
-      <div class="pd-rematch-step" [class.is-active]="rematchStep === 'matches'" [class.is-complete]="rematchStep === 'deadline'">
-        <span>1</span>
-        <strong>{{ lang === 'ar' ? 'اختيار الخبراء' : 'Select users' }}</strong>
+      <div
+        *ngFor="let step of rematchStepItems; let stepIndex = index"
+        class="pd-rematch-step"
+        [class.is-active]="rematchStep === step.id"
+        [class.is-complete]="isRematchStepComplete(step.id)">
+        <span>{{ stepIndex + 1 }}</span>
+        <strong>{{ getRematchStepLabel(step) }}</strong>
       </div>
-      <div class="pd-rematch-step" [class.is-active]="rematchStep === 'deadline'">
-        <span>2</span>
-        <strong>{{ lang === 'ar' ? 'تاريخ العرض' : 'Offer deadline' }}</strong>
+    </div>
+
+    <div *ngIf="rematchOptionsLoading" class="pd-rematch-loading">
+      <div class="pd-rematch-loader-card" *ngFor="let item of [1, 2]">
+        <span></span>
+        <div>
+          <i></i>
+          <i></i>
+        </div>
+        <b></b>
       </div>
+    </div>
+
+    <ng-container *ngIf="!rematchOptionsLoading && rematchStep === 'industry'">
+      <div class="pd-rematch-intro">
+        <h4>{{ lang === 'ar' ? 'ما القطاع المطلوب لهذا الخبير؟' : 'Which industry should this insighter match?' }}</h4>
+        <p>
+          {{ lang === 'ar' ? 'اختر القطاع الذي سيتم استخدامه في المطابقة العادية.' : 'Choose the industry that should be used for the normal matching search.' }}
+        </p>
+      </div>
+
+      <div class="pd-rematch-form">
+        <label class="pd-rematch-field" for="specific-rematch-industry">
+          <span>{{ lang === 'ar' ? 'قطاع الخبير' : 'Insighter industry' }}</span>
+          <p-dropdown
+            inputId="specific-rematch-industry"
+            [options]="rematchIndustryOptions"
+            [(ngModel)]="specificRematchProperties.insighter_industry_id"
+            optionLabel="label"
+            optionValue="id"
+            [filter]="true"
+            filterBy="label"
+            [showClear]="true"
+            appendTo="body"
+            [style]="{ width: '100%' }"
+            [placeholder]="lang === 'ar' ? 'اختر القطاع' : 'Select industry'"
+            [filterPlaceholder]="lang === 'ar' ? 'ابحث عن قطاع' : 'Search industry'"
+            (ngModelChange)="rematchError = null">
+          </p-dropdown>
+        </label>
+      </div>
+    </ng-container>
+
+    <ng-container *ngIf="!rematchOptionsLoading && rematchStep === 'preferred-type'">
+      <div class="pd-rematch-intro">
+        <h4>{{ lang === 'ar' ? 'أي نوع من الخبراء تفضّل؟' : 'Which insighter type do you prefer?' }}</h4>
+        <p>
+          {{ lang === 'ar' ? 'سيتم استخدام هذا الاختيار لتوسيع المشروع من مطابقة محددة إلى مطابقة عادية.' : 'This choice converts the specific request into the normal matching criteria.' }}
+        </p>
+      </div>
+
+      <div class="pd-rematch-choice-grid">
+        <button
+          type="button"
+          class="pd-rematch-choice"
+          [class.is-selected]="specificRematchProperties.insighter_preferred_type === 'individual'"
+          (click)="selectSpecificPreferredType('individual')">
+          <i class="ki-outline ki-user fs-3"></i>
+          <strong>{{ lang === 'ar' ? 'فرد' : 'Individual' }}</strong>
+        </button>
+        <button
+          type="button"
+          class="pd-rematch-choice"
+          [class.is-selected]="specificRematchProperties.insighter_preferred_type === 'company'"
+          (click)="selectSpecificPreferredType('company')">
+          <i class="ki-outline ki-bank fs-3"></i>
+          <strong>{{ lang === 'ar' ? 'شركة' : 'Company' }}</strong>
+        </button>
+        <button
+          type="button"
+          class="pd-rematch-choice"
+          [class.is-selected]="specificRematchProperties.insighter_preferred_type === 'either'"
+          (click)="selectSpecificPreferredType('either')">
+          <i class="ki-outline ki-people fs-3"></i>
+          <strong>{{ lang === 'ar' ? 'أي منهما' : 'Either' }}</strong>
+        </button>
+      </div>
+    </ng-container>
+
+    <ng-container *ngIf="!rematchOptionsLoading && rematchStep === 'origin'">
+      <div class="pd-rematch-intro">
+        <h4>{{ lang === 'ar' ? 'من أين تريد أن يكون الخبير؟' : 'Where should the insighter be based?' }}</h4>
+        <p>
+          {{ lang === 'ar' ? 'اختر بلدًا محددًا أو منطقة لاستخدامها في المطابقة.' : 'Choose a country or region to use in the matching criteria.' }}
+        </p>
+      </div>
+
+      <div class="pd-rematch-form">
+        <div class="pd-rematch-segment" role="group" [attr.aria-label]="lang === 'ar' ? 'نوع الموقع' : 'Origin type'">
+          <button
+            type="button"
+            [class.is-active]="specificRematchProperties.insighter_origin_type === 'country'"
+            (click)="selectSpecificOriginType('country')">
+            {{ lang === 'ar' ? 'بلد' : 'Country' }}
+          </button>
+          <button
+            type="button"
+            [class.is-active]="specificRematchProperties.insighter_origin_type === 'region'"
+            (click)="selectSpecificOriginType('region')">
+            {{ lang === 'ar' ? 'منطقة' : 'Region' }}
+          </button>
+        </div>
+
+        <label class="pd-rematch-field" for="specific-rematch-origin">
+          <span>{{ specificRematchProperties.insighter_origin_type === 'region' ? (lang === 'ar' ? 'المنطقة' : 'Region') : (lang === 'ar' ? 'البلد' : 'Country') }}</span>
+          <p-dropdown
+            inputId="specific-rematch-origin"
+            [options]="rematchOriginOptions"
+            [(ngModel)]="specificRematchProperties.insighter_origin_id"
+            optionLabel="label"
+            optionValue="id"
+            [filter]="true"
+            filterBy="label"
+            [showClear]="true"
+            appendTo="body"
+            [style]="{ width: '100%' }"
+            [placeholder]="lang === 'ar' ? 'اختياري' : 'Optional'"
+            [filterPlaceholder]="lang === 'ar' ? 'ابحث' : 'Search'"
+            (ngModelChange)="rematchError = null">
+            <ng-template pTemplate="selectedItem" let-option>
+              <span class="d-inline-flex align-items-center gap-2" *ngIf="option">
+                <img
+                  *ngIf="specificRematchProperties.insighter_origin_type === 'country' && getRematchOptionFlagPath(option)"
+                  [src]="getRematchOptionFlagPath(option)"
+                  [alt]="option.label"
+                  class="w-20px"
+                  (error)="onFlagLoadError($event)" />
+                <span>{{ option.label }}</span>
+              </span>
+            </ng-template>
+            <ng-template pTemplate="item" let-option>
+              <span class="d-inline-flex align-items-center gap-2">
+                <img
+                  *ngIf="specificRematchProperties.insighter_origin_type === 'country' && getRematchOptionFlagPath(option)"
+                  [src]="getRematchOptionFlagPath(option)"
+                  [alt]="option.label"
+                  class="w-20px"
+                  (error)="onFlagLoadError($event)" />
+                <span>{{ option.label }}</span>
+              </span>
+            </ng-template>
+          </p-dropdown>
+        </label>
+      </div>
+    </ng-container>
+
+    <ng-container *ngIf="!rematchOptionsLoading && rematchStep === 'experience'">
+      <div class="pd-rematch-intro">
+        <h4>{{ lang === 'ar' ? 'ما سنوات الخبرة المطلوبة؟' : 'What experience range is required?' }}</h4>
+        <p>
+          {{ lang === 'ar' ? 'يمكنك ترك القيم فارغة إذا لم يكن لديك حد محدد.' : 'You can leave these values empty if there is no strict range.' }}
+        </p>
+      </div>
+
+      <div class="pd-rematch-form pd-rematch-form--split">
+        <label class="pd-rematch-field" for="specific-rematch-min-exp">
+          <span>{{ lang === 'ar' ? 'الحد الأدنى للخبرة' : 'Minimum years' }}</span>
+          <input
+            id="specific-rematch-min-exp"
+            type="number"
+            min="0"
+            [(ngModel)]="specificRematchProperties.insighter_min_years_experience"
+            (ngModelChange)="rematchError = null" />
+        </label>
+        <label class="pd-rematch-field" for="specific-rematch-max-exp">
+          <span>{{ lang === 'ar' ? 'الحد الأعلى للخبرة' : 'Maximum years' }}</span>
+          <input
+            id="specific-rematch-max-exp"
+            type="number"
+            min="0"
+            [(ngModel)]="specificRematchProperties.insighter_max_years_experience"
+            (ngModelChange)="rematchError = null" />
+        </label>
+      </div>
+    </ng-container>
+
+    <ng-container *ngIf="!rematchOptionsLoading && rematchStep === 'team-size'">
+      <div class="pd-rematch-intro">
+        <h4>{{ lang === 'ar' ? 'ما حجم الفريق المطلوب؟' : 'What company team size is required?' }}</h4>
+        <p>
+          {{ lang === 'ar' ? 'يمكنك ترك القيم فارغة إذا لم يكن حجم الفريق مهمًا.' : 'You can leave these values empty if team size is not important.' }}
+        </p>
+      </div>
+
+      <div class="pd-rematch-form pd-rematch-form--split">
+        <label class="pd-rematch-field" for="specific-rematch-min-team">
+          <span>{{ lang === 'ar' ? 'الحد الأدنى للفريق' : 'Minimum team size' }}</span>
+          <input
+            id="specific-rematch-min-team"
+            type="number"
+            min="0"
+            [(ngModel)]="specificRematchProperties.company_min_team_size"
+            (ngModelChange)="rematchError = null" />
+        </label>
+        <label class="pd-rematch-field" for="specific-rematch-max-team">
+          <span>{{ lang === 'ar' ? 'الحد الأعلى للفريق' : 'Maximum team size' }}</span>
+          <input
+            id="specific-rematch-max-team"
+            type="number"
+            min="0"
+            [(ngModel)]="specificRematchProperties.company_max_team_size"
+            (ngModelChange)="rematchError = null" />
+        </label>
+      </div>
+    </ng-container>
+
+    <ng-container *ngIf="!rematchOptionsLoading && rematchStep === 'project-deadline'">
+      <div class="pd-rematch-intro">
+        <h4>{{ lang === 'ar' ? 'ما موعد انتهاء المشروع؟' : 'What is the project deadline?' }}</h4>
+        <p>
+          {{ lang === 'ar' ? 'هذا الموعد يُحفظ مع معايير المشروع قبل بدء المطابقة العادية.' : 'This deadline is saved with the project criteria before normal matching starts.' }}
+        </p>
+      </div>
+
+      <div class="pd-rematch-date">
+        <label for="specific-rematch-project-deadline">
+          {{ lang === 'ar' ? 'موعد المشروع' : 'Project deadline' }}
+        </label>
+        <input
+          id="specific-rematch-project-deadline"
+          type="date"
+          [(ngModel)]="specificRematchProperties.deadline"
+          [attr.min]="todayDateString"
+          (ngModelChange)="rematchError = null" />
+      </div>
+    </ng-container>
+
+    <div *ngIf="isSpecificRematchFlow && rematchError && rematchStep !== 'matches' && rematchStep !== 'deadline'" class="pd-rematch-error">
+      {{ rematchError }}
     </div>
 
     <ng-container *ngIf="rematchStep === 'matches'">
@@ -1551,9 +1901,33 @@
     <div class="pd-rematch-footer" [attr.dir]="lang === 'ar' ? 'rtl' : 'ltr'">
       <button type="button"
               class="pd-rematch-footer__secondary"
-              (click)="rematchStep === 'deadline' ? goToRematchMatches() : closeRematchWizard()"
+              (click)="goBackInRematchWizard()"
               [disabled]="isSubmittingRematch || isRematchLoading">
-        {{ rematchStep === 'deadline' ? (lang === 'ar' ? 'رجوع' : 'Back') : (lang === 'ar' ? 'إلغاء' : 'Cancel') }}
+        {{ rematchStep === rematchStepItems[0]?.id ? (lang === 'ar' ? 'إلغاء' : 'Cancel') : (lang === 'ar' ? 'رجوع' : 'Back') }}
+      </button>
+
+      <button
+        *ngIf="isSpecificRematchFlow && rematchStep === 'origin'"
+        type="button"
+        class="pd-rematch-footer__secondary"
+        (click)="skipSpecificOrigin()"
+        [disabled]="isSubmittingRematch || isRematchLoading">
+        {{ lang === 'ar' ? 'تخطي' : 'Skip' }}
+      </button>
+
+      <button
+        *ngIf="isSpecificRematchFlow && rematchStep !== 'matches' && rematchStep !== 'deadline'"
+        type="button"
+        class="pd-rematch-footer__primary"
+        (click)="continueSpecificRematchStep()"
+        [disabled]="!canContinueSpecificRematchStep">
+        {{
+          rematchStep === 'project-deadline' && isRematchLoading
+            ? (lang === 'ar' ? 'جاري بدء المطابقة...' : 'Starting match...')
+            : (rematchStep === 'project-deadline'
+                ? (lang === 'ar' ? 'بدء المطابقة' : 'Start matching')
+                : (lang === 'ar' ? 'متابعة' : 'Continue'))
+        }}
       </button>
 
       <button

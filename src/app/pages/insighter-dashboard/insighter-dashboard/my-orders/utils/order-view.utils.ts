@@ -97,6 +97,18 @@ export function getUniqueExtensions(orderable: Orderable): string[] {
   return Array.from(extensions);
 }
 
+export function getProjectTitle(order: Order | null | undefined, lang: Language): string {
+  return order?.orderable?.project?.title || (lang === 'ar' ? 'مشروع' : 'Project');
+}
+
+export function getProjectDescription(order: Order | null | undefined): string {
+  return order?.orderable?.project?.description || '';
+}
+
+export function getProjectNo(order: Order | null | undefined): string {
+  return order?.orderable?.project?.project_no || '';
+}
+
 export function getStatusBadgeClass(status: string): string {
   switch (status.toLowerCase()) {
     case 'paid':
@@ -116,6 +128,9 @@ export function getServiceTypeDisplay(service: string): string {
   }
   if (service === 'meeting_service') {
     return 'Meeting';
+  }
+  if (service === 'project_service') {
+    return 'Project';
   }
   return service
     .replace(/_/g, ' ')

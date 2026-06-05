@@ -18,8 +18,8 @@ export class InvoiceGeneratorService {
     });
     const invoiceNo = OrderViewUtils.getOrderInvoiceNo(order) || order.order_no;
 
-    // Check if this is a meeting order or knowledge order
     const isMeetingOrder = order.service === 'meeting_service';
+    const isProjectOrder = order.service === 'project_service';
     let serviceRows = '';
     let subtotal = order.amount;
 
@@ -46,6 +46,22 @@ export class InvoiceGeneratorService {
           </tr>
         `;
       }
+    } else if (isProjectOrder) {
+      const project = order.orderable?.project;
+      serviceRows = `
+        <tr>
+          <td class="knowledge-item" style="padding-top:8px;">Project: ${project?.title || order.order_no}</td>
+          <td class="amount" style="padding-top:8px;">$${order.amount.toFixed(2)}</td>
+        </tr>
+        ${project?.project_no ? `
+          <tr>
+            <td class="sub-item">
+              &nbsp;&nbsp;&nbsp;&nbsp;• Project No: ${project.project_no}
+            </td>
+            <td class="amount">-</td>
+          </tr>
+        ` : ''}
+      `;
     } else {
       // Handle knowledge orders - Group by knowledge package
       const knowledgePackages = new Map<string, {documents: KnowledgeDocument[], totalPrice: number}>();

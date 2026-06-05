@@ -118,6 +118,8 @@
 
 
 .main-content-area {
+    min-width: 0;
+    max-width: 100%;
     min-height: 500px;
     
     // Special handling for my-company route to give more horizontal space
@@ -703,11 +705,23 @@
 }
   
 .responsive-cont{
+  box-sizing: border-box;
+  max-width: 100%;
   padding-top: 20px;
 }
 @media screen and (max-width: 992px)  {
   .responsive-cont {
+    overflow-x: hidden;
     padding-top: 80px;
+  }
+
+  .app-main {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .main-content-area.pe-5 {
+    padding-inline: 20px !important;
   }
 }
 
@@ -715,5 +729,10 @@
 @media screen and (max-width: 574px)  {
   .responsive-cont {
     padding-top: 50px;
+  }
+
+  .main-content-area.pe-5,
+  .main-content-area.pe-2 {
+    padding-inline: 0.75rem !important;
   }
 }

@@ -36,6 +36,13 @@
           {{ lang === 'ar' ? 'الجلسات الاستشارية' : 'Sessions' }}
         </a>
       </li>
+      <li class="nav-item" *ngIf="canViewProjectSalesTab">
+        <a class="nav-link text-active-primary pb-4"
+          [class.active]="activeTab === 'sold-projects'"
+          (click)="setActiveTab('sold-projects')">
+          {{ lang === 'ar' ? 'المشاريع' : 'Projects' }}
+        </a>
+      </li>
     </ul>
   </div>
 </app-page-header>
@@ -286,6 +293,25 @@
       (orderSelected)="onOrderSelected($event)"
       (invoiceDownload)="onInvoiceDownload($event)"
       (navigateToDownloads)="onNavigateToDownloads($event)"
+      (copyOrderNo)="onCopyOrderNo($event)"
+      (insighterFilterChange)="onInsighterFilterChange($event)">
+    </app-sold-knowledge-details>
+  </ng-container>
+
+  <!-- Sold Project Details Tab -->
+  <ng-container *ngIf="activeTab === 'sold-projects'">
+    <app-sold-knowledge-details
+      [lang]="lang === 'ar' ? 'ar' : 'en'"
+      [mode]="'project'"
+      [salesOrders$]="soldProjectOrders$"
+      [salesTotalPages$]="soldProjectTotalPages$"
+      [currentSalesPage]="currentSoldProjectPage"
+      [isSalesLoading$]="isSoldProjectLoading$"
+      [selectedInsighterUuid]="selectedInsighterUuid"
+      [roles]="roles"
+      (salesPageChange)="onSoldProjectPageChange($event)"
+      (orderSelected)="onOrderSelected($event)"
+      (invoiceDownload)="onInvoiceDownload($event)"
       (copyOrderNo)="onCopyOrderNo($event)"
       (insighterFilterChange)="onInsighterFilterChange($event)">
     </app-sold-knowledge-details>
