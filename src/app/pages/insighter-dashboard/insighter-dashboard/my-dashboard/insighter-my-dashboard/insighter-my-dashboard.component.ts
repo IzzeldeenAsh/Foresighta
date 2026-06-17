@@ -1,4 +1,4 @@
-import { Component, Injector } from '@angular/core';
+import { Component, Injector, Input } from '@angular/core';
 import { Router } from '@angular/router';
 import { Observable } from 'rxjs';
 import { IKnoldgProfile } from 'src/app/_fake/models/profile.interface';
@@ -11,6 +11,8 @@ import { BaseComponent } from 'src/app/modules/base.component';
   styleUrl: './insighter-my-dashboard.component.scss'
 })
 export class InsighterMyDashboardComponent extends BaseComponent {
+  @Input() showProjectServiceSetupWidget = false;
+
   profile: IKnoldgProfile;
   hasPendingActivationRequest: boolean = false;
   userHasStatistics: boolean = false;
@@ -20,7 +22,12 @@ export class InsighterMyDashboardComponent extends BaseComponent {
   showNotificationPreferencesBanner = false;
   readonly notificationBannerImageUrl =
     "https://res.cloudinary.com/dsiku9ipv/image/upload/v1771139272/whatsappsms_l4scor.png";
+  readonly projectServiceImageUrl =
+    "./assets/media/illustrations/misc/project-service.svg";
+  readonly publishInsightsImageUrl =
+    "https://res.cloudinary.com/dsiku9ipv/image/upload/v1780901537/insight_bioyfv.png";
   readonly notificationPreferencesRoute = "/app/insighter-dashboard/account-settings/notification-settings";
+  readonly projectSettingsRoute = "/app/insighter-dashboard/account-settings/project-settings";
   constructor(
     injector: Injector,
     private profileService: ProfileService,
@@ -32,6 +39,10 @@ export class InsighterMyDashboardComponent extends BaseComponent {
 
   goToNotificationPreferences(): void {
     this.router.navigateByUrl(this.notificationPreferencesRoute);
+  }
+
+  goToProjectSettings(): void {
+    this.router.navigateByUrl(this.projectSettingsRoute);
   }
 
   private computeNotificationBannerVisibility(profile: any): void {

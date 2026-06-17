@@ -14,6 +14,11 @@ export const locale = {
     CHECK_EXPERTS: 'Check out top experts in various industries',
     TODAY_MEETINGS: 'Today\'s Sessions',
     START_UPLOADING: 'Start Publishing',
+    PUBLISH_INSIGHTS_WIDGET: {
+      TITLE: 'Publish Your Insights',
+      DESCRIPTION: 'Start earning from your expertise by publishing insight-ready content.',
+      ACTION: 'Publish Now',
+    },
     LATEST_KNOWLEDGE: 'Latest Insights',
     STATISTICS: 'Statistics',
     STATISTIC: 'Statistic',

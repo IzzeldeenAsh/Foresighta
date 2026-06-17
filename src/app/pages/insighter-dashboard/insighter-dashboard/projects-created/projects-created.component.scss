@@ -14,9 +14,21 @@
 }
 
 .pc-toolbar,
-.pc-toolbar__filters {
+.pc-toolbar__filters,
+.pc-toolbar__actions {
   min-width: 0;
   max-width: 100%;
+}
+
+.pc-toolbar {
+  align-items: flex-start !important;
+}
+
+.pc-toolbar__filters {
+  flex: 1 1 auto;
+  align-items: stretch !important;
+  flex-direction: column;
+  gap: 14px !important;
 }
 
 .pc-grid {
@@ -25,6 +37,7 @@
 
 .pc-view-toggle {
   display: inline-flex;
+  flex: 0 0 auto;
   border: 1px solid var(--pc-border);
   border-radius: 8px;
   overflow: hidden;
@@ -58,12 +71,23 @@
   }
 }
 
+.pc-toolbar__actions {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  margin-inline-start: auto;
+  margin-top: 20px;
+}
+
 .pc-filter {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  width: 100%;
   max-width: 100%;
-  min-width: min(100%, 560px);
+  min-width: 0;
 
   &__label {
     color: var(--pc-text-muted);
@@ -73,6 +97,13 @@
     letter-spacing: 0.04em;
     text-transform: uppercase;
   }
+
+  &--read-status {
+    width: auto;
+    margin-inline-start: 0;
+    padding-inline-start: 0;
+    border-inline-start: 0;
+  }
 }
 
 .pc-filter-chips {
@@ -81,6 +112,12 @@
   flex-wrap: wrap;
   gap: 6px;
   max-width: 100%;
+
+  &--read-status {
+    justify-content: flex-end;
+    flex-wrap: nowrap;
+    gap: 6px;
+  }
 }
 
 .pc-filter-chip {
@@ -133,8 +170,28 @@
     }
   }
 
+  &__count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 18px;
+    padding: 0 6px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.78);
+    color: inherit;
+    font-size: 10px;
+    font-weight: 800;
+    line-height: 1;
+  }
+
   &.active .pc-filter-chip__icon {
     background: transparent;
+    color: #ffffff;
+  }
+
+  &.active .pc-filter-chip__count {
+    background: rgba(255, 255, 255, 0.22);
     color: #ffffff;
   }
 
@@ -145,13 +202,6 @@
     --chip-active-bg: #334155;
   }
 
-  &--draft {
-    --chip-color: #475569;
-    --chip-bg: rgba(248, 250, 252, 0.9);
-    --chip-border: rgba(100, 116, 139, 0.22);
-    --chip-active-bg: #475569;
-  }
-
   &--submitted {
     --chip-color: #1d4ed8;
     --chip-bg: rgba(239, 246, 255, 0.92);
@@ -160,6 +210,13 @@
   }
 
   &--contract {
+    --chip-color: #075985;
+    --chip-bg: rgba(224, 242, 254, 0.9);
+    --chip-border: rgba(2, 132, 199, 0.2);
+    --chip-active-bg: #0284c7;
+  }
+
+  &--contracting {
     --chip-color: #075985;
     --chip-bg: rgba(224, 242, 254, 0.9);
     --chip-border: rgba(2, 132, 199, 0.2);
@@ -206,6 +263,20 @@
     --chip-bg: rgba(254, 242, 242, 0.96);
     --chip-border: rgba(153, 27, 27, 0.28);
     --chip-active-bg: #991b1b;
+  }
+
+  &--read {
+    --chip-color: #047857;
+    --chip-bg: rgba(236, 253, 245, 0.94);
+    --chip-border: rgba(16, 185, 129, 0.24);
+    --chip-active-bg: #059669;
+  }
+
+  &--not_read {
+    --chip-color: #9a3412;
+    --chip-bg: rgba(255, 247, 237, 0.96);
+    --chip-border: rgba(234, 88, 12, 0.24);
+    --chip-active-bg: #ea580c;
   }
 }
 
@@ -255,6 +326,36 @@
     border-bottom: 0;
   }
 
+  thead th:nth-child(2),
+  tbody td:nth-child(2) {
+    width: 360px;
+    max-width: 360px;
+  }
+
+  &__heading {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  &__total-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 22px;
+    height: 22px;
+    padding: 0 7px;
+    border-radius: 999px;
+    background: #1594f3;
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: 0;
+    white-space: nowrap;
+  }
+
   &__row:hover {
     background: #fafafa;
   }
@@ -295,19 +396,25 @@
     display: flex;
     flex-direction: column;
     gap: 6px;
+    max-width: 328px;
+    min-width: 0;
   }
 
   &__project-title {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
+    display: block;
+    width: 100%;
+    overflow: hidden;
     color: #1f2937;
     font-size: 14px;
     font-weight: 500;
     line-height: 1.45;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   &__project-summary {
+    width: 100%;
+    max-width: 100%;
     color: #6b7280;
     font-size: 12px;
     font-weight: 400;
@@ -636,13 +743,31 @@
   }
 
   .pc-toolbar__filters,
+  .pc-toolbar__actions,
   .pc-filter,
   .pc-view-toggle {
     width: 100%;
   }
 
+  .pc-toolbar__actions {
+    align-items: stretch;
+    margin-inline-start: 0;
+    margin-top: 0;
+  }
+
+  .pc-view-toggle {
+    margin-inline-start: 0;
+    margin-top: 0;
+  }
+
   .pc-filter {
     min-width: 0;
+
+    &--read-status {
+      margin-inline-start: 0;
+      padding-inline-start: 0;
+      border-inline-start: 0;
+    }
   }
 
   .pc-filter-chips {

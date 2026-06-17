@@ -5,6 +5,8 @@ import { takeUntil } from 'rxjs/operators';
 import { BaseComponent } from 'src/app/modules/base.component';
 import {
   CreatedProject,
+  CreatedProjectReadStatus,
+  CreatedProjectStatistics,
   CreatedProjectStatus,
   CreatedProjectType,
   CreatedProjectsFilters,
@@ -41,6 +43,9 @@ export class ProjectsCreatedComponent extends BaseComponent implements OnInit, O
   projectReadImageUrl = 'https://res.cloudinary.com/dsiku9ipv/image/upload/v1779196120/project_18669661_o5xc3a_copy_ue7w6e.jpg';
   projectUnreadImageUrl = 'https://res.cloudinary.com/dsiku9ipv/image/upload/v1779196441/project_18669661_o5xc3a_codsdpy_qmneyt.png';
   selectedProjectStatus: CreatedProjectStatus | null = null;
+  selectedReadStatus: CreatedProjectReadStatus | null = null;
+  projectStatistics: CreatedProjectStatistics = { total: 0, statuses: [] };
+  projectStatisticsLoaded = false;
   markingReadProjectUuids = new Set<string>();
 
   currentPage: number = 1;
@@ -55,7 +60,6 @@ export class ProjectsCreatedComponent extends BaseComponent implements OnInit, O
   ];
 
   projectStatusOptions: StatusFilterOption<CreatedProjectStatus>[] = [
-    { value: 'draft', labelEn: 'Draft', labelAr: 'مسودة', iconClass: 'ki-notepad-edit' },
     { value: 'expired', labelEn: 'Expired', labelAr: 'منتهي', iconClass: 'ki-timer' },
     { value: 'cancelled', labelEn: 'Cancelled', labelAr: 'ملغي', iconClass: 'ki-cross-circle' },
     { value: 'submitted', labelEn: 'Submitted', labelAr: 'مُرسل', iconClass: 'ki-send' },
@@ -64,6 +68,10 @@ export class ProjectsCreatedComponent extends BaseComponent implements OnInit, O
     { value: 'in_progress', labelEn: 'In Progress', labelAr: 'قيد التنفيذ', iconClass: 'ki-arrows-circle' },
     { value: 'in_review', labelEn: 'In Review', labelAr: 'قيد المراجعة', iconClass: 'ki-eye' },
     { value: 'closed', labelEn: 'Closed', labelAr: 'مغلق', iconClass: 'ki-check-circle' },
+  ];
+  readStatusOptions: StatusFilterOption<CreatedProjectReadStatus>[] = [
+    { value: 'not_read', labelEn: 'Unread', labelAr: 'غير مقروء', iconClass: 'ki-notification-on' },
+    { value: 'read', labelEn: 'Read', labelAr: 'مقروء', iconClass: 'ki-eye' },
   ];
 
   constructor(
@@ -77,6 +85,7 @@ export class ProjectsCreatedComponent extends BaseComponent implements OnInit, O
 
   ngOnInit(): void {
     this.syncResponsiveViewMode();
+    this.loadProjectStatistics();
     this.loadProjects(1);
   }
 
@@ -88,6 +97,7 @@ export class ProjectsCreatedComponent extends BaseComponent implements OnInit, O
   loadProjects(page: number): void {
     const filters: CreatedProjectsFilters = {
       project_status: this.selectedProjectStatus,
+      read_status: this.selectedReadStatus,
     };
     this.projectsCreatedService.getProjects(page, filters)
       .pipe(takeUntil(this.unsubscribe$))
@@ -112,6 +122,13 @@ export class ProjectsCreatedComponent extends BaseComponent implements OnInit, O
 
   onProjectStatusChange(status: CreatedProjectStatus | null): void {
     this.selectedProjectStatus = status;
+    this.currentPage = 1;
+    this.first = 0;
+    this.loadProjects(1);
+  }
+
+  onReadStatusChange(status: CreatedProjectReadStatus | null): void {
+    this.selectedReadStatus = this.selectedReadStatus === status ? null : status;
     this.currentPage = 1;
     this.first = 0;
     this.loadProjects(1);
@@ -193,6 +210,17 @@ export class ProjectsCreatedComponent extends BaseComponent implements OnInit, O
     return this.lang === 'ar' ? match.ar : match.en;
   }
 
+  getAllProjectsCount(): number {
+    return this.projectStatisticsLoaded ? this.projectStatistics.total : this.totalRecords;
+  }
+
+  getProjectStatusCount(status: CreatedProjectStatus | null | undefined): number {
+    if (!status || !this.projectStatisticsLoaded) return 0;
+    const key = this.normalizeStatusKey(status);
+    const match = this.projectStatistics.statuses.find(item => this.normalizeStatusKey(item.status) === key);
+    return match?.total ?? 0;
+  }
+
   formatDate(value: string | null | undefined): string {
     if (!value) return '-';
     try {
@@ -246,6 +274,20 @@ export class ProjectsCreatedComponent extends BaseComponent implements OnInit, O
       });
   }
 
+  private loadProjectStatistics(): void {
+    this.projectsCreatedService.getProjectStatistics()
+      .pipe(takeUntil(this.unsubscribe$))
+      .subscribe({
+        next: statistics => {
+          this.projectStatistics = statistics;
+          this.projectStatisticsLoaded = true;
+        },
+        error: () => {
+          this.projectStatisticsLoaded = false;
+        },
+      });
+  }
+
   private handleServerErrors(error: any): void {
     if (error?.error?.errors) {
       const serverErrors = error.error.errors;
@@ -271,6 +313,10 @@ export class ProjectsCreatedComponent extends BaseComponent implements OnInit, O
       .replace(/\s+/g, ' ')
       .trim()
       .replace(/\b\w/g, l => l.toUpperCase());
+  }
+
+  private normalizeStatusKey(value: string): string {
+    return (value || '').toLowerCase().replace(/[-\s]+/g, '_');
   }
 
   private syncResponsiveViewMode(): void {

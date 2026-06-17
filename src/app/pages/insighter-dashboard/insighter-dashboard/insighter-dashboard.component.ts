@@ -21,6 +21,7 @@ export class InsighterDashboardComponent implements OnInit, OnDestroy {
   lang: string = 'en';
   isMeetingsExpanded: boolean = false;
   isSettingsExpanded: boolean = false;
+  isClientProjectsExpanded: boolean = false;
   isNavCollapsed: boolean = false;
   isMobileSidebarVisible: boolean = false;
   isMobileView: boolean = false;
@@ -70,9 +71,12 @@ export class InsighterDashboardComponent implements OnInit, OnDestroy {
       
       // Check if we're on a meetings route to expand the meetings section
       this.checkMeetingsRoute(this.router.url);
-      
+
       // Check if we're on a settings route to expand the settings section
       this.checkSettingsRoute(this.router.url);
+
+      // Check if we're on a client projects route to expand the section
+      this.checkClientProjectsRoute(this.router.url);
 
     });
     this.subscriptions.push(hasCompanyRoleSub);
@@ -88,6 +92,7 @@ export class InsighterDashboardComponent implements OnInit, OnDestroy {
       this.setActiveTabFromRoute(event.url);
       this.checkMeetingsRoute(event.url);
       this.checkSettingsRoute(event.url);
+      this.checkClientProjectsRoute(event.url);
       // Close mobile sidebar after navigation
       if (this.isMobileView) {
         this.isMobileSidebarVisible = false;
@@ -259,6 +264,16 @@ export class InsighterDashboardComponent implements OnInit, OnDestroy {
 
   toggleSettings(): void {
     this.isSettingsExpanded = !this.isSettingsExpanded;
+  }
+
+  toggleClientProjects(): void {
+    this.isClientProjectsExpanded = !this.isClientProjectsExpanded;
+  }
+
+  checkClientProjectsRoute(url: string): void {
+    if (url.includes('project-offers') || url.includes('on-work-projects')) {
+      this.isClientProjectsExpanded = true;
+    }
   }
 
   checkSettingsRoute(url: string): void {

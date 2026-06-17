@@ -168,6 +168,11 @@ export class ViewMyKnowledgeComponent extends BaseComponent implements OnInit, C
     }).subscribe({
       next: (response) => {
         this.knowledge = response.knowledge.data;
+        // Normalize status casing — API may return e.g. "Unpublished"
+        // while all template/logic checks compare against lowercase values.
+        if (this.knowledge?.status) {
+          this.knowledge.status = this.knowledge.status.toLowerCase() as any;
+        }
         this.documents = response.documents;
         this.trackDocumentAddition(response.documents);
         this.isLoading = false;

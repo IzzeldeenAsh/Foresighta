@@ -37,11 +37,18 @@
         <div class="d-flex align-items-center">
           <div class="symbol symbol-45px me-4">
             <span class="symbol-label" style="background: none;">
-              <span
-                [inlineSVG]="'./assets/media/icons/' + (alert.sub_type | notificationsIcons)"
-                class="svg-icon fs-1 svg-icon-2x"
-                [ngClass]="'svg-icon-' + (alert.sub_type | notificationsBg)"
-              ></span>
+              <app-keenicon
+                *ngIf="getKeeniconName(alert) as kiName; else svgIcon"
+                [name]="kiName"
+                [class]="'fs-2x text-' + (alert.sub_type | notificationsBg : alert.sub_type_value)"
+              ></app-keenicon>
+              <ng-template #svgIcon>
+                <span
+                  [inlineSVG]="'./assets/media/icons/' + (alert.sub_type | notificationsIcons : alert.sub_type_value)"
+                  class="svg-icon fs-1 svg-icon-2x"
+                  [ngClass]="'svg-icon-' + (alert.sub_type | notificationsBg : alert.sub_type_value)"
+                ></span>
+              </ng-template>
             </span>
           </div>
   

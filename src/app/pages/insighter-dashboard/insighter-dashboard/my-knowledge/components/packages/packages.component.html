@@ -202,7 +202,7 @@
                           <span class="text-dark fw-bold fs-6">{{ knowledge.total_price | currency }}</span>
                         </td>
                         <td>
-                          <span class="badge" [ngClass]="getStatusClass(knowledge.status)">{{ knowledge.status }}</span>
+                          <span class="badge text-capitalize" [ngClass]="getStatusClass(knowledge.status)">{{ getStatusDisplayLabel(knowledge) }}</span>
                         </td>
                         <td class="text-end">
                           <button type="button" class="btn btn-sm btn-icon btn-light-primary" 

@@ -13,6 +13,8 @@ import {
   ProjectOffersPaginatedResponse,
   ProjectOffersFilters,
   ProjectOffersService,
+  ProjectOfferReadStatus,
+  ProjectOfferStatistics,
   ProjectOfferType,
 } from 'src/app/_fake/services/project-offers/project-offers.service';
 
@@ -53,6 +55,9 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
   offerReadImageUrl = 'https://res.cloudinary.com/dsiku9ipv/image/upload/v1777637418/job-offer_8062313_lqbkuq.png';
   offerUnreadImageUrl = 'https://res.cloudinary.com/dsiku9ipv/image/upload/v1779196244/job-offer_8062313_lqbkuq_belled_zx6gpr.png';
   selectedActionStatus: ProjectOfferActionStatus | null = null;
+  selectedReadStatus: ProjectOfferReadStatus | null = null;
+  projectStatistics: ProjectOfferStatistics = { total: 0, statuses: [] };
+  projectStatisticsLoaded = false;
 
   currentPage: number = 1;
   rows: number = 10;
@@ -65,6 +70,7 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
   drawerDetailsError: boolean = false;
   activeDrawerTab: DrawerTab = 'overview';
   rejectingOfferUuid: string | null = null;
+  interestingOfferUuid: string | null = null;
   openingFileUuid: string | null = null;
   markingViewedOfferUuids = new Set<string>();
   currentTime: number = Date.now();
@@ -81,11 +87,17 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
     { value: 'new', labelEn: 'New', labelAr: 'جديد', iconClass: 'ki-notification-on' },
     { value: 'viewed', labelEn: 'Viewed', labelAr: 'تمت المشاهدة', iconClass: 'ki-eye' },
     { value: 'offered', labelEn: 'Offered', labelAr: 'تم تقديم العرض', iconClass: 'ki-check-circle' },
+    { value: 'awarded', labelEn: 'Awarded', labelAr: 'تم الترسية', iconClass: 'ki-medal-star' },
+    { value: 'technical_rejected', labelEn: 'Technical Rejected', labelAr: 'مرفوض فنياً', iconClass: 'ki-cross-circle' },
     { value: 'expired', labelEn: 'Expired', labelAr: 'منتهي', iconClass: 'ki-time' },
+  ];
+  readStatusOptions: StatusFilterOption<ProjectOfferReadStatus>[] = [
+    { value: 'not_read', labelEn: 'Unread', labelAr: 'غير مقروء', iconClass: 'ki-notification-on' },
+    { value: 'read', labelEn: 'Read', labelAr: 'مقروء', iconClass: 'ki-eye' },
   ];
   drawerTabOptions: DrawerTabOption[] = [
     { value: 'overview', labelEn: 'Overview', labelAr: 'نظرة عامة', iconClass: 'ki-element-7' },
-    { value: 'documents', labelEn: 'Documents', labelAr: 'المستندات', iconClass: 'ki-document' },
+    { value: 'documents', labelEn: 'Shared Documents', labelAr: 'المستندات', iconClass: 'ki-document' },
     { value: 'discussion', labelEn: 'Discussion', labelAr: 'النقاش', iconClass: 'ki-messages' },
     { value: 'offer', labelEn: 'Offer', labelAr: 'العرض', iconClass: 'ki-dollar' },
   ];
@@ -100,10 +112,40 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
   }
 
   ngOnInit(): void {
+    this.loadProjectStatistics();
     this.loadOffers(1);
     this.deadlineTicker = setInterval(() => {
       this.currentTime = Date.now();
     }, 60_000);
+  }
+
+  private loadProjectStatistics(): void {
+    this.projectOffersService.getProjectStatistics()
+      .pipe(takeUntil(this.unsubscribe$))
+      .subscribe({
+        next: statistics => {
+          this.projectStatistics = statistics;
+          this.projectStatisticsLoaded = true;
+        },
+        error: () => {
+          this.projectStatisticsLoaded = false;
+        },
+      });
+  }
+
+  getAllOffersCount(): number {
+    return this.projectStatisticsLoaded ? this.projectStatistics.total : this.totalRecords;
+  }
+
+  getActionStatusCount(status: ProjectOfferActionStatus | null | undefined): number {
+    if (!status || !this.projectStatisticsLoaded) return 0;
+    const key = this.normalizeStatusKey(status);
+    const match = this.projectStatistics.statuses.find(item => this.normalizeStatusKey(item.status) === key);
+    return match?.total ?? 0;
+  }
+
+  private normalizeStatusKey(value: string): string {
+    return (value || '').toLowerCase().replace(/[-\s]+/g, '_');
   }
 
   loadOffers(page: number): void {
@@ -130,6 +172,11 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
 
   onActionStatusChange(actionStatus: ProjectOfferActionStatus | null): void {
     this.selectedActionStatus = actionStatus;
+    this.resetPaginationAndReload();
+  }
+
+  onReadStatusChange(readStatus: ProjectOfferReadStatus | null): void {
+    this.selectedReadStatus = this.selectedReadStatus === readStatus ? null : readStatus;
     this.resetPaginationAndReload();
   }
 
@@ -210,11 +257,14 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
       case 'approved':
       case 'offered':
         return 'badge-light-success';
+      case 'awarded':
+        return 'badge-light-info';
       case 'rejected':
       case 'declined':
       case 'cancelled':
       case 'expired':
       case 'not_selected':
+      case 'technical_rejected':
         return 'badge-light-danger';
       case 'submitted':
       case 'contract':
@@ -232,6 +282,8 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
       invited: { en: 'Invited', ar: 'مدعو' },
       viewed: { en: 'Viewed', ar: 'تمت المشاهدة' },
       offered: { en: 'Offered', ar: 'تم تقديم العرض' },
+      awarded: { en: 'Awarded', ar: 'تم الترسية' },
+      technical_rejected: { en: 'Technical Rejected', ar: 'مرفوض فنياً' },
       accepted: { en: 'Accepted', ar: 'مقبول' },
       approved: { en: 'Approved', ar: 'موافق' },
       rejected: { en: 'Rejected', ar: 'مرفوض' },
@@ -809,10 +861,64 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
 
   onAskClient(): void {
     if (!this.selectedOffer) return;
-    this.showInfo(
-      this.lang === 'ar' ? 'سؤال العميل' : 'Ask Client',
-      this.lang === 'ar' ? 'سيتم فتح نافذة المحادثة.' : 'Conversation will open shortly.'
+
+    const detailsUuid = this.getProposalDetailsUuid(this.selectedOffer);
+    if (!detailsUuid) {
+      this.showError(
+        this.lang === 'ar' ? 'تعذر فتح النقاش' : 'Cannot open discussion',
+        this.lang === 'ar' ? 'لم يتم العثور على معرّف العرض.' : 'Offer identifier was not found.'
+      );
+      return;
+    }
+
+    this.router.navigate(
+      ['/app/insighter-dashboard/project-offers/details', detailsUuid],
+      { queryParams: { tab: 'discussion' } }
     );
+  }
+
+  onInterestOffer(): void {
+    if (!this.selectedOffer || this.isInterestingSelectedOffer()) {
+      return;
+    }
+
+    const offerUuid = this.selectedOffer.uuid;
+    const proposalUuid = this.getProposalInterestUuid(this.selectedOffer);
+
+    if (!proposalUuid) {
+      this.showError(
+        this.lang === 'ar' ? 'تعذر تسجيل الاهتمام' : 'Cannot mark interested',
+        this.lang === 'ar' ? 'لم يتم العثور على معرّف المقترح.' : 'Proposal identifier was not found.'
+      );
+      return;
+    }
+
+    this.interestingOfferUuid = offerUuid || proposalUuid;
+
+    this.projectOffersService.markProposalAsInterested(proposalUuid)
+      .pipe(takeUntil(this.unsubscribe$))
+      .subscribe({
+        next: (response: ProjectOfferActionResponse) => {
+          const successMessage = response?.message
+            || (this.lang === 'ar' ? 'تم تسجيل اهتمامك بنجاح.' : 'Interest registered successfully.');
+
+          this.showSuccess(
+            this.lang === 'ar' ? 'تم تسجيل الاهتمام' : 'Interested',
+            successMessage
+          );
+
+          if (offerUuid) {
+            this.updateOfferActionStatus(offerUuid, 'interested');
+          }
+
+          this.loadOffers(this.currentPage);
+          this.interestingOfferUuid = null;
+        },
+        error: (err) => {
+          this.interestingOfferUuid = null;
+          this.handleServerErrors(err);
+        },
+      });
   }
 
   onRejectOffer(): void {
@@ -908,6 +1014,14 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
     return rawName ? decodeURIComponent(rawName) : (this.lang === 'ar' ? 'ملف' : 'File');
   }
 
+  getProjectFileExtension(file: ProjectOfferFile | null | undefined): string {
+    const name = this.getProjectFileName(file);
+    if (name.includes('.')) return (name.split('.').pop() || '').toLowerCase();
+
+    const urlPath = (file?.url || '').split('?')[0];
+    return urlPath.includes('.') ? (urlPath.split('.').pop() || '').toLowerCase() : '';
+  }
+
   openProjectFile(file: ProjectOfferFile | null | undefined): void {
     if (!file?.uuid) {
       this.showError(
@@ -983,12 +1097,26 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
       return false;
     }
 
-    return ['new', 'viewed'].includes(this.getResolvedStatus(offer));
+    return ['new', 'viewed', 'interested'].includes(this.getResolvedStatus(offer));
+  }
+
+  canInterestOffer(offer: ProjectOffer | null): boolean {
+    if (!offer?.uuid) {
+      return false;
+    }
+
+    return this.getResolvedStatus(offer) === 'new';
   }
 
   isRejectingSelectedOffer(): boolean {
     return !!this.selectedOffer?.uuid
       && this.rejectingOfferUuid === this.selectedOffer.uuid;
+  }
+
+  isInterestingSelectedOffer(): boolean {
+    return !!this.selectedOffer
+      && !!this.interestingOfferUuid
+      && [this.selectedOffer.uuid, this.selectedOffer.project_proposal_uuid].includes(this.interestingOfferUuid);
   }
 
   isOpeningFile(file: ProjectOfferFile | null | undefined): boolean {
@@ -1064,6 +1192,7 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
   private getActiveFilters(): ProjectOffersFilters {
     return {
       action_status: this.selectedActionStatus,
+      read_status: this.selectedReadStatus,
     };
   }
 
@@ -1074,6 +1203,10 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
   }
 
   private getProposalDetailsUuid(offer: ProjectOffer): string {
+    return offer.uuid || offer.project_proposal_uuid || '';
+  }
+
+  private getProposalInterestUuid(offer: ProjectOffer): string {
     return offer.uuid || offer.project_proposal_uuid || '';
   }
 

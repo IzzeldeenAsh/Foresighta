@@ -909,6 +909,7 @@ export class PrimengHeaderComponent implements OnInit, OnDestroy {
         'project.review.submission.reviewed',
         'project.file.uploaded',
         'project.service.started',
+        'project.discussion.message',
         'order.project'
       ];
       events.forEach(evt => {
@@ -946,6 +947,7 @@ export class PrimengHeaderComponent implements OnInit, OnDestroy {
       sub_type: data?.sub_type ?? 'info',
       sub_type_value: data?.sub_type_value,
       redirect_page: !!data?.redirect_page,
+      url: data?.url,
       read_at: undefined,
       sub_page: data?.sub_page,
       tap: data?.tap,

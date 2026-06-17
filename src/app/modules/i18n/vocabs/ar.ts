@@ -25,6 +25,11 @@ export const locale = {
     GENERATE_AI_ABSTRACT: 'ٌانشاء بواسطة الذكاء الاصطناعي',
     BUILD_YOUR_TEAM_DESCRIPTION: 'نمي أعمالك عبر <br> إضافة فريق لشركتك',
     START_UPLOADING: 'ابدأ  النشر!',
+    PUBLISH_INSIGHTS_WIDGET: {
+      TITLE: 'انشر رؤاك',
+      DESCRIPTION: 'ابدأ بتحقيق الأرباح من خبرتك عبر نشر محتوى جاهز كرؤى.',
+      ACTION: 'انشر الآن',
+    },
     START_UPLOADING_DESRIPTION: 'شارك معارفك مع العالم وابدأ برفعها الآن!',
     FILE_UPLOADED: 'تم رفع الملف',
     GENERATE_AI_INFORMATION: "إنشاء معلومات المعرفة بواسطة الذكاء الاصطناعي",

@@ -6,15 +6,11 @@
 }
 
 .dashboard-card {
-    flex: 1 1 0; /* Equal width for all cards */
-    min-width: 0; /* Prevents flex items from overflowing */
+    flex: 1 1 calc(25% - 0.9375rem); /* Equal width for all cards */
+    min-width: 220px; /* Keeps CTA copy readable before wrapping */
 
     @media (max-width: 992px) { /* LG breakpoint */
         flex: 0 0 calc(50% - 0.625rem); /* 2 columns */
-
-        &:nth-child(3) {
-            flex: 0 0 100%; /* Third card full width on medium screens */
-        }
     }
 
     @media (max-width: 576px) { /* SM breakpoint */
@@ -41,6 +37,19 @@
 .light-published-gradient-bg{
     background-image: linear-gradient(to bottom right, #fff , #f8ecfd);
     color: #a128ed;
+}
+.light-publish-insights-gradient-bg {
+    background-image: linear-gradient(to bottom right, #fff, #e8f8ff);
+    color: #0a7abf;
+}
+
+.publish-insights-card {
+    overflow: hidden;
+}
+
+.publish-insights-card__button {
+    border-radius: 0.6rem;
+    padding-inline: 1rem;
 }
 
 // Wallet card inherits same width as other cards

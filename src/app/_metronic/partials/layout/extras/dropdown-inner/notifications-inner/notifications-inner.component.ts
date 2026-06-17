@@ -68,6 +68,26 @@ export class NotificationsInnerComponent extends BaseComponent implements OnInit
     document.addEventListener('click', this.onClickOutside.bind(this));
   }
 
+  // Returns a keenicon (ki-duotone) font icon name for notifications that use
+  // the newer font set (not available as inline SVGs). Returns null to fall
+  // back to the SVG icon pipe.
+  getKeeniconName(alert: Notification): string | null {
+    if (alert.sub_type === 'project_service') {
+      return 'chart-line-star';
+    }
+    if (alert.sub_type === 'project_review_submission') {
+      return 'file-up';
+    }
+    if (alert.sub_type === 'project_review_submission_reviewed') {
+      const label = (alert.sub_type_value ?? '').toLowerCase();
+      const isChanges = label.includes('change') || label.includes('تعديل');
+      if (isChanges) {
+        return 'message-notif';
+      }
+    }
+    return null;
+  }
+
   // ---- Message rendering helpers ----
   // Unread: render safe minimal HTML to preserve <b>/<strong> emphasis.
   // Read: render plain text so `fw-light` always wins and can’t be overridden.
@@ -406,6 +426,12 @@ export class NotificationsInnerComponent extends BaseComponent implements OnInit
       case 'project.file.uploaded':
         this.navigateByProjectRole(param, insighterBase, clientBase);
         return true;
+
+      // Backend ships the full destination URL in `url` (it resolves stage + role).
+      // We navigate to its path and always force the discussion tab.
+      case 'project.discussion.message':
+        this.navigateToDiscussion(n);
+        return true;
     }
 
     // 2) REST fallback (no event_name): distinguish by sub_type; use role where ambiguous.
@@ -427,9 +453,36 @@ export class NotificationsInnerComponent extends BaseComponent implements OnInit
       case 'project_file_uploaded':               // either side, project.uuid -> role
         this.navigateByProjectRole(param, insighterBase, clientBase);
         return true;
+      case 'project_discussion':                  // url = full destination URL
+        this.navigateToDiscussion(n);
+        return true;
     }
 
     return false;
+  }
+
+  // `project.discussion.message` carries the full destination URL the backend
+  // resolved (proposal/project stage, client/insighter side). It now arrives in
+  // `url`; older notifications carried it in `param`, so we fall back to that.
+  // We don't re-derive the route — we navigate to its path inside the dashboard
+  // and always force the discussion tab.
+  private navigateToDiscussion(n: Notification): void {
+    const raw = ((n.url ?? n.param) ?? '').toString().trim();
+    if (!raw) { return; }
+
+    let path = raw;
+    try {
+      // Usually an absolute URL (localhost or prod host) -> keep only its path.
+      path = new URL(raw).pathname;
+    } catch {
+      // Not absolute: treat as a path and drop any existing query/hash.
+      path = raw.split(/[?#]/)[0];
+    }
+    if (path && !path.startsWith('/')) { path = `/${path}`; }
+
+    // This is a discussion notification: always land on the discussion tab,
+    // ignoring whatever tab the backend may have baked into the URL.
+    this.navigateTo(`${path}?tab=discussion`);
   }
 
   // Resolve client vs insighter destination by the user's role.

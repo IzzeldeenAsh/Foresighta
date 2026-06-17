@@ -72,7 +72,12 @@
     <table class="table align-middle fs-6 po-table">
       <thead>
         <tr class="text-inline-start text-gray-500 fw-semibold fs-8 text-uppercase gs-0">
-          <th class="min-w-300px">{{ lang === 'ar' ? 'المشروع' : 'Project' }}</th>
+          <th class="min-w-300px">
+            <span class="po-table__heading">
+              <span>{{ lang === 'ar' ? 'المشروع' : 'Project' }}</span>
+              <span class="po-table__total-badge">{{ totalRecords }}</span>
+            </span>
+          </th>
           <th class="min-w-170px">{{ lang === 'ar' ? 'النوع' : 'Type' }}</th>
           <th class="min-w-180px">{{ lang === 'ar' ? 'الخدمة' : 'Service' }}</th>
           <th class="min-w-150px">{{ lang === 'ar' ? 'موعد التسليم' : 'Deadline' }}</th>
@@ -251,6 +256,9 @@
             [attr.aria-label]="lang === 'ar' ? 'رجوع' : 'Back'">
             <i class="ki-outline fs-3" [ngClass]="getDrawerBackIcon()"></i>
           </button>
+          <span class="text-gray-700 fw-semibold fs-6">
+            {{ lang === 'ar' ? 'المشاريع قيد العمل' : 'On Work Projects' }}
+          </span>
         </div>
 
         <div class="po-drawer__body">
@@ -310,8 +318,16 @@
               class="po-drawer-tab"
               role="tab"
               [class.active]="activeDrawerTab === tab.value"
+              [class.po-drawer-tab--disabled]="isDrawerTabDisabled(tab.value)"
+              [disabled]="isDrawerTabDisabled(tab.value)"
               [attr.aria-selected]="activeDrawerTab === tab.value"
+              [attr.aria-disabled]="isDrawerTabDisabled(tab.value)"
+              [attr.title]="isDrawerTabDisabled(tab.value) ? (lang === 'ar' ? 'المشروع مغلق' : 'Project is closed') : null"
               (click)="setDrawerTab(tab.value)">
+              <i
+                *ngIf="tab.value === 'reviews' && isDrawerTabDisabled(tab.value)"
+                class="ki-outline ki-lock-2 fs-6 po-drawer-tab__lock"
+                aria-hidden="true"></i>
               <span>{{ lang === 'ar' ? tab.labelAr : tab.labelEn }}</span>
               <ng-container *ngIf="tab.value === 'documents'">
                 <ng-container *ngIf="unreadDocumentsCount$ | async as unreadDocumentsCount">
@@ -368,6 +384,14 @@
                   </div>
                 </div>
 
+                <div class="po-fact po-fact--slate" *ngIf="project.project.industry">
+                  <i class="ki-outline ki-office-bag fs-4"></i>
+                  <div class="po-fact__body">
+                    <div class="po-fact__label">{{ lang === 'ar' ? 'القطاع' : 'Industry' }}</div>
+                    <div class="po-fact__value">{{ getFormattedValue(project.project.industry?.name || project.project.industry) }}</div>
+                  </div>
+                </div>
+
                 <div class="po-fact po-fact--slate" *ngIf="project.project.language">
                   <span class="po-language-icon po-language-icon--fact" aria-hidden="true">
                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
@@ -386,18 +410,19 @@
                 </div>
               </section>
 
-              <section class="po-section" *ngIf="project.project.scopes?.length">
-                <div class="po-section__head">
+              <details class="po-section po-section--accordion po-section--scope" *ngIf="project.project.scopes?.length">
+                <summary class="po-section__head po-section__summary">
+                  <span class="po-section__title-icon" aria-hidden="true"><i class="pi pi-list"></i></span>
                   <h6 class="po-section__title">{{ lang === 'ar' ? 'النطاقات' : 'Scopes' }}</h6>
                   <span class="po-section__eyebrow">{{ lang === 'ar' ? 'تفاصيل العمل' : 'Work Scope' }}</span>
-                </div>
+                  <span class="po-section__chevron" aria-hidden="true">
+                    <i class="pi pi-chevron-down"></i>
+                  </span>
+                </summary>
                 <div class="po-scope-list">
                   <div class="po-detail-card po-detail-card--scope"
                     *ngFor="let scope of project.project.scopes; trackBy: trackByScope">
                     <div class="po-detail-card__header">
-                      <span class="po-detail-card__icon">
-                        <i class="ki-outline ki-subtitle fs-4"></i>
-                      </span>
                       <div class="po-detail-card__copy">
                         <div class="po-detail-card__title">{{ getScopeLabel(scope) }}</div>
                         <div class="po-detail-card__subtitle" *ngIf="getScopeDescription(scope)">
@@ -436,18 +461,22 @@
                     </div>
                   </div>
                 </div>
-              </section>
+              </details>
 
-              <section class="po-section" *ngIf="getComponent(project, 'deliverable-stage') as deliverableStage">
-                <div class="po-section__head">
+              <details class="po-section po-section--accordion po-section--stages" *ngIf="getComponent(project, 'deliverable-stage') as deliverableStage">
+                <summary class="po-section__head po-section__summary">
+                  <span class="po-section__title-icon" aria-hidden="true"><i class="pi pi-file"></i></span>
                   <h6 class="po-section__title">{{ lang === 'ar' ? 'مراحل التسليم' : 'Deliverable Stages' }}</h6>
                   <span class="po-section__eyebrow">{{ lang === 'ar' ? 'خطة التسليم' : 'Delivery Timeline' }}</span>
-                </div>
+                  <span class="po-section__chevron" aria-hidden="true">
+                    <i class="pi pi-chevron-down"></i>
+                  </span>
+                </summary>
                 <div class="po-stage-grid">
                   <div class="po-stage-card" *ngIf="deliverableStage.first_draft as firstDraft">
                     <div class="po-stage-card__head">
-                      <span class="po-stage-card__icon">
-                        <i class="ki-outline ki-document fs-4"></i>
+                      <span class="po-stage-card__icon po-stage-card__icon--draft">
+                        <i class="pi pi-file-edit"></i>
                       </span>
                       <div class="po-stage-card__copy">
                         <span class="po-stage-card__title">{{ lang === 'ar' ? 'المسودة الأولى' : 'First Draft' }}</span>
@@ -489,8 +518,8 @@
 
                   <div class="po-stage-card" *ngIf="deliverableStage.final_version as finalVersion">
                     <div class="po-stage-card__head">
-                      <span class="po-stage-card__icon">
-                        <i class="ki-outline ki-check-square fs-4"></i>
+                      <span class="po-stage-card__icon po-stage-card__icon--final">
+                        <i class="pi pi-file-check"></i>
                       </span>
                       <div class="po-stage-card__copy">
                         <span class="po-stage-card__title">{{ lang === 'ar' ? 'النسخة النهائية' : 'Final Version' }}</span>
@@ -530,13 +559,17 @@
                     </div>
                   </div>
                 </div>
-              </section>
+              </details>
 
-              <section class="po-section" *ngIf="getComponent(project, 'target-market') as targetMarket">
-                <div class="po-section__head">
+              <details class="po-section po-section--accordion po-section--market" *ngIf="getComponent(project, 'target-market') as targetMarket">
+                <summary class="po-section__head po-section__summary">
+                  <span class="po-section__title-icon" aria-hidden="true"><i class="pi pi-map-marker"></i></span>
                   <h6 class="po-section__title">{{ lang === 'ar' ? 'السوق المستهدف' : 'Target Market' }}</h6>
                   <span class="po-section__eyebrow">{{ lang === 'ar' ? 'النطاق الجغرافي' : 'Geographic Reach' }}</span>
-                </div>
+                  <span class="po-section__chevron" aria-hidden="true">
+                    <i class="pi pi-chevron-down"></i>
+                  </span>
+                </summary>
                 <div class="po-detail-card po-detail-card--market">
                   <div class="po-detail-card__header">
                     <span class="po-detail-card__icon">
@@ -565,13 +598,17 @@
                     </div>
                   </div>
                 </div>
-              </section>
+              </details>
 
-              <section class="po-section" *ngIf="getComponent(project, 'data-sources-expected') as dataSources">
-                <div class="po-section__head">
+              <details class="po-section po-section--accordion po-section--sources" *ngIf="getComponent(project, 'data-sources-expected') as dataSources">
+                <summary class="po-section__head po-section__summary">
+                  <span class="po-section__title-icon" aria-hidden="true"><i class="pi pi-database"></i></span>
                   <h6 class="po-section__title">{{ lang === 'ar' ? 'مصادر البيانات' : 'Data Sources' }}</h6>
                   <span class="po-section__eyebrow">{{ lang === 'ar' ? 'منهجية البحث' : 'Research Inputs' }}</span>
-                </div>
+                  <span class="po-section__chevron" aria-hidden="true">
+                    <i class="pi pi-chevron-down"></i>
+                  </span>
+                </summary>
                 <div class="po-detail-card po-detail-card--source">
                   <div class="po-detail-card__header">
                     <span class="po-detail-card__icon">
@@ -591,13 +628,17 @@
                     </div>
                   </div>
                 </div>
-              </section>
+              </details>
 
-              <section class="po-section" *ngIf="hasAddons(project)">
-                <div class="po-section__head">
+              <details class="po-section po-section--accordion po-section--addons" *ngIf="hasAddons(project)">
+                <summary class="po-section__head po-section__summary">
+                  <span class="po-section__title-icon" aria-hidden="true"><i class="pi pi-plus-circle"></i></span>
                   <h6 class="po-section__title">{{ lang === 'ar' ? 'الإضافات' : 'Add-ons' }}</h6>
                   <span class="po-section__eyebrow">{{ lang === 'ar' ? 'عناصر داعمة' : 'Supporting Scope' }}</span>
-                </div>
+                  <span class="po-section__chevron" aria-hidden="true">
+                    <i class="pi pi-chevron-down"></i>
+                  </span>
+                </summary>
                 <div class="po-addon-grid">
                   <div class="po-addon-card" *ngIf="getAddon(project, 'kickoff-meeting') as kickoffMeeting">
                     <div class="po-addon-card__head">
@@ -612,15 +653,10 @@
                     </div>
                   </div>
                 </div>
-              </section>
+              </details>
             </div>
 
-            <section *ngSwitchCase="'documents'" class="po-section po-documents owp-doc-workspace">
-              <div class="po-section__head">
-                <h6 class="po-section__title">{{ lang === 'ar' ? 'المستندات' : 'Documents' }}</h6>
-                <span class="po-section__eyebrow">{{ lang === 'ar' ? 'تسليم المشروع' : 'Project Delivery' }}</span>
-              </div>
-
+            <section *ngSwitchCase="'documents'" class="po-documents owp-doc-workspace">
               <p-progressBar
                 *ngIf="projectDetailsLoading"
                 mode="indeterminate"
@@ -640,14 +676,6 @@
               </button>
 
               <ng-container *ngIf="hasAnyProjectDocuments(project); else noProjectDocuments">
-                <div class="owp-subsection-head" *ngIf="getDeliveryDocumentGroups(project).length">
-                  <div>
-                    <h6>{{ lang === 'ar' ? 'ملفات التسليم' : 'Delivery Files' }}</h6>
-                    <p>{{ lang === 'ar' ? 'مصنفة حسب نوع التسليم.' : 'Grouped by delivery type.' }}</p>
-                  </div>
-                  <span>{{ getDeliveryDocumentCount(project) }} {{ lang === 'ar' ? 'ملف' : (getDeliveryDocumentCount(project) === 1 ? 'file' : 'files') }}</span>
-                </div>
-
                 <div
                   class="po-document-group owp-delivery-group"
                   *ngFor="let group of getDeliveryDocumentGroups(project); trackBy: trackByDocumentGroup">
@@ -665,29 +693,37 @@
                       [class.po-document-item--new]="isUnreadFile(file)"
                       *ngFor="let file of group.files; trackBy: trackByFile"
                       [disabled]="isOpeningFile(file)"
+                      [attr.aria-label]="getProjectFileName(file)"
+                      [attr.title]="getProjectFileName(file)"
                       (click)="openProjectFile(file)">
                       <span class="po-new-ribbon" *ngIf="isUnreadFile(file)">
                         {{ lang === 'ar' ? 'جديد' : 'New' }}
                       </span>
-                      <span class="po-document-item__icon">
-                        <img
-                          [src]="getFileTypeIconPath(getProjectFileExtension(file))"
-                          [alt]="getProjectFileExtension(file) || 'file'"
-                          loading="lazy"
-                          (error)="onFileIconLoadError($event)">
+                      <img class="po-document-item__icon"
+                        [src]="getFileTypeIconPath(getProjectFileExtension(file))"
+                        [alt]="getProjectFileExtension(file) || 'file'"
+                        loading="lazy"
+                        (error)="onFileIconLoadError($event)">
+                      <span class="po-document-item__scope">{{ file.scope || getProjectFileName(file) }}</span>
+                      <span class="po-document-item__uploader" *ngIf="getProjectFileUploader(file)">
+                        <span class="po-document-item__avatar" aria-hidden="true">
+                          <img
+                            *ngIf="getProjectFileUploaderAvatar(file); else deliveryUploaderInitials"
+                            [src]="getProjectFileUploaderAvatar(file)"
+                            [alt]="getProjectFileUploader(file)"
+                            loading="lazy"
+                            (error)="onProjectFileUploaderAvatarError(file)">
+                          <ng-template #deliveryUploaderInitials>
+                            <span>{{ getProjectFileUploaderInitials(file) }}</span>
+                          </ng-template>
+                        </span>
+                        <span class="po-document-item__uploader-name">{{ getProjectFileUploader(file) }}</span>
                       </span>
                       <span class="po-document-item__copy">
                         <strong>{{ isOpeningFile(file) ? (lang === 'ar' ? 'جارٍ الفتح...' : 'Opening...') : getProjectFileName(file) }}</strong>
                         <small>{{ file.uploadBy || file.uploaded_by || '-' }} &middot; {{ formatDate(file.upload_date) }}</small>
                       </span>
                     </button>
-                  </div>
-                </div>
-
-                <div class="owp-subsection-head" *ngIf="getAllProposalFiles(project).length || getRequestFiles(project).length">
-                  <div>
-                    <h6>{{ lang === 'ar' ? 'مستندات مرجعية' : 'Reference Documents' }}</h6>
-                    <p>{{ lang === 'ar' ? 'ملفات الطلب والعرض السابقة.' : 'Existing request and offer files.' }}</p>
                   </div>
                 </div>
 
@@ -700,18 +736,29 @@
                     </div>
                   </div>
                   <div class="po-document-list">
-                    <button type="button" class="po-document-item" [class.po-document-item--new]="isUnreadFile(file)" *ngFor="let file of getProposalFiles(project, 'general'); trackBy: trackByFile" [disabled]="isOpeningFile(file)" (click)="openProjectFile(file)">
+                    <button type="button" class="po-document-item" [class.po-document-item--new]="isUnreadFile(file)" *ngFor="let file of getProposalFiles(project, 'general'); trackBy: trackByFile" [disabled]="isOpeningFile(file)" [attr.aria-label]="getProjectFileName(file)" [attr.title]="getProjectFileName(file)" (click)="openProjectFile(file)">
                       <span class="po-new-ribbon" *ngIf="isUnreadFile(file)">
                         {{ lang === 'ar' ? 'جديد' : 'New' }}
                       </span>
-                      <span class="po-document-item__icon">
-                        <i *ngIf="isOpeningFile(file)" class="ki-outline ki-loading fs-5"></i>
-                        <img
-                          *ngIf="!isOpeningFile(file)"
-                          [src]="getFileTypeIconPath(getProjectFileExtension(file))"
-                          [alt]="getProjectFileExtension(file) || 'file'"
-                          loading="lazy"
-                          (error)="onFileIconLoadError($event)">
+                      <img class="po-document-item__icon"
+                        [src]="getFileTypeIconPath(getProjectFileExtension(file))"
+                        [alt]="getProjectFileExtension(file) || 'file'"
+                        loading="lazy"
+                        (error)="onFileIconLoadError($event)">
+                      <span class="po-document-item__scope">{{ file.scope || getProjectFileName(file) }}</span>
+                      <span class="po-document-item__uploader" *ngIf="getProjectFileUploader(file)">
+                        <span class="po-document-item__avatar" aria-hidden="true">
+                          <img
+                            *ngIf="getProjectFileUploaderAvatar(file); else generalUploaderInitials"
+                            [src]="getProjectFileUploaderAvatar(file)"
+                            [alt]="getProjectFileUploader(file)"
+                            loading="lazy"
+                            (error)="onProjectFileUploaderAvatarError(file)">
+                          <ng-template #generalUploaderInitials>
+                            <span>{{ getProjectFileUploaderInitials(file) }}</span>
+                          </ng-template>
+                        </span>
+                        <span class="po-document-item__uploader-name">{{ getProjectFileUploader(file) }}</span>
                       </span>
                       <span class="po-document-item__copy">
                         <strong>{{ getProjectFileName(file) }}</strong>
@@ -730,18 +777,29 @@
                     </div>
                   </div>
                   <div class="po-document-list">
-                    <button type="button" class="po-document-item" [class.po-document-item--new]="isUnreadFile(file)" *ngFor="let file of getProposalFiles(project, 'scopes'); trackBy: trackByFile" [disabled]="isOpeningFile(file)" (click)="openProjectFile(file)">
+                    <button type="button" class="po-document-item" [class.po-document-item--new]="isUnreadFile(file)" *ngFor="let file of getProposalFiles(project, 'scopes'); trackBy: trackByFile" [disabled]="isOpeningFile(file)" [attr.aria-label]="getProjectFileName(file)" [attr.title]="getProjectFileName(file)" (click)="openProjectFile(file)">
                       <span class="po-new-ribbon" *ngIf="isUnreadFile(file)">
                         {{ lang === 'ar' ? 'جديد' : 'New' }}
                       </span>
-                      <span class="po-document-item__icon">
-                        <i *ngIf="isOpeningFile(file)" class="ki-outline ki-loading fs-5"></i>
-                        <img
-                          *ngIf="!isOpeningFile(file)"
-                          [src]="getFileTypeIconPath(getProjectFileExtension(file))"
-                          [alt]="getProjectFileExtension(file) || 'file'"
-                          loading="lazy"
-                          (error)="onFileIconLoadError($event)">
+                      <img class="po-document-item__icon"
+                        [src]="getFileTypeIconPath(getProjectFileExtension(file))"
+                        [alt]="getProjectFileExtension(file) || 'file'"
+                        loading="lazy"
+                        (error)="onFileIconLoadError($event)">
+                      <span class="po-document-item__scope">{{ file.scope || getProjectFileName(file) }}</span>
+                      <span class="po-document-item__uploader" *ngIf="getProjectFileUploader(file)">
+                        <span class="po-document-item__avatar" aria-hidden="true">
+                          <img
+                            *ngIf="getProjectFileUploaderAvatar(file); else scopeUploaderInitials"
+                            [src]="getProjectFileUploaderAvatar(file)"
+                            [alt]="getProjectFileUploader(file)"
+                            loading="lazy"
+                            (error)="onProjectFileUploaderAvatarError(file)">
+                          <ng-template #scopeUploaderInitials>
+                            <span>{{ getProjectFileUploaderInitials(file) }}</span>
+                          </ng-template>
+                        </span>
+                        <span class="po-document-item__uploader-name">{{ getProjectFileUploader(file) }}</span>
                       </span>
                       <span class="po-document-item__copy">
                         <strong>{{ file.scope || getProjectFileName(file) }}</strong>
@@ -760,18 +818,29 @@
                     </div>
                   </div>
                   <div class="po-document-list">
-                    <button type="button" class="po-document-item" [class.po-document-item--new]="isUnreadFile(file)" *ngFor="let file of getProposalFiles(project, 'offer'); trackBy: trackByFile" [disabled]="isOpeningFile(file)" (click)="openProjectFile(file)">
+                    <button type="button" class="po-document-item" [class.po-document-item--new]="isUnreadFile(file)" *ngFor="let file of getProposalFiles(project, 'offer'); trackBy: trackByFile" [disabled]="isOpeningFile(file)" [attr.aria-label]="getProjectFileName(file)" [attr.title]="getProjectFileName(file)" (click)="openProjectFile(file)">
                       <span class="po-new-ribbon" *ngIf="isUnreadFile(file)">
                         {{ lang === 'ar' ? 'جديد' : 'New' }}
                       </span>
-                      <span class="po-document-item__icon">
-                        <i *ngIf="isOpeningFile(file)" class="ki-outline ki-loading fs-5"></i>
-                        <img
-                          *ngIf="!isOpeningFile(file)"
-                          [src]="getFileTypeIconPath(getProjectFileExtension(file))"
-                          [alt]="getProjectFileExtension(file) || 'file'"
-                          loading="lazy"
-                          (error)="onFileIconLoadError($event)">
+                      <img class="po-document-item__icon"
+                        [src]="getFileTypeIconPath(getProjectFileExtension(file))"
+                        [alt]="getProjectFileExtension(file) || 'file'"
+                        loading="lazy"
+                        (error)="onFileIconLoadError($event)">
+                      <span class="po-document-item__scope">{{ file.scope || getProjectFileName(file) }}</span>
+                      <span class="po-document-item__uploader" *ngIf="getProjectFileUploader(file)">
+                        <span class="po-document-item__avatar" aria-hidden="true">
+                          <img
+                            *ngIf="getProjectFileUploaderAvatar(file); else offerUploaderInitials"
+                            [src]="getProjectFileUploaderAvatar(file)"
+                            [alt]="getProjectFileUploader(file)"
+                            loading="lazy"
+                            (error)="onProjectFileUploaderAvatarError(file)">
+                          <ng-template #offerUploaderInitials>
+                            <span>{{ getProjectFileUploaderInitials(file) }}</span>
+                          </ng-template>
+                        </span>
+                        <span class="po-document-item__uploader-name">{{ getProjectFileUploader(file) }}</span>
                       </span>
                       <span class="po-document-item__copy">
                         <strong>{{ getProjectFileName(file) }}</strong>
@@ -790,18 +859,29 @@
                     </div>
                   </div>
                   <div class="po-document-list">
-                    <button type="button" class="po-document-item" [class.po-document-item--new]="isUnreadFile(file)" *ngFor="let file of getRequestFiles(project); trackBy: trackByFile" [disabled]="isOpeningFile(file)" (click)="openProjectFile(file)">
+                    <button type="button" class="po-document-item" [class.po-document-item--new]="isUnreadFile(file)" *ngFor="let file of getRequestFiles(project); trackBy: trackByFile" [disabled]="isOpeningFile(file)" [attr.aria-label]="getProjectFileName(file)" [attr.title]="getProjectFileName(file)" (click)="openProjectFile(file)">
                       <span class="po-new-ribbon" *ngIf="isUnreadFile(file)">
                         {{ lang === 'ar' ? 'جديد' : 'New' }}
                       </span>
-                      <span class="po-document-item__icon">
-                        <i *ngIf="isOpeningFile(file)" class="ki-outline ki-loading fs-5"></i>
-                        <img
-                          *ngIf="!isOpeningFile(file)"
-                          [src]="getFileTypeIconPath(getProjectFileExtension(file))"
-                          [alt]="getProjectFileExtension(file) || 'file'"
-                          loading="lazy"
-                          (error)="onFileIconLoadError($event)">
+                      <img class="po-document-item__icon"
+                        [src]="getFileTypeIconPath(getProjectFileExtension(file))"
+                        [alt]="getProjectFileExtension(file) || 'file'"
+                        loading="lazy"
+                        (error)="onFileIconLoadError($event)">
+                      <span class="po-document-item__scope">{{ file.scope || getProjectFileName(file) }}</span>
+                      <span class="po-document-item__uploader" *ngIf="getProjectFileUploader(file)">
+                        <span class="po-document-item__avatar" aria-hidden="true">
+                          <img
+                            *ngIf="getProjectFileUploaderAvatar(file); else requestUploaderInitials"
+                            [src]="getProjectFileUploaderAvatar(file)"
+                            [alt]="getProjectFileUploader(file)"
+                            loading="lazy"
+                            (error)="onProjectFileUploaderAvatarError(file)">
+                          <ng-template #requestUploaderInitials>
+                            <span>{{ getProjectFileUploaderInitials(file) }}</span>
+                          </ng-template>
+                        </span>
+                        <span class="po-document-item__uploader-name">{{ getProjectFileUploader(file) }}</span>
                       </span>
                       <span class="po-document-item__copy">
                         <strong>{{ getProjectFileName(file) }}</strong>
@@ -813,14 +893,9 @@
               </ng-container>
 
               <ng-template #noProjectDocuments>
-                <div class="po-empty po-empty--compact">
-                  <i class="ki-outline ki-document fs-2x text-info mb-3"></i>
-                  <h6 class="fw-semibold text-gray-800 mb-2">
-                    {{ lang === 'ar' ? 'لا توجد مستندات' : 'No documents' }}
-                  </h6>
-                  <p class="text-gray-500 fs-7 mb-0">
-                    {{ lang === 'ar' ? 'ارفع ملفات المشروع أو انتظر ملفات العميل.' : 'Upload project files or wait for client files.' }}
-                  </p>
+                <div class="po-documents-empty">
+                  <i class="ki-outline ki-folder fs-2x text-gray-400"></i>
+                  <span>{{ lang === 'ar' ? 'ارفع ملفات المشروع أو انتظر ملفات العميل.' : 'Upload project files or wait for client files.' }}</span>
                 </div>
               </ng-template>
 
@@ -1052,16 +1127,49 @@
                       [(ngModel)]="reviewRequestNote"
                       [placeholder]="lang === 'ar' ? 'اكتب ما تريد من العميل مراجعته...' : 'Describe what the client should review...'">
                     </textarea>
-                    <div class="pd-review-compose__buttons">
-                      <button
-                        type="submit"
-                        class="pd-review-compose__btn pd-review-compose__btn--approve"
-                        [disabled]="!canSubmitReviewRequest()">
-                        <span *ngIf="reviewRequestSubmitting" class="spinner-border spinner-border-sm me-2"></span>
-                        <i *ngIf="!reviewRequestSubmitting" class="ki-outline ki-send fs-6"></i>
-                        {{ reviewRequestSubmitting ? (lang === 'ar' ? 'جاري الإرسال...' : 'Submitting...') : (lang === 'ar' ? 'إرسال طلب المراجعة' : 'Request Review') }}
+                  </div>
+
+                  <label class="owp-upload-drop owp-upload-drop--compact" for="owp-review-request-files">
+                    <i class="ki-outline ki-paper-clip fs-2"></i>
+                    <strong>{{ lang === 'ar' ? 'إرفاق ملفات للمراجعة' : 'Attach review files' }}</strong>
+                    <span>{{ lang === 'ar' ? 'يمكنك إرفاق ملف واحد أو أكثر' : 'You can attach one or more files' }}</span>
+                  </label>
+                  <input
+                    id="owp-review-request-files"
+                    class="owp-file-input"
+                    type="file"
+                    multiple
+                    (change)="onReviewRequestFilesSelected($event)">
+
+                  <div class="owp-selected-files" *ngIf="selectedReviewRequestFiles.length">
+                    <div class="owp-selected-file" *ngFor="let file of selectedReviewRequestFiles; let i = index">
+                      <span class="owp-selected-file__meta">
+                        <img
+                          class="owp-selected-file__icon"
+                          [src]="getSelectedFileIconPath(file)"
+                          [alt]="getSelectedFileExtension(file) || 'file'"
+                          loading="lazy"
+                          (error)="onFileIconLoadError($event)">
+                        <span>
+                          <strong>{{ file.name }}</strong>
+                          <small>{{ formatFileSize(file) }}</small>
+                        </span>
+                      </span>
+                      <button type="button" (click)="removeSelectedReviewRequestFile(i)" [attr.aria-label]="lang === 'ar' ? 'إزالة' : 'Remove'">
+                        <i class="ki-outline ki-cross fs-5"></i>
                       </button>
                     </div>
+                  </div>
+
+                  <div class="pd-review-compose__buttons pd-review-compose__buttons--footer">
+                    <button
+                      type="submit"
+                      class="pd-review-compose__btn pd-review-compose__btn--approve"
+                      [disabled]="!canSubmitReviewRequest()">
+                      <span *ngIf="reviewRequestSubmitting" class="spinner-border spinner-border-sm me-2"></span>
+                      <i *ngIf="!reviewRequestSubmitting" class="ki-outline ki-send fs-6"></i>
+                      {{ reviewRequestSubmitting ? (lang === 'ar' ? 'جاري الإرسال...' : 'Submitting...') : (lang === 'ar' ? 'إرسال طلب المراجعة' : 'Request Review') }}
+                    </button>
                   </div>
                 </form>
               </p-dialog>

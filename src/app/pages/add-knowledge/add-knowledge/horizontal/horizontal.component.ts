@@ -81,6 +81,10 @@ export class HorizontalComponent extends BaseComponent implements OnInit {
     }
   }
 
+  private normalizeKnowledgeType(type: string | null | undefined): string {
+    return (type || '').trim().toLowerCase();
+  }
+
   ngOnInit(): void {
     // Read the optional ?step= query parameter
     this.route.queryParams.subscribe(queryParams => {
@@ -157,7 +161,7 @@ export class HorizontalComponent extends BaseComponent implements OnInit {
             const updatedAccount: any = {
               ...this.account$.value,
               knowledgeId: this.knowledgeId,
-              knowledgeType: knowledge.type,
+              knowledgeType: this.normalizeKnowledgeType(knowledge.type),
               title: knowledge.title,
               topicId: knowledge.topic?.id || null,
               industry: knowledge.industry?.id || null,
@@ -202,6 +206,7 @@ export class HorizontalComponent extends BaseComponent implements OnInit {
 
   updateAccount = (part: Partial<ICreateKnowldege>, isFormValid: boolean) => {
     const currentAccount = this.account$.value;
+    const knowledgeTypeChanged = part.knowledgeType !== undefined && part.knowledgeType !== currentAccount.knowledgeType;
     const updatedAccount = { ...currentAccount, ...part };
 
 
@@ -210,7 +215,7 @@ export class HorizontalComponent extends BaseComponent implements OnInit {
     this.syncDraftFlagForExternalRedirect();
 
     // If the knowledgeType has changed and it's valid, handle the API call
-    if (part.knowledgeType && isFormValid) {
+    if (knowledgeTypeChanged && part.knowledgeType && isFormValid) {
       this.handleKnowledgeTypeChange(part.knowledgeType);
     }
   };

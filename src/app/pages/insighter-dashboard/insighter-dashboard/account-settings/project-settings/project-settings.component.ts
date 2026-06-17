@@ -632,6 +632,7 @@ export class ProjectSettingsComponent extends BaseComponent implements OnInit {
     const required = results.profile?.required;
     const missingFieldsEn: string[] = [];
     const missingFieldsAr: string[] = [];
+    const isCompanyAccount = this.isCompanyAccount();
 
     if (required) {
       if (!this.isRequiredFieldComplete(required, 'profile_photo')) {
@@ -639,7 +640,7 @@ export class ProjectSettingsComponent extends BaseComponent implements OnInit {
         missingFieldsAr.push('أضف صورة شخصية');
       }
 
-      if (this.isCompanyAccount()) {
+      if (isCompanyAccount) {
         if (!this.isRequiredFieldComplete(required, 'about_us')) {
           missingFieldsEn.push('Add company about us');
           missingFieldsAr.push('أضف نبذة عن الشركة');
@@ -650,17 +651,17 @@ export class ProjectSettingsComponent extends BaseComponent implements OnInit {
       }
 
       if (!this.isRequiredFieldComplete(required, 'country')) {
-        missingFieldsEn.push('Add country');
-        missingFieldsAr.push('أضف البلد');
+        missingFieldsEn.push(isCompanyAccount ? 'Add company country' : 'Add country');
+        missingFieldsAr.push(isCompanyAccount ? 'أضف دولة الشركة' : 'أضف البلد');
       }
 
       if (!this.isExperienceComplete(results)) {
-        missingFieldsEn.push('Add years of experience');
-        missingFieldsAr.push('أضف سنوات الخبرة');
+        missingFieldsEn.push(isCompanyAccount ? 'Add company years of experience' : 'Add years of experience');
+        missingFieldsAr.push(isCompanyAccount ? 'أضف سنوات خبرة الشركة' : 'أضف سنوات الخبرة');
       }
     } else if (!this.isExperienceComplete(results)) {
-      missingFieldsEn.push('Add years of experience');
-      missingFieldsAr.push('أضف سنوات الخبرة');
+      missingFieldsEn.push(isCompanyAccount ? 'Add company years of experience' : 'Add years of experience');
+      missingFieldsAr.push(isCompanyAccount ? 'أضف سنوات خبرة الشركة' : 'أضف سنوات الخبرة');
     }
 
     if (missingFieldsAr.length || missingFieldsEn.length) {

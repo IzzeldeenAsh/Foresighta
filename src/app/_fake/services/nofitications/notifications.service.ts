@@ -15,6 +15,9 @@ export interface Notification {
   param: any;
   sub_type: string;
   redirect_page: boolean;
+  // Full destination URL shipped by the backend for redirect notifications
+  // (e.g. project_discussion). When present we navigate straight to it.
+  url?: string;
   read_at?: string;
   sub_page?: string;
   tap?: string;

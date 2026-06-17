@@ -12,81 +12,118 @@
   (cancelled)="onAgreementCancelled()"
 ></app-agreement-modal>
 <app-widgets-row></app-widgets-row>
-<div class="row">
-    <div class="col-12 col-md-6" *ngIf="userHasStatistics"><app-knowledge-types-statistics (hasStatistics)="hasStatistics($event)"></app-knowledge-types-statistics></div>
-    <div class="col-12" [ngClass]="{'col-md-12':!userHasStatistics , 'col-md-6':userHasStatistics}" *ngIf="!(isCompanyInsight | async)">
-        <div class="card light-upgrade-gradient-bg h-md-100 "  style="border: 1px solid #e3f2fd">
-            <div class="card-body d-flex justify-content-center flex-wrap px-xl-15 px-5">          
-                <div class="flex-grow-1 mt-2 me-9 me-md-0">
-                    <div class="position-relative text-gray-800 fs-1 z-index-2 fw-bold mb-5">
-                        {{ 'UPGRADE_TO_COMPANY_ACCOUNT.TITLE' | translate }} 
-                    </div>
-        
-                    <span class="text-gray-600 fw-semibold fs-6 mb-6 d-block mw-400px">
-                        <ng-container *ngIf="hasPendingActivationRequest; else regularDescription">
-                            {{'UPGRADE_TO_COMPANY_ACCOUNT.PENDING_DESCRIPTION' | translate}}
-                        </ng-container>
-                        <ng-template #regularDescription>
-                            {{'UPGRADE_TO_COMPANY_ACCOUNT.DESCRIPTION' | translate}}
-                        </ng-template>
-                    </span>
-                
-                    <div class="mb-7">
-                        <ng-container *ngIf="hasPendingActivationRequest; else upgradeButton">
-                            <button class="btn btn-sm btn-secondary fw-semibold me-2" disabled>
-                                {{'UPGRADE_TO_COMPANY_ACCOUNT.PENDING' | translate}}
-                            </button>
-                        </ng-container>
-                        <ng-template #upgradeButton>
-                            <a [routerLink]="['/app/insighter-dashboard/account-settings/company-account']" 
-                               class="btn btn-sm btn-primary fw-semibold me-2">
-                                {{'UPGRADE_TO_COMPANY_ACCOUNT.UPGRADE_NOW' | translate}}
-                            </a>
-                        </ng-template>
-                    </div>
-                </div>
-        
-                <img src="./assets/media/auth/upgrade-to-corporate.png" class="h-175px me-15" alt="Upgrade to Corporate"> 
-            </div>
-        </div>
-    </div>
-</div>
 
-<div class="row mt-6" *ngIf="showNotificationPreferencesBanner">
-  <div class="col-12">
-    <div
-      class="card border-0 overflow-hidden px-10"
-      style="background: linear-gradient(135deg, #fff 0%, #cdffdd 100%);"
-    >
-      <div
-        class="card-body d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-6 p-6 p-md-8"
-      >
-        <div [ngClass]="{ 'text-end': lang === 'ar' }">
-          <div class="fw-bold fs-2 text-gray-800 mb-2">
-            {{ lang === 'ar' ? 'إشعارات واتساب والرسائل النصية' : 'WhatsApp & SMS notifications' }}
-          </div>
-          <div class="text-gray-600 fw-semibold fs-5" style="max-width: 400px;">
+<section class="dashboard-promo-grid">
+  <article class="dashboard-promo-card dashboard-promo-card--project" *ngIf="showProjectServiceSetupWidget">
+    <div class="dashboard-promo-card__content">
+      <img
+        class="dashboard-promo-card__image"
+        [src]="projectServiceImageUrl"
+        [alt]="lang === 'ar' ? 'خدمة المشاريع' : 'Project service'"
+        loading="lazy"
+      />
+      <div class="dashboard-promo-card__copy">
+        <h3 class="dashboard-promo-card__title">
+          {{ lang === 'ar' ? 'ابدأ استقبال طلبات المشاريع' : 'Start receiving project requests' }}
+        </h3>
+        <p class="dashboard-promo-card__text">
+          {{
+            lang === 'ar'
+              ? 'أكمل إعداد خدمة المشاريع لتحديد خدماتك، أسعارك، وأنواع الطلبات المناسبة لك.'
+              : 'Complete project service setup to define your services, rate, and preferred request types.'
+          }}
+        </p>
+      </div>
+    </div>
+    <button type="button" class="btn btn-info fw-semibold dashboard-promo-card__button" (click)="goToProjectSettings()">
+      {{ lang === 'ar' ? 'ابدأ الإعداد' : 'Start setup' }}
+    </button>
+  </article>
+
+  <article class="dashboard-promo-card dashboard-promo-card--upgrade" *ngIf="!(isCompanyInsight | async)">
+    <div class="dashboard-promo-card__content">
+      <img src="./assets/media/auth/upgrade-to-corporate.png" class="dashboard-promo-card__image" alt="Upgrade to Corporate">
+      <div class="dashboard-promo-card__copy">
+        <h3 class="dashboard-promo-card__title">
+          {{ 'UPGRADE_TO_COMPANY_ACCOUNT.TITLE' | translate }}
+        </h3>
+        <p class="dashboard-promo-card__text">
+          <ng-container *ngIf="hasPendingActivationRequest; else regularDescription">
+            {{'UPGRADE_TO_COMPANY_ACCOUNT.PENDING_DESCRIPTION' | translate}}
+          </ng-container>
+          <ng-template #regularDescription>
+            {{'UPGRADE_TO_COMPANY_ACCOUNT.DESCRIPTION' | translate}}
+          </ng-template>
+        </p>
+      </div>
+    </div>
+    <ng-container *ngIf="hasPendingActivationRequest; else upgradeButton">
+      <button class="btn btn-secondary fw-semibold dashboard-promo-card__button" disabled>
+        {{'UPGRADE_TO_COMPANY_ACCOUNT.PENDING' | translate}}
+      </button>
+    </ng-container>
+    <ng-template #upgradeButton>
+      <a [routerLink]="['/app/insighter-dashboard/account-settings/company-account']"
+         class="btn btn-info fw-semibold dashboard-promo-card__button">
+        {{'UPGRADE_TO_COMPANY_ACCOUNT.UPGRADE_NOW' | translate}}
+      </a>
+    </ng-template>
+  </article>
+
+  <article class="dashboard-promo-card dashboard-promo-card--notifications" *ngIf="showNotificationPreferencesBanner">
+    <div class="dashboard-promo-card__content">
+      <img
+        class="dashboard-promo-card__image"
+        [src]="notificationBannerImageUrl"
+        [alt]="lang === 'ar' ? 'واتساب والرسائل النصية' : 'WhatsApp and SMS'"
+        loading="lazy"
+      />
+      <div class="dashboard-promo-card__copy">
+        <h3 class="dashboard-promo-card__title">
+          {{ lang === 'ar' ? 'إشعارات واتساب والرسائل النصية' : 'WhatsApp & SMS notifications' }}
+        </h3>
+        <p class="dashboard-promo-card__text">
             {{
               lang === 'ar'
                 ? 'هل تريد استلام الإشعارات عبر واتساب والرسائل النصية؟ قم بتفعيل القنوات وإضافة أرقامك من إعدادات الإشعارات.'
                 : 'Want to receive notifications by WhatsApp and SMS? Enable channels and add your numbers in Notification Settings.'
             }}
-          </div>
-          <div class="mt-5">
-            <button type="button" class="btn btn-sm btn-primary fw-semibold" (click)="goToNotificationPreferences()">
-              {{ lang === 'ar' ? 'تحديث الاعدادات' : 'Update Settings' }}
-            </button>
-          </div>
-        </div>
-
-        <img
-          class="d-none d-md-block"
-          [src]="notificationBannerImageUrl"
-          [alt]="lang === 'ar' ? 'واتساب والرسائل النصية' : 'WhatsApp and SMS'"
-          style="width: 200px; height: 200px; object-fit: contain;"
-          loading="lazy"
-        />
+        </p>
       </div>
     </div>
+    <button type="button" class="btn btn-info fw-semibold dashboard-promo-card__button" (click)="goToNotificationPreferences()">
+      {{ lang === 'ar' ? 'تحديث الاعدادات' : 'Update Settings' }}
+    </button>
+  </article>
+
+  <article class="dashboard-promo-card dashboard-promo-card--publish">
+    <div class="dashboard-promo-card__content">
+      <img
+        class="dashboard-promo-card__image"
+        [src]="publishInsightsImageUrl"
+        [alt]="lang === 'ar' ? 'نشر الرؤى' : 'Publish insights'"
+        loading="lazy"
+      />
+      <div class="dashboard-promo-card__copy">
+        <h3 class="dashboard-promo-card__title">
+          {{ 'PUBLISH_INSIGHTS_WIDGET.TITLE' | translate }}
+        </h3>
+        <p class="dashboard-promo-card__text">
+          {{ 'PUBLISH_INSIGHTS_WIDGET.DESCRIPTION' | translate }}
+        </p>
+      </div>
+    </div>
+    <a
+      [routerLink]="['/app/add-knowledge/stepper']"
+      class="btn btn-info fw-semibold dashboard-promo-card__button"
+    >
+      {{ 'PUBLISH_INSIGHTS_WIDGET.ACTION' | translate }}
+    </a>
+  </article>
+</section>
+
+<div class="row" *ngIf="userHasStatistics">
+  <div class="col-12">
+    <app-knowledge-types-statistics (hasStatistics)="hasStatistics($event)"></app-knowledge-types-statistics>
   </div>
 </div>

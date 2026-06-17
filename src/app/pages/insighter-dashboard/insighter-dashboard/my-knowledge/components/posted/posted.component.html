@@ -195,7 +195,7 @@
                   </td>
                   <td class="fw-bold text-gray-900">{{ knowledge.total_price | currency }}</td>
                   <td>
-                    <span class="badge badge-light-success">{{ knowledge.status === 'unpublished' ? 'Draft' : knowledge.status | titlecase }}</span>
+                    <span class="badge badge-light-success text-capitalize">{{ getStatusDisplayLabel(knowledge) }}</span>
                   </td>
                   <td class="text-end" *ngIf="!showPackageBuilder">
                     <div class="d-flex justify-content-end">
@@ -298,7 +298,7 @@
 
                   <!-- Footer -->
                   <div class="d-flex justify-content-between align-items-center">
-                    <span class="badge badge-light-success text-capitalize">{{knowledge.status === 'unpublished' ? 'Draft' : knowledge.status}}</span>
+                    <span class="badge badge-light-success text-capitalize">{{ getStatusDisplayLabel(knowledge) }}</span>
                     
                     <div class="d-flex gap-2">
                       <a [routerLink]="['/app/my-knowledge-base/view-my-knowledge/', knowledge.id]" 

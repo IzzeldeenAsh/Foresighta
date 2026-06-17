@@ -19,6 +19,8 @@ import {
   CreatedProjectType,
   ProjectCheckoutPaymentMethod,
   ProjectFileUploadType,
+  ProjectMatchListResponse,
+  ProjectOfferTechnicalDecisionStatus,
   ProjectSettingOption,
   ProjectReviewAction,
   ProjectReviewSubmission,
@@ -148,14 +150,14 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
   proposalDrawerVisible: boolean = false;
   selectedInvite: CreatedProjectProposalInvite | null = null;
   openingFileUuid: string | null = null;
-  acceptingOfferUuid: string | null = null;
+  offerActionUuid: string | null = null;
+  offerActionKind: ProjectOfferTechnicalDecisionStatus | 'award' | null = null;
   rematchDialogVisible = false;
   rematchStep: RematchWizardStep = 'matches';
   rematchPhase: RematchPhase = 'idle';
   rematchProposalUuid = '';
   rematchMatches: CreatedProjectProposalMatch[] = [];
   selectedRematchIds: string[] = [];
-  includePreviousInvited = false;
   deadlineOfferDate = '';
   rematchError: string | null = null;
   isSpecificRematchFlow = false;
@@ -174,6 +176,8 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
   projectWalletBalanceLoadFailed = false;
   projectCloseSubmitting = false;
   projectCloseError: string | null = null;
+  projectCancelSubmitting = false;
+  projectCancelError: string | null = null;
   reviewSubmissions: ProjectReviewSubmission[] = [];
   reviewSubmissionsLoading = false;
   respondingReviewUuid: string | null = null;
@@ -278,19 +282,7 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
   }
 
   get visibleRematchMatches(): CreatedProjectProposalMatch[] {
-    if (this.hasNewRematchMatches && !this.includePreviousInvited) {
-      return this.rematchMatches.filter(match => !match.is_match_before);
-    }
-
     return this.rematchMatches;
-  }
-
-  get hasNewRematchMatches(): boolean {
-    return this.rematchMatches.some(match => !match.is_match_before);
-  }
-
-  get shouldAskToIncludePreviousInvited(): boolean {
-    return this.hasNewRematchMatches && this.rematchMatches.some(match => match.is_match_before);
   }
 
   get selectedRematchCount(): number {
@@ -384,19 +376,6 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
     }
 
     return null;
-  }
-
-  setIncludePreviousInvited(include: boolean): void {
-    this.includePreviousInvited = include;
-
-    if (!include && this.hasNewRematchMatches) {
-      const newMatchIds = new Set(
-        this.rematchMatches
-          .filter(match => !match.is_match_before)
-          .map(match => match.uuid)
-      );
-      this.selectedRematchIds = this.selectedRematchIds.filter(id => newMatchIds.has(id));
-    }
   }
 
   toggleRematchSelection(matchUuid: string): void {
@@ -637,29 +616,77 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
     this.selectedInvite = null;
   }
 
-  acceptOffer(invite: CreatedProjectProposalInvite | null): void {
+  makeOfferTechnicalDecision(
+    invite: CreatedProjectProposalInvite | null,
+    status: ProjectOfferTechnicalDecisionStatus
+  ): void {
     const offerUuid = invite?.offer?.uuid || '';
-    if (!offerUuid || this.acceptingOfferUuid) {
+    if (!offerUuid || this.offerActionUuid) {
       if (!offerUuid) {
         this.showError(
-          this.lang === 'ar' ? 'تعذر قبول العرض' : 'Cannot accept offer',
+          this.lang === 'ar' ? 'تعذر تحديث العرض' : 'Cannot update offer',
           this.lang === 'ar' ? 'لم يتم العثور على معرّف العرض.' : 'Offer identifier was not found.'
         );
       }
       return;
     }
 
-    this.acceptingOfferUuid = offerUuid;
+    this.offerActionUuid = offerUuid;
+    this.offerActionKind = status;
 
-    this.projectsCreatedService.acceptProposalOffer(offerUuid)
+    this.projectsCreatedService.decideProposalOfferTechnically(offerUuid, status)
       .pipe(takeUntil(this.unsubscribe$))
       .subscribe({
         next: () => {
+          this.updateOfferStatus(invite, status);
           this.showSuccess(
-            this.lang === 'ar' ? 'تم قبول العرض' : 'Offer accepted',
+            status === 'technical_accepted'
+              ? (this.lang === 'ar' ? 'تمت إضافة العرض للقائمة المختصرة' : 'Offer shortlisted')
+              : (this.lang === 'ar' ? 'تم رفض العرض فنياً' : 'Offer technically rejected'),
+            status === 'technical_accepted'
+              ? (this.lang === 'ar'
+                  ? 'يمكنك اختيار هذا العرض لاحقاً للترسية.'
+                  : 'You can award this offer from the shortlisted offers.')
+              : (this.lang === 'ar'
+                  ? 'تم تحديث حالة العرض إلى مرفوض فنياً.'
+                  : 'The offer status was updated to technically rejected.')
+          );
+        },
+        error: (err) => {
+          this.resetOfferActionState();
+          this.handleServerErrors(err);
+        },
+        complete: () => {
+          this.resetOfferActionState();
+        },
+      });
+  }
+
+  awardOffer(invite: CreatedProjectProposalInvite | null): void {
+    const offerUuid = invite?.offer?.uuid || '';
+    if (!offerUuid || this.offerActionUuid) {
+      if (!offerUuid) {
+        this.showError(
+          this.lang === 'ar' ? 'تعذر ترسية العرض' : 'Cannot award offer',
+          this.lang === 'ar' ? 'لم يتم العثور على معرّف العرض.' : 'Offer identifier was not found.'
+        );
+      }
+      return;
+    }
+
+    this.offerActionUuid = offerUuid;
+    this.offerActionKind = 'award';
+
+    this.projectsCreatedService.awardProposalOffer(offerUuid)
+      .pipe(takeUntil(this.unsubscribe$))
+      .subscribe({
+        next: () => {
+          this.updateOfferStatus(invite, 'awarded');
+          this.showSuccess(
+            this.lang === 'ar' ? 'تمت ترسية العرض' : 'Offer awarded',
             this.lang === 'ar'
-              ? 'تم قبول العرض. يمكنك الآن مراجعة العقد.'
-              : 'The offer was accepted. You can now review the contract.'
+              ? 'تم اختيار العرض. يمكنك الآن مراجعة العقد.'
+              : 'The offer was awarded. You can now review the contract.'
           );
           this.closeProposalDrawer();
           if (this.project?.uuid) {
@@ -667,23 +694,65 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
           }
         },
         error: (err) => {
-          this.acceptingOfferUuid = null;
+          this.resetOfferActionState();
           this.handleServerErrors(err);
         },
         complete: () => {
-          this.acceptingOfferUuid = null;
+          this.resetOfferActionState();
         },
       });
   }
 
-  isAcceptingOffer(invite: CreatedProjectProposalInvite | null): boolean {
-    return !!invite?.offer?.uuid && this.acceptingOfferUuid === invite.offer.uuid;
+  isOfferActionInProgress(
+    invite: CreatedProjectProposalInvite | null,
+    action?: ProjectOfferTechnicalDecisionStatus | 'award'
+  ): boolean {
+    if (!invite?.offer?.uuid || this.offerActionUuid !== invite.offer.uuid) return false;
+    return action ? this.offerActionKind === action : true;
   }
 
-  canAcceptOffer(invite: CreatedProjectProposalInvite | null): boolean {
-    if (!invite?.offer?.uuid || this.acceptingOfferUuid) return false;
-    const status = this.getInvitedStatus(invite);
-    return !['accepted', 'approved', 'closed', 'cancelled', 'expired'].includes(status);
+  canMakeOfferTechnicalDecision(
+    invite: CreatedProjectProposalInvite | null,
+    status: ProjectOfferTechnicalDecisionStatus
+  ): boolean {
+    if (!invite?.offer?.uuid || this.offerActionUuid) return false;
+    const currentStatus = this.getOfferStatus(invite);
+    return currentStatus !== status && !['awarded', 'not_selected', 'closed', 'cancelled', 'expired'].includes(currentStatus);
+  }
+
+  isOfferTechnicalAccepted(invite: CreatedProjectProposalInvite | null): boolean {
+    return this.getOfferStatus(invite) === 'technical_accepted';
+  }
+
+  isLastProposalDeadlinePassed(project: CreatedProject | null = this.project): boolean {
+    const deadline = project?.last_proposal_deadline;
+    if (!deadline) return false;
+    const deadlineTime = new Date(deadline).getTime();
+    if (Number.isNaN(deadlineTime)) return false;
+    return deadlineTime <= Date.now();
+  }
+
+  canAwardOffer(invite: CreatedProjectProposalInvite | null): boolean {
+    return !!invite?.offer?.uuid
+      && !this.offerActionUuid
+      && this.isOfferTechnicalAccepted(invite)
+      && this.isLastProposalDeadlinePassed();
+  }
+
+  getAwardDisabledReason(invite: CreatedProjectProposalInvite | null): string {
+    if (!this.isOfferTechnicalAccepted(invite)) {
+      return this.lang === 'ar'
+        ? 'يمكن ترسية العرض فقط بعد قبوله فنياً.'
+        : 'The offer can only be awarded after it is technically accepted.';
+    }
+
+    if (!this.isLastProposalDeadlinePassed()) {
+      return this.lang === 'ar'
+        ? 'يمكن ترسية العرض بعد انتهاء الموعد النهائي لاستلام العروض.'
+        : 'The offer can be awarded once the proposal deadline has passed.';
+    }
+
+    return '';
   }
 
   hasContractAction(project: CreatedProject | null = this.project): boolean {
@@ -717,6 +786,10 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
 
   isProjectClosed(project: CreatedProject | null = this.project): boolean {
     return this.normalizeValue(project?.status) === 'closed';
+  }
+
+  isProjectCancelled(project: CreatedProject | null = this.project): boolean {
+    return this.normalizeValue(project?.status) === 'cancelled';
   }
 
   shouldShowProjectTimeline(project: CreatedProject | null = this.project): boolean {
@@ -1046,6 +1119,73 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
           );
         },
       });
+  }
+
+  canCancelProject(project: CreatedProject | null = this.project): boolean {
+    const status = this.normalizeValue(project?.status);
+    return ['submitted', 'contracting', 'contract', 'payment'].includes(status);
+  }
+
+  cancelProject(): void {
+    if (this.projectCancelSubmitting) return;
+
+    const projectUuid = this.project?.uuid;
+    if (!projectUuid || !this.canCancelProject(this.project)) return;
+
+    void this.confirmCancelProject().then(confirmed => {
+      if (!confirmed) return;
+
+      this.projectCancelSubmitting = true;
+      this.projectCancelError = null;
+
+      this.projectsCreatedService.cancelProject(projectUuid)
+        .pipe(
+          takeUntil(this.unsubscribe$),
+          finalize(() => (this.projectCancelSubmitting = false))
+        )
+        .subscribe({
+          next: () => {
+            this.showSuccess(
+              this.lang === 'ar' ? 'تم إلغاء المشروع' : 'Project cancelled',
+              this.lang === 'ar'
+                ? 'تم إلغاء المشروع بنجاح.'
+                : 'The project was cancelled successfully.'
+            );
+            this.refreshProjectDetails(projectUuid);
+          },
+          error: err => {
+            this.projectCancelError = this.getServerErrorMessage(
+              err,
+              this.lang === 'ar' ? 'تعذر إلغاء المشروع.' : 'Failed to cancel project.'
+            );
+            this.showError(
+              this.lang === 'ar' ? 'تعذر إلغاء المشروع' : 'Cancel project failed',
+              this.projectCancelError
+            );
+          },
+        });
+    });
+  }
+
+  private async confirmCancelProject(): Promise<boolean> {
+    const result = await Swal.fire({
+      title: this.lang === 'ar' ? 'تأكيد إلغاء المشروع' : 'Cancel project',
+      text: this.lang === 'ar'
+        ? 'هل أنت متأكد من إلغاء هذا المشروع؟ لا يمكن التراجع عن هذا الإجراء.'
+        : 'Are you sure you want to cancel this project? This action cannot be undone.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: this.lang === 'ar' ? 'نعم، إلغاء المشروع' : 'Yes, cancel project',
+      cancelButtonText: this.lang === 'ar' ? 'تراجع' : 'Back',
+      reverseButtons: this.lang === 'ar',
+      buttonsStyling: false,
+      customClass: {
+        confirmButton: 'btn btn-danger',
+        cancelButton: 'btn btn-light me-3',
+      },
+    });
+
+    return result.isConfirmed;
   }
 
   getProjectDownPaymentLabel(order: CreatedProjectOrder | null | undefined): string {
@@ -1548,6 +1688,10 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
     return this.normalizeValue(invite?.action_status) || 'pending';
   }
 
+  isInterestedInviteAction(invite: CreatedProjectProposalInvite | null): boolean {
+    return ['submitted', 'interested'].includes(this.getInviteActionStatus(invite));
+  }
+
   getInviteStatus(invite: CreatedProjectProposalInvite | null): string {
     return this.normalizeValue(invite?.status) || 'invited';
   }
@@ -1558,7 +1702,8 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
       case 'viewed':
         return 'badge-light-warning';
       case 'submitted':
-        return 'badge-light-primary';
+      case 'interested':
+        return 'badge-light-submitted';
       case 'accepted':
       case 'approved':
       case 'offered':
@@ -1601,7 +1746,8 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
       pending: { en: 'Pending', ar: 'قيد الانتظار' },
       viewed: { en: 'Viewed', ar: 'تمت المشاهدة' },
       offered: { en: 'Offered', ar: 'تم تقديم العرض' },
-      submitted: { en: 'Submitted', ar: 'مُرسل' },
+      submitted: { en: 'Interested', ar: 'مهتم' },
+      interested: { en: 'Interested', ar: 'مهتم' },
       accepted: { en: 'Accepted', ar: 'مقبول' },
       approved: { en: 'Approved', ar: 'موافق' },
       rejected: { en: 'Rejected', ar: 'مرفوض' },
@@ -1644,6 +1790,7 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
       case 'viewed':
         return 'badge-light-warning';
       case 'submitted':
+      case 'interested':
         return 'badge-light-primary';
       case 'accepted':
       case 'approved':
@@ -1668,6 +1815,7 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
       viewed: { en: 'Viewed', ar: 'تمت المشاهدة' },
       offered: { en: 'Offered', ar: 'تم تقديم العرض' },
       submitted: { en: 'Submitted', ar: 'مُرسل' },
+      interested: { en: 'Interested', ar: 'مهتم' },
       accepted: { en: 'Accepted', ar: 'مقبول' },
       approved: { en: 'Approved', ar: 'موافق' },
       rejected: { en: 'Rejected', ar: 'مرفوض' },
@@ -1680,6 +1828,41 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
     const key = this.getInvitedStatus(invite);
     const match = labels[key];
     if (!match) return this.humanizeValue(key) || '-';
+    return this.lang === 'ar' ? match.ar : match.en;
+  }
+
+  getOfferStatus(invite: CreatedProjectProposalInvite | null): string {
+    return this.normalizeValue(invite?.offer?.status) || 'pending';
+  }
+
+  getOfferStatusBadgeClass(invite: CreatedProjectProposalInvite | null): string {
+    switch (this.getOfferStatus(invite)) {
+      case 'technical_accepted':
+      case 'awarded':
+        return 'badge-light-success';
+      case 'technical_rejected':
+        return 'badge-light-danger';
+      case 'not_selected':
+        return 'badge-light-gray';
+      case 'pending':
+        return 'badge-light-warning';
+      default:
+        return this.getInvitedStatusBadgeClass(invite);
+    }
+  }
+
+  getOfferStatusLabel(invite: CreatedProjectProposalInvite | null): string {
+    const labels: Record<string, { en: string; ar: string }> = {
+      pending: { en: 'Pending', ar: 'قيد الانتظار' },
+      technical_accepted: { en: 'Technical Accepted', ar: 'مقبول فنياً' },
+      technical_rejected: { en: 'Technical Rejected', ar: 'مرفوض فنياً' },
+      awarded: { en: 'Awarded', ar: 'تمت الترسية' },
+      not_selected: { en: 'Not Selected', ar: 'غير مختار' },
+    };
+
+    const key = this.getOfferStatus(invite);
+    const match = labels[key];
+    if (!match) return this.getInvitedStatusLabel(invite);
     return this.lang === 'ar' ? match.ar : match.en;
   }
 
@@ -1905,6 +2088,8 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
         },
       ];
     }
+
+    this.reviewSubmissionsSubject.next([...this.reviewSubmissions]);
   }
 
   respondToReview(review: ProjectReviewSubmission, action: ProjectReviewAction): void {
@@ -2092,6 +2277,20 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
     return Array.isArray(files) ? files : [];
   }
 
+  hasScopeAttachments(scope: CreatedProjectScope | null | undefined): boolean {
+    if (!scope) return false;
+    if (scope.have_attachments === true) return true;
+    if (this.getScopeFiles(scope).length > 0) return true;
+    return this.getScopeChildren(scope).some(child => this.hasScopeAttachments(child));
+  }
+
+  openScopeDocuments(scope: CreatedProjectScope | null | undefined, event?: Event): void {
+    event?.preventDefault();
+    event?.stopPropagation();
+    if (!this.hasScopeAttachments(scope)) return;
+    this.setActiveTab('documents');
+  }
+
   getDocumentGroups(project: CreatedProject | null = this.project): ProjectDocumentGroup[] {
     if (!project) return [];
 
@@ -2201,6 +2400,33 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
 
   getProjectFileUploader(file: CreatedProjectFile | null | undefined): string {
     return file?.uploadBy || file?.uploaded_by || '';
+  }
+
+  getProjectFileUploaderAvatar(file: CreatedProjectFile | null | undefined): string {
+    return this.stringifyValue(
+      file?.uploadByAvatarProfile
+        ?? file?.uploaded_by_avatar_profile
+        ?? (file as any)?.upload_by_avatar_profile
+        ?? (file as any)?.uploadedByAvatarProfile
+    );
+  }
+
+  getProjectFileUploaderInitials(file: CreatedProjectFile | null | undefined): string {
+    const name = this.getProjectFileUploader(file);
+    const initials = name
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map(part => part.charAt(0).toUpperCase())
+      .join('');
+
+    return initials || 'U';
+  }
+
+  onProjectFileUploaderAvatarError(file: CreatedProjectFile | null | undefined): void {
+    if (!file) return;
+    file.uploadByAvatarProfile = null;
+    file.uploaded_by_avatar_profile = null;
   }
 
   getProjectFileUploadDate(file: CreatedProjectFile | null | undefined): string {
@@ -2329,7 +2555,7 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
       .pipe(
         tap(project => {
           this.project = project;
-          this.invitedInsighters = project.invited || [];
+          this.loadSubmittedInsighters(project.uuid);
           this.documentFilesSubject.next(this.collectProjectDocumentFiles(project));
           this.primeReviewSubmissionStats(project.uuid);
           if (this.shouldShowProjectPayment(project)) {
@@ -2346,8 +2572,29 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
       });
   }
 
+  private loadSubmittedInsighters(projectUuid: string): void {
+    if (!projectUuid) {
+      this.invitedInsighters = [];
+      return;
+    }
+
+    this.projectsCreatedService.getProjectMatchList(projectUuid)
+      .pipe(takeUntil(this.unsubscribe$))
+      .subscribe({
+        next: (result: ProjectMatchListResponse) => {
+          this.invitedInsighters = result.submitted || [];
+        },
+        error: () => {
+          this.invitedInsighters = [];
+        },
+      });
+  }
+
   private loadProjectReviewSubmissions(projectUuid: string, force = false): void {
     if (!projectUuid || this.reviewSubmissionsLoading) return;
+    if (force) {
+      this.reviewSubmissionsRequest$ = null;
+    }
     if (!force && this.reviewSubmissions.length) return;
 
     this.reviewSubmissionsLoading = true;
@@ -2594,14 +2841,16 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
   }
 
   private loadRematchMatches(proposalUuid: string): void {
+    const projectUuid = this.project?.uuid || '';
     this.rematchPhase = 'loading';
 
-    this.projectsCreatedService.getProjectProposalMatches(proposalUuid)
+    this.projectsCreatedService.getProjectMatchList(projectUuid)
       .pipe(takeUntil(this.unsubscribe$))
       .subscribe({
-        next: (matches: CreatedProjectProposalMatch[]) => {
+        next: (result: ProjectMatchListResponse) => {
+          const group = result.unsubmitted.find(item => item.proposalUuid === proposalUuid);
+          const matches = group?.matches ?? [];
           this.rematchMatches = matches;
-          this.includePreviousInvited = !matches.some(match => !match.is_match_before);
           this.selectedRematchIds = [];
           this.expandedMatchIds = new Set<string>();
           this.rematchPhase = matches.length > 0 ? 'ready' : 'empty';
@@ -2648,7 +2897,6 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
     this.rematchProposalUuid = '';
     this.rematchMatches = [];
     this.selectedRematchIds = [];
-    this.includePreviousInvited = false;
     this.deadlineOfferDate = '';
     this.rematchError = null;
     this.isSpecificRematchFlow = false;
@@ -2801,7 +3049,7 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
       .subscribe({
         next: project => {
           this.project = project;
-          this.invitedInsighters = project.invited || [];
+          this.loadSubmittedInsighters(project.uuid);
           if (this.shouldShowProjectPayment(project)) {
             this.loadProjectWalletBalance(project);
           }
@@ -3052,6 +3300,29 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
 
   private isWarningResponse(error: any): boolean {
     return this.normalizeValue(error?.error?.type ?? error?.type) === 'warning';
+  }
+
+  private resetOfferActionState(): void {
+    this.offerActionUuid = null;
+    this.offerActionKind = null;
+  }
+
+  private updateOfferStatus(invite: CreatedProjectProposalInvite | null, status: string): void {
+    const offerUuid = invite?.offer?.uuid;
+    if (!offerUuid) return;
+
+    if (invite.offer) {
+      invite.offer.status = status;
+    }
+
+    const projectInvite = this.invitedInsighters.find(item => item.offer?.uuid === offerUuid);
+    if (projectInvite?.offer) {
+      projectInvite.offer.status = status;
+    }
+
+    if (this.selectedInvite?.offer?.uuid === offerUuid) {
+      this.selectedInvite.offer.status = status;
+    }
   }
 
   private handleServerErrors(error: any): void {

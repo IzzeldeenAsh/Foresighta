@@ -167,6 +167,10 @@ export class PostedComponent extends BaseComponent implements OnInit {
   onTypeChange(event: any): void {
     this.selectedType = event.target.value;
   }
+
+  getStatusDisplayLabel(knowledge: Knowledge): string {
+    return knowledge.status_label || (knowledge.status === 'unpublished' ? 'Draft' : knowledge.status);
+  }
   
   getPages(): (number | string)[] {
     const totalPages = this.totalPages;

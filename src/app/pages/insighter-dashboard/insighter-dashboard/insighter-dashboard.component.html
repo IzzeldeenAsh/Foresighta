@@ -76,27 +76,25 @@
     <div class="mobile-section"
       *ngIf="(isInsighter$ | async) || (isCompany$ | async) || (isCompanyInsighter$ | async) || (isClient$ | async)">
       <div class="mobile-section-title">{{ lang === 'ar' ? 'المشاريع' : 'Projects' }}</div>
-      <div class="nav-item" [routerLink]="['project-offers']" routerLinkActive="active" *ngIf="!(isClient$ | async)"
-        (click)="closeMobileSidebar()">
+      <!-- Client Projects - mobile -->
+      <div class="nav-item" [routerLink]="['project-offers']" routerLinkActive="active"
+        *ngIf="!(isClient$ | async)" (click)="closeMobileSidebar()">
         <div class="item-icon">
-          <i class="ki-outline ki-abstract-26"></i>
+          <i class="ki-outline ki-people"></i>
         </div>
-        <span>{{ lang === 'ar' ? 'عروض المشاريع' : 'Project Proposals' }}</span>
+        <span>{{ lang === 'ar' ? 'مشاريع العملاء' : 'Client Projects' }}</span>
       </div>
-      <div class="nav-item" [routerLink]="['on-work-projects']" routerLinkActive="active" *ngIf="!(isClient$ | async)"
-        (click)="closeMobileSidebar()">
-        <div class="item-icon">
-          <i class="ki-outline ki-briefcase"></i>
-        </div>
-        <span>{{ lang === 'ar' ? 'المشاريع الموافق عليها' : 'Accepted Projects' }}</span>
-      </div>
+
+      <!-- My Projects - mobile -->
       <div class="nav-item" [routerLink]="['projects-created']" routerLinkActive="active"
         (click)="closeMobileSidebar()">
         <div class="item-icon">
           <i class="ki-outline ki-rocket"></i>
         </div>
-        <span>{{ lang === 'ar' ? 'المشاريع المُنشأة' : 'Projects Created' }}</span>
+        <span>{{ lang === 'ar' ? 'مشاريعي' : 'My Projects' }}</span>
       </div>
+
+      <!-- Project Settings - mobile -->
       <div class="nav-item" [routerLink]="['account-settings/project-settings']" routerLinkActive="active"
         *ngIf="!(isClient$ | async)" (click)="closeMobileSidebar()">
         <div class="item-icon">
@@ -326,41 +324,34 @@
                   <h3>{{ lang === 'ar' ? 'المشاريع' : 'Projects' }}</h3>
                 </div>
                 <div class="p-card-body">
+                  <!-- Client Projects -->
                   <div class="nav-item" [routerLink]="['project-offers']" routerLinkActive="active"
                     *ngIf="!(isClient$ | async)"
-                    [attr.title]="isNavCollapsed ? (lang === 'ar' ? 'عروض المشاريع' : 'Project Proposals') : null"
-                    pTooltip="{{ isNavCollapsed ? (lang === 'ar' ? 'عروض المشاريع' : 'Project Proposals') : '' }}"
+                    [attr.title]="isNavCollapsed ? (lang === 'ar' ? 'مشاريع العملاء' : 'Client Projects') : null"
+                    pTooltip="{{ isNavCollapsed ? (lang === 'ar' ? 'مشاريع العملاء' : 'Client Projects') : '' }}"
                     tooltipPosition="right" appendTo="body">
                     <div class="item-icon">
-                      <i class="ki-outline ki-abstract-26"></i>
+                      <i class="ki-outline ki-people"></i>
                     </div>
                     <div class="item-label" *ngIf="!isNavCollapsed">
-                      {{ lang === 'ar' ? 'عروض المشاريع' : 'Project Proposals' }}
+                      {{ lang === 'ar' ? 'مشاريع العملاء' : 'Client Projects' }}
                     </div>
                   </div>
-                  <div class="nav-item" [routerLink]="['on-work-projects']" routerLinkActive="active"
-                    *ngIf="!(isClient$ | async)"
-                    [attr.title]="isNavCollapsed ? (lang === 'ar' ? 'المشاريع الموافق عليها' : 'Accepted Projects') : null"
-                    pTooltip="{{ isNavCollapsed ? (lang === 'ar' ? 'المشاريع الموافق عليها' : 'Accepted Projects') : '' }}"
-                    tooltipPosition="right" appendTo="body">
-                    <div class="item-icon">
-                      <i class="ki-outline ki-briefcase"></i>
-                    </div>
-                    <div class="item-label" *ngIf="!isNavCollapsed">
-                      {{ lang === 'ar' ? 'المشاريع الموافق عليها' : 'Accepted Projects' }}
-                    </div>
-                  </div>
+
+                  <!-- My Projects -->
                   <div class="nav-item" [routerLink]="['projects-created']" routerLinkActive="active"
-                    [attr.title]="isNavCollapsed ? (lang === 'ar' ? 'المشاريع المُنشأة' : 'Projects Created') : null"
-                    pTooltip="{{ isNavCollapsed ? (lang === 'ar' ? 'المشاريع المُنشأة' : 'Projects Created') : '' }}"
+                    [attr.title]="isNavCollapsed ? (lang === 'ar' ? 'مشاريعي' : 'My Projects') : null"
+                    pTooltip="{{ isNavCollapsed ? (lang === 'ar' ? 'مشاريعي' : 'My Projects') : '' }}"
                     tooltipPosition="right" appendTo="body">
                     <div class="item-icon">
                       <i class="ki-outline ki-rocket"></i>
                     </div>
                     <div class="item-label" *ngIf="!isNavCollapsed">
-                      {{ lang === 'ar' ? 'المشاريع المُنشأة' : 'Projects Created' }}
+                      {{ lang === 'ar' ? 'مشاريعي' : 'My Projects' }}
                     </div>
                   </div>
+
+                  <!-- Project Settings -->
                   <div class="nav-item" [routerLink]="['account-settings/project-settings']" routerLinkActive="active"
                     *ngIf="!(isClient$ | async)"
                     [attr.title]="isNavCollapsed ? (lang === 'ar' ? 'إعدادات المشروع' : 'Project Settings') : null"

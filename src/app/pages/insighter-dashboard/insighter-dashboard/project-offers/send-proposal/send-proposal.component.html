@@ -19,7 +19,8 @@
 
           <!-- Header inside card with back button -->
           <div class="sp-card-header">
-            <button type="button" class="sp-iconbtn" (click)="goBack()">
+            <button type="button" class="sp-iconbtn" (click)="goBack()"
+              [attr.aria-label]="lang === 'ar' ? 'رجوع' : 'Back'">
               <i class="ki-outline fs-3" [ngClass]="getBackIcon()"></i>
             </button>
             <div class="sp-card-header__text">
@@ -29,6 +30,9 @@
               <span class="sp-card-header__title">{{ p.project?.title || (lang === 'ar' ? 'المقترح' : 'Proposal')
                 }}</span>
             </div>
+            <span *ngIf="p.status" class="badge sp-card-header__badge" [ngClass]="getStatusBadgeClass(p.status)">
+              {{ getStatusLabel(p.status) }}
+            </span>
           </div>
 
           <div class="sp-body">
@@ -36,12 +40,14 @@
           <!-- Proposal Details (Cover Letter) -->
           <section class="sp-section">
             <div class="sp-section__head">
-              <h3 class="sp-section__title">{{ lang === 'ar' ? 'الرسالة التعريفية' : 'Cover letter' }}</h3>
-              <p class="sp-section__sub">
-                {{ lang === 'ar'
-                ? 'عرّف عن نفسك ووضّح كيف ستتعامل مع هذا المشروع.'
-                : 'Introduce yourself and explain how you’ll approach this project.' }}
-              </p>
+              <div class="sp-section__copy">
+                <h3 class="sp-section__title">{{ lang === 'ar' ? 'الرسالة التعريفية' : 'Cover letter' }}</h3>
+                <p class="sp-section__sub">
+                  {{ lang === 'ar'
+                  ? 'عرّف عن نفسك ووضّح كيف ستتعامل مع هذا المشروع.'
+                  : 'Introduce yourself and explain how you’ll approach this project.' }}
+                </p>
+              </div>
             </div>
 
             <div class="sp-field">
@@ -101,62 +107,66 @@
           <!-- Pricing & Estimated Working Time -->
           <section class="sp-section">
             <div class="sp-section__head">
-              <h3 class="sp-section__title">{{ lang === 'ar' ? 'التسعير والمدة' : 'Pricing & estimated time' }}</h3>
-              <p class="sp-section__sub">
-                {{ lang === 'ar'
-                ? 'حدّد أسلوب التقدير وسعر الساعة وخطة الدفعات.'
-                : 'Choose the estimate basis, hourly rate, and payment plan.' }}
-              </p>
-            </div>
-
-            <!-- Unit toggle -->
-            <div class="sp-field">
-              <label class="sp-field__label">
-                {{ lang === 'ar' ? 'أساس التقدير' : 'Estimate basis' }}
-              </label>
-              <div class="sp-toggle" role="tablist">
-                <button type="button" role="tab" class="sp-toggle__btn" [class.is-active]="estimateUnit === 'hours'"
-                  (click)="setEstimateUnit('hours')">
-                  <i class="ki-outline ki-time fs-6"></i>
-                  {{ lang === 'ar' ? 'ساعات' : 'Hours' }}
-                </button>
-                <button type="button" role="tab" class="sp-toggle__btn" [class.is-active]="estimateUnit === 'days'"
-                  (click)="setEstimateUnit('days')">
-                  <i class="ki-outline ki-calendar fs-6"></i>
-                  {{ lang === 'ar' ? 'أيام' : 'Days' }}
-                </button>
+              <div class="sp-section__copy">
+                <h3 class="sp-section__title">{{ lang === 'ar' ? 'التسعير والمدة' : 'Pricing & estimated time' }}</h3>
+                <p class="sp-section__sub">
+                  {{ lang === 'ar'
+                  ? 'حدّد أسلوب التقدير وسعر الساعة وخطة الدفعات.'
+                  : 'Choose the estimate basis, hourly rate, and payment plan.' }}
+                </p>
               </div>
             </div>
 
-            <!-- Amount input + suffix -->
-            <div class="sp-field">
-              <label class="sp-field__label" for="sp-estimate-amount">
-                {{ estimateUnit === 'days'
-                ? (lang === 'ar' ? 'عدد الأيام' : 'Number of Days')
-                : (lang === 'ar' ? 'عدد الساعات' : 'Number of Hours') }}
-              </label>
-              <div class="sp-input-group"
-                [class.is-invalid]="shouldShowFieldError(estimateAmountModel, isEstimateAmountInvalid())">
-                <input id="sp-estimate-amount" name="estimateAmount" type="number" min="1" step="1" class="sp-input"
-                  [(ngModel)]="estimateAmount" #estimateAmountModel="ngModel" required
-                  [placeholder]="estimateUnit === 'days' ? '0' : '0'" />
-                <span class="sp-input-group__suffix" *ngIf="estimateUnit === 'days'">
-                  {{ lang === 'ar' ? '8 ساعات/يوم' : '8 hrs / Day' }}
-                </span>
-                <span class="sp-input-group__suffix" *ngIf="estimateUnit === 'hours'">
+            <div class="sp-duo-grid">
+              <!-- Unit toggle -->
+              <div class="sp-field">
+                <label class="sp-field__label">
+                  {{ lang === 'ar' ? 'أساس التقدير' : 'Estimate basis' }}
+                </label>
+                <div class="sp-toggle" role="tablist">
+                  <button type="button" role="tab" class="sp-toggle__btn" [class.is-active]="estimateUnit === 'hours'"
+                    (click)="setEstimateUnit('hours')">
+                    <i class="ki-outline ki-time fs-6"></i>
+                    {{ lang === 'ar' ? 'ساعات' : 'Hours' }}
+                  </button>
+                  <button type="button" role="tab" class="sp-toggle__btn" [class.is-active]="estimateUnit === 'days'"
+                    (click)="setEstimateUnit('days')">
+                    <i class="ki-outline ki-calendar fs-6"></i>
+                    {{ lang === 'ar' ? 'أيام' : 'Days' }}
+                  </button>
+                </div>
+              </div>
+
+              <!-- Amount input + suffix -->
+              <div class="sp-field">
+                <label class="sp-field__label" for="sp-estimate-amount">
+                  {{ estimateUnit === 'days'
+                  ? (lang === 'ar' ? 'عدد الأيام' : 'Number of Days')
+                  : (lang === 'ar' ? 'عدد الساعات' : 'Number of Hours') }}
+                </label>
+                <div class="sp-input-group"
+                  [class.is-invalid]="shouldShowFieldError(estimateAmountModel, isEstimateAmountInvalid())">
+                  <input id="sp-estimate-amount" name="estimateAmount" type="number" min="1" step="1" class="sp-input"
+                    [(ngModel)]="estimateAmount" #estimateAmountModel="ngModel" required
+                    [placeholder]="estimateUnit === 'days' ? '0' : '0'" />
+                  <span class="sp-input-group__suffix" *ngIf="estimateUnit === 'days'">
+                    {{ lang === 'ar' ? '8 ساعات/يوم' : '8 hrs / Day' }}
+                  </span>
+                  <span class="sp-input-group__suffix" *ngIf="estimateUnit === 'hours'">
+                    {{ lang === 'ar' ? 'ساعة' : 'hrs' }}
+                  </span>
+                </div>
+                <div class="sp-field__hint sp-field__hint--danger"
+                  *ngIf="shouldShowFieldError(estimateAmountModel, isEstimateAmountInvalid())">
+                  {{ estimateUnit === 'days'
+                  ? (lang === 'ar' ? 'عدد الأيام مطلوب.' : 'Number of days is required.')
+                  : (lang === 'ar' ? 'عدد الساعات مطلوب.' : 'Number of hours is required.') }}
+                </div>
+                <div class="sp-field__hint" *ngIf="estimateUnit === 'days' && totalHours > 0">
+                  {{ lang === 'ar' ? 'إجمالي الساعات' : 'Total hours' }}
+                  <strong>{{ totalHours }}</strong>
                   {{ lang === 'ar' ? 'ساعة' : 'hrs' }}
-                </span>
-              </div>
-              <div class="sp-field__hint sp-field__hint--danger"
-                *ngIf="shouldShowFieldError(estimateAmountModel, isEstimateAmountInvalid())">
-                {{ estimateUnit === 'days'
-                ? (lang === 'ar' ? 'عدد الأيام مطلوب.' : 'Number of days is required.')
-                : (lang === 'ar' ? 'عدد الساعات مطلوب.' : 'Number of hours is required.') }}
-              </div>
-              <div class="sp-field__hint" *ngIf="estimateUnit === 'days' && totalHours > 0">
-                {{ lang === 'ar' ? 'إجمالي الساعات' : 'Total hours' }}
-                <strong>{{ totalHours }}</strong>
-                {{ lang === 'ar' ? 'ساعة' : 'hrs' }}
+                </div>
               </div>
             </div>
 
@@ -185,6 +195,12 @@
             </div>
 
             <ng-container>
+              <div class="sp-subhead">
+                <span class="sp-subhead__title">{{ lang === 'ar' ? 'جدول الدفعات' : 'Payment schedule' }}</span>
+                <span class="sp-subhead__sub">
+                  {{ lang === 'ar' ? 'يجب أن يكون مجموع النسبتين 100%.' : 'The two percentages must add up to 100%.' }}
+                </span>
+              </div>
               <div class="sp-payment-grid">
                 <div class="sp-field">
                   <label class="sp-field__label" for="sp-first-payment-percentage">
@@ -233,29 +249,33 @@
 
           <!-- Footer: summary + actions inline (inside the card) -->
           <footer class="sp-summary">
-          <div class="sp-summary__grid">
-            <div class="sp-summary__row">
-              <span class="sp-summary__label">{{ lang === 'ar' ? 'إجمالي الساعات' : 'Total hours' }}</span>
-              <span class="sp-summary__value">{{ totalHours || 0 }} {{ lang === 'ar' ? 'ساعة' : 'hrs' }}</span>
+            <div class="sp-summary__stats">
+              <div class="sp-stat">
+                <span class="sp-stat__label">{{ lang === 'ar' ? 'إجمالي الساعات' : 'Total hours' }}</span>
+                <span class="sp-stat__value">{{ totalHours || 0 }} {{ lang === 'ar' ? 'ساعة' : 'hrs' }}</span>
+              </div>
+              <div class="sp-stat">
+                <span class="sp-stat__label">{{ lang === 'ar' ? 'سعر الساعة' : 'Hourly rate' }}</span>
+                <span class="sp-stat__value">{{ formatPrice(hourlyRate) }}</span>
+              </div>
+              <div class="sp-stat sp-stat--total">
+                <span class="sp-stat__label">{{ lang === 'ar' ? 'الإجمالي التقديري' : 'Estimated total' }}</span>
+                <span class="sp-stat__value">{{ formatPrice(suggestedPrice) }}</span>
+              </div>
             </div>
-            <div class="sp-summary__row sp-summary__row--total">
-              <span class="sp-summary__label">{{ lang === 'ar' ? 'الإجمالي' : 'Total' }}</span>
-              <span class="sp-summary__value">{{ formatPrice(suggestedPrice) }}</span>
-            </div>
-          </div>
 
-          <div class="sp-actions">
-            <button type="button" class="btn btn-light" [disabled]="isSubmitting" (click)="goBack()">
-              {{ lang === 'ar' ? 'إلغاء' : 'Cancel' }}
-            </button>
-            <button type="button" class="btn btn-info" [disabled]="isSubmitting" (click)="submitProposal()">
-              <i class="ki-outline ki-send fs-6" *ngIf="!isSubmitting"></i>
-              {{ isSubmitting
-              ? (lang === 'ar' ? 'جارٍ الإرسال...' : 'Submitting...')
-              : (lang === 'ar' ? 'إرسال العرض' : 'Submit proposal') }}
-            </button>
-          </div>
-        </footer>
+            <div class="sp-actions">
+              <button type="button" class="btn btn-light" [disabled]="isSubmitting" (click)="goBack()">
+                {{ lang === 'ar' ? 'إلغاء' : 'Cancel' }}
+              </button>
+              <button type="button" class="btn btn-info" [disabled]="isSubmitting" (click)="submitProposal()">
+                <i class="ki-outline ki-send fs-6" *ngIf="!isSubmitting"></i>
+                {{ isSubmitting
+                ? (lang === 'ar' ? 'جارٍ الإرسال...' : 'Submitting...')
+                : (lang === 'ar' ? 'إرسال العرض' : 'Submit proposal') }}
+              </button>
+            </div>
+          </footer>
         </div>
       </div>
 
@@ -458,9 +478,6 @@
               <div class="po-detail-card po-detail-card--scope"
                 *ngFor="let scope of p.project?.scopes; trackBy: trackByScope">
                 <div class="po-detail-card__header">
-                  <span class="po-detail-card__icon">
-                    <i class="ki-outline ki-subtitle fs-4"></i>
-                  </span>
                   <div class="po-detail-card__copy">
                     <div class="po-detail-card__title">{{ getScopeLabel(scope) }}</div>
                     <div class="po-detail-card__subtitle" *ngIf="getScopeDescription(scope)">
@@ -595,8 +612,8 @@
             <div class="po-stage-grid">
               <div class="po-stage-card" *ngIf="deliverableStage.first_draft as firstDraft">
                 <div class="po-stage-card__head">
-                  <span class="po-stage-card__icon">
-                    <i class="ki-outline ki-document fs-4"></i>
+                  <span class="po-stage-card__icon po-stage-card__icon--draft">
+                    <i class="pi pi-file-edit"></i>
                   </span>
                   <div class="po-stage-card__copy">
                     <span class="po-stage-card__title">{{ lang === 'ar' ? 'المسودة الأولى' : 'First Draft' }}</span>
@@ -635,8 +652,8 @@
 
               <div class="po-stage-card" *ngIf="deliverableStage.final_version as finalVersion">
                 <div class="po-stage-card__head">
-                  <span class="po-stage-card__icon">
-                    <i class="ki-outline ki-check-square fs-4"></i>
+                  <span class="po-stage-card__icon po-stage-card__icon--final">
+                    <i class="pi pi-file-check"></i>
                   </span>
                   <div class="po-stage-card__copy">
                     <span class="po-stage-card__title">{{ lang === 'ar' ? 'النسخة النهائية' : 'Final Version' }}</span>

@@ -1,4 +1,4 @@
-<div class="discussion-card" [attr.dir]="lang === 'ar' ? 'rtl' : 'ltr'">
+<div class="discussion-card" [class.discussion-card--empty]="hasEmptyThread" [attr.dir]="lang === 'ar' ? 'rtl' : 'ltr'">
   <div class="discussion-card__body" #messagesScroller>
     <div *ngIf="isLoading" class="discussion-state">
       <span class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></span>
@@ -18,7 +18,7 @@
       </button>
     </div>
 
-    <div *ngIf="!isLoading && normalizedProjectUuid && !loadFailed && messages.length === 0"
+    <div *ngIf="hasEmptyThread"
          class="discussion-state discussion-state--empty">
       <i class="ki-outline ki-messages fs-2x text-gray-400"></i>
       <span>{{ lang === 'ar' ? 'لا توجد رسائل بعد.' : 'No messages yet.' }}</span>
@@ -74,7 +74,7 @@
       <button
         type="button"
         class="btn btn-primary discussion-send"
-        [disabled]="isSending || !draft.trim() || !normalizedProjectUuid"
+        [disabled]="isSending || !normalizedProjectUuid"
         (click)="sendMessage()">
         <span *ngIf="isSending" class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
         {{ lang === 'ar' ? 'إرسال' : 'Send' }}

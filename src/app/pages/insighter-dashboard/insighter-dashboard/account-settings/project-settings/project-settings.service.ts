@@ -35,6 +35,7 @@ export interface ProjectAccountCheckResults {
   whatsapp?: WhatsAppCheck;
   experience?: ExperienceCheck;
   profile?: ProfileCheck;
+  pass?: boolean;
 }
 
 interface ProjectAccountCheckResponse {

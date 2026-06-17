@@ -27,9 +27,9 @@
     </div>
   </app-page-header>
 
-  <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+  <div class="po-toolbar d-flex justify-content-between align-items-start flex-wrap gap-3">
 
-    <div class="d-flex align-items-center  flex-wrap gap-3">
+    <div class="po-toolbar__filters d-flex align-items-start flex-wrap gap-3">
       <div class="po-filter">
         <label class="po-filter__label">{{ lang === 'ar' ? 'حالة الإجراء' : 'Action Status' }}</label>
         <div class="po-filter-chips" role="group" [attr.aria-label]="lang === 'ar' ? 'تصفية حسب حالة الإجراء' : 'Filter by action status'">
@@ -42,6 +42,7 @@
               <i class="ki-outline ki-abstract-26 fs-6"></i>
             </span>
             <span>{{ lang === 'ar' ? 'الكل' : 'All' }}</span>
+            <span class="po-filter-chip__count">{{ getAllOffersCount() }}</span>
           </button>
 
           <button type="button"
@@ -55,12 +56,14 @@
               <i class="ki-outline fs-6" [ngClass]="option.iconClass"></i>
             </span>
             <span>{{ lang === 'ar' ? option.labelAr : option.labelEn }}</span>
+            <span class="po-filter-chip__count">{{ getActionStatusCount(option.value) }}</span>
           </button>
         </div>
       </div>
+
     </div>
 
-    <div class="d-flex sm-flex-row flex-column justify-content-end align-items-end">
+    <div class="po-toolbar__actions d-flex sm-flex-row flex-column justify-content-end align-items-end">
       <div class="po-view-toggle" role="group" style="max-height: fit-content;">
         <button type="button" class="po-view-toggle__btn" [class.active]="viewMode === 'grid'"
           (click)="setViewMode('grid')" [attr.aria-label]="lang === 'ar' ? 'عرض شبكي' : 'Grid view'">
@@ -70,6 +73,23 @@
           (click)="setViewMode('list')" [attr.aria-label]="lang === 'ar' ? 'عرض قائمـة' : 'List view'">
           <i class="ki-outline ki-row-horizontal fs-5"></i>
         </button>
+      </div>
+
+      <div class="po-filter po-filter--read-status">
+        <div class="po-filter-chips po-filter-chips--read-status" role="group" [attr.aria-label]="lang === 'ar' ? 'تصفية حسب حالة القراءة' : 'Filter by read status'">
+          <button type="button"
+            *ngFor="let option of readStatusOptions"
+            class="po-filter-chip"
+            [ngClass]="'po-filter-chip--' + option.value"
+            [class.active]="selectedReadStatus === option.value"
+            [attr.aria-pressed]="selectedReadStatus === option.value"
+            (click)="onReadStatusChange(option.value)">
+            <span class="po-filter-chip__icon">
+              <i class="ki-outline fs-6" [ngClass]="option.iconClass"></i>
+            </span>
+            <span>{{ lang === 'ar' ? option.labelAr : option.labelEn }}</span>
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -97,11 +117,16 @@
     <table class="table align-middle fs-6 po-table">
       <thead>
         <tr class="text-inline-start text-gray-500 fw-semibold fs-8 text-uppercase gs-0">
-          <th class="min-w-300px">{{ lang === 'ar' ? 'المشروع' : 'Project' }}</th>
+          <th class="min-w-300px">
+            <span class="po-table__heading">
+              <span>{{ lang === 'ar' ? 'المشروع' : 'Project' }}</span>
+              <span class="po-table__total-badge">{{ totalRecords }}</span>
+            </span>
+          </th>
           <th class="min-w-170px">{{ lang === 'ar' ? 'النوع' : 'Type' }}</th>
           <th class="min-w-180px">{{ lang === 'ar' ? 'الخدمة' : 'Service' }}</th>
           <th class="min-w-150px">{{ lang === 'ar' ? 'الموعد النهائي' : 'Deadline' }}</th>
-          <th class="min-w-130px">{{ lang === 'ar' ? 'الحالة' : 'Status' }}</th>
+          <th class="min-w-180px">{{ lang === 'ar' ? 'الحالة' : 'Status' }}</th>
           <th class="w-100px"></th>
         </tr>
       </thead>
@@ -151,7 +176,7 @@
 
           <td class="text-gray-800 fw-semibold">{{ getDeadlineLabel(offer) }}</td>
 
-          <td>
+          <td class="text-nowrap">
             <span class="po-card__status" [ngClass]="getStatusBadgeClass(offer)">
               <span class="po-card__status-dot"></span>
               {{ getStatusLabel(offer) }}
@@ -449,7 +474,7 @@
             </div>
           </section>
 
-          <details class="po-section po-section--accordion" *ngIf="offer.project.scopes?.length">
+          <details class="po-section po-section--accordion po-section--scope" *ngIf="offer.project.scopes?.length">
             <summary class="po-section__head po-section__summary">
               <span class="po-section__title-icon" aria-hidden="true"><i class="pi pi-list"></i></span>
               <h6 class="po-section__title">{{ lang === 'ar' ? 'النطاقات' : 'Scopes' }}</h6>
@@ -462,9 +487,6 @@
               <div class="po-detail-card po-detail-card--scope"
                 *ngFor="let scope of offer.project.scopes; trackBy: trackByScope">
                 <div class="po-detail-card__header">
-                  <span class="po-detail-card__icon">
-                    <i class="ki-outline ki-subtitle fs-4"></i>
-                  </span>
                   <div class="po-detail-card__copy">
                     <div class="po-detail-card__title">{{ getScopeLabel(scope) }}</div>
                     <div class="po-detail-card__subtitle" *ngIf="getScopeDescription(scope)">
@@ -535,7 +557,7 @@
             </div>
           </details>
 
-          <details class="po-section po-section--accordion" *ngIf="getComponent(offer, 'deliverable-stage') as deliverableStage">
+          <details class="po-section po-section--accordion po-section--stages" *ngIf="getComponent(offer, 'deliverable-stage') as deliverableStage">
             <summary class="po-section__head po-section__summary">
               <span class="po-section__title-icon" aria-hidden="true"><i class="pi pi-file"></i></span>
               <h6 class="po-section__title">{{ lang === 'ar' ? 'مراحل التسليم' : 'Deliverable Stages' }}</h6>
@@ -547,8 +569,8 @@
             <div class="po-stage-grid">
               <div class="po-stage-card" *ngIf="deliverableStage.first_draft as firstDraft">
                 <div class="po-stage-card__head">
-                  <span class="po-stage-card__icon">
-                    <i class="ki-outline ki-document fs-4"></i>
+                  <span class="po-stage-card__icon po-stage-card__icon--draft">
+                    <i class="pi pi-file-edit"></i>
                   </span>
                   <div class="po-stage-card__copy">
                     <span class="po-stage-card__title">{{ lang === 'ar' ? 'المسودة الأولى' : 'First Draft' }}</span>
@@ -587,8 +609,8 @@
 
               <div class="po-stage-card" *ngIf="deliverableStage.final_version as finalVersion">
                 <div class="po-stage-card__head">
-                  <span class="po-stage-card__icon">
-                    <i class="ki-outline ki-check-square fs-4"></i>
+                  <span class="po-stage-card__icon po-stage-card__icon--final">
+                    <i class="pi pi-file-check"></i>
                   </span>
                   <div class="po-stage-card__copy">
                     <span class="po-stage-card__title">{{ lang === 'ar' ? 'النسخة النهائية' : 'Final Version' }}</span>
@@ -627,7 +649,7 @@
             </div>
           </details>
 
-          <details class="po-section po-section--accordion" *ngIf="getComponent(offer, 'target-market') as targetMarket">
+          <details class="po-section po-section--accordion po-section--market" *ngIf="getComponent(offer, 'target-market') as targetMarket">
             <summary class="po-section__head po-section__summary">
               <span class="po-section__title-icon" aria-hidden="true"><i class="pi pi-map-marker"></i></span>
               <h6 class="po-section__title">{{ lang === 'ar' ? 'السوق المستهدف' : 'Target Market' }}</h6>
@@ -665,7 +687,7 @@
             </div>
           </details>
 
-          <details class="po-section po-section--accordion" *ngIf="getComponent(offer, 'data-sources-expected') as dataSources">
+          <details class="po-section po-section--accordion po-section--sources" *ngIf="getComponent(offer, 'data-sources-expected') as dataSources">
             <summary class="po-section__head po-section__summary">
               <span class="po-section__title-icon" aria-hidden="true"><i class="pi pi-database"></i></span>
               <h6 class="po-section__title">{{ lang === 'ar' ? 'مصادر البيانات' : 'Data Sources' }}</h6>
@@ -697,7 +719,7 @@
             </div>
           </details>
 
-          <details class="po-section po-section--accordion" *ngIf="hasAddons(offer) ">
+          <details class="po-section po-section--accordion po-section--addons" *ngIf="hasAddons(offer) ">
             <summary class="po-section__head po-section__summary">
               <span class="po-section__title-icon" aria-hidden="true"><i class="pi pi-plus-circle"></i></span>
               <h6 class="po-section__title">{{ lang === 'ar' ? 'الإضافات' : 'Add-ons' }}</h6>
@@ -776,16 +798,7 @@
           </details>
             </div>
 
-            <details *ngSwitchCase="'documents'" class="po-section po-section--accordion po-documents">
-              <summary class="po-section__head po-section__summary">
-                <span class="po-section__title-icon" aria-hidden="true"><i class="pi pi-folder"></i></span>
-                <h6 class="po-section__title">{{ lang === 'ar' ? 'المستندات' : 'Documents' }}</h6>
-                <span class="po-section__eyebrow">{{ lang === 'ar' ? 'ملفات المقترح' : 'Proposal Files' }}</span>
-                <span class="po-section__chevron" aria-hidden="true">
-                  <i class="pi pi-chevron-down"></i>
-                </span>
-              </summary>
-
+            <section *ngSwitchCase="'documents'" class="po-documents">
               <ng-container *ngIf="getAllProposalFiles(offer).length; else noProposalDocuments">
                 <div class="po-document-group" *ngIf="getProposalFiles(offer, 'general').length">
                   <div class="po-document-group__head">
@@ -799,13 +812,19 @@
                     <button type="button" class="po-document-item"
                       *ngFor="let file of getProposalFiles(offer, 'general'); trackBy: trackByFile"
                       [class.po-document-item--new]="isUnreadFile(file)"
-                      [disabled]="isOpeningFile(file)" (click)="openProjectFile(file)">
+                      [disabled]="isOpeningFile(file)"
+                      [attr.aria-label]="getProjectFileName(file)"
+                      [attr.title]="getProjectFileName(file)"
+                      (click)="openProjectFile(file)">
                       <span class="po-new-ribbon" *ngIf="isUnreadFile(file)">
                         {{ lang === 'ar' ? 'جديد' : 'New' }}
                       </span>
-                      <span class="po-document-item__icon">
-                        <i class="ki-outline fs-5" [ngClass]="isOpeningFile(file) ? 'ki-loading' : 'ki-file-down'"></i>
-                      </span>
+                      <img class="po-document-item__icon"
+                        [src]="getFileTypeIconPath(getProjectFileExtension(file))"
+                        [alt]="getProjectFileExtension(file) || 'file'"
+                        loading="lazy"
+                        (error)="onFileIconLoadError($event)">
+                      <span class="po-document-item__scope">{{ file.scope || getProjectFileName(file) }}</span>
                       <span class="po-document-item__copy">
                         <strong>{{ getProjectFileName(file) }}</strong>
                         <small>{{ file.uploadBy || '-' }} &middot; {{ formatDate(file.upload_date) }}</small>
@@ -826,13 +845,19 @@
                     <button type="button" class="po-document-item"
                       *ngFor="let file of getProposalFiles(offer, 'scopes'); trackBy: trackByFile"
                       [class.po-document-item--new]="isUnreadFile(file)"
-                      [disabled]="isOpeningFile(file)" (click)="openProjectFile(file)">
+                      [disabled]="isOpeningFile(file)"
+                      [attr.aria-label]="getProjectFileName(file)"
+                      [attr.title]="getProjectFileName(file)"
+                      (click)="openProjectFile(file)">
                       <span class="po-new-ribbon" *ngIf="isUnreadFile(file)">
                         {{ lang === 'ar' ? 'جديد' : 'New' }}
                       </span>
-                      <span class="po-document-item__icon">
-                        <i class="ki-outline fs-5" [ngClass]="isOpeningFile(file) ? 'ki-loading' : 'ki-file-down'"></i>
-                      </span>
+                      <img class="po-document-item__icon"
+                        [src]="getFileTypeIconPath(getProjectFileExtension(file))"
+                        [alt]="getProjectFileExtension(file) || 'file'"
+                        loading="lazy"
+                        (error)="onFileIconLoadError($event)">
+                      <span class="po-document-item__scope">{{ file.scope || getProjectFileName(file) }}</span>
                       <span class="po-document-item__copy">
                         <strong>{{ getProjectFileName(file) }}</strong>
                         <small>
@@ -856,13 +881,19 @@
                     <button type="button" class="po-document-item"
                       *ngFor="let file of getProposalFiles(offer, 'offer'); trackBy: trackByFile"
                       [class.po-document-item--new]="isUnreadFile(file)"
-                      [disabled]="isOpeningFile(file)" (click)="openProjectFile(file)">
+                      [disabled]="isOpeningFile(file)"
+                      [attr.aria-label]="getProjectFileName(file)"
+                      [attr.title]="getProjectFileName(file)"
+                      (click)="openProjectFile(file)">
                       <span class="po-new-ribbon" *ngIf="isUnreadFile(file)">
                         {{ lang === 'ar' ? 'جديد' : 'New' }}
                       </span>
-                      <span class="po-document-item__icon">
-                        <i class="ki-outline fs-5" [ngClass]="isOpeningFile(file) ? 'ki-loading' : 'ki-file-down'"></i>
-                      </span>
+                      <img class="po-document-item__icon"
+                        [src]="getFileTypeIconPath(getProjectFileExtension(file))"
+                        [alt]="getProjectFileExtension(file) || 'file'"
+                        loading="lazy"
+                        (error)="onFileIconLoadError($event)">
+                      <span class="po-document-item__scope">{{ file.scope || getProjectFileName(file) }}</span>
                       <span class="po-document-item__copy">
                         <strong>{{ getProjectFileName(file) }}</strong>
                         <small>{{ file.uploadBy || '-' }} &middot; {{ formatDate(file.upload_date) }}</small>
@@ -873,17 +904,12 @@
               </ng-container>
 
               <ng-template #noProposalDocuments>
-                <div class="po-empty po-empty--compact">
-                  <i class="ki-outline ki-document fs-2x text-info mb-3"></i>
-                  <h6 class="fw-semibold text-gray-800 mb-2">
-                    {{ lang === 'ar' ? 'لا توجد مستندات' : 'No documents' }}
-                  </h6>
-                  <p class="text-gray-500 fs-7 mb-0">
-                    {{ lang === 'ar' ? 'لم يتم إرفاق ملفات لهذا المقترح.' : 'No proposal files are attached yet.' }}
-                  </p>
+                <div class="po-documents-empty">
+                  <i class="ki-outline ki-folder fs-2x text-gray-400"></i>
+                  <span>{{ lang === 'ar' ? 'لم يتم إرفاق ملفات لهذا المقترح.' : 'No proposal files are attached yet.' }}</span>
                 </div>
               </ng-template>
-            </details>
+            </section>
 
             <ng-container *ngSwitchCase="'discussion'">
               <app-project-discussion
@@ -947,10 +973,16 @@
                   <div class="po-document-list">
                     <button type="button" class="po-document-item"
                       *ngFor="let file of getOfferFiles(offer); trackBy: trackByFile"
-                      [disabled]="isOpeningFile(file)" (click)="openProjectFile(file)">
-                      <span class="po-document-item__icon">
-                        <i class="ki-outline fs-5" [ngClass]="isOpeningFile(file) ? 'ki-loading' : 'ki-file-down'"></i>
-                      </span>
+                      [disabled]="isOpeningFile(file)"
+                      [attr.aria-label]="getProjectFileName(file)"
+                      [attr.title]="getProjectFileName(file)"
+                      (click)="openProjectFile(file)">
+                      <img class="po-document-item__icon"
+                        [src]="getFileTypeIconPath(getProjectFileExtension(file))"
+                        [alt]="getProjectFileExtension(file) || 'file'"
+                        loading="lazy"
+                        (error)="onFileIconLoadError($event)">
+                      <span class="po-document-item__scope">{{ file.scope || getProjectFileName(file) }}</span>
                       <span class="po-document-item__copy">
                         <strong>{{ getProjectFileName(file) }}</strong>
                         <small>{{ file.uploadBy || '-' }} &middot; {{ formatDate(file.upload_date) }}</small>
@@ -1048,6 +1080,14 @@
           <button *ngIf="!hasContractAction(offer) && canSendOffer(offer)" type="button" class="btn btn-info w-100 mb-2" (click)="onSendProposal()">
             <i class="ki-outline ki-send fs-6 me-1"></i>
             {{ lang === 'ar' ? 'إرسال عرض' : 'Send Offer' }}
+          </button>
+
+          <button *ngIf="!hasContractAction(offer) && canInterestOffer(offer)" type="button" class="btn btn-outline btn-outline-success w-100 mb-2"
+            [disabled]="isInterestingSelectedOffer()" (click)="onInterestOffer()">
+            <i class="ki-outline ki-check-circle fs-6 me-1"></i>
+            {{ isInterestingSelectedOffer()
+            ? (lang === 'ar' ? 'جاري تسجيل الاهتمام...' : 'Marking interested...')
+            : (lang === 'ar' ? 'مهتم' : 'Interested') }}
           </button>
 
           <button *ngIf="!hasContractAction(offer)" type="button" class="btn btn-outline btn-outline-info w-100" (click)="onAskClient()">

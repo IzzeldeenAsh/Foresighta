@@ -24,6 +24,8 @@ export type ProjectReviewAction = 'approve' | 'request_change';
 export type ProjectReviewSubmissionPriorityValue = 'normal' | 'medium' | 'critical' | string;
 export type RematchOriginType = 'country' | 'region';
 export type RematchPreferredInsighterType = 'individual' | 'company' | 'either' | string;
+export type CreatedProjectReadStatus = 'read' | 'not_read';
+export type ProjectOfferTechnicalDecisionStatus = 'technical_accepted' | 'technical_rejected';
 
 export interface ProjectReviewSubmissionPriority {
   value: ProjectReviewSubmissionPriorityValue | null;
@@ -48,7 +50,9 @@ export interface CreatedProjectFile {
   identifier?: string | null;
   second_identifier?: string | null;
   uploadBy?: string | null;
+  uploadByAvatarProfile?: string | null;
   uploaded_by?: string | null;
+  uploaded_by_avatar_profile?: string | null;
   upload_date?: string | null;
   scope?: string | null;
   is_read?: boolean | null;
@@ -132,6 +136,7 @@ export interface ProjectReviewSubmission {
 export interface CreatedProjectScope {
   scope: string | null;
   description?: string | null;
+  have_attachments?: boolean | null;
   files?: CreatedProjectFile[];
   children?: CreatedProjectScope[];
   [key: string]: any;
@@ -159,6 +164,7 @@ export interface CreatedProject {
   budget_min: number | null;
   budget_max: number | null;
   deadline: string | null;
+  last_proposal_deadline?: string | null;
   components: CreatedProjectBlock[];
   addons: CreatedProjectBlock[];
   scopes: CreatedProjectScope[];
@@ -256,7 +262,20 @@ export interface CreatedProjectProposalMatch {
   matches: Record<string, boolean | undefined>;
   is_match_all: boolean;
   is_match_before: boolean;
+  is_invited_before?: boolean;
+  action_status?: string | null;
+  proposal_uuid?: string | null;
   status: string | null;
+}
+
+export interface ProjectUnsubmittedMatchGroup {
+  proposalUuid: string;
+  matches: CreatedProjectProposalMatch[];
+}
+
+export interface ProjectMatchListResponse {
+  submitted: CreatedProjectProposalInvite[];
+  unsubmitted: ProjectUnsubmittedMatchGroup[];
 }
 
 export interface SubmitRematchProposalPayload {
@@ -284,6 +303,18 @@ export interface ProjectSettingOption {
 
 export interface CreatedProjectsFilters {
   project_status?: CreatedProjectStatus | null;
+  read_status?: CreatedProjectReadStatus | null;
+}
+
+export interface CreatedProjectStatusStatistic {
+  status: CreatedProjectStatus;
+  label: string;
+  total: number;
+}
+
+export interface CreatedProjectStatistics {
+  total: number;
+  statuses: CreatedProjectStatusStatistic[];
 }
 
 interface PaginationLinks {
@@ -366,6 +397,9 @@ export class ProjectsCreatedService {
     if (filters.project_status) {
       params = params.set('project_status', filters.project_status);
     }
+    if (filters.read_status) {
+      params = params.set('read_status', filters.read_status);
+    }
 
     return this.http.get<any>(this.baseUrl, {
       headers: this.getHeaders(),
@@ -374,6 +408,15 @@ export class ProjectsCreatedService {
       map(response => this.mapPaginatedResponse(response)),
       catchError(error => throwError(() => error)),
       finalize(() => this.setLoading(false))
+    );
+  }
+
+  getProjectStatistics(): Observable<CreatedProjectStatistics> {
+    return this.http.get<any>(`${this.baseUrl}/statistics`, {
+      headers: this.getHeaders(),
+    }).pipe(
+      map(response => this.mapProjectStatistics(response)),
+      catchError(error => throwError(() => error))
     );
   }
 
@@ -502,6 +545,19 @@ export class ProjectsCreatedService {
     );
   }
 
+  cancelProject(projectUuid: string): Observable<any> {
+    this.setLoading(true);
+
+    return this.http.post<any>(
+      `${this.baseUrl}/cancel/${projectUuid}`,
+      {},
+      { headers: this.getHeaders() }
+    ).pipe(
+      catchError(error => throwError(() => error)),
+      finalize(() => this.setLoading(false))
+    );
+  }
+
   getProjectFileUrl(fileUuid: string): Observable<string> {
     return this.http.get<any>(`${environment.apiBaseUrl}/account/project/file/download/${fileUuid}`, {
       headers: this.getHeaders(),
@@ -571,13 +627,13 @@ export class ProjectsCreatedService {
     );
   }
 
-  getProjectProposalMatches(proposalUuid: string): Observable<CreatedProjectProposalMatch[]> {
+  getProjectMatchList(projectUuid: string): Observable<ProjectMatchListResponse> {
     this.setLoading(true);
 
-    return this.http.get<any>(`${this.baseUrl}/proposal/match/${proposalUuid}`, {
+    return this.http.get<any>(`${this.baseUrl}/proposal/match/list/${projectUuid}`, {
       headers: this.getHeaders(),
     }).pipe(
-      map(response => this.mapProposalMatches(response)),
+      map(response => this.mapProjectMatchList(response)),
       catchError(error => throwError(() => error)),
       finalize(() => this.setLoading(false))
     );
@@ -597,10 +653,24 @@ export class ProjectsCreatedService {
     );
   }
 
-  acceptProposalOffer(offerUuid: string): Observable<any> {
+  decideProposalOfferTechnically(
+    offerUuid: string,
+    status: ProjectOfferTechnicalDecisionStatus
+  ): Observable<any> {
     this.setLoading(true);
 
-    return this.http.post<any>(`${this.baseUrl}/proposal/offer/accept/${offerUuid}`, {}, {
+    return this.http.post<any>(`${this.baseUrl}/proposal/offer/technical-decision/${offerUuid}`, { status }, {
+      headers: this.getHeaders(),
+    }).pipe(
+      catchError(error => throwError(() => error)),
+      finalize(() => this.setLoading(false))
+    );
+  }
+
+  awardProposalOffer(offerUuid: string): Observable<any> {
+    this.setLoading(true);
+
+    return this.http.post<any>(`${this.baseUrl}/proposal/offer/award/${offerUuid}`, {}, {
       headers: this.getHeaders(),
     }).pipe(
       catchError(error => throwError(() => error)),
@@ -656,6 +726,23 @@ export class ProjectsCreatedService {
     };
   }
 
+  private mapProjectStatistics(response: any): CreatedProjectStatistics {
+    const data = response?.data && typeof response.data === 'object' ? response.data : response;
+    const statuses = Array.isArray(data?.statuses) ? data.statuses : [];
+
+    return {
+      total: this.toNumber(data?.total),
+      statuses: statuses
+        .filter((item: any) => item && typeof item === 'object' && !Array.isArray(item))
+        .map((item: any) => ({
+          status: this.stringifyValue(item?.status),
+          label: this.stringifyValue(item?.label),
+          total: this.toNumber(item?.total),
+        }))
+        .filter((item: CreatedProjectStatusStatistic) => !!item.status),
+    };
+  }
+
   private mapProject(p: any): CreatedProject {
     return {
       uuid: p?.uuid ?? '',
@@ -679,6 +766,7 @@ export class ProjectsCreatedService {
       budget_min: p?.budget_min ?? null,
       budget_max: p?.budget_max ?? null,
       deadline: p?.deadline ?? null,
+      last_proposal_deadline: p?.last_proposal_deadline ?? null,
       components: this.sanitizeBlocks(p?.components),
       addons: this.sanitizeBlocks(p?.addons),
       scopes: this.sanitizeScopes(p?.scopes),
@@ -794,17 +882,21 @@ export class ProjectsCreatedService {
       .filter((invite: CreatedProjectProposalInvite) => !!invite.uuid || !!invite.insighter?.uuid);
   }
 
-  private mapProposalMatches(response: any): CreatedProjectProposalMatch[] {
-    const data = response?.data;
-    const matches = Array.isArray(data)
-      ? data
-      : Array.isArray(data?.matches)
-        ? data.matches
-        : [];
+  private mapProjectMatchList(response: any): ProjectMatchListResponse {
+    // `submitted` shares the same shape as a project `invited` entry (it carries the
+    // offer, deadline_offer and action/submission status), so reuse the invite mapper.
+    const submitted = this.mapProjectInvites(response?.submitted);
 
-    return matches
-      .map((item: any) => this.mapProposalMatch(item))
-      .filter((match: CreatedProjectProposalMatch) => !!match.uuid && !!match.insighter.uuid);
+    const unsubmitted = Array.isArray(response?.unsubmitted)
+      ? response.unsubmitted.map((group: any) => ({
+          proposalUuid: this.stringifyValue(group?.proposal_uuid),
+          matches: (Array.isArray(group?.matches) ? group.matches : [])
+            .map((item: any) => this.mapProposalMatch(item))
+            .filter((match: CreatedProjectProposalMatch) => !!match.uuid && !!match.insighter.uuid),
+        }))
+      : [];
+
+    return { submitted, unsubmitted };
   }
 
   private mapProposalMatch(item: any): CreatedProjectProposalMatch {
@@ -829,6 +921,9 @@ export class ProjectsCreatedService {
         : {},
       is_match_all: Boolean(item?.is_match_all ?? item?.is_match_all_properties),
       is_match_before: Boolean(item?.is_match_before),
+      is_invited_before: Boolean(item?.is_invited_before),
+      action_status: item?.action_status ?? null,
+      proposal_uuid: item?.proposal_uuid ?? null,
       status: item?.status ?? null,
     };
   }
@@ -917,6 +1012,11 @@ export class ProjectsCreatedService {
     return false;
   }
 
+  private toOptionalBoolean(value: any): boolean | null {
+    if (value === null || value === undefined || value === '') return null;
+    return this.toBoolean(value);
+  }
+
   private toReadState(value: any): boolean | null {
     if (value === null || value === undefined) return null;
     if (typeof value === 'boolean') return value;
@@ -947,10 +1047,17 @@ export class ProjectsCreatedService {
         ...scope,
         scope: scope.scope ?? null,
         description: scope.description ?? null,
+        have_attachments: this.toOptionalBoolean((scope as any).have_attachments ?? (scope as any).has_attachments),
         files: this.sanitizeFiles(scope.files),
         children: this.sanitizeScopes(scope.children),
       }))
-      .filter(scope => !!scope.scope || !!scope.description || !!scope.files?.length || !!scope.children?.length);
+      .filter(scope =>
+        !!scope.scope
+        || !!scope.description
+        || scope.have_attachments === true
+        || !!scope.files?.length
+        || !!scope.children?.length
+      );
   }
 
   private sanitizeFiles(files: CreatedProjectFile[] | null | undefined): CreatedProjectFile[] {
@@ -966,7 +1073,17 @@ export class ProjectsCreatedService {
         identifier: file.identifier ?? null,
         second_identifier: file.second_identifier ?? null,
         uploadBy: file.uploadBy ?? null,
+        uploadByAvatarProfile: file.uploadByAvatarProfile
+          ?? (file as any).upload_by_avatar_profile
+          ?? (file as any).uploadedByAvatarProfile
+          ?? (file as any).uploaded_by_avatar_profile
+          ?? null,
         uploaded_by: file.uploaded_by ?? null,
+        uploaded_by_avatar_profile: file.uploaded_by_avatar_profile
+          ?? (file as any).uploadByAvatarProfile
+          ?? (file as any).upload_by_avatar_profile
+          ?? (file as any).uploadedByAvatarProfile
+          ?? null,
         upload_date: file.upload_date ?? null,
         scope: file.scope ?? null,
         is_read: this.toReadState(file.is_read),

@@ -1,11 +1,13 @@
-<app-page-header
-  [titleEn]="'Project Settings'"
-  [titleAr]="'إعدادات المشروع'"
-  [lang]="lang"
-  [subtitle]="subtitle">
-  <i slot="icon" class="ki-outline ki-abstract-26 fs-2x text-info"></i>
-</app-page-header>
+<div class="project-settings-page">
+  <app-page-header
+    [titleEn]="'Project Settings'"
+    [titleAr]="'إعدادات المشروع'"
+    [lang]="lang"
+    [subtitle]="subtitle">
+    <i slot="icon" class="ki-outline ki-abstract-26 fs-2x text-info"></i>
+  </app-page-header>
 
-<div class="py-1 bg-white rounded-2">
-  <app-project-settings></app-project-settings>
+  <div class="project-settings-page-body">
+    <app-project-settings></app-project-settings>
+  </div>
 </div>

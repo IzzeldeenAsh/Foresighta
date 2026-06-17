@@ -12,7 +12,64 @@
 
   (cancelled)="onAgreementCancelled()"
 ></app-agreement-modal>
-<app-widgets-row [userRole]="userRole"></app-widgets-row>
+<app-widgets-row
+  [userRole]="userRole">
+</app-widgets-row>
+
+<section class="dashboard-promo-grid">
+  <article class="dashboard-promo-card dashboard-promo-card--project" *ngIf="showProjectServiceSetupWidget">
+    <div class="dashboard-promo-card__content">
+      <img
+        class="dashboard-promo-card__image"
+        [src]="projectServiceImageUrl"
+        [alt]="lang === 'ar' ? 'خدمة المشاريع' : 'Project service'"
+        loading="lazy"
+      />
+      <div class="dashboard-promo-card__copy">
+        <h3 class="dashboard-promo-card__title">
+          {{ lang === 'ar' ? 'ابدأ استقبال طلبات المشاريع' : 'Start receiving project requests' }}
+        </h3>
+        <p class="dashboard-promo-card__text">
+          {{
+            lang === 'ar'
+              ? 'أكمل إعداد خدمة المشاريع لتحديد خدماتك، أسعارك، وأنواع الطلبات المناسبة لك.'
+              : 'Complete project service setup to define your services, rate, and preferred request types.'
+          }}
+        </p>
+      </div>
+    </div>
+    <button type="button" class="btn btn-info fw-semibold dashboard-promo-card__button" (click)="goToProjectSettings()">
+      {{ lang === 'ar' ? 'ابدأ الإعداد' : 'Start setup' }}
+    </button>
+  </article>
+
+  <article class="dashboard-promo-card dashboard-promo-card--notifications" *ngIf="showNotificationPreferencesBanner">
+    <div class="dashboard-promo-card__content">
+      <img
+        class="dashboard-promo-card__image"
+        [src]="notificationBannerImageUrl"
+        [alt]="lang === 'ar' ? 'واتساب والرسائل النصية' : 'WhatsApp and SMS'"
+        loading="lazy"
+      />
+      <div class="dashboard-promo-card__copy">
+        <h3 class="dashboard-promo-card__title">
+          {{ lang === 'ar' ? 'إشعارات واتساب والرسائل النصية' : 'WhatsApp & SMS notifications' }}
+        </h3>
+        <p class="dashboard-promo-card__text">
+          {{
+            lang === 'ar'
+              ? 'هل تريد استلام الإشعارات عبر واتساب والرسائل النصية؟ قم بتفعيل القنوات وإضافة أرقامك من إعدادات الإشعارات.'
+              : 'Want to receive notifications by WhatsApp and SMS? Enable channels and add your numbers in Notification Settings.'
+          }}
+        </p>
+      </div>
+    </div>
+    <button type="button" class="btn btn-info fw-semibold dashboard-promo-card__button" (click)="goToNotificationPreferences()">
+      {{ lang === 'ar' ? 'تحديث الاعدادات' : 'Update Settings' }}
+    </button>
+  </article>
+</section>
+
 <div class="row g-4">
     <div class="col-12 col-lg-4 d-flex">
       <div class="card border-0 h-100 w-100">
@@ -127,41 +184,29 @@
     </div>
 </div>
 
-<div class="row mt-6" *ngIf="showNotificationPreferencesBanner">
-  <div class="col-12">
-    <div
-      class="card border-0 overflow-hidden px-10"
-      style="background: linear-gradient(135deg, #fff 0%, #cdffdd 100%);"
-    >
-      <div
-        class="card-body d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-6 p-6 p-md-8"
-      >
-        <div [ngClass]="{ 'text-end': lang === 'ar' }">
-          <div class="fw-bold fs-2 text-gray-800 mb-2">
-            {{ lang === 'ar' ? 'إشعارات واتساب والرسائل النصية' : 'WhatsApp & SMS notifications' }}
-          </div>
-          <div class="text-gray-600 fw-semibold fs-5" style="max-width: 400px;">
-            {{
-              lang === 'ar'
-                ? 'هل تريد استلام الإشعارات عبر واتساب والرسائل النصية؟ قم بتفعيل القنوات وإضافة أرقامك من إعدادات الإشعارات.'
-                : 'Want to receive notifications by WhatsApp and SMS? Enable channels and add your numbers in Notification Settings.'
-            }}
-          </div>
-          <div class="mt-5">
-            <button type="button" class="btn btn-sm btn-primary fw-semibold" (click)="goToNotificationPreferences()">
-              {{ lang === 'ar' ? 'تحديث الاعدادات' : 'Update Settings' }}
-            </button>
-          </div>
-        </div>
-
-        <img
-          class="d-none d-md-block"
-          [src]="notificationBannerImageUrl"
-          [alt]="lang === 'ar' ? 'واتساب والرسائل النصية' : 'WhatsApp and SMS'"
-          style="width: 200px; height: 200px; object-fit: contain;"
-          loading="lazy"
-        />
+<section class="dashboard-promo-grid mt-5">
+  <article class="dashboard-promo-card dashboard-promo-card--publish">
+    <div class="dashboard-promo-card__content">
+      <img
+        class="dashboard-promo-card__image"
+        [src]="publishInsightsImageUrl"
+        [alt]="lang === 'ar' ? 'نشر الرؤى' : 'Publish insights'"
+        loading="lazy"
+      />
+      <div class="dashboard-promo-card__copy">
+        <h3 class="dashboard-promo-card__title">
+          {{ 'PUBLISH_INSIGHTS_WIDGET.TITLE' | translate }}
+        </h3>
+        <p class="dashboard-promo-card__text">
+          {{ 'PUBLISH_INSIGHTS_WIDGET.DESCRIPTION' | translate }}
+        </p>
       </div>
     </div>
-  </div>
-</div>
+    <a
+      [routerLink]="['/app/add-knowledge/stepper']"
+      class="btn btn-info fw-semibold dashboard-promo-card__button"
+    >
+      {{ 'PUBLISH_INSIGHTS_WIDGET.ACTION' | translate }}
+    </a>
+  </article>
+</section>

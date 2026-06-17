@@ -9,8 +9,8 @@
     </div>
   </app-page-header>
 
-  <div class="pc-toolbar d-flex justify-content-between align-items-end flex-wrap gap-3">
-    <div class="pc-toolbar__filters d-flex align-items-center flex-wrap gap-3">
+  <div class="pc-toolbar d-flex justify-content-between align-items-start flex-wrap gap-3">
+    <div class="pc-toolbar__filters d-flex align-items-start flex-wrap gap-3">
       <div class="pc-filter">
         <label class="pc-filter__label">{{ lang === 'ar' ? 'حالة المشروع' : 'Project Status' }}</label>
         <div class="pc-filter-chips" role="group" [attr.aria-label]="lang === 'ar' ? 'تصفية حسب حالة المشروع' : 'Filter by project status'">
@@ -23,6 +23,7 @@
               <i class="ki-outline ki-rocket fs-6"></i>
             </span>
             <span>{{ lang === 'ar' ? 'الكل' : 'All' }}</span>
+            <span class="pc-filter-chip__count">{{ getAllProjectsCount() }}</span>
           </button>
 
           <button type="button"
@@ -36,26 +37,47 @@
               <i class="ki-outline fs-6" [ngClass]="option.iconClass"></i>
             </span>
             <span>{{ lang === 'ar' ? option.labelAr : option.labelEn }}</span>
+            <span class="pc-filter-chip__count">{{ getProjectStatusCount(option.value) }}</span>
           </button>
         </div>
       </div>
+
     </div>
 
-    <div class="pc-view-toggle" role="group">
-      <button type="button"
-              class="pc-view-toggle__btn"
-              [class.active]="viewMode === 'grid'"
-              (click)="setViewMode('grid')"
-              [attr.aria-label]="lang === 'ar' ? 'عرض شبكي' : 'Grid view'">
-        <i class="ki-outline ki-element-11 fs-5"></i>
-      </button>
-      <button type="button"
-              class="pc-view-toggle__btn"
-              [class.active]="viewMode === 'list'"
-              (click)="setViewMode('list')"
-              [attr.aria-label]="lang === 'ar' ? 'عرض قائمة' : 'List view'">
-        <i class="ki-outline ki-row-horizontal fs-5"></i>
-      </button>
+    <div class="pc-toolbar__actions">
+      <div class="pc-view-toggle" role="group">
+        <button type="button"
+                class="pc-view-toggle__btn"
+                [class.active]="viewMode === 'grid'"
+                (click)="setViewMode('grid')"
+                [attr.aria-label]="lang === 'ar' ? 'عرض شبكي' : 'Grid view'">
+          <i class="ki-outline ki-element-11 fs-5"></i>
+        </button>
+        <button type="button"
+                class="pc-view-toggle__btn"
+                [class.active]="viewMode === 'list'"
+                (click)="setViewMode('list')"
+                [attr.aria-label]="lang === 'ar' ? 'عرض قائمة' : 'List view'">
+          <i class="ki-outline ki-row-horizontal fs-5"></i>
+        </button>
+      </div>
+
+      <div class="pc-filter pc-filter--read-status">
+        <div class="pc-filter-chips pc-filter-chips--read-status" role="group" [attr.aria-label]="lang === 'ar' ? 'تصفية حسب حالة القراءة' : 'Filter by read status'">
+          <button type="button"
+            *ngFor="let option of readStatusOptions"
+            class="pc-filter-chip"
+            [ngClass]="'pc-filter-chip--' + option.value"
+            [class.active]="selectedReadStatus === option.value"
+            [attr.aria-pressed]="selectedReadStatus === option.value"
+            (click)="onReadStatusChange(option.value)">
+            <span class="pc-filter-chip__icon">
+              <i class="ki-outline fs-6" [ngClass]="option.iconClass"></i>
+            </span>
+            <span>{{ lang === 'ar' ? option.labelAr : option.labelEn }}</span>
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -86,11 +108,16 @@
       <thead>
         <tr class="text-start text-gray-500 fw-semibold fs-8 text-uppercase gs-0">
           <th class="w-64px"></th>
-          <th class="min-w-300px">{{ lang === 'ar' ? 'المشروع' : 'Project' }}</th>
+          <th class="min-w-300px">
+            <span class="pc-table__heading">
+              <span>{{ lang === 'ar' ? 'المشروع' : 'Project' }}</span>
+              <span class="pc-table__total-badge">{{ totalRecords }}</span>
+            </span>
+          </th>
           <th class="min-w-170px">{{ lang === 'ar' ? 'النوع' : 'Type' }}</th>
           <th class="min-w-180px">{{ lang === 'ar' ? 'الخدمة' : 'Service' }}</th>
           <th class="min-w-150px">{{ lang === 'ar' ? 'الموعد النهائي' : 'Deadline' }}</th>
-          <th class="min-w-130px" *ngIf="hasProjectStatus()">{{ lang === 'ar' ? 'الحالة' : 'Status' }}</th>
+          <th class="min-w-180px" *ngIf="hasProjectStatus()">{{ lang === 'ar' ? 'الحالة' : 'Status' }}</th>
           <th class="w-120px"></th>
         </tr>
       </thead>
@@ -135,7 +162,7 @@
 
           <td class="text-gray-800 fw-semibold">{{ formatDate(project.deadline) }}</td>
 
-          <td *ngIf="hasProjectStatus()">
+          <td *ngIf="hasProjectStatus()" class="text-nowrap">
             <span class="pc-status-badge" [ngClass]="getStatusBadgeClass(project.status)">
               <i class="ki-outline pc-status-badge__icon" [ngClass]="getStatusIconClass(project.status)"></i>
               {{ getStatusLabel(project.status) }}

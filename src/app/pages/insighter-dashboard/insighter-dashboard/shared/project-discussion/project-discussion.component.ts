@@ -240,6 +240,10 @@ export class ProjectDiscussionComponent extends BaseComponent implements OnInit,
     return `${message.id}-${message.date || index}-${message.sender || 'sender'}`;
   }
 
+  get hasEmptyThread(): boolean {
+    return !this.isLoading && !!this.normalizedProjectUuid && !this.loadFailed && this.messages.length === 0;
+  }
+
   get normalizedProjectUuid(): string {
     return (this.projectUuid || '').trim();
   }

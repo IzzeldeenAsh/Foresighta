@@ -8,6 +8,7 @@ import { environment } from 'src/environments/environment';
 export type ProjectOfferType = 'ad_hoc' | 'frame_work_agreement' | 'urgent_request' | string;
 export type ProjectOfferProjectStatus = 'invited' | 'cancelled' | 'submitted' | 'closed' | string;
 export type ProjectOfferActionStatus = 'pending' | 'viewed' | 'offered' | 'declined' | 'expired' | string;
+export type ProjectOfferReadStatus = 'read' | 'not_read';
 export type ProjectFileUploadType = 'first_draft' | 'final_draft' | 'samples' | 'document' | 'other' | string;
 export type ProjectReviewSubmissionType = 'first_draft' | 'final_draft' | 'session_completed' | string;
 export type ProjectReviewSubmissionStatus = 'pending' | 'approved' | 'changes_requested' | string;
@@ -21,6 +22,18 @@ export interface ProjectReviewSubmissionPriority {
 
 export interface ProjectOffersFilters {
   action_status?: ProjectOfferActionStatus | null;
+  read_status?: ProjectOfferReadStatus | null;
+}
+
+export interface ProjectOfferStatusStatistic {
+  status: ProjectOfferActionStatus;
+  label: string;
+  total: number;
+}
+
+export interface ProjectOfferStatistics {
+  total: number;
+  statuses: ProjectOfferStatusStatistic[];
 }
 
 export interface ProjectOfferService {
@@ -46,7 +59,9 @@ export interface ProjectOfferFile {
   identifier?: string | null;
   second_identifier?: string | null;
   uploadBy?: string | null;
+  uploadByAvatarProfile?: string | null;
   uploaded_by?: string | null;
+  uploaded_by_avatar_profile?: string | null;
   upload_date?: string | null;
   scope?: string | null;
   is_read?: boolean | null;
@@ -605,6 +620,15 @@ export class ProjectOffersService {
     );
   }
 
+  getProjectStatistics(): Observable<ProjectOfferStatistics> {
+    return this.http.get<any>(`${environment.apiBaseUrl}/insighter/project/statistics`, {
+      headers: this.getHeaders(),
+    }).pipe(
+      map(response => this.mapProjectStatistics(response)),
+      catchError(error => throwError(() => error))
+    );
+  }
+
   getOnWorkProjects(page: number = 1): Observable<ProjectOffersPaginatedResponse> {
     this.setLoading(true);
 
@@ -645,14 +669,14 @@ export class ProjectOffersService {
 
   requestProjectReview(
     projectUuid: string,
-    payload: { type: ProjectReviewSubmissionType; priority: ProjectReviewSubmissionPriorityValue; note: string }
+    payload: FormData
   ): Observable<any> {
     this.setLoading(true);
 
     return this.http.post<any>(
       `${environment.apiBaseUrl}/insighter/project/review-submission/${projectUuid}`,
       payload,
-      { headers: this.getHeaders() }
+      { headers: this.getFormDataHeaders() }
     ).pipe(
       catchError(error => throwError(() => error)),
       finalize(() => this.setLoading(false))
@@ -672,7 +696,20 @@ export class ProjectOffersService {
     this.setLoading(true);
 
     return this.http.post<ProjectOfferActionResponse>(
-      `${this.baseUrl}/decline-offer/${offerUuid}`,
+      `${this.baseUrl}/decline/${offerUuid}`,
+      {},
+      { headers: this.getHeaders() }
+    ).pipe(
+      catchError(error => throwError(() => error)),
+      finalize(() => this.setLoading(false))
+    );
+  }
+
+  markProposalAsInterested(proposalUuid: string): Observable<ProjectOfferActionResponse> {
+    this.setLoading(true);
+
+    return this.http.post<ProjectOfferActionResponse>(
+      `${this.baseUrl}/interest/${proposalUuid}`,
       {},
       { headers: this.getHeaders() }
     ).pipe(
@@ -846,8 +883,33 @@ export class ProjectOffersService {
     if (filters.action_status) {
       params = params.set('action_status', filters.action_status);
     }
+    if (filters.read_status) {
+      params = params.set('read_status', filters.read_status);
+    }
 
     return params;
+  }
+
+  private mapProjectStatistics(response: any): ProjectOfferStatistics {
+    const data = response?.data && typeof response.data === 'object' ? response.data : response;
+    const statuses = Array.isArray(data?.statuses) ? data.statuses : [];
+
+    return {
+      total: this.toNumber(data?.total),
+      statuses: statuses
+        .filter((item: any) => item && typeof item === 'object' && !Array.isArray(item))
+        .map((item: any) => ({
+          status: `${item?.status ?? ''}`.trim(),
+          label: `${item?.label ?? ''}`.trim(),
+          total: this.toNumber(item?.total),
+        }))
+        .filter((item: ProjectOfferStatusStatistic) => !!item.status),
+    };
+  }
+
+  private toNumber(value: any): number {
+    const numberValue = Number(value);
+    return Number.isFinite(numberValue) ? numberValue : 0;
   }
 
   private buildMockResponse(page: number, filters: ProjectOffersFilters): ProjectOffersPaginatedResponse {
@@ -1121,7 +1183,17 @@ export class ProjectOffersService {
         identifier: file.identifier ?? null,
         second_identifier: file.second_identifier ?? null,
         uploadBy: file.uploadBy ?? null,
+        uploadByAvatarProfile: file.uploadByAvatarProfile
+          ?? (file as any).uploadedByAvatarProfile
+          ?? (file as any).upload_by_avatar_profile
+          ?? (file as any).uploaded_by_avatar_profile
+          ?? null,
         uploaded_by: file.uploaded_by ?? null,
+        uploaded_by_avatar_profile: file.uploaded_by_avatar_profile
+          ?? (file as any).upload_by_avatar_profile
+          ?? (file as any).uploadByAvatarProfile
+          ?? (file as any).uploadedByAvatarProfile
+          ?? null,
         upload_date: file.upload_date ?? null,
         scope: file.scope ?? null,
         is_read: this.toReadState(file.is_read),

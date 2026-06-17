@@ -44,6 +44,7 @@ export interface Knowledge {
   total_price: string;
   package?: any[];
   status: string;
+  status_label?: string;
   regions: any[];
   countries: any[];
   economic_blocs: any[];

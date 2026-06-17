@@ -89,7 +89,7 @@
                     [class.active]="activeTab === 'documents'"
                     [attr.aria-selected]="activeTab === 'documents'"
                     (click)="setActiveTab('documents')">
-              <span>{{ lang === 'ar' ? 'المستندات' : 'Documents' }}</span>
+              <span>{{ lang === 'ar' ? 'المستندات' : 'Shared Documents' }}</span>
               <ng-container *ngIf="unreadDocumentsCount$ | async as unreadDocumentsCount">
                 <span
                   *ngIf="unreadDocumentsCount > 0"
@@ -203,7 +203,7 @@
           </section>
 
           <!-- Scopes -->
-          <details class="pd-section pd-section--accordion" *ngIf="p.scopes?.length">
+          <details class="pd-section pd-section--accordion pd-section--scope" *ngIf="p.scopes?.length">
             <summary class="pd-section__head pd-section__summary">
               <span class="pd-section__title-icon" aria-hidden="true"><i class="pi pi-list"></i></span>
               <h6 class="pd-section__title">{{ lang === 'ar' ? 'النطاقات' : 'Scopes' }}</h6>
@@ -217,9 +217,6 @@
               <div class="pd-detail-card pd-detail-card--scope"
                    *ngFor="let scope of p.scopes; trackBy: trackByScope">
                 <div class="pd-detail-card__header">
-                  <span class="pd-detail-card__icon">
-                    <i class="ki-outline ki-subtitle fs-4"></i>
-                  </span>
                   <div class="pd-detail-card__copy">
                     <div class="pd-detail-card__title">{{ getScopeLabel(scope) }}</div>
                     <div class="pd-detail-card__subtitle" *ngIf="getScopeDescription(scope)">
@@ -241,6 +238,14 @@
                           {{ getScopeDescription(child) }}
                         </span>
                       </div>
+                      <button
+                        type="button"
+                        class="pd-file-button pd-scope-doc-button pd-scope-doc-button--child"
+                        *ngIf="hasScopeAttachments(child)"
+                        (click)="openScopeDocuments(child, $event)">
+                        <i class="ki-outline ki-folder fs-7"></i>
+                        <span>{{ lang === 'ar' ? 'عرض الملف' : 'View File' }}</span>
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -249,7 +254,7 @@
           </details>
 
           <!-- Deliverable Stages -->
-          <details class="pd-section pd-section--accordion" *ngIf="getComponent('deliverable-stage') as deliverableStage">
+          <details class="pd-section pd-section--accordion pd-section--stages" *ngIf="getComponent('deliverable-stage') as deliverableStage">
             <summary class="pd-section__head pd-section__summary">
               <span class="pd-section__title-icon" aria-hidden="true"><i class="pi pi-file"></i></span>
               <h6 class="pd-section__title">{{ lang === 'ar' ? 'مراحل التسليم' : 'Deliverable Stages' }}</h6>
@@ -261,7 +266,7 @@
             <div class="pd-stage-grid">
               <div class="pd-stage-card" *ngIf="deliverableStage.first_draft as firstDraft">
                 <div class="pd-stage-card__head">
-                  <span class="pd-stage-card__icon"><i class="ki-outline ki-document fs-4"></i></span>
+                  <span class="pd-stage-card__icon pd-stage-card__icon--draft"><i class="pi pi-file-edit"></i></span>
                   <div class="pd-stage-card__copy">
                     <span class="pd-stage-card__title">{{ lang === 'ar' ? 'المسودة الأولى' : 'First Draft' }}</span>
                     <span class="pd-stage-card__subtitle">
@@ -296,7 +301,7 @@
 
               <div class="pd-stage-card" *ngIf="deliverableStage.final_version as finalVersion">
                 <div class="pd-stage-card__head">
-                  <span class="pd-stage-card__icon"><i class="ki-outline ki-check-square fs-4"></i></span>
+                  <span class="pd-stage-card__icon pd-stage-card__icon--final"><i class="pi pi-file-check"></i></span>
                   <div class="pd-stage-card__copy">
                     <span class="pd-stage-card__title">{{ lang === 'ar' ? 'النسخة النهائية' : 'Final Version' }}</span>
                     <span class="pd-stage-card__subtitle">
@@ -332,7 +337,7 @@
           </details>
 
           <!-- Target Market -->
-          <details class="pd-section pd-section--accordion" *ngIf="getComponent('target-market') as targetMarket">
+          <details class="pd-section pd-section--accordion pd-section--market" *ngIf="getComponent('target-market') as targetMarket">
             <summary class="pd-section__head pd-section__summary">
               <span class="pd-section__title-icon" aria-hidden="true"><i class="pi pi-map-marker"></i></span>
               <h6 class="pd-section__title">{{ lang === 'ar' ? 'السوق المستهدف' : 'Target Market' }}</h6>
@@ -368,7 +373,7 @@
           </details>
 
           <!-- Data Sources -->
-          <details class="pd-section pd-section--accordion" *ngIf="getComponent('data-sources-expected') as dataSources">
+          <details class="pd-section pd-section--accordion pd-section--sources" *ngIf="getComponent('data-sources-expected') as dataSources">
             <summary class="pd-section__head pd-section__summary">
               <span class="pd-section__title-icon" aria-hidden="true"><i class="pi pi-database"></i></span>
               <h6 class="pd-section__title">{{ lang === 'ar' ? 'مصادر البيانات' : 'Data Sources' }}</h6>
@@ -396,7 +401,7 @@
           </details>
 
           <!-- Add-ons -->
-          <details class="pd-section pd-section--accordion" *ngIf="hasAddons()">
+          <details class="pd-section pd-section--accordion pd-section--addons" *ngIf="hasAddons()">
             <summary class="pd-section__head pd-section__summary">
               <span class="pd-section__title-icon" aria-hidden="true"><i class="pi pi-plus-circle"></i></span>
               <h6 class="pd-section__title">{{ lang === 'ar' ? 'الإضافات' : 'Add-ons' }}</h6>
@@ -477,11 +482,7 @@
                 <div class="pd-document-group__head">
                   <div>
                     <h6 class="pd-document-group__title">{{ getDocumentGroupLabel(group) }}</h6>
-                    <p class="pd-document-group__hint">{{ getDocumentGroupDescription(group) }}</p>
                   </div>
-                  <span class="pd-document-group__count">
-                    {{ group.files.length }} {{ lang === 'ar' ? 'ملف' : (group.files.length === 1 ? 'file' : 'files') }}
-                  </span>
                 </div>
 
                 <div class="pd-document-list">
@@ -490,6 +491,8 @@
                           [class.pd-document-card--new]="isUnreadFile(file)"
                           *ngFor="let file of group.files; trackBy: trackByFile"
                           [disabled]="isOpeningFile(file)"
+                          [attr.aria-label]="getProjectFileName(file)"
+                          [attr.title]="getProjectFileName(file)"
                           (click)="openProjectFile(file)">
                     <span class="pd-new-ribbon" *ngIf="isUnreadFile(file)">
                       {{ lang === 'ar' ? 'جديد' : 'New' }}
@@ -499,34 +502,24 @@
                          [alt]="getProjectFileExtension(file) || 'file'"
                          loading="lazy"
                          (error)="onFileIconLoadError($event)">
-
-                    <span class="pd-document-card__body">
-                      <span class="pd-document-card__name">
-                        {{
-                          isOpeningFile(file)
-                            ? (lang === 'ar' ? 'جارٍ الفتح...' : 'Opening...')
-                            : (getProjectFileScope(file) || getProjectFileName(file))
-                        }}
+                    <span class="pd-document-card__scope">
+                      {{ getProjectFileScope(file) || getProjectFileName(file) }}
+                    </span>
+                    <span class="pd-document-card__uploader" *ngIf="getProjectFileUploader(file)">
+                      <span class="pd-document-card__avatar" aria-hidden="true">
+                        <img
+                          *ngIf="getProjectFileUploaderAvatar(file); else uploaderInitials"
+                          [src]="getProjectFileUploaderAvatar(file)"
+                          [alt]="getProjectFileUploader(file)"
+                          loading="lazy"
+                          (error)="onProjectFileUploaderAvatarError(file)">
+                        <ng-template #uploaderInitials>
+                          <span>{{ getProjectFileUploaderInitials(file) }}</span>
+                        </ng-template>
                       </span>
-                      <span class="pd-document-card__meta">
-                        <ng-container *ngIf="getProjectFileScope(file)">
-                          <span class="pd-document-card__file-label">
-                            {{ getProjectFileName(file) }}
-                          </span>
-                        </ng-container>
-                        <ng-container *ngIf="getProjectFileUploader(file)">
-                          <span class="pd-document-card__dot" *ngIf="getProjectFileScope(file)"></span>
-                          {{ getProjectFileUploader(file) }}
-                        </ng-container>
-                        <ng-container *ngIf="getProjectFileUploadDate(file)">
-                          <span class="pd-document-card__dot" *ngIf="getProjectFileScope(file) || getProjectFileUploader(file)"></span>
-                          {{ getProjectFileUploadDate(file) }}
-                        </ng-container>
-                      </span>
+                      <span class="pd-document-card__uploader-name">{{ getProjectFileUploader(file) }}</span>
                     </span>
 
-                    <i class="ki-outline fs-4 pd-document-card__action"
-                       [ngClass]="isOpeningFile(file) ? 'ki-loading' : 'ki-file-down'"></i>
                   </button>
                 </div>
               </div>
@@ -657,6 +650,31 @@
                       </div>
                     </div>
 
+                    <div class="pd-review-card__files" *ngIf="review.files?.length">
+                      <span class="pd-review-card__files-label">
+                        <i class="ki-outline ki-folder fs-7"></i>
+                        {{ lang === 'ar' ? 'الملفات المرفقة' : 'Attached Files' }}
+                      </span>
+                      <div class="pd-review-files-list">
+                        <button type="button"
+                                class="pd-review-file-btn"
+                                *ngFor="let file of review.files; trackBy: trackByFile"
+                                [disabled]="isOpeningFile(file)"
+                                (click)="openProjectFile(file)">
+                          <img class="pd-review-file-btn__icon"
+                               [src]="getFileTypeIconPath(getProjectFileExtension(file))"
+                               [alt]="getProjectFileExtension(file) || 'file'"
+                               loading="lazy"
+                               (error)="onFileIconLoadError($event)">
+                          <span class="pd-review-file-btn__name">
+                            {{ isOpeningFile(file) ? (lang === 'ar' ? 'جارٍ الفتح...' : 'Opening...') : getProjectFileName(file) }}
+                          </span>
+                          <i class="ki-outline fs-5 pd-review-file-btn__action"
+                             [ngClass]="isOpeningFile(file) ? 'ki-loading' : 'ki-file-down'"></i>
+                        </button>
+                      </div>
+                    </div>
+
                     <div class="pd-review-card__response" *ngIf="!isReviewPending(review)">
                       <span class="pd-review-card__response-label">
                         <i class="ki-outline ki-message-text-2 fs-6"></i>
@@ -717,7 +735,7 @@
       </div>
 
       <!-- Aside -->
-      <aside class="pd-aside">
+      <aside class="pd-aside" *ngIf="!isProjectCancelled(p)">
         <div class="pd-aside-card">
           <div class="pd-aside-card__title">
             {{ lang === 'ar' ? 'إجراءات المشروع' : 'Project Actions' }}
@@ -808,23 +826,21 @@
                   </a>
 
                   <span class="badge pd-invite-card__action-status flex-shrink-0"
+                        [class.pd-invite-card__action-status--interested]="isInterestedInviteAction(invite)"
                         [class.pd-invite-card__action-status--offered]="canViewSubmittedOffer(invite)"
                         [ngClass]="getInviteActionStatusBadgeClass(invite)">
+                    <i *ngIf="isInterestedInviteAction(invite)"
+                       class="ki-solid ki-double-check pd-invite-card__action-icon"
+                       aria-hidden="true"></i>
                     {{ getInviteActionStatusLabel(invite) }}
                   </span>
                 </div>
 
-                <div class="pd-invite-card__footer d-flex align-items-center justify-content-between gap-2 mt-3 pt-3 border-top">
-                  <span class="badge pd-invite-card__status flex-shrink-0"
-                        [ngClass]="getInviteStatusBadgeClass(invite)">
-                    {{ getInviteStatusLabel(invite) }}
-                  </span>
-
+                <div class="pd-invite-card__footer d-flex align-items-center mt-3 pt-3 border-top">
                   <button type="button"
                           *ngIf="canViewSubmittedOffer(invite)"
-                          class="btn btn-sm btn-light-info pd-invite-card__offer-btn d-inline-flex align-items-center gap-1 flex-shrink-0 text-nowrap"
+                          class="btn btn-link btn-sm p-0 border-0 bg-transparent text-info fw-bold pd-invite-card__offer-btn"
                           (click)="openProposalDrawer(invite)">
-                    <i class="ki-outline ki-file-up fs-7"></i>
                     <span>{{ lang === 'ar' ? 'عرض العرض' : 'View Offer' }}</span>
                   </button>
                 </div>
@@ -1289,6 +1305,18 @@
             </button>
           </span>
 
+          <button type="button"
+                  *ngIf="canCancelProject(p)"
+                  class="btn btn-light-danger w-100 mt-3"
+                  (click)="cancelProject()"
+                  [disabled]="projectCancelSubmitting">
+            <span *ngIf="projectCancelSubmitting" class="spinner-border spinner-border-sm me-2"></span>
+            <i *ngIf="!projectCancelSubmitting" class="ki-outline ki-cross-circle fs-6 me-1"></i>
+            {{ projectCancelSubmitting
+                ? (lang === 'ar' ? 'جارٍ الإلغاء...' : 'Cancelling...')
+                : (lang === 'ar' ? 'إلغاء المشروع' : 'Cancel Project') }}
+          </button>
+
         </div>
       </aside>
 
@@ -1740,9 +1768,6 @@
                 <span class="pd-match-type" [class.pd-match-type--company]="isCompanyMatch(match)">
                   {{ getMatchBadgeLabel(match) }}
                 </span>
-                <span *ngIf="match.is_match_before" class="pd-match-before">
-                  {{ lang === 'ar' ? 'مدعو سابقًا' : 'Previously invited' }}
-                </span>
               </div>
 
               <div *ngIf="isCompanyMatch(match) && match.insighter.company?.legal_name" class="pd-match-company">
@@ -1815,29 +1840,6 @@
             </div>
           </div>
         </article>
-      </div>
-
-      <div *ngIf="rematchPhase === 'ready' && shouldAskToIncludePreviousInvited" class="pd-rematch-previous">
-        <strong>{{ lang === 'ar' ? 'تم العثور على نتائج جديدة' : 'New matches found' }}</strong>
-        <div class="pd-rematch-previous__actions" role="group" [attr.aria-label]="lang === 'ar' ? 'تضمين المدعوين سابقًا' : 'Include previously invited insighters'">
-          <button type="button"
-                  [class.is-active]="includePreviousInvited"
-                  (click)="setIncludePreviousInvited(true)">
-            {{ lang === 'ar' ? 'نعم' : 'Yes' }}
-          </button>
-          <button type="button"
-                  [class.is-active]="!includePreviousInvited"
-                  (click)="setIncludePreviousInvited(false)">
-            {{ lang === 'ar' ? 'لا' : 'No' }}
-          </button>
-        </div>
-        <span>
-          {{
-            lang === 'ar'
-              ? 'هل تريد تضمين الخبراء الذين تمت دعوتهم سابقًا؟'
-              : 'Do you want to include previously invited insighters?'
-          }}
-        </span>
       </div>
 
       <div *ngIf="rematchPhase === 'empty'" class="pd-rematch-empty">
@@ -2015,8 +2017,8 @@
               <span class="pd-proposal-drawer__pill">
                 {{ lang === 'ar' ? 'عرض مقدم' : 'Submitted Offer' }}
               </span>
-              <span class="badge" [ngClass]="getInvitedStatusBadgeClass(invite)">
-                {{ getInvitedStatusLabel(invite) }}
+              <span class="badge" [ngClass]="getOfferStatusBadgeClass(invite)">
+                {{ getOfferStatusLabel(invite) }}
               </span>
             </div>
 
@@ -2110,21 +2112,59 @@
           </div>
           <p class="pd-proposal-drawer__aside-hint">
             {{ lang === 'ar'
-              ? 'راجع تفاصيل العرض ثم اقبله للانتقال إلى مرحلة العقد.'
-              : 'Review the offer details, then accept it to move into the contract stage.' }}
+              ? 'راجع تفاصيل العرض ثم أضفه إلى القائمة المختصرة أو ارفضه فنياً. تتم الترسية من العروض المقبولة فنياً.'
+              : 'Review the offer, then shortlist or technically reject it. Award only from technically accepted offers.' }}
           </p>
 
-          <button type="button"
-                  class="btn btn-info w-100"
-                  [disabled]="!canAcceptOffer(invite)"
-                  (click)="acceptOffer(invite)">
-            <i class="ki-outline ki-check fs-6 me-1"></i>
-            {{
-              isAcceptingOffer(invite)
-                ? (lang === 'ar' ? 'جاري القبول...' : 'Accepting...')
-                : (lang === 'ar' ? 'قبول العرض' : 'Accept Offer')
-            }}
-          </button>
+          <div class="row g-2 mb-2" *ngIf="getOfferStatus(invite) !== 'technical_accepted' && getOfferStatus(invite) !== 'technical_rejected'">
+            <div class="col-12">
+              <button type="button"
+                      class="btn btn-light-success w-100"
+                      [disabled]="!canMakeOfferTechnicalDecision(invite, 'technical_accepted')"
+                      (click)="makeOfferTechnicalDecision(invite, 'technical_accepted')">
+                <i class="ki-outline ki-check fs-6 me-1"></i>
+                {{
+                  isOfferActionInProgress(invite, 'technical_accepted')
+                    ? (lang === 'ar' ? 'جاري الإضافة...' : 'Shortlisting...')
+                    : (lang === 'ar' ? 'قبول فني' : 'Technical Accept')
+                }}
+              </button>
+            </div>
+
+            <div class="col-12">
+              <button type="button"
+                      class="btn btn-light-danger w-100"
+                      [disabled]="!canMakeOfferTechnicalDecision(invite, 'technical_rejected')"
+                      (click)="makeOfferTechnicalDecision(invite, 'technical_rejected')">
+                <i class="ki-outline ki-cross fs-6 me-1"></i>
+                {{
+                  isOfferActionInProgress(invite, 'technical_rejected')
+                    ? (lang === 'ar' ? 'جاري الرفض...' : 'Rejecting...')
+                    : (lang === 'ar' ? 'رفض فني' : 'Technical Reject')
+                }}
+              </button>
+            </div>
+          </div>
+
+          <ng-container *ngIf="isOfferTechnicalAccepted(invite)">
+            <button type="button"
+                    class="btn btn-info w-100"
+                    [disabled]="!canAwardOffer(invite)"
+                    (click)="awardOffer(invite)">
+              <i class="ki-outline ki-award fs-6 me-1"></i>
+              {{
+                isOfferActionInProgress(invite, 'award')
+                  ? (lang === 'ar' ? 'جاري الترسية...' : 'Awarding...')
+                  : (lang === 'ar' ? 'ترسية العرض' : 'Award Offer')
+              }}
+            </button>
+
+            <p *ngIf="!canAwardOffer(invite) && getAwardDisabledReason(invite)"
+               class="pd-proposal-drawer__aside-hint text-muted mt-2 mb-0">
+              <i class="ki-outline ki-information-5 fs-7 me-1"></i>
+              {{ getAwardDisabledReason(invite) }}
+            </p>
+          </ng-container>
 
           <div class="pd-aside-table-wrap">
             <table class="pd-aside-table">
@@ -2132,8 +2172,8 @@
                 <tr>
                   <th scope="row">{{ lang === 'ar' ? 'الحالة' : 'Status' }}</th>
                   <td>
-                    <span class="badge" [ngClass]="getInvitedStatusBadgeClass(invite)">
-                      {{ getInvitedStatusLabel(invite) }}
+                    <span class="badge" [ngClass]="getOfferStatusBadgeClass(invite)">
+                      {{ getOfferStatusLabel(invite) }}
                     </span>
                   </td>
                 </tr>

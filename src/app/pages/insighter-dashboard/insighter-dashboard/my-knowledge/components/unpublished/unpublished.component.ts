@@ -73,6 +73,10 @@ export class UnpublishedComponent implements OnInit {
     this.selectedType = event.target.value;
   }
 
+  getStatusDisplayLabel(knowledge: Knowledge): string {
+    return knowledge.status_label || (knowledge.status === 'unpublished' ? 'Draft' : knowledge.status);
+  }
+
   loadPage(page: number): void {
     this.loading = true;
     this.knowledgeService.getPaginatedKnowledges(page, 'unpublished', this.searchTerm, this.selectedKnowledgeType).subscribe(

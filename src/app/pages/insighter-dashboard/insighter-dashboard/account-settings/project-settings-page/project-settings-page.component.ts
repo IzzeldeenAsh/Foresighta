@@ -3,7 +3,8 @@ import { BaseComponent } from 'src/app/modules/base.component';
 
 @Component({
   selector: 'app-project-settings-page',
-  templateUrl: './project-settings-page.component.html'
+  templateUrl: './project-settings-page.component.html',
+  styleUrls: ['./project-settings-page.component.scss']
 })
 export class ProjectSettingsPageComponent extends BaseComponent {
   constructor(injector: Injector) {

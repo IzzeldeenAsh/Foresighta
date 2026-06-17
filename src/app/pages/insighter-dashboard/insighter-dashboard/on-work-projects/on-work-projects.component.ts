@@ -149,6 +149,7 @@ export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
   reviewRequestType: ProjectReviewSubmissionType = 'first_draft';
   reviewRequestPriority: ProjectReviewSubmissionPriorityValue = 'normal';
   reviewRequestNote = '';
+  selectedReviewRequestFiles: File[] = [];
   reviewRequestSubmitting = false;
 
   currentPage = 1;
@@ -169,7 +170,7 @@ export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
   ];
   drawerTabOptions: DrawerTabOption[] = [
     { value: 'overview', labelEn: 'Overview', labelAr: 'نظرة عامة' },
-    { value: 'documents', labelEn: 'Documents', labelAr: 'المستندات' },
+    { value: 'documents', labelEn: 'Shared Documents', labelAr: 'المستندات' },
     { value: 'reviews', labelEn: 'Review Request', labelAr: 'طلب المراجعة' },
     { value: 'discussion', labelEn: 'Discussion', labelAr: 'النقاش' },
     { value: 'contract', labelEn: 'Contract', labelAr: 'العقد' },
@@ -267,6 +268,14 @@ export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
   }
 
   setDrawerTab(tab: DrawerTab, syncUrl = true): void {
+    if (this.isDrawerTabDisabled(tab)) {
+      this.activeDrawerTab = 'overview';
+      if (syncUrl) {
+        this.onDrawerTabChanged('overview');
+      }
+      return;
+    }
+
     this.activeDrawerTab = tab;
 
     if (tab === 'contract') {
@@ -628,9 +637,18 @@ export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
     ));
   }
 
+  isProjectClosed(project: ProjectOffer | null | undefined = this.selectedProject): boolean {
+    return this.normalizeProjectFileType(project?.status || '') === 'closed';
+  }
+
+  isDrawerTabDisabled(tab: DrawerTab): boolean {
+    return tab === 'reviews' && this.isProjectClosed();
+  }
+
   canSubmitReviewRequest(): boolean {
     return !!(
       this.selectedProject
+      && !this.isProjectClosed()
       && !this.reviewRequestSubmitting
       && (this.reviewRequestNote || '').trim()
       && !this.hasPendingReviewForType(this.reviewRequestType)
@@ -648,6 +666,19 @@ export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
 
   removeSelectedProjectFile(index: number): void {
     this.selectedProjectFiles = this.selectedProjectFiles.filter((_, fileIndex) => fileIndex !== index);
+  }
+
+  onReviewRequestFilesSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const files = input.files ? Array.from(input.files) : [];
+    if (!files.length) return;
+
+    this.selectedReviewRequestFiles = [...this.selectedReviewRequestFiles, ...files];
+    input.value = '';
+  }
+
+  removeSelectedReviewRequestFile(index: number): void {
+    this.selectedReviewRequestFiles = this.selectedReviewRequestFiles.filter((_, fileIndex) => fileIndex !== index);
   }
 
   submitProjectFileUpload(): void {
@@ -700,22 +731,26 @@ export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
     const projectUuid = this.getProjectUuid(this.selectedProject);
     const note = (this.reviewRequestNote || '').trim();
 
-    if (!projectUuid || !note || this.hasPendingReviewForType(this.reviewRequestType)) {
+    if (!projectUuid || !note || this.isProjectClosed() || this.hasPendingReviewForType(this.reviewRequestType)) {
       this.showError(
         this.lang === 'ar' ? 'تعذر إرسال طلب المراجعة' : 'Cannot request review',
-        this.lang === 'ar'
+        this.isProjectClosed()
+          ? (this.lang === 'ar' ? 'لا يمكن طلب مراجعة لمشروع مغلق.' : 'Review requests are disabled for closed projects.')
+          : this.lang === 'ar'
           ? 'يرجى كتابة ملاحظة والتأكد من عدم وجود طلب معلق لنفس النوع.'
           : 'Add a note and make sure there is no pending request for the same type.'
       );
       return;
     }
 
+    const payload = new FormData();
+    payload.append('type', this.reviewRequestType);
+    payload.append('priority', this.reviewRequestPriority);
+    payload.append('note', note);
+    this.selectedReviewRequestFiles.forEach(file => payload.append('files[]', file, file.name));
+
     this.reviewRequestSubmitting = true;
-    this.projectOffersService.requestProjectReview(projectUuid, {
-      type: this.reviewRequestType,
-      priority: this.reviewRequestPriority,
-      note,
-    })
+    this.projectOffersService.requestProjectReview(projectUuid, payload)
       .pipe(
         takeUntil(this.unsubscribe$),
         finalize(() => (this.reviewRequestSubmitting = false))
@@ -730,6 +765,7 @@ export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
           );
           this.reviewRequestPriority = 'normal';
           this.reviewRequestNote = '';
+          this.selectedReviewRequestFiles = [];
           this.reviewRequestDialogVisible = false;
           this.loadProjectReviewSubmissions(true);
         },
@@ -838,6 +874,37 @@ export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
 
     const urlPath = (file?.url || '').split('?')[0];
     return urlPath.includes('.') ? (urlPath.split('.').pop() || '').toLowerCase() : '';
+  }
+
+  getProjectFileUploader(file: ProjectOfferFile | null | undefined): string {
+    return file?.uploadBy || file?.uploaded_by || '';
+  }
+
+  getProjectFileUploaderAvatar(file: ProjectOfferFile | null | undefined): string {
+    const avatar = file?.uploadByAvatarProfile
+      ?? file?.uploaded_by_avatar_profile
+      ?? (file as any)?.upload_by_avatar_profile
+      ?? (file as any)?.uploadedByAvatarProfile;
+
+    return avatar === null || avatar === undefined ? '' : String(avatar).trim();
+  }
+
+  getProjectFileUploaderInitials(file: ProjectOfferFile | null | undefined): string {
+    const name = this.getProjectFileUploader(file);
+    const initials = name
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map(part => part.charAt(0).toUpperCase())
+      .join('');
+
+    return initials || 'U';
+  }
+
+  onProjectFileUploaderAvatarError(file: ProjectOfferFile | null | undefined): void {
+    if (!file) return;
+    file.uploadByAvatarProfile = null;
+    file.uploaded_by_avatar_profile = null;
   }
 
   getSelectedFileExtension(file: File | null | undefined): string {
@@ -1108,7 +1175,9 @@ export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
           this.loadedProjectDetailsUuid = projectUuid;
           this.projectDetailsLoading = false;
 
-          if (this.activeDrawerTab === 'contract') {
+          if (this.isDrawerTabDisabled(this.activeDrawerTab)) {
+            this.setDrawerTab('overview');
+          } else if (this.activeDrawerTab === 'contract') {
             this.loadContractDetails(project);
           } else if (this.activeDrawerTab === 'reviews') {
             this.loadProjectReviewSubmissions();
@@ -1243,6 +1312,7 @@ export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
       this.reviewRequestType = 'first_draft';
       this.reviewRequestPriority = 'normal';
       this.reviewRequestNote = '';
+      this.selectedReviewRequestFiles = [];
       this.reviewRequestSubmitting = false;
     }
   }

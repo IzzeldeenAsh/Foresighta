@@ -3,3 +3,145 @@
     border: 1px solid #e3f2fd !important;
     border:1px solid #e3f2fd !important;
 }
+
+.dashboard-promo-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.25rem;
+    margin-bottom: 2.5rem;
+}
+
+.dashboard-promo-card {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 1.75rem;
+    min-height: 300px;
+    padding: 2rem;
+    border: 1px solid #e3f2fd;
+    border-radius: 0.75rem;
+    overflow: hidden;
+}
+
+.dashboard-promo-card--project {
+    background-image: linear-gradient(to bottom right, #fff, #ecfdfa);
+    color: #27897f;
+}
+
+.dashboard-promo-card--upgrade {
+    background-image: linear-gradient(to bottom right, #fff, #e0f3ff);
+}
+
+.dashboard-promo-card--publish {
+    background-image: linear-gradient(to bottom right, #fff, #e8f8ff);
+    color: #0a7abf;
+}
+
+.dashboard-promo-card--publish .dashboard-promo-card__title {
+    color: #26324d;
+    font-size: clamp(1.85rem, 2vw, 2.2rem);
+    font-weight: 700;
+    line-height: 1.15;
+}
+
+.dashboard-promo-card--publish .dashboard-promo-card__text {
+    color: #26324d;
+    font-size: 1.25rem;
+    font-weight: 500;
+    line-height: 1.45;
+}
+
+.dashboard-promo-card--notifications {
+    background-image: linear-gradient(to bottom right, #fff, #e9ffe9);
+}
+
+.dashboard-promo-card__content {
+    display: grid;
+    grid-template-columns: minmax(140px, 180px) minmax(0, 1fr);
+    align-items: flex-start;
+    gap: 1.75rem;
+}
+
+.dashboard-promo-card__icon {
+    flex: 0 0 auto;
+    color: #4d5875;
+    font-size: 5rem;
+    line-height: 1;
+}
+
+.dashboard-promo-card__image {
+    width: 180px;
+    height: 180px;
+    max-width: 100%;
+    object-fit: contain;
+}
+
+.dashboard-promo-card__copy {
+    min-width: 0;
+}
+
+.dashboard-promo-card__title {
+    margin: 0 0 0.65rem;
+    color: #2a3246;
+    font-size: 1.7rem;
+    font-weight: 700;
+    letter-spacing: 0;
+    line-height: 1.2;
+    overflow-wrap: break-word;
+}
+
+.dashboard-promo-card__text {
+ margin: 0;
+  color: #878787;
+  font-size: 1.2rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  line-height: 1.55;
+  overflow-wrap: break-word;
+}
+
+.dashboard-promo-card__button {
+    align-self: flex-start;
+    min-width: 132px;
+    border-radius: 0.6rem;
+    padding: 0.85rem 1.35rem;
+}
+
+@media (max-width: 1400px) {
+    .dashboard-promo-card__content {
+        grid-template-columns: 1fr;
+        gap: 1.25rem;
+    }
+
+    .dashboard-promo-card__image {
+        justify-self: center;
+    }
+}
+
+@media (max-width: 576px) {
+    .dashboard-promo-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .dashboard-promo-card {
+        min-height: auto;
+        padding: 1.5rem;
+    }
+
+    .dashboard-promo-card__content {
+        gap: 1rem;
+    }
+
+    .dashboard-promo-card__icon {
+        font-size: 4rem;
+    }
+
+    .dashboard-promo-card__image {
+        width: 140px;
+        height: 140px;
+    }
+
+    .dashboard-promo-card__button {
+        width: 100%;
+    }
+}

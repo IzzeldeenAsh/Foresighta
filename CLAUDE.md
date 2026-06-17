@@ -237,6 +237,7 @@ Which also has lang:string that can be 'en' or 'ar' so we know the current local
 **Preferences:**
 
 - Simple, elegant, and clean design (similar to **Vercel** website).
+- Follow `ui-guideline.md` when designing or improving app pages.
 - No shadows.
 - Light gray borders
 - We can use metronic icons and themes

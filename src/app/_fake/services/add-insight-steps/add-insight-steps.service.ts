@@ -182,6 +182,10 @@ export class AddInsightStepsService {
     return throwError(error);
   }
 
+  private normalizeKnowledgeType(type: string): string {
+    return (type || "").trim().toLowerCase();
+  }
+
   step1HandleKnowledgeType(type: string): Observable<CreateKnowledgeResponse> {
     const headers = new HttpHeaders({
       Accept: "application/json",
@@ -191,7 +195,7 @@ export class AddInsightStepsService {
 
     this.setLoading(true);
     return this.http
-      .post<CreateKnowledgeResponse>(`${this.apiUrl}/type`, { type }, { headers })
+      .post<CreateKnowledgeResponse>(`${this.apiUrl}/type`, { type: this.normalizeKnowledgeType(type) }, { headers })
       .pipe(
         map((res) => res),
         tap(() => this.knowledgeService.notifyKnowledgeStatusStatisticsChanged()),
@@ -208,7 +212,7 @@ export class AddInsightStepsService {
 
     this.setLoading(true);
     return this.http
-      .put<CreateKnowledgeResponse>(`${this.apiUrl}/type/${knowledgeId}`, { type }, { headers })
+      .put<CreateKnowledgeResponse>(`${this.apiUrl}/type/${knowledgeId}`, { type: this.normalizeKnowledgeType(type) }, { headers })
       .pipe(
         map((res) => res),
         catchError((error) => this.handleError(error)),
@@ -226,7 +230,7 @@ export class AddInsightStepsService {
 
     this.setLoading(true);
     return this.http
-      .post<CreateKnowledgeResponse>(this.apiUrl, request, { headers })
+      .post<CreateKnowledgeResponse>(this.apiUrl, { ...request, type: this.normalizeKnowledgeType(request.type) }, { headers })
       .pipe(
         map((res) => res),
         tap(() => this.knowledgeService.notifyKnowledgeStatusStatisticsChanged()),
@@ -247,7 +251,7 @@ export class AddInsightStepsService {
 
     this.setLoading(true);
     return this.http
-      .put<CreateKnowledgeResponse>(`${this.apiUrl}/${knowledgeId}`, request, {
+      .put<CreateKnowledgeResponse>(`${this.apiUrl}/${knowledgeId}`, { ...request, type: this.normalizeKnowledgeType(request.type) }, {
         headers,
       })
       .pipe(

@@ -685,6 +685,14 @@ export class GeneralComponent extends BaseComponent implements OnInit, OnDestroy
     }
   }
 
+  getStatusDisplayLabel(knowledge: Knowledge): string {
+    return knowledge.status_label || (knowledge.status === 'unpublished' ? 'Draft' : knowledge.status);
+  }
+
+  getTranslatedStatusDisplayLabel(knowledge: Knowledge): string {
+    return knowledge.status_label || this.translate.getTranslation('KNOWLEDGE.KNOWLEDGE_STATUS.' + knowledge.status.toUpperCase());
+  }
+
   onTypeChange(event: any) {
     this.selectedType = event.target.value;
   }

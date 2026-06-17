@@ -9,6 +9,11 @@
   overflow: hidden;
 }
 
+.discussion-card--empty {
+  min-height: 380px;
+  grid-template-rows: minmax(180px, auto) auto;
+}
+
 .discussion-card__body {
   min-height: 0;
   max-height: 560px;
@@ -33,7 +38,7 @@
 
 .discussion-card__footer {
   border-top: 1px solid #edf0f5;
-  padding: 24px 32px 28px;
+  padding: 20px 32px 24px;
   background: #fff;
 }
 
@@ -80,7 +85,7 @@
 .discussion-actions {
   display: flex;
   justify-content: flex-end;
-  margin-top: 18px;
+  margin-top: 14px;
 }
 
 .discussion-send {
@@ -101,6 +106,10 @@
   color: #7e88a5;
   text-align: center;
   font-weight: 600;
+}
+
+.discussion-card--empty .discussion-state {
+  min-height: 180px;
 }
 
 .discussion-state--empty {
@@ -223,6 +232,10 @@
     min-height: 560px;
   }
 
+  .discussion-card--empty {
+    min-height: 360px;
+  }
+
   .discussion-card__body {
     max-height: 480px;
     padding: 24px 20px;
@@ -241,6 +254,10 @@
   .discussion-card {
     min-height: 500px;
     border-radius: 8px;
+  }
+
+  .discussion-card--empty {
+    min-height: 340px;
   }
 
   .discussion-card__body {

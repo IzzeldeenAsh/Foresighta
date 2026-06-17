@@ -266,6 +266,10 @@ export class PackagesComponent implements OnInit, OnDestroy {
     }
   }
 
+  getStatusDisplayLabel(knowledge: any): string {
+    return knowledge?.status_label || (knowledge?.status === 'unpublished' ? 'Draft' : knowledge?.status || '');
+  }
+
   showEmittedPackage(packageData: PackageData) {
     console.log('Received package data:', packageData);
     

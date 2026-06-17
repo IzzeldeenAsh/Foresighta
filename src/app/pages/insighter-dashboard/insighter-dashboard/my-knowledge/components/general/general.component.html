@@ -234,7 +234,7 @@ styleClass=""
               <td class="fw-semibold text-gray-900">{{ knowledge.total_price | currency }}</td>
               <td>
                 <div class="d-flex align-items-center gap-2 knowledge-status-cell">
-                  <span *ngIf="knowledge.publish_as !== 'package'" [ngClass]="getStatusClass(knowledge.status)" class="text-capitalize">{{knowledge.status === 'unpublished' ? 'Draft' : knowledge.status }}</span>
+                  <span *ngIf="knowledge.publish_as !== 'package'" [ngClass]="getStatusClass(knowledge.status)" class="text-capitalize">{{ getStatusDisplayLabel(knowledge) }}</span>
                   <svg *ngIf="knowledge.publish_as === 'both'" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" ngbTooltip="Included in a package">
                     <path d="M16.1082 4.73332L10.8832 1.91665C10.3332 1.61665 9.66657 1.61665 9.11657 1.91665L3.89157 4.73332C3.50824 4.94165 3.2749 5.34165 3.2749 5.79998C3.2749 6.24998 3.50824 6.65832 3.89157 6.86665L9.11657 9.68332C9.39157 9.83332 9.6999 9.90832 9.9999 9.90832C10.2999 9.90832 10.6082 9.83332 10.8832 9.68332L16.1082 6.86665C16.4916 6.65832 16.7249 6.25832 16.7249 5.79998C16.7249 5.34165 16.4916 4.94165 16.1082 4.73332Z" fill="#0071FF"/>
                     <path opacity="0.4" d="M8.25841 10.6583L3.39175 8.22492C3.01675 8.04159 2.58341 8.05825 2.23341 8.27492C1.87508 8.49992 1.66675 8.87492 1.66675 9.29158V13.8833C1.66675 14.6749 2.10841 15.3916 2.81675 15.7499L7.67508 18.1833C7.84175 18.2666 8.02508 18.3083 8.20842 18.3083C8.42508 18.3083 8.64175 18.2499 8.83342 18.1333C9.19175 17.9166 9.40008 17.5333 9.40008 17.1166V12.5249C9.40841 11.7249 8.96675 11.0083 8.25841 10.6583Z" fill="#0071FF"/>
@@ -351,7 +351,7 @@ styleClass=""
 
             <!-- Footer -->
             <div *ngIf="!showPackageBuilder" class="d-flex justify-content-between align-items-center">
-              <span [ngClass]="getStatusClass(knowledge.status)" class="text-capitalize">{{ 'KNOWLEDGE.KNOWLEDGE_STATUS.' + knowledge.status.toUpperCase() | translate }}</span>
+              <span [ngClass]="getStatusClass(knowledge.status)" class="text-capitalize">{{ getTranslatedStatusDisplayLabel(knowledge) }}</span>
               
               <div class="d-flex gap-2">
                 <a [routerLink]="['/app/my-knowledge-base/view-my-knowledge/', knowledge.id]" 

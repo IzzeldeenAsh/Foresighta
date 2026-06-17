@@ -47,7 +47,7 @@ export class OnWorkProjectDetailsComponent extends OnWorkProjectsComponent imple
         if (!this.selectedProject) return;
         const tab = this.getCurrentTabFromUrl();
         super.setDrawerTab(tab, false);
-        this.updateTabQueryParam(tab);
+        this.updateTabQueryParam(this.activeDrawerTab);
       });
   }
 

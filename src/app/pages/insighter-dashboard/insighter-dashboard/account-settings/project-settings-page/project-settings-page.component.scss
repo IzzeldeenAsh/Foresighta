@@ -1,0 +1,80 @@
+:host {
+  display: block;
+}
+
+.project-settings-page {
+  padding-bottom: 2.5rem;
+}
+
+.project-settings-page-body {
+  background: transparent;
+}
+
+:host ::ng-deep app-page-header {
+  display: block;
+  margin: 0 auto;
+  max-width: 1320px;
+  padding: 0 1.5rem;
+}
+
+:host ::ng-deep app-page-header > .card {
+  border: 1px solid #e5e7eb !important;
+  border-radius: 8px !important;
+  box-shadow: none !important;
+  margin-bottom: 0 !important;
+  min-height: auto !important;
+}
+
+:host ::ng-deep app-page-header .card-header {
+  min-height: 0 !important;
+  padding: 2rem 2.25rem 2.35rem !important;
+}
+
+:host ::ng-deep app-page-header .symbol {
+  margin-inline-end: 1.25rem !important;
+}
+
+:host ::ng-deep app-page-header .symbol-label {
+  height: 64px !important;
+  width: 64px !important;
+}
+
+:host ::ng-deep app-page-header h2 {
+  color: #2563eb !important;
+  line-height: 1.2 !important;
+  margin-bottom: 0.55rem !important;
+}
+
+:host ::ng-deep app-page-header .text-muted {
+  color: #818898 !important;
+  font-size: 1.08rem !important;
+  font-weight: 600 !important;
+  line-height: 1.45 !important;
+}
+
+@media (max-width: 767px) {
+  .project-settings-page {
+    padding-bottom: 1.5rem;
+  }
+
+  :host ::ng-deep app-page-header {
+    padding: 0 1rem;
+  }
+
+  :host ::ng-deep app-page-header .card-header {
+    padding: 1.35rem !important;
+  }
+
+  :host ::ng-deep app-page-header .symbol-label {
+    height: 52px !important;
+    width: 52px !important;
+  }
+
+  :host ::ng-deep app-page-header h2 {
+    font-size: 1.55rem !important;
+  }
+
+  :host ::ng-deep app-page-header .text-muted {
+    font-size: 0.98rem !important;
+  }
+}

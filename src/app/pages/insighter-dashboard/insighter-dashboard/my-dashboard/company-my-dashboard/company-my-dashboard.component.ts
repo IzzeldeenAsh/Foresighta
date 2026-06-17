@@ -1,4 +1,4 @@
-import { Component, Injector, OnInit } from "@angular/core";
+import { Component, Injector, Input, OnInit } from "@angular/core";
 import { Router } from "@angular/router";
 import { Subject } from "rxjs";
 import { BaseComponent } from 'src/app/modules/base.component';
@@ -13,6 +13,8 @@ import { AgreementService } from 'src/app/_fake/services/agreement/agreement.ser
   styleUrls: ["./company-my-dashboard.component.scss"],
 })
 export class CompanyMyDashboardComponent extends BaseComponent implements OnInit {
+  @Input() showProjectServiceSetupWidget = false;
+
   userRole: string = '';
   userProfile: IKnoldgProfile | null = null;
   private destroy$ = new Subject<void>();
@@ -28,7 +30,12 @@ export class CompanyMyDashboardComponent extends BaseComponent implements OnInit
   showNotificationPreferencesBanner = false;
   readonly notificationBannerImageUrl =
     "https://res.cloudinary.com/dsiku9ipv/image/upload/v1771139272/whatsappsms_l4scor.png";
+  readonly projectServiceImageUrl =
+    "./assets/media/illustrations/misc/project-service.svg";
+  readonly publishInsightsImageUrl =
+    "https://res.cloudinary.com/dsiku9ipv/image/upload/v1780901537/insight_bioyfv.png";
   readonly notificationPreferencesRoute = "/app/insighter-dashboard/account-settings/notification-settings";
+  readonly projectSettingsRoute = "/app/insighter-dashboard/account-settings/project-settings";
 
   private readonly knowledgeTypeColors: Record<string, string> = {
     statistic: '#0a7abf',
@@ -50,6 +57,10 @@ export class CompanyMyDashboardComponent extends BaseComponent implements OnInit
 
   goToNotificationPreferences(): void {
     this.router.navigateByUrl(this.notificationPreferencesRoute);
+  }
+
+  goToProjectSettings(): void {
+    this.router.navigateByUrl(this.projectSettingsRoute);
   }
 
   private computeNotificationBannerVisibility(profile: any): void {

@@ -73,6 +73,10 @@ export class ScheduledComponent implements OnInit {
     this.selectedType = event.target.value;
   }
 
+  getStatusDisplayLabel(knowledge: Knowledge): string {
+    return knowledge.status_label || (knowledge.status === 'unpublished' ? 'Draft' : knowledge.status === 'in_review' ? 'In Review' : knowledge.status);
+  }
+
   loadPage(page: number): void {
     this.loading = true;
     this.knowledgeService.getPaginatedKnowledges(page, 'scheduled', this.searchTerm, this.selectedKnowledgeType).subscribe(
