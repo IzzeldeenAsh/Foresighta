@@ -1135,10 +1135,6 @@
   }
 }
 
-.pd-workspace-panel--full-row {
-  grid-column: 1 / -1;
-}
-
 .pd-document-add-card {
   display: flex;
   align-items: center;
@@ -1675,20 +1671,6 @@
 
   50% {
     box-shadow: 0 0 0 7px rgba(21, 188, 101, 0);
-  }
-}
-
-@keyframes pd-offered-pointer {
-
-  0%,
-  100% {
-    transform: translate(0, 0) rotate(-35deg);
-    opacity: 0.7;
-  }
-
-  50% {
-    transform: translate(3px, -2px) rotate(-35deg);
-    opacity: 1;
   }
 }
 
@@ -2377,57 +2359,6 @@
   }
 }
 
-.pd-rematch-previous {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 8px 14px;
-  margin-top: 14px;
-  padding: 15px 16px;
-  border: 1px solid #b9ddff;
-  border-radius: 16px;
-  background: #eef7ff;
-
-  strong {
-    color: #0f172a;
-    font-size: 13px;
-    font-weight: 800;
-  }
-
-  span {
-    grid-column: 1 / -1;
-    color: #475569;
-    font-size: 12px;
-    line-height: 1.45;
-  }
-}
-
-.pd-rematch-previous__actions {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(72px, 1fr));
-  gap: 6px;
-  padding: 4px;
-  border: 1px solid #cbd5e1;
-  border-radius: 12px;
-  background: #fff;
-
-  button {
-    min-height: 34px;
-    border: 1px solid transparent;
-    border-radius: 9px;
-    background: transparent;
-    color: #64748b;
-    font-size: 12px;
-    font-weight: 800;
-
-    &.is-active {
-      border-color: #18a0fb;
-      background: #e6f4ff;
-      color: #0f6fae;
-    }
-  }
-}
-
 .pd-rematch-form {
   display: grid;
   gap: 16px;
@@ -2525,22 +2456,6 @@
       background: #e6f4ff;
       color: #0f6fae;
     }
-  }
-}
-
-.pd-rematch[dir='rtl'] {
-  .pd-rematch-previous {
-    grid-template-columns: auto minmax(0, 1fr);
-  }
-
-  .pd-rematch-previous__actions {
-    grid-column: 1;
-    grid-row: 1;
-  }
-
-  .pd-rematch-previous>strong {
-    grid-column: 2;
-    grid-row: 1;
   }
 }
 
@@ -2728,8 +2643,7 @@
   object-fit: cover;
 }
 
-.pd-match-type,
-.pd-match-before {
+.pd-match-type {
   display: inline-flex;
   align-items: center;
   min-height: 22px;
@@ -2748,12 +2662,6 @@
     background: #eaf6ff;
     color: #0f6fae;
   }
-}
-
-.pd-match-before {
-  background: #f8fafc;
-  color: #64748b;
-  box-shadow: inset 0 0 0 1px rgba(203, 213, 225, 0.8);
 }
 
 .pd-match-company {
@@ -3449,18 +3357,6 @@
 
   .pd-rematch-segment {
     width: 100%;
-  }
-
-  .pd-rematch-previous {
-    grid-template-columns: 1fr;
-  }
-
-  .pd-rematch-previous__actions {
-    width: 100%;
-
-    button {
-      flex: 1;
-    }
   }
 
   .pd-match-card__main {

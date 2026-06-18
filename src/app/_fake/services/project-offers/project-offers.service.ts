@@ -621,7 +621,7 @@ export class ProjectOffersService {
   }
 
   getProjectStatistics(): Observable<ProjectOfferStatistics> {
-    return this.http.get<any>(`${environment.apiBaseUrl}/insighter/project/statistics`, {
+    return this.http.get<any>(`${this.baseUrl}/statistics`, {
       headers: this.getHeaders(),
     }).pipe(
       map(response => this.mapProjectStatistics(response)),
