@@ -5,7 +5,7 @@
     [subtitle]="lang === 'ar' ? 'تصفح وإدارة المشاريع التي أنشأتها.' : 'Browse and manage the projects you have created.'"
     [lang]="lang">
     <div slot="icon">
-      <i class="ki-outline ki-rocket fs-2x text-info"></i>
+      <img src="assets/media/icons/projects/my-projects.svg" width="32" height="32" alt="" aria-hidden="true">
     </div>
   </app-page-header>
 
@@ -13,7 +13,13 @@
     <div class="pc-toolbar__filters d-flex align-items-start flex-wrap gap-3">
       <div class="pc-filter">
         <label class="pc-filter__label">{{ lang === 'ar' ? 'حالة المشروع' : 'Project Status' }}</label>
-        <div class="pc-filter-chips" role="group" [attr.aria-label]="lang === 'ar' ? 'تصفية حسب حالة المشروع' : 'Filter by project status'">
+        <div class="pc-filter-chips" role="group"
+          [attr.aria-label]="lang === 'ar' ? 'تصفية حسب حالة المشروع' : 'Filter by project status'"
+          (wheel)="onChipRailWheel($event)"
+          (pointerdown)="onChipRailPointerDown($event)"
+          (pointermove)="onChipRailPointerMove($event)"
+          (pointerup)="onChipRailPointerUp($event)"
+          (pointercancel)="onChipRailPointerUp($event)">
           <button type="button"
             class="pc-filter-chip pc-filter-chip--all"
             [class.active]="selectedProjectStatus === null"
@@ -63,7 +69,13 @@
       </div>
 
       <div class="pc-filter pc-filter--read-status">
-        <div class="pc-filter-chips pc-filter-chips--read-status" role="group" [attr.aria-label]="lang === 'ar' ? 'تصفية حسب حالة القراءة' : 'Filter by read status'">
+        <div class="pc-filter-chips pc-filter-chips--read-status" role="group"
+          [attr.aria-label]="lang === 'ar' ? 'تصفية حسب حالة القراءة' : 'Filter by read status'"
+          (wheel)="onChipRailWheel($event)"
+          (pointerdown)="onChipRailPointerDown($event)"
+          (pointermove)="onChipRailPointerMove($event)"
+          (pointerup)="onChipRailPointerUp($event)"
+          (pointercancel)="onChipRailPointerUp($event)">
           <button type="button"
             *ngFor="let option of readStatusOptions"
             class="pc-filter-chip"
@@ -103,7 +115,7 @@
     </div>
   </div>
 
-  <div *ngIf="projects.length > 0 && viewMode === 'list'" class="table-responsive pc-table-shell">
+  <div *ngIf="projects.length > 0 && viewMode === 'list'" class="table-responsive pc-table-shell pc-table-shell--desktop">
     <table class="table align-middle fs-6 pc-table">
       <thead>
         <tr class="text-start text-gray-500 fw-semibold fs-8 text-uppercase gs-0">
@@ -171,11 +183,65 @@
 
           <td class="text-end">
             <button type="button"
-                    class="btn btn-sm btn-light-info text-nowrap"
+                    class="pc-table__action"
+                    [attr.aria-label]="lang === 'ar' ? 'عرض المشروع' : 'View project'"
+                    [attr.title]="lang === 'ar' ? 'عرض المشروع' : 'View project'"
                     (click)="$event.stopPropagation(); viewDetails(project)">
-              <i class="ki-outline ki-eye fs-6 me-1"></i>
-              {{ lang === 'ar' ? 'عرض' : 'View' }}
+              <i class="ki-outline ki-eye fs-5"></i>
             </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div *ngIf="projects.length > 0 && viewMode === 'list'" class="pc-mobile-table-shell">
+    <table class="pc-mobile-table">
+      <thead>
+        <tr>
+          <th>
+            <span class="pc-mobile-table__heading">
+              <span>{{ lang === 'ar' ? 'المشروع' : 'Project' }}</span>
+              <span class="pc-table__total-badge">{{ totalRecords }}</span>
+            </span>
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let project of projects; trackBy: trackByProject"
+            class="pc-mobile-table__row"
+            [class.pc-mobile-table__row--unread]="isClientUnread(project)"
+            role="button"
+            tabindex="0"
+            (click)="viewDetails(project)"
+            (keydown.enter)="viewDetails(project)"
+            (keydown.space)="$event.preventDefault(); viewDetails(project)">
+          <td>
+            <div class="pc-mobile-table__main">
+              <img class="pc-mobile-table__image"
+                   [src]="getProjectImageUrl(project)"
+                   [alt]="lang === 'ar' ? 'أيقونة المشروع' : 'Project icon'">
+              <div class="pc-mobile-table__copy">
+                <span class="pc-mobile-table__title">{{ project.title }}</span>
+                <span class="pc-mobile-table__summary">{{ getSummary(project) }}</span>
+              </div>
+              <i class="ki-outline pc-mobile-table__chevron"
+                 [ngClass]="lang === 'ar' ? 'ki-arrow-left' : 'ki-arrow-right'"
+                 aria-hidden="true"></i>
+            </div>
+
+            <div class="pc-mobile-table__meta">
+              <div class="pc-mobile-table__deadline">
+                <span class="pc-mobile-table__meta-label">{{ lang === 'ar' ? 'الموعد النهائي' : 'Deadline' }}</span>
+                <span class="pc-mobile-table__meta-value">{{ formatDate(project.deadline) }}</span>
+              </div>
+              <span *ngIf="project.status"
+                    class="pc-status-badge"
+                    [ngClass]="getStatusBadgeClass(project.status)">
+                <i class="ki-outline pc-status-badge__icon" [ngClass]="getStatusIconClass(project.status)"></i>
+                {{ getStatusLabel(project.status) }}
+              </span>
+            </div>
           </td>
         </tr>
       </tbody>

@@ -6,7 +6,7 @@
     [lang]="lang"
     [showTabs]="true">
     <div slot="icon">
-      <i class="ki-outline ki-briefcase fs-2x text-info"></i>
+      <img src="assets/media/icons/projects/client-projects.svg" width="32" height="32" alt="" aria-hidden="true">
     </div>
 
     <div slot="tabs" class="d-flex justify-content-between w-100">
@@ -68,7 +68,7 @@
     </div>
   </div>
 
-  <div *ngIf="projects.length > 0 && viewMode === 'list'" class="table-responsive po-table-shell">
+  <div *ngIf="projects.length > 0 && viewMode === 'list'" class="table-responsive po-table-shell po-table-shell--desktop">
     <table class="table align-middle fs-6 po-table">
       <thead>
         <tr class="text-inline-start text-gray-500 fw-semibold fs-8 text-uppercase gs-0">
@@ -132,11 +132,65 @@
           <td class="text-end">
             <button
               type="button"
-              class="btn btn-sm btn-info owp-contract-button"
-              (click)="openDrawer(project)">
-              <i class="ki-outline ki-eye fs-6 me-1"></i>
-              {{ lang === 'ar' ? 'عرض التفاصيل' : 'View Details' }}
+              class="po-table__action"
+              [attr.aria-label]="lang === 'ar' ? 'عرض المشروع' : 'View project'"
+              [attr.title]="lang === 'ar' ? 'عرض المشروع' : 'View project'"
+              (click)="$event.stopPropagation(); openDrawer(project)">
+              <i class="ki-outline ki-eye fs-5"></i>
             </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div *ngIf="projects.length > 0 && viewMode === 'list'" class="po-mobile-table-shell">
+    <table class="po-mobile-table">
+      <thead>
+        <tr>
+          <th>
+            <span class="po-mobile-table__heading">
+              <span>{{ lang === 'ar' ? 'المشروع' : 'Project' }}</span>
+              <span class="po-table__total-badge">{{ totalRecords }}</span>
+            </span>
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let project of projects; trackBy: trackByProject"
+            class="po-mobile-table__row"
+            role="button"
+            tabindex="0"
+            (click)="openDrawer(project)"
+            (keydown.enter)="openDrawer(project)"
+            (keydown.space)="$event.preventDefault(); openDrawer(project)">
+          <td>
+            <div class="po-mobile-table__main">
+              <span class="po-mobile-table__image">
+                <img
+                  src="https://res.cloudinary.com/dsiku9ipv/image/upload/v1777637418/job-offer_8062313_lqbkuq.png"
+                  alt=""
+                  loading="lazy">
+              </span>
+              <span class="po-mobile-table__copy">
+                <span class="po-mobile-table__title">{{ project.project.title }}</span>
+                <span class="po-mobile-table__summary">{{ getSummary(project) }}</span>
+              </span>
+              <i class="ki-outline po-mobile-table__chevron"
+                 [ngClass]="lang === 'ar' ? 'ki-arrow-left' : 'ki-arrow-right'"
+                 aria-hidden="true"></i>
+            </div>
+
+            <div class="po-mobile-table__meta">
+              <span class="po-mobile-table__deadline">
+                <span class="po-mobile-table__meta-label">{{ lang === 'ar' ? 'موعد التسليم' : 'Deadline' }}</span>
+                <span class="po-mobile-table__meta-value">{{ getDeadlineLabel(project) }}</span>
+              </span>
+              <span class="po-card__status" [ngClass]="getContractStatusClass(project)">
+                <span class="po-card__status-dot"></span>
+                {{ getContractStatusLabel(project) }}
+              </span>
+            </div>
           </td>
         </tr>
       </tbody>

@@ -80,7 +80,7 @@
       <div class="nav-item" [routerLink]="['project-offers']" routerLinkActive="active"
         *ngIf="!(isClient$ | async)" (click)="closeMobileSidebar()">
         <div class="item-icon">
-          <i class="ki-outline ki-people"></i>
+          <img src="assets/media/icons/projects/client-projects.svg" width="18" height="18" alt="" aria-hidden="true">
         </div>
         <span>{{ lang === 'ar' ? 'مشاريع العملاء' : 'Client Projects' }}</span>
       </div>
@@ -89,7 +89,7 @@
       <div class="nav-item" [routerLink]="['projects-created']" routerLinkActive="active"
         (click)="closeMobileSidebar()">
         <div class="item-icon">
-          <i class="ki-outline ki-rocket"></i>
+          <img src="assets/media/icons/projects/my-projects.svg" width="18" height="18" alt="" aria-hidden="true">
         </div>
         <span>{{ lang === 'ar' ? 'مشاريعي' : 'My Projects' }}</span>
       </div>
@@ -331,7 +331,8 @@
                     pTooltip="{{ isNavCollapsed ? (lang === 'ar' ? 'مشاريع العملاء' : 'Client Projects') : '' }}"
                     tooltipPosition="right" appendTo="body">
                     <div class="item-icon">
-                      <i class="ki-outline ki-people"></i>
+                      <img src="assets/media/icons/projects/client-projects.svg" width="18" height="18" alt=""
+                        aria-hidden="true">
                     </div>
                     <div class="item-label" *ngIf="!isNavCollapsed">
                       {{ lang === 'ar' ? 'مشاريع العملاء' : 'Client Projects' }}
@@ -344,7 +345,8 @@
                     pTooltip="{{ isNavCollapsed ? (lang === 'ar' ? 'مشاريعي' : 'My Projects') : '' }}"
                     tooltipPosition="right" appendTo="body">
                     <div class="item-icon">
-                      <i class="ki-outline ki-rocket"></i>
+                      <img src="assets/media/icons/projects/my-projects.svg" width="18" height="18" alt=""
+                        aria-hidden="true">
                     </div>
                     <div class="item-label" *ngIf="!isNavCollapsed">
                       {{ lang === 'ar' ? 'مشاريعي' : 'My Projects' }}

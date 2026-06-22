@@ -312,54 +312,6 @@
           </div>
         </section>
 
-        <!-- Agreement -->
-        <section class="ps-section" [class.is-invalid]="showAgreementError">
-          <div class="ps-agreement">
-            <input id="project_service_agreement" class="form-check-input ps-agreement-input" type="checkbox"
-              formControlName="project_service_agreement" (change)="onAgreementCheckboxChange()" />
-
-            <div class="ps-agreement-copy">
-              <label class="ps-setting-title" for="project_service_agreement">
-                {{
-                lang === 'ar'
-                ? 'أوافق على اتفاقية خدمات المشاريع'
-                : 'I agree to the project services agreement'
-                }}
-              </label>
-
-              <p class="ps-section-desc">
-                {{
-                lang === 'ar'
-                ? 'الموافقة مطلوبة قبل تفعيل استقبال عروض المشاريع.'
-                : 'Acceptance is required before enabling project offer receiving.'
-                }}
-                <button type="button" class="ps-link" (click)="openProjectServiceAgreementDialog()">
-                  {{
-                  projectServiceAgreement?.name ||
-                  (lang === 'ar' ? 'عرض الاتفاقية' : 'View agreement')
-                  }}
-                </button>
-              </p>
-
-              <div *ngIf="isAgreementLoading" class="ps-muted">
-                {{ lang === 'ar' ? 'جاري تحميل الاتفاقية...' : 'Loading agreement...' }}
-              </div>
-
-              <div *ngIf="agreementErrorMessage" class="ps-error">
-                {{ agreementErrorMessage }}
-              </div>
-
-              <div *ngIf="showAgreementError" class="ps-error">
-                {{
-                lang === 'ar'
-                ? 'اقبل اتفاقية خدمات المشاريع أولاً.'
-                : 'Accept the project services agreement first.'
-                }}
-              </div>
-            </div>
-          </div>
-        </section>
-
         <div class="ps-actions">
           <button type="submit" class="btn btn-primary ps-save"
             [disabled]="(isSaving$ | async) || (isServicesLoading$ | async) || !availableServices.length">
@@ -418,6 +370,8 @@
   [modal]="true"
   [draggable]="false"
   [resizable]="false"
+  [closable]="!isProjectStatusUpdating"
+  [closeOnEscape]="!isProjectStatusUpdating"
   appendTo="body"
   [style]="{ width: '85vw', maxWidth: '960px' }"
   [breakpoints]="{ '992px': '90vw', '576px': '96vw' }"
@@ -448,8 +402,18 @@
   </div>
 
   <ng-template pTemplate="footer">
-    <button type="button" class="btn btn-primary ps-save" (click)="isAgreementDialogVisible = false">
-      {{ lang === 'ar' ? 'إغلاق' : 'Close' }}
+    <button type="button" class="btn btn-light ps-dialog-action" [disabled]="isProjectStatusUpdating"
+      (click)="isAgreementDialogVisible = false">
+      {{ lang === 'ar' ? 'إلغاء' : 'Cancel' }}
+    </button>
+    <button type="button" class="btn btn-primary ps-dialog-action"
+      [disabled]="isAgreementLoading || !!agreementErrorMessage || !projectServiceAgreement || isProjectStatusUpdating"
+      (click)="agreeAndActivateProjectOffers()">
+      {{
+      isProjectStatusUpdating
+      ? (lang === 'ar' ? 'جاري التفعيل...' : 'Activating...')
+      : (lang === 'ar' ? 'أوافق وأفعّل استقبال العروض' : 'Agree and activate')
+      }}
     </button>
   </ng-template>
 </p-dialog>

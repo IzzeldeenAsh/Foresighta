@@ -77,6 +77,12 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
   private deadlineTicker: ReturnType<typeof setInterval> | null = null;
   private drawerDetailsRequestId = 0;
   private readonly defaultOfferDeadlineWindowMs = 14 * 86_400_000;
+  private chipRailDragTarget: HTMLElement | null = null;
+  private chipRailDragPointerId: number | null = null;
+  private chipRailDragStartX = 0;
+  private chipRailDragStartScrollLeft = 0;
+  private chipRailDragMoved = false;
+  private suppressChipClick = false;
 
   projectTypeOptions: ProjectTypeMeta[] = [
     { key: 'ad_hoc', labelEn: 'Ad Hoc', labelAr: 'خاص' },
@@ -171,13 +177,76 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
   }
 
   onActionStatusChange(actionStatus: ProjectOfferActionStatus | null): void {
+    if (this.suppressChipClick) return;
     this.selectedActionStatus = actionStatus;
     this.resetPaginationAndReload();
   }
 
   onReadStatusChange(readStatus: ProjectOfferReadStatus | null): void {
+    if (this.suppressChipClick) return;
     this.selectedReadStatus = this.selectedReadStatus === readStatus ? null : readStatus;
     this.resetPaginationAndReload();
+  }
+
+  onChipRailWheel(event: WheelEvent): void {
+    const rail = event.currentTarget as HTMLElement;
+    if (rail.scrollWidth <= rail.clientWidth) return;
+
+    const delta = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
+    const direction = getComputedStyle(rail).direction === 'rtl' ? -1 : 1;
+    rail.scrollLeft += delta * direction;
+    event.preventDefault();
+  }
+
+  onChipRailPointerDown(event: PointerEvent): void {
+    if (event.pointerType !== 'mouse' || event.button !== 0) return;
+
+    const rail = event.currentTarget as HTMLElement;
+    if (rail.scrollWidth <= rail.clientWidth) return;
+
+    this.chipRailDragTarget = rail;
+    this.chipRailDragPointerId = event.pointerId;
+    this.chipRailDragStartX = event.clientX;
+    this.chipRailDragStartScrollLeft = rail.scrollLeft;
+    this.chipRailDragMoved = false;
+    rail.setPointerCapture(event.pointerId);
+    rail.classList.add('is-dragging');
+  }
+
+  onChipRailPointerMove(event: PointerEvent): void {
+    if (!this.chipRailDragTarget || this.chipRailDragPointerId !== event.pointerId) return;
+    if ((event.buttons & 1) !== 1) {
+      this.onChipRailPointerUp(event);
+      return;
+    }
+
+    const distance = event.clientX - this.chipRailDragStartX;
+    if (Math.abs(distance) > 4) {
+      this.chipRailDragMoved = true;
+      this.suppressChipClick = true;
+    }
+
+    if (this.chipRailDragMoved) {
+      this.chipRailDragTarget.scrollLeft = this.chipRailDragStartScrollLeft - distance;
+      event.preventDefault();
+    }
+  }
+
+  onChipRailPointerUp(event: PointerEvent): void {
+    if (!this.chipRailDragTarget || this.chipRailDragPointerId !== event.pointerId) return;
+
+    const rail = this.chipRailDragTarget;
+    rail.classList.remove('is-dragging');
+    if (rail.hasPointerCapture(event.pointerId)) {
+      rail.releasePointerCapture(event.pointerId);
+    }
+
+    this.chipRailDragTarget = null;
+    this.chipRailDragPointerId = null;
+    this.chipRailDragMoved = false;
+    setTimeout(() => {
+      this.suppressChipClick = false;
+    });
   }
 
   setViewMode(mode: ViewMode): void {
@@ -514,6 +583,10 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
     }
 
     return this.getResolvedStatus(offer) !== 'offered';
+  }
+
+  isOfferTimedOut(offer: ProjectOffer | null | undefined): boolean {
+    return !!this.getOfferDeadlineDate(offer) && this.getOfferRemainingMs(offer) <= 0;
   }
 
   getDrawerBackIcon(): string {

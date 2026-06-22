@@ -4,7 +4,7 @@
     [lang]="lang"
     [showTabs]="true">
     <div slot="icon">
-      <i class="ki-outline ki-abstract-26 fs-2x text-info"></i>
+      <img src="assets/media/icons/projects/client-projects.svg" width="32" height="32" alt="" aria-hidden="true">
     </div>
 
     <div slot="tabs" class="d-flex justify-content-between w-100">
@@ -32,7 +32,13 @@
     <div class="po-toolbar__filters d-flex align-items-start flex-wrap gap-3">
       <div class="po-filter">
         <label class="po-filter__label">{{ lang === 'ar' ? 'حالة الإجراء' : 'Action Status' }}</label>
-        <div class="po-filter-chips" role="group" [attr.aria-label]="lang === 'ar' ? 'تصفية حسب حالة الإجراء' : 'Filter by action status'">
+        <div class="po-filter-chips" role="group"
+          [attr.aria-label]="lang === 'ar' ? 'تصفية حسب حالة الإجراء' : 'Filter by action status'"
+          (wheel)="onChipRailWheel($event)"
+          (pointerdown)="onChipRailPointerDown($event)"
+          (pointermove)="onChipRailPointerMove($event)"
+          (pointerup)="onChipRailPointerUp($event)"
+          (pointercancel)="onChipRailPointerUp($event)">
           <button type="button"
             class="po-filter-chip po-filter-chip--all"
             [class.active]="selectedActionStatus === null"
@@ -76,7 +82,13 @@
       </div>
 
       <div class="po-filter po-filter--read-status">
-        <div class="po-filter-chips po-filter-chips--read-status" role="group" [attr.aria-label]="lang === 'ar' ? 'تصفية حسب حالة القراءة' : 'Filter by read status'">
+        <div class="po-filter-chips po-filter-chips--read-status" role="group"
+          [attr.aria-label]="lang === 'ar' ? 'تصفية حسب حالة القراءة' : 'Filter by read status'"
+          (wheel)="onChipRailWheel($event)"
+          (pointerdown)="onChipRailPointerDown($event)"
+          (pointermove)="onChipRailPointerMove($event)"
+          (pointerup)="onChipRailPointerUp($event)"
+          (pointercancel)="onChipRailPointerUp($event)">
           <button type="button"
             *ngFor="let option of readStatusOptions"
             class="po-filter-chip"
@@ -113,7 +125,7 @@
     </div>
   </div>
 
-  <div *ngIf="offers.length > 0 && viewMode === 'list'" class="table-responsive po-table-shell">
+  <div *ngIf="offers.length > 0 && viewMode === 'list'" class="table-responsive po-table-shell po-table-shell--desktop">
     <table class="table align-middle fs-6 po-table">
       <thead>
         <tr class="text-inline-start text-gray-500 fw-semibold fs-8 text-uppercase gs-0">
@@ -184,9 +196,64 @@
           </td>
 
           <td class="text-end">
-            <button type="button" class="po-table__action" (click)="$event.stopPropagation(); openDrawer(offer)">
+            <button type="button"
+                    class="po-table__action"
+                    [attr.aria-label]="lang === 'ar' ? 'عرض المشروع' : 'View project'"
+                    [attr.title]="lang === 'ar' ? 'عرض المشروع' : 'View project'"
+                    (click)="$event.stopPropagation(); openDrawer(offer)">
               <i class="ki-outline ki-eye fs-5"></i>
             </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div *ngIf="offers.length > 0 && viewMode === 'list'" class="po-mobile-table-shell">
+    <table class="po-mobile-table">
+      <thead>
+        <tr>
+          <th>
+            <span class="po-mobile-table__heading">
+              <span>{{ lang === 'ar' ? 'المشروع' : 'Project' }}</span>
+              <span class="po-table__total-badge">{{ totalRecords }}</span>
+            </span>
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let offer of offers; trackBy: trackByOffer"
+            class="po-mobile-table__row"
+            [class.po-mobile-table__row--unread]="isInsighterUnread(offer)"
+            role="button"
+            tabindex="0"
+            (click)="openDrawer(offer)"
+            (keydown.enter)="openDrawer(offer)"
+            (keydown.space)="$event.preventDefault(); openDrawer(offer)">
+          <td>
+            <div class="po-mobile-table__main">
+              <span class="po-mobile-table__image">
+                <img [src]="getOfferImageUrl(offer)" alt="" loading="lazy">
+              </span>
+              <span class="po-mobile-table__copy">
+                <span class="po-mobile-table__title">{{ offer.project.title }}</span>
+                <span class="po-mobile-table__summary">{{ getSummary(offer) }}</span>
+              </span>
+              <i class="ki-outline po-mobile-table__chevron"
+                 [ngClass]="lang === 'ar' ? 'ki-arrow-left' : 'ki-arrow-right'"
+                 aria-hidden="true"></i>
+            </div>
+
+            <div class="po-mobile-table__meta">
+              <span class="po-mobile-table__deadline">
+                <span class="po-mobile-table__meta-label">{{ lang === 'ar' ? 'الموعد النهائي' : 'Deadline' }}</span>
+                <span class="po-mobile-table__meta-value">{{ getDeadlineLabel(offer) }}</span>
+              </span>
+              <span class="po-card__status" [ngClass]="getStatusBadgeClass(offer)">
+                <span class="po-card__status-dot"></span>
+                {{ getStatusLabel(offer) }}
+              </span>
+            </div>
           </td>
         </tr>
       </tbody>
@@ -1072,36 +1139,38 @@
             </div>
           </div>
 
-          <button *ngIf="hasContractAction(offer)" type="button" class="btn btn-info w-100 mb-2" (click)="viewContract(offer)">
-            <i class="ki-outline ki-document fs-6 me-1"></i>
-            {{ lang === 'ar' ? 'عرض العقد' : 'View Contract' }}
-          </button>
+          <ng-container *ngIf="!isOfferTimedOut(offer)">
+            <button *ngIf="hasContractAction(offer)" type="button" class="btn btn-info w-100 mb-2" (click)="viewContract(offer)">
+              <i class="ki-outline ki-document fs-6 me-1"></i>
+              {{ lang === 'ar' ? 'عرض العقد' : 'View Contract' }}
+            </button>
 
-          <button *ngIf="!hasContractAction(offer) && canSendOffer(offer)" type="button" class="btn btn-info w-100 mb-2" (click)="onSendProposal()">
-            <i class="ki-outline ki-send fs-6 me-1"></i>
-            {{ lang === 'ar' ? 'إرسال عرض' : 'Send Offer' }}
-          </button>
+            <button *ngIf="!hasContractAction(offer) && canSendOffer(offer)" type="button" class="btn btn-info w-100 mb-2" (click)="onSendProposal()">
+              <i class="ki-outline ki-send fs-6 me-1"></i>
+              {{ lang === 'ar' ? 'إرسال عرض' : 'Send Offer' }}
+            </button>
 
-          <button *ngIf="!hasContractAction(offer) && canInterestOffer(offer)" type="button" class="btn btn-outline btn-outline-success w-100 mb-2"
-            [disabled]="isInterestingSelectedOffer()" (click)="onInterestOffer()">
-            <i class="ki-outline ki-check-circle fs-6 me-1"></i>
-            {{ isInterestingSelectedOffer()
-            ? (lang === 'ar' ? 'جاري تسجيل الاهتمام...' : 'Marking interested...')
-            : (lang === 'ar' ? 'مهتم' : 'Interested') }}
-          </button>
+            <button *ngIf="!hasContractAction(offer) && canInterestOffer(offer)" type="button" class="btn btn-outline btn-outline-success w-100 mb-2"
+              [disabled]="isInterestingSelectedOffer()" (click)="onInterestOffer()">
+              <i class="ki-outline ki-check-circle fs-6 me-1"></i>
+              {{ isInterestingSelectedOffer()
+              ? (lang === 'ar' ? 'جاري تسجيل الاهتمام...' : 'Marking interested...')
+              : (lang === 'ar' ? 'مهتم' : 'Interested') }}
+            </button>
 
-          <button *ngIf="!hasContractAction(offer)" type="button" class="btn btn-outline btn-outline-info w-100" (click)="onAskClient()">
-            <i class="ki-outline ki-messages fs-6 me-1"></i>
-            {{ lang === 'ar' ? 'سؤال العميل' : 'Ask Client' }}
-          </button>
+            <button *ngIf="!hasContractAction(offer)" type="button" class="btn btn-outline btn-outline-info w-100" (click)="onAskClient()">
+              <i class="ki-outline ki-messages fs-6 me-1"></i>
+              {{ lang === 'ar' ? 'سؤال العميل' : 'Ask Client' }}
+            </button>
 
-          <button *ngIf="!hasContractAction(offer) && canRejectOffer(offer)" type="button" class="btn btn-outline btn-outline-danger w-100 mt-2"
-            [disabled]="isRejectingSelectedOffer()" (click)="onRejectOffer()">
-            <i class="ki-outline ki-cross fs-6 me-1"></i>
-            {{ isRejectingSelectedOffer()
-            ? (lang === 'ar' ? 'جاري الرفض...' : 'Rejecting...')
-            : (lang === 'ar' ? 'رفض العرض' : 'Not Interested') }}
-          </button>
+            <button *ngIf="!hasContractAction(offer) && canRejectOffer(offer)" type="button" class="btn btn-outline btn-outline-danger w-100 mt-2"
+              [disabled]="isRejectingSelectedOffer()" (click)="onRejectOffer()">
+              <i class="ki-outline ki-cross fs-6 me-1"></i>
+              {{ isRejectingSelectedOffer()
+              ? (lang === 'ar' ? 'جاري الرفض...' : 'Rejecting...')
+              : (lang === 'ar' ? 'رفض العرض' : 'Not Interested') }}
+            </button>
+          </ng-container>
 
           <div class="po-aside-table-wrap">
             <table class="po-aside-table">

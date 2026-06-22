@@ -47,6 +47,12 @@ export class ProjectsCreatedComponent extends BaseComponent implements OnInit, O
   projectStatistics: CreatedProjectStatistics = { total: 0, statuses: [] };
   projectStatisticsLoaded = false;
   markingReadProjectUuids = new Set<string>();
+  private chipRailDragTarget: HTMLElement | null = null;
+  private chipRailDragPointerId: number | null = null;
+  private chipRailDragStartX = 0;
+  private chipRailDragStartScrollLeft = 0;
+  private chipRailDragMoved = false;
+  private suppressChipClick = false;
 
   currentPage: number = 1;
   rows: number = 10;
@@ -121,6 +127,7 @@ export class ProjectsCreatedComponent extends BaseComponent implements OnInit, O
   }
 
   onProjectStatusChange(status: CreatedProjectStatus | null): void {
+    if (this.suppressChipClick) return;
     this.selectedProjectStatus = status;
     this.currentPage = 1;
     this.first = 0;
@@ -128,6 +135,7 @@ export class ProjectsCreatedComponent extends BaseComponent implements OnInit, O
   }
 
   onReadStatusChange(status: CreatedProjectReadStatus | null): void {
+    if (this.suppressChipClick) return;
     this.selectedReadStatus = this.selectedReadStatus === status ? null : status;
     this.currentPage = 1;
     this.first = 0;
@@ -137,6 +145,67 @@ export class ProjectsCreatedComponent extends BaseComponent implements OnInit, O
   setViewMode(mode: ViewMode): void {
     this.hasUserSelectedViewMode = true;
     this.viewMode = mode;
+  }
+
+  onChipRailWheel(event: WheelEvent): void {
+    const rail = event.currentTarget as HTMLElement;
+    if (rail.scrollWidth <= rail.clientWidth) return;
+
+    const delta = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
+    const direction = getComputedStyle(rail).direction === 'rtl' ? -1 : 1;
+    rail.scrollLeft += delta * direction;
+    event.preventDefault();
+  }
+
+  onChipRailPointerDown(event: PointerEvent): void {
+    if (event.pointerType !== 'mouse' || event.button !== 0) return;
+
+    const rail = event.currentTarget as HTMLElement;
+    if (rail.scrollWidth <= rail.clientWidth) return;
+
+    this.chipRailDragTarget = rail;
+    this.chipRailDragPointerId = event.pointerId;
+    this.chipRailDragStartX = event.clientX;
+    this.chipRailDragStartScrollLeft = rail.scrollLeft;
+    this.chipRailDragMoved = false;
+    rail.setPointerCapture(event.pointerId);
+    rail.classList.add('is-dragging');
+  }
+
+  onChipRailPointerMove(event: PointerEvent): void {
+    if (!this.chipRailDragTarget || this.chipRailDragPointerId !== event.pointerId) return;
+    if ((event.buttons & 1) !== 1) {
+      this.onChipRailPointerUp(event);
+      return;
+    }
+
+    const distance = event.clientX - this.chipRailDragStartX;
+    if (Math.abs(distance) > 4) {
+      this.chipRailDragMoved = true;
+      this.suppressChipClick = true;
+    }
+
+    if (this.chipRailDragMoved) {
+      this.chipRailDragTarget.scrollLeft = this.chipRailDragStartScrollLeft - distance;
+      event.preventDefault();
+    }
+  }
+
+  onChipRailPointerUp(event: PointerEvent): void {
+    if (!this.chipRailDragTarget || this.chipRailDragPointerId !== event.pointerId) return;
+
+    const rail = this.chipRailDragTarget;
+    rail.classList.remove('is-dragging');
+    if (rail.hasPointerCapture(event.pointerId)) {
+      rail.releasePointerCapture(event.pointerId);
+    }
+
+    this.chipRailDragTarget = null;
+    this.chipRailDragPointerId = null;
+    this.chipRailDragMoved = false;
+    setTimeout(() => {
+      this.suppressChipClick = false;
+    });
   }
 
   viewDetails(project: CreatedProject): void {
