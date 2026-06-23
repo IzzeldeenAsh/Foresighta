@@ -90,7 +90,7 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
     { key: 'urgent_request', labelEn: 'Urgent Request', labelAr: 'طلب عاجل' },
   ];
   actionStatusOptions: StatusFilterOption<ProjectOfferActionStatus>[] = [
-    { value: 'new', labelEn: 'New', labelAr: 'جديد', iconClass: 'pi-bell' },
+    { value: 'pending', labelEn: 'Pending', labelAr: 'قيد الانتظار', iconClass: 'pi-clock' },
     { value: 'viewed', labelEn: 'Viewed', labelAr: 'تمت المشاهدة', iconClass: 'pi-eye' },
     { value: 'offered', labelEn: 'Offered', labelAr: 'تم تقديم العرض', iconClass: 'pi-send' },
     { value: 'awarded', labelEn: 'Awarded', labelAr: 'تم الترسية', iconClass: 'pi-star' },
@@ -319,7 +319,7 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
     switch (status) {
       case 'viewed':
         return 'badge-light-viewed';
-      case 'new':
+      case 'pending':
       case 'invited':
         return 'badge-light-warning';
       case 'accepted':
@@ -347,7 +347,7 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
   getStatusLabel(offer: ProjectOffer): string {
     const status = this.getDisplayStatus(offer);
     const labels: { [k: string]: { en: string; ar: string } } = {
-      new: { en: 'New', ar: 'جديد' },
+      pending: { en: 'Pending', ar: 'قيد الانتظار' },
       invited: { en: 'Invited', ar: 'مدعو' },
       viewed: { en: 'Viewed', ar: 'تمت المشاهدة' },
       offered: { en: 'Offered', ar: 'تم تقديم العرض' },
@@ -1162,7 +1162,7 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
     }
 
     const status = this.getResolvedStatus(offer);
-    return ['new', 'viewed'].includes(status);
+    return ['pending', 'viewed'].includes(status);
   }
 
   canSendOffer(offer: ProjectOffer | null): boolean {
@@ -1170,7 +1170,7 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
       return false;
     }
 
-    return ['new', 'viewed', 'interested'].includes(this.getResolvedStatus(offer));
+    return ['pending', 'viewed', 'interested'].includes(this.getResolvedStatus(offer));
   }
 
   canInterestOffer(offer: ProjectOffer | null): boolean {
@@ -1178,7 +1178,7 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
       return false;
     }
 
-    return this.getResolvedStatus(offer) === 'new';
+    return this.getResolvedStatus(offer) === 'pending';
   }
 
   isRejectingSelectedOffer(): boolean {

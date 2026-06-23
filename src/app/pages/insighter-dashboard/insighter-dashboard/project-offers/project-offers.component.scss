@@ -233,7 +233,7 @@
     --chip-active-bg: #365a9b;
   }
 
-  &--new {
+  &--pending {
     --chip-color: #9a6200;
     --chip-bg: rgba(255, 246, 219, 0.9);
     --chip-border: rgba(245, 158, 11, 0.24);
@@ -2999,7 +2999,7 @@
     --chip-active-bg: #34435a;
   }
 
-  &--new { --chip-dot: #f59e0b; }
+  &--pending { --chip-dot: #f59e0b; }
   &--viewed { --chip-dot: #3b82f6; }
   &--offered { --chip-dot: #22c55e; }
   &--awarded { --chip-dot: #0ea5e9; }
