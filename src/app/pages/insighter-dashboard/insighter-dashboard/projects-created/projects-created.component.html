@@ -9,87 +9,83 @@
     </div>
   </app-page-header>
 
-  <div class="pc-toolbar d-flex justify-content-between align-items-start flex-wrap gap-3">
-    <div class="pc-toolbar__filters d-flex align-items-start flex-wrap gap-3">
-      <div class="pc-filter">
-        <label class="pc-filter__label">{{ lang === 'ar' ? 'حالة المشروع' : 'Project Status' }}</label>
-        <div class="pc-filter-chips" role="group"
-          [attr.aria-label]="lang === 'ar' ? 'تصفية حسب حالة المشروع' : 'Filter by project status'"
-          (wheel)="onChipRailWheel($event)"
-          (pointerdown)="onChipRailPointerDown($event)"
-          (pointermove)="onChipRailPointerMove($event)"
-          (pointerup)="onChipRailPointerUp($event)"
-          (pointercancel)="onChipRailPointerUp($event)">
-          <button type="button"
-            class="pc-filter-chip pc-filter-chip--all"
-            [class.active]="selectedProjectStatus === null"
-            [attr.aria-pressed]="selectedProjectStatus === null"
-            (click)="onProjectStatusChange(null)">
-            <span class="pc-filter-chip__icon">
-              <i class="ki-outline ki-rocket fs-6"></i>
-            </span>
-            <span>{{ lang === 'ar' ? 'الكل' : 'All' }}</span>
-            <span class="pc-filter-chip__count">{{ getAllProjectsCount() }}</span>
-          </button>
+  <div class="pc-status-filter">
+    <label class="pc-filter__label">{{ lang === 'ar' ? 'حالة المشروع' : 'Project Status' }}</label>
+    <div class="pc-filter-chips" role="group"
+      [attr.aria-label]="lang === 'ar' ? 'تصفية حسب حالة المشروع' : 'Filter by project status'"
+      (wheel)="onChipRailWheel($event)"
+      (pointerdown)="onChipRailPointerDown($event)"
+      (pointermove)="onChipRailPointerMove($event)"
+      (pointerup)="onChipRailPointerUp($event)"
+      (pointercancel)="onChipRailPointerUp($event)">
+      <button type="button"
+        class="pc-filter-chip pc-filter-chip--all"
+        [class.active]="selectedProjectStatus === null"
+        [attr.aria-pressed]="selectedProjectStatus === null"
+        (click)="onProjectStatusChange(null)">
+        <span>{{ lang === 'ar' ? 'الكل' : 'All' }}</span>
+        <span class="pc-filter-chip__count">{{ getAllProjectsCount() }}</span>
+      </button>
 
-          <button type="button"
-            *ngFor="let option of projectStatusOptions"
-            class="pc-filter-chip"
-            [ngClass]="'pc-filter-chip--' + option.value"
-            [class.active]="selectedProjectStatus === option.value"
-            [attr.aria-pressed]="selectedProjectStatus === option.value"
-            (click)="onProjectStatusChange(option.value)">
-            <span class="pc-filter-chip__icon">
-              <i class="ki-outline fs-6" [ngClass]="option.iconClass"></i>
-            </span>
-            <span>{{ lang === 'ar' ? option.labelAr : option.labelEn }}</span>
-            <span class="pc-filter-chip__count">{{ getProjectStatusCount(option.value) }}</span>
-          </button>
-        </div>
+      <button type="button"
+        *ngFor="let option of projectStatusOptions"
+        class="pc-filter-chip"
+        [ngClass]="'pc-filter-chip--' + option.value"
+        [class.active]="selectedProjectStatus === option.value"
+        [attr.aria-pressed]="selectedProjectStatus === option.value"
+        (click)="onProjectStatusChange(option.value)">
+        <span class="pc-filter-chip__icon" aria-hidden="true">
+          <i class="pi" [ngClass]="option.iconClass"></i>
+        </span>
+        <span>{{ lang === 'ar' ? option.labelAr : option.labelEn }}</span>
+        <span class="pc-filter-chip__count">{{ getProjectStatusCount(option.value) }}</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="pc-control-bar">
+    <div class="pc-control-bar__left">
+      <span class="pc-control-bar__count">
+        <strong>{{ totalRecords }}</strong>
+        {{ lang === 'ar' ? 'مشاريع' : (totalRecords === 1 ? 'project' : 'projects') }}
+      </span>
+      <span class="pc-control-bar__divider" aria-hidden="true"></span>
+      <div class="pc-read-toggle" role="group"
+        [attr.aria-label]="lang === 'ar' ? 'تصفية حسب حالة القراءة' : 'Filter by read status'">
+        <button type="button"
+          class="pc-read-toggle__btn"
+          [class.active]="selectedReadStatus === null"
+          [attr.aria-pressed]="selectedReadStatus === null"
+          (click)="onReadStatusChange(null)">
+          <i class="ki-outline ki-directbox-default fs-5"></i>
+          <span>{{ lang === 'ar' ? 'الكل' : 'All' }}</span>
+        </button>
+        <button type="button"
+          class="pc-read-toggle__btn"
+          [class.active]="selectedReadStatus === 'not_read'"
+          [attr.aria-pressed]="selectedReadStatus === 'not_read'"
+          (click)="onReadStatusChange('not_read')">
+          <i class="ki-outline ki-notification-on fs-5"></i>
+          <span>{{ lang === 'ar' ? 'غير مقروء' : 'Unread' }}</span>
+        </button>
       </div>
-
     </div>
 
-    <div class="pc-toolbar__actions">
-      <div class="pc-view-toggle" role="group">
-        <button type="button"
-                class="pc-view-toggle__btn"
-                [class.active]="viewMode === 'grid'"
-                (click)="setViewMode('grid')"
-                [attr.aria-label]="lang === 'ar' ? 'عرض شبكي' : 'Grid view'">
-          <i class="ki-outline ki-element-11 fs-5"></i>
-        </button>
-        <button type="button"
-                class="pc-view-toggle__btn"
-                [class.active]="viewMode === 'list'"
-                (click)="setViewMode('list')"
-                [attr.aria-label]="lang === 'ar' ? 'عرض قائمة' : 'List view'">
-          <i class="ki-outline ki-row-horizontal fs-5"></i>
-        </button>
-      </div>
-
-      <div class="pc-filter pc-filter--read-status">
-        <div class="pc-filter-chips pc-filter-chips--read-status" role="group"
-          [attr.aria-label]="lang === 'ar' ? 'تصفية حسب حالة القراءة' : 'Filter by read status'"
-          (wheel)="onChipRailWheel($event)"
-          (pointerdown)="onChipRailPointerDown($event)"
-          (pointermove)="onChipRailPointerMove($event)"
-          (pointerup)="onChipRailPointerUp($event)"
-          (pointercancel)="onChipRailPointerUp($event)">
-          <button type="button"
-            *ngFor="let option of readStatusOptions"
-            class="pc-filter-chip"
-            [ngClass]="'pc-filter-chip--' + option.value"
-            [class.active]="selectedReadStatus === option.value"
-            [attr.aria-pressed]="selectedReadStatus === option.value"
-            (click)="onReadStatusChange(option.value)">
-            <span class="pc-filter-chip__icon">
-              <i class="ki-outline fs-6" [ngClass]="option.iconClass"></i>
-            </span>
-            <span>{{ lang === 'ar' ? option.labelAr : option.labelEn }}</span>
-          </button>
-        </div>
-      </div>
+    <div class="pc-view-toggle" role="group">
+      <button type="button"
+              class="pc-view-toggle__btn"
+              [class.active]="viewMode === 'grid'"
+              (click)="setViewMode('grid')"
+              [attr.aria-label]="lang === 'ar' ? 'عرض شبكي' : 'Grid view'">
+        <i class="ki-outline ki-element-11 fs-5"></i>
+      </button>
+      <button type="button"
+              class="pc-view-toggle__btn"
+              [class.active]="viewMode === 'list'"
+              (click)="setViewMode('list')"
+              [attr.aria-label]="lang === 'ar' ? 'عرض قائمة' : 'List view'">
+        <i class="ki-outline ki-row-horizontal fs-5"></i>
+      </button>
     </div>
   </div>
 
@@ -123,7 +119,6 @@
           <th class="min-w-300px">
             <span class="pc-table__heading">
               <span>{{ lang === 'ar' ? 'المشروع' : 'Project' }}</span>
-              <span class="pc-table__total-badge">{{ totalRecords }}</span>
             </span>
           </th>
           <th class="min-w-170px">{{ lang === 'ar' ? 'النوع' : 'Type' }}</th>
@@ -143,17 +138,24 @@
             (keydown.enter)="viewDetails(project)"
             (keydown.space)="$event.preventDefault(); viewDetails(project)">
           <td>
-            <img class="pc-table__project-image"
-                 [src]="getProjectImageUrl(project)"
-                 [alt]="lang === 'ar' ? 'أيقونة المشروع' : 'Project icon'">
+            <span class="pc-table__project-image-frame">
+              <img class="pc-table__project-image"
+                   src="assets/media/icons/projects/project-row-document.svg"
+                   [alt]="lang === 'ar' ? 'أيقونة المشروع' : 'Project icon'">
+            </span>
           </td>
 
           <td>
-            <div class="pc-table__project">
-              <span class="pc-table__project-title">
-                {{ project.title }}
-              </span>
-              <span class="pc-table__project-summary">{{ getSummary(project) }}</span>
+            <div class="pc-table__project-cell">
+              <span class="pc-table__unread-dot"
+                    [class.pc-table__unread-dot--visible]="isClientUnread(project)"
+                    aria-hidden="true"></span>
+              <div class="pc-table__project">
+                <span class="pc-table__project-title">
+                  {{ project.title }}
+                </span>
+                <span class="pc-table__project-summary">{{ getSummary(project) }}</span>
+              </div>
             </div>
           </td>
 
@@ -202,7 +204,6 @@
           <th>
             <span class="pc-mobile-table__heading">
               <span>{{ lang === 'ar' ? 'المشروع' : 'Project' }}</span>
-              <span class="pc-table__total-badge">{{ totalRecords }}</span>
             </span>
           </th>
         </tr>
@@ -219,7 +220,7 @@
           <td>
             <div class="pc-mobile-table__main">
               <img class="pc-mobile-table__image"
-                   [src]="getProjectImageUrl(project)"
+                   src="assets/media/icons/projects/project-row-document.svg"
                    [alt]="lang === 'ar' ? 'أيقونة المشروع' : 'Project icon'">
               <div class="pc-mobile-table__copy">
                 <span class="pc-mobile-table__title">{{ project.title }}</span>

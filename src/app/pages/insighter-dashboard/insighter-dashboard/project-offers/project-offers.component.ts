@@ -90,12 +90,12 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
     { key: 'urgent_request', labelEn: 'Urgent Request', labelAr: 'طلب عاجل' },
   ];
   actionStatusOptions: StatusFilterOption<ProjectOfferActionStatus>[] = [
-    { value: 'new', labelEn: 'New', labelAr: 'جديد', iconClass: 'ki-notification-on' },
-    { value: 'viewed', labelEn: 'Viewed', labelAr: 'تمت المشاهدة', iconClass: 'ki-eye' },
-    { value: 'offered', labelEn: 'Offered', labelAr: 'تم تقديم العرض', iconClass: 'ki-check-circle' },
-    { value: 'awarded', labelEn: 'Awarded', labelAr: 'تم الترسية', iconClass: 'ki-medal-star' },
-    { value: 'technical_rejected', labelEn: 'Technical Rejected', labelAr: 'مرفوض فنياً', iconClass: 'ki-cross-circle' },
-    { value: 'expired', labelEn: 'Expired', labelAr: 'منتهي', iconClass: 'ki-time' },
+    { value: 'new', labelEn: 'New', labelAr: 'جديد', iconClass: 'pi-bell' },
+    { value: 'viewed', labelEn: 'Viewed', labelAr: 'تمت المشاهدة', iconClass: 'pi-eye' },
+    { value: 'offered', labelEn: 'Offered', labelAr: 'تم تقديم العرض', iconClass: 'pi-send' },
+    { value: 'awarded', labelEn: 'Awarded', labelAr: 'تم الترسية', iconClass: 'pi-star' },
+    { value: 'technical_rejected', labelEn: 'Technical Rejected', labelAr: 'مرفوض فنياً', iconClass: 'pi-times-circle' },
+    { value: 'expired', labelEn: 'Expired', labelAr: 'منتهي', iconClass: 'pi-clock' },
   ];
   readStatusOptions: StatusFilterOption<ProjectOfferReadStatus>[] = [
     { value: 'not_read', labelEn: 'Unread', labelAr: 'غير مقروء', iconClass: 'ki-notification-on' },

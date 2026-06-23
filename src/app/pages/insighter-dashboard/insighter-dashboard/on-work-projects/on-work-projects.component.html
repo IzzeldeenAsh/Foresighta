@@ -29,8 +29,12 @@
     </div>
   </app-page-header>
 
-  <div class="d-flex justify-content-end align-items-center">
-    <div class="po-view-toggle" role="group" style="max-height: fit-content;">
+  <div class="po-control-bar po-control-bar--simple">
+    <span class="po-control-bar__count">
+      <strong>{{ totalRecords }}</strong>
+      {{ lang === 'ar' ? 'مشاريع' : (totalRecords === 1 ? 'project' : 'projects') }}
+    </span>
+    <div class="po-view-toggle" role="group">
       <button
         type="button"
         class="po-view-toggle__btn"
@@ -72,10 +76,10 @@
     <table class="table align-middle fs-6 po-table">
       <thead>
         <tr class="text-inline-start text-gray-500 fw-semibold fs-8 text-uppercase gs-0">
+          <th class="w-64px"></th>
           <th class="min-w-300px">
             <span class="po-table__heading">
               <span>{{ lang === 'ar' ? 'المشروع' : 'Project' }}</span>
-              <span class="po-table__total-badge">{{ totalRecords }}</span>
             </span>
           </th>
           <th class="min-w-170px">{{ lang === 'ar' ? 'النوع' : 'Type' }}</th>
@@ -89,13 +93,14 @@
       <tbody class="fw-semibold text-gray-600">
         <tr *ngFor="let project of projects; trackBy: trackByProject" class="po-table__row">
           <td>
+            <span class="po-table__project-image">
+              <img src="assets/media/icons/projects/project-row-document.svg" alt="" loading="lazy">
+            </span>
+          </td>
+
+          <td>
             <button type="button" class="po-table__project" (click)="openDrawer(project)">
-              <span class="po-table__project-image">
-                <img
-                  src="https://res.cloudinary.com/dsiku9ipv/image/upload/v1777637418/job-offer_8062313_lqbkuq.png"
-                  alt=""
-                  loading="lazy">
-              </span>
+              <span class="po-table__unread-dot" aria-hidden="true"></span>
               <span class="po-table__project-copy">
                 <span class="po-table__project-title">{{ project.project.title }}</span>
                 <span class="po-table__project-summary">{{ getSummary(project) }}</span>
@@ -151,7 +156,6 @@
           <th>
             <span class="po-mobile-table__heading">
               <span>{{ lang === 'ar' ? 'المشروع' : 'Project' }}</span>
-              <span class="po-table__total-badge">{{ totalRecords }}</span>
             </span>
           </th>
         </tr>
@@ -167,10 +171,7 @@
           <td>
             <div class="po-mobile-table__main">
               <span class="po-mobile-table__image">
-                <img
-                  src="https://res.cloudinary.com/dsiku9ipv/image/upload/v1777637418/job-offer_8062313_lqbkuq.png"
-                  alt=""
-                  loading="lazy">
+                <img src="assets/media/icons/projects/project-row-document.svg" alt="" loading="lazy">
               </span>
               <span class="po-mobile-table__copy">
                 <span class="po-mobile-table__title">{{ project.project.title }}</span>

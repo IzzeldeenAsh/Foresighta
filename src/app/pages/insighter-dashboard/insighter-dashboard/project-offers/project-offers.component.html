@@ -27,82 +27,80 @@
     </div>
   </app-page-header>
 
-  <div class="po-toolbar d-flex justify-content-between align-items-start flex-wrap gap-3">
+  <div class="po-status-filter">
+    <label class="po-filter__label">{{ lang === 'ar' ? 'حالة الإجراء' : 'Action Status' }}</label>
+    <div class="po-filter-chips" role="group"
+      [attr.aria-label]="lang === 'ar' ? 'تصفية حسب حالة الإجراء' : 'Filter by action status'"
+      (wheel)="onChipRailWheel($event)"
+      (pointerdown)="onChipRailPointerDown($event)"
+      (pointermove)="onChipRailPointerMove($event)"
+      (pointerup)="onChipRailPointerUp($event)"
+      (pointercancel)="onChipRailPointerUp($event)">
+      <button type="button"
+        class="po-filter-chip po-filter-chip--all"
+        [class.active]="selectedActionStatus === null"
+        [attr.aria-pressed]="selectedActionStatus === null"
+        (click)="onActionStatusChange(null)">
+        <span class="po-filter-chip__icon" aria-hidden="true">
+          <i class="pi pi-inbox"></i>
+        </span>
+        <span>{{ lang === 'ar' ? 'الكل' : 'All' }}</span>
+        <span class="po-filter-chip__count">{{ getAllOffersCount() }}</span>
+      </button>
 
-    <div class="po-toolbar__filters d-flex align-items-start flex-wrap gap-3">
-      <div class="po-filter">
-        <label class="po-filter__label">{{ lang === 'ar' ? 'حالة الإجراء' : 'Action Status' }}</label>
-        <div class="po-filter-chips" role="group"
-          [attr.aria-label]="lang === 'ar' ? 'تصفية حسب حالة الإجراء' : 'Filter by action status'"
-          (wheel)="onChipRailWheel($event)"
-          (pointerdown)="onChipRailPointerDown($event)"
-          (pointermove)="onChipRailPointerMove($event)"
-          (pointerup)="onChipRailPointerUp($event)"
-          (pointercancel)="onChipRailPointerUp($event)">
-          <button type="button"
-            class="po-filter-chip po-filter-chip--all"
-            [class.active]="selectedActionStatus === null"
-            [attr.aria-pressed]="selectedActionStatus === null"
-            (click)="onActionStatusChange(null)">
-            <span class="po-filter-chip__icon">
-              <i class="ki-outline ki-abstract-26 fs-6"></i>
-            </span>
-            <span>{{ lang === 'ar' ? 'الكل' : 'All' }}</span>
-            <span class="po-filter-chip__count">{{ getAllOffersCount() }}</span>
-          </button>
+      <button type="button"
+        *ngFor="let option of actionStatusOptions"
+        class="po-filter-chip"
+        [ngClass]="'po-filter-chip--' + option.value"
+        [class.active]="selectedActionStatus === option.value"
+        [attr.aria-pressed]="selectedActionStatus === option.value"
+        (click)="onActionStatusChange(option.value)">
+        <span class="po-filter-chip__icon" aria-hidden="true">
+          <i class="pi" [ngClass]="option.iconClass"></i>
+        </span>
+        <span>{{ lang === 'ar' ? option.labelAr : option.labelEn }}</span>
+        <span class="po-filter-chip__count">{{ getActionStatusCount(option.value) }}</span>
+      </button>
+    </div>
+  </div>
 
-          <button type="button"
-            *ngFor="let option of actionStatusOptions"
-            class="po-filter-chip"
-            [ngClass]="'po-filter-chip--' + option.value"
-            [class.active]="selectedActionStatus === option.value"
-            [attr.aria-pressed]="selectedActionStatus === option.value"
-            (click)="onActionStatusChange(option.value)">
-            <span class="po-filter-chip__icon">
-              <i class="ki-outline fs-6" [ngClass]="option.iconClass"></i>
-            </span>
-            <span>{{ lang === 'ar' ? option.labelAr : option.labelEn }}</span>
-            <span class="po-filter-chip__count">{{ getActionStatusCount(option.value) }}</span>
-          </button>
-        </div>
+  <div class="po-control-bar">
+    <div class="po-control-bar__left">
+      <span class="po-control-bar__count">
+        <strong>{{ totalRecords }}</strong>
+        {{ lang === 'ar' ? 'عروض' : (totalRecords === 1 ? 'proposal' : 'proposals') }}
+      </span>
+      <span class="po-control-bar__divider" aria-hidden="true"></span>
+      <div class="po-read-toggle" role="group"
+        [attr.aria-label]="lang === 'ar' ? 'تصفية حسب حالة القراءة' : 'Filter by read status'">
+        <button type="button"
+          class="po-read-toggle__btn"
+          [class.active]="selectedReadStatus === null"
+          [attr.aria-pressed]="selectedReadStatus === null"
+          (click)="onReadStatusChange(null)">
+          <i class="ki-outline ki-directbox-default fs-5"></i>
+          <span>{{ lang === 'ar' ? 'الكل' : 'All' }}</span>
+        </button>
+        <button type="button"
+          class="po-read-toggle__btn"
+          [class.active]="selectedReadStatus === 'not_read'"
+          [attr.aria-pressed]="selectedReadStatus === 'not_read'"
+          (click)="onReadStatusChange('not_read')">
+          <i class="ki-outline ki-notification-on fs-5"></i>
+          <span>{{ lang === 'ar' ? 'غير مقروء' : 'Unread' }}</span>
+        </button>
       </div>
-
     </div>
 
-    <div class="po-toolbar__actions d-flex sm-flex-row flex-column justify-content-end align-items-end">
-      <div class="po-view-toggle" role="group" style="max-height: fit-content;">
-        <button type="button" class="po-view-toggle__btn" [class.active]="viewMode === 'grid'"
-          (click)="setViewMode('grid')" [attr.aria-label]="lang === 'ar' ? 'عرض شبكي' : 'Grid view'">
-          <i class="ki-outline ki-element-11 fs-5"></i>
-        </button>
-        <button type="button" class="po-view-toggle__btn" [class.active]="viewMode === 'list'"
-          (click)="setViewMode('list')" [attr.aria-label]="lang === 'ar' ? 'عرض قائمـة' : 'List view'">
-          <i class="ki-outline ki-row-horizontal fs-5"></i>
-        </button>
-      </div>
-
-      <div class="po-filter po-filter--read-status">
-        <div class="po-filter-chips po-filter-chips--read-status" role="group"
-          [attr.aria-label]="lang === 'ar' ? 'تصفية حسب حالة القراءة' : 'Filter by read status'"
-          (wheel)="onChipRailWheel($event)"
-          (pointerdown)="onChipRailPointerDown($event)"
-          (pointermove)="onChipRailPointerMove($event)"
-          (pointerup)="onChipRailPointerUp($event)"
-          (pointercancel)="onChipRailPointerUp($event)">
-          <button type="button"
-            *ngFor="let option of readStatusOptions"
-            class="po-filter-chip"
-            [ngClass]="'po-filter-chip--' + option.value"
-            [class.active]="selectedReadStatus === option.value"
-            [attr.aria-pressed]="selectedReadStatus === option.value"
-            (click)="onReadStatusChange(option.value)">
-            <span class="po-filter-chip__icon">
-              <i class="ki-outline fs-6" [ngClass]="option.iconClass"></i>
-            </span>
-            <span>{{ lang === 'ar' ? option.labelAr : option.labelEn }}</span>
-          </button>
-        </div>
-      </div>
+    <div class="po-view-toggle" role="group">
+      <button type="button" class="po-view-toggle__btn" [class.active]="viewMode === 'grid'"
+        (click)="setViewMode('grid')" [attr.aria-label]="lang === 'ar' ? 'عرض شبكي' : 'Grid view'">
+        <i class="ki-outline ki-element-11 fs-5"></i>
+      </button>
+      <button type="button" class="po-view-toggle__btn" [class.active]="viewMode === 'list'"
+        (click)="setViewMode('list')" [attr.aria-label]="lang === 'ar' ? 'عرض قائمـة' : 'List view'">
+        <i class="ki-outline ki-row-horizontal fs-5"></i>
+      </button>
     </div>
   </div>
 
@@ -129,10 +127,10 @@
     <table class="table align-middle fs-6 po-table">
       <thead>
         <tr class="text-inline-start text-gray-500 fw-semibold fs-8 text-uppercase gs-0">
+          <th class="w-64px"></th>
           <th class="min-w-300px">
             <span class="po-table__heading">
               <span>{{ lang === 'ar' ? 'المشروع' : 'Project' }}</span>
-              <span class="po-table__total-badge">{{ totalRecords }}</span>
             </span>
           </th>
           <th class="min-w-170px">{{ lang === 'ar' ? 'النوع' : 'Type' }}</th>
@@ -153,13 +151,16 @@
             (keydown.enter)="openDrawer(offer)"
             (keydown.space)="$event.preventDefault(); openDrawer(offer)">
           <td>
+            <span class="po-table__project-image">
+              <img src="assets/media/icons/projects/project-row-document.svg" alt="" loading="lazy">
+            </span>
+          </td>
+
+          <td>
             <button type="button" class="po-table__project" (click)="$event.stopPropagation(); openDrawer(offer)">
-              <span class="po-table__project-image">
-                <img
-                  [src]="getOfferImageUrl(offer)"
-                  alt=""
-                  loading="lazy">
-              </span>
+              <span class="po-table__unread-dot"
+                    [class.po-table__unread-dot--visible]="isInsighterUnread(offer)"
+                    aria-hidden="true"></span>
               <span class="po-table__project-copy">
                 <span class="po-table__project-title">
                   {{ offer.project.title }}
@@ -216,7 +217,6 @@
           <th>
             <span class="po-mobile-table__heading">
               <span>{{ lang === 'ar' ? 'المشروع' : 'Project' }}</span>
-              <span class="po-table__total-badge">{{ totalRecords }}</span>
             </span>
           </th>
         </tr>
@@ -233,7 +233,7 @@
           <td>
             <div class="po-mobile-table__main">
               <span class="po-mobile-table__image">
-                <img [src]="getOfferImageUrl(offer)" alt="" loading="lazy">
+                <img src="assets/media/icons/projects/project-row-document.svg" alt="" loading="lazy">
               </span>
               <span class="po-mobile-table__copy">
                 <span class="po-mobile-table__title">{{ offer.project.title }}</span>
@@ -322,7 +322,7 @@
 </ng-template>
 
 <ng-template #typeIcon let-type>
-  <!-- <span class="po-type__icon" [class.po-type__icon--adhoc]="type === 'ad_hoc'"
+  <span class="po-type__icon" [class.po-type__icon--adhoc]="type === 'ad_hoc'"
     [class.po-type__icon--framework]="type === 'frame_work_agreement'"
     [class.po-type__icon--urgent]="type === 'urgent_request'">
     <ng-container [ngSwitch]="type">
@@ -380,7 +380,7 @@
 
       <i *ngSwitchDefault class="ki-outline ki-briefcase fs-7 text-info"></i>
     </ng-container>
-  </span> -->
+  </span>
 </ng-template>
 
 <div *ngIf="isDetailsPage" class="po-details-page">

@@ -883,6 +883,7 @@ export class PrimengHeaderComponent implements OnInit, OnDestroy {
       const events = [
         'account.activated',
         'account.deactivated',
+        'account.stripe.restricted',
         'knowledge.accepted',
         'knowledge.declined',
         'order.insight',
@@ -896,6 +897,7 @@ export class PrimengHeaderComponent implements OnInit, OnDestroy {
         'meeting.insighter_meeting_approved',
         'meeting.insighter_meeting_reminder',
         'meeting.insighter_meeting_client_new',
+        'meeting.insighter_meeting_client_reschedule',
         'requests.action',
         'requests',
         // Project notifications
@@ -904,12 +906,16 @@ export class PrimengHeaderComponent implements OnInit, OnDestroy {
         'project.client.closed',
         'project.insighter.closed',
         'project.client.contract',
+        'project.client.started',
         'project.insighter.contract',
         'project.review.submission',
         'project.review.submission.reviewed',
         'project.file.uploaded',
         'project.service.started',
         'project.discussion.message',
+        'project.insighter.offer.technical-decision',
+        'project.insighter.offer.not-selected',
+        'project.insighter.cancelled',
         'order.project'
       ];
       events.forEach(evt => {

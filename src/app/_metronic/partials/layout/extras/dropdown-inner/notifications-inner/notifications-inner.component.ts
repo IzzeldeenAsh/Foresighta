@@ -72,20 +72,96 @@ export class NotificationsInnerComponent extends BaseComponent implements OnInit
   // the newer font set (not available as inline SVGs). Returns null to fall
   // back to the SVG icon pipe.
   getKeeniconName(alert: Notification): string | null {
-    if (alert.sub_type === 'project_service') {
-      return 'chart-line-star';
-    }
-    if (alert.sub_type === 'project_review_submission') {
-      return 'file-up';
-    }
     if (alert.sub_type === 'project_review_submission_reviewed') {
       const label = (alert.sub_type_value ?? '').toLowerCase();
       const isChanges = label.includes('change') || label.includes('تعديل');
-      if (isChanges) {
-        return 'message-notif';
-      }
+      return isChanges ? 'message-notif' : 'file-added';
     }
-    return null;
+
+    switch (alert.sub_type) {
+      case 'project_proposal':
+      case 'project_proposal_offer':
+        return 'briefcase';
+      case 'project_offer_technical_decision':
+        return this.isRejectedTechnicalDecision(alert)
+          ? 'brifecase-cros'
+          : 'brifecase-tick';
+      case 'project_offer_not_selected':
+      case 'project_cancelled':
+        return 'brifecase-cros';
+      case 'project':
+        return 'clipboard';
+      case 'project_closed':
+        return 'archive';
+      case 'project_service':
+        return 'chart-line-star';
+      case 'project_review_submission':
+        return 'file-up';
+      case 'project_file_uploaded':
+        return 'folder-up';
+      case 'project_discussion':
+        return 'messages';
+      default:
+        return null;
+    }
+  }
+
+  getKeeniconColor(alert: Notification): string {
+    if (alert.sub_type === 'project_review_submission_reviewed') {
+      const label = (alert.sub_type_value ?? '').toLowerCase();
+      return label.includes('change') || label.includes('تعديل') ? 'warning' : 'success';
+    }
+    if (alert.sub_type === 'project_offer_technical_decision') {
+      return this.isRejectedTechnicalDecision(alert) ? 'danger' : 'success';
+    }
+
+    switch (alert.sub_type) {
+      case 'project':
+      case 'project_service':
+        return 'success';
+      case 'project_closed':
+      case 'project_cancelled':
+      case 'project_offer_not_selected':
+        return 'danger';
+      default:
+        return 'info';
+    }
+  }
+
+  private isRejectedTechnicalDecision(alert: Notification): boolean {
+    const message = this.htmlToText((alert?.message ?? '').toString()).toLowerCase();
+    return (
+      message.includes('reject') ||
+      message.includes('declin') ||
+      message.includes('رفض') ||
+      message.includes('مرفوض')
+    );
+  }
+
+  getNotificationTitle(alert: Notification): string | null {
+    const language = this.translationService.getSelectedLanguage();
+    const projectTitles: Record<string, { en: string; ar: string }> = {
+      project_offer_technical_decision: {
+        en: this.isRejectedTechnicalDecision(alert)
+          ? 'Project Offer Technically Rejected'
+          : 'Project Offer Technically Accepted',
+        ar: this.isRejectedTechnicalDecision(alert)
+          ? 'تم رفض عرض المشروع فنياً'
+          : 'تم قبول عرض المشروع فنياً'
+      },
+      project_offer_not_selected: {
+        en: 'Project Offer Not Selected',
+        ar: 'لم يتم اختيار عرض المشروع'
+      },
+      project_cancelled: {
+        en: 'Project Cancelled',
+        ar: 'تم إلغاء المشروع'
+      }
+    };
+    const projectTitle = projectTitles[alert.sub_type];
+    return projectTitle
+      ? (language === 'ar' ? projectTitle.ar : projectTitle.en)
+      : null;
   }
 
   // ---- Message rendering helpers ----
@@ -409,6 +485,7 @@ export class NotificationsInnerComponent extends BaseComponent implements OnInit
       // Client receives, param = project.uuid
       case 'project.client.closed':
       case 'project.client.contract':
+      case 'project.client.started':
       case 'project.review.submission':
         this.navigateTo(param ? `${clientBase}/${param}` : clientBase);
         return true;
@@ -432,6 +509,22 @@ export class NotificationsInnerComponent extends BaseComponent implements OnInit
       case 'project.discussion.message':
         this.navigateToDiscussion(n);
         return true;
+
+      // The backend sends an offer UUID, while the detail route requires the
+      // proposal-match UUID. Use the offers list until the payload exposes it.
+      case 'project.insighter.offer.technical-decision':
+      case 'project.insighter.offer.not-selected':
+        this.navigateTo(offersBase);
+        return true;
+
+      // Cancellation can target either an invited proposal or an active project.
+      // The backend-provided URL is the authoritative destination.
+      case 'project.insighter.cancelled':
+        if (this.navigateToBackendUrl(n.url)) {
+          return true;
+        }
+        this.navigateTo(insighterBase);
+        return true;
     }
 
     // 2) REST fallback (no event_name): distinguish by sub_type; use role where ambiguous.
@@ -444,6 +537,16 @@ export class NotificationsInnerComponent extends BaseComponent implements OnInit
         return true;
       case 'project_review_submission_reviewed':  // insighter, project.uuid
         this.navigateTo(param ? `${insighterBase}/details/${param}` : insighterBase);
+        return true;
+      case 'project_offer_technical_decision':
+      case 'project_offer_not_selected':
+        this.navigateTo(offersBase);
+        return true;
+      case 'project_cancelled':
+        if (this.navigateToBackendUrl(n.url)) {
+          return true;
+        }
+        this.navigateTo(insighterBase);
         return true;
       case 'project_service':                     // service.started (insighter), orderable id
         this.navigateTo(insighterBase);
@@ -459,6 +562,22 @@ export class NotificationsInnerComponent extends BaseComponent implements OnInit
     }
 
     return false;
+  }
+
+  private navigateToBackendUrl(rawUrl?: string): boolean {
+    const raw = (rawUrl ?? '').trim();
+    if (!raw) {
+      return false;
+    }
+
+    try {
+      const parsed = new URL(raw);
+      this.navigateTo(`${parsed.pathname}${parsed.search}`);
+    } catch {
+      this.navigateTo(raw.startsWith('/') ? raw : `/${raw}`);
+    }
+
+    return true;
   }
 
   // `project.discussion.message` carries the full destination URL the backend

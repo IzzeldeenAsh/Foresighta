@@ -66,14 +66,14 @@ export class ProjectsCreatedComponent extends BaseComponent implements OnInit, O
   ];
 
   projectStatusOptions: StatusFilterOption<CreatedProjectStatus>[] = [
-    { value: 'expired', labelEn: 'Expired', labelAr: 'منتهي', iconClass: 'ki-timer' },
-    { value: 'cancelled', labelEn: 'Cancelled', labelAr: 'ملغي', iconClass: 'ki-cross-circle' },
-    { value: 'submitted', labelEn: 'Submitted', labelAr: 'مُرسل', iconClass: 'ki-send' },
-    { value: 'contracting', labelEn: 'Contracting', labelAr: 'العقد', iconClass: 'ki-document' },
-    { value: 'payment', labelEn: 'Payment', labelAr: 'الدفع', iconClass: 'ki-wallet' },
-    { value: 'in_progress', labelEn: 'In Progress', labelAr: 'قيد التنفيذ', iconClass: 'ki-arrows-circle' },
-    { value: 'in_review', labelEn: 'In Review', labelAr: 'قيد المراجعة', iconClass: 'ki-eye' },
-    { value: 'closed', labelEn: 'Closed', labelAr: 'مغلق', iconClass: 'ki-check-circle' },
+    { value: 'expired', labelEn: 'Expired', labelAr: 'منتهي', iconClass: 'pi-clock' },
+    { value: 'cancelled', labelEn: 'Cancelled', labelAr: 'ملغي', iconClass: 'pi-times-circle' },
+    { value: 'submitted', labelEn: 'Submitted', labelAr: 'مُرسل', iconClass: 'pi-send' },
+    { value: 'contracting', labelEn: 'Contracting', labelAr: 'العقد', iconClass: 'pi-file' },
+    { value: 'payment', labelEn: 'Payment', labelAr: 'الدفع', iconClass: 'pi-wallet' },
+    { value: 'in_progress', labelEn: 'In Progress', labelAr: 'قيد التنفيذ', iconClass: 'pi-sync' },
+    { value: 'in_review', labelEn: 'In Review', labelAr: 'قيد المراجعة', iconClass: 'pi-eye' },
+    { value: 'closed', labelEn: 'Closed', labelAr: 'مغلق', iconClass: 'pi-check-circle' },
   ];
   readStatusOptions: StatusFilterOption<CreatedProjectReadStatus>[] = [
     { value: 'not_read', labelEn: 'Unread', labelAr: 'غير مقروء', iconClass: 'ki-notification-on' },

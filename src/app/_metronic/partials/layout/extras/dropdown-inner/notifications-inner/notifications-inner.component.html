@@ -40,7 +40,7 @@
               <app-keenicon
                 *ngIf="getKeeniconName(alert) as kiName; else svgIcon"
                 [name]="kiName"
-                [class]="'fs-2x text-' + (alert.sub_type | notificationsBg : alert.sub_type_value)"
+                [class]="'fs-2x text-' + getKeeniconColor(alert)"
               ></app-keenicon>
               <ng-template #svgIcon>
                 <span
@@ -55,11 +55,16 @@
           <div class="mb-0 me-2">
             <a  class="fs-8 text-info-800 text-hover-info text-capitalize" [ngClass]="{'fw-bolder': !alert.read_at, 'fw-light': alert.read_at}" style="word-break: break-word;">
             
-            <ng-container *ngIf="alert.sub_type_value else default">
-                {{ alert.sub_type_value }}
+              <ng-container *ngIf="getNotificationTitle(alert) as projectTitle; else standardTitle">
+                {{ projectTitle }}
               </ng-container>
-              <ng-template #default>
-                {{ alert.sub_type | notificationsNames }}
+              <ng-template #standardTitle>
+                <ng-container *ngIf="alert.sub_type_value; else defaultTitle">
+                  {{ alert.sub_type_value }}
+                </ng-container>
+                <ng-template #defaultTitle>
+                  {{ alert.sub_type | notificationsNames }}
+                </ng-template>
               </ng-template>
             </a>
             <div
