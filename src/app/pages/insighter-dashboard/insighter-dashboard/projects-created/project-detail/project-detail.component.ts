@@ -182,6 +182,8 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
   reviewSubmissionsLoading = false;
   respondingReviewUuid: string | null = null;
   reviewChangeNotes: Record<string, string> = {};
+  submittedOfferDeadline: string | null = null;
+  currentTime: number = Date.now();
   private documentFilesSubject = new BehaviorSubject<CreatedProjectFile[]>([]);
   private reviewSubmissionsSubject = new BehaviorSubject<ProjectReviewSubmission[]>([]);
   private reviewSubmissionsRequest$: Observable<ProjectReviewSubmission[]> | null = null;
@@ -198,6 +200,8 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
   documentUploadDialogVisible = false;
 
   private rematchMatchDelayTimer: ReturnType<typeof setTimeout> | null = null;
+  private deadlineTicker: ReturnType<typeof setInterval> | null = null;
+  private readonly defaultOfferDeadlineWindowMs = 14 * 86_400_000;
 
   private projectTypeOptions = [
     { key: 'ad_hoc', labelEn: 'Ad Hoc', labelAr: 'خاص' },
@@ -226,6 +230,10 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
     this.projectsCreatedService.isLoading$
       .pipe(takeUntil(this.unsubscribe$))
       .subscribe(loading => this.isLoading = loading);
+
+    this.deadlineTicker = setInterval(() => {
+      this.currentTime = Date.now();
+    }, 60_000);
 
     this.route.paramMap
       .pipe(takeUntil(this.unsubscribe$))
@@ -737,6 +745,127 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
       && !this.offerActionUuid
       && this.isOfferTechnicalAccepted(invite)
       && this.isLastProposalDeadlinePassed();
+  }
+
+  shouldShowSubmittedOfferTimer(project: CreatedProject | null = this.project): boolean {
+    return this.normalizeValue(project?.status) === 'submitted';
+  }
+
+  getSubmittedOfferDeadlineDate(): Date | null {
+    const deadlineTime = this.getDateTime(this.submittedOfferDeadline);
+    return deadlineTime > 0 ? new Date(deadlineTime) : null;
+  }
+
+  getSubmittedOfferRemainingMs(): number {
+    const deadline = this.getSubmittedOfferDeadlineDate();
+    return deadline ? deadline.getTime() - this.currentTime : 0;
+  }
+
+  getSubmittedOfferRemainingDays(): number {
+    const remainingMs = this.getSubmittedOfferRemainingMs();
+    if (remainingMs <= 0) return 0;
+    return Math.ceil(remainingMs / 86_400_000);
+  }
+
+  getSubmittedOfferRemainingHours(): number {
+    const remainingMs = this.getSubmittedOfferRemainingMs();
+    if (remainingMs <= 0) return 0;
+    return Math.max(1, Math.ceil(remainingMs / 3_600_000));
+  }
+
+  getSubmittedOfferTimerValue(): string {
+    if (!this.getSubmittedOfferDeadlineDate()) return '-';
+    if (this.getSubmittedOfferRemainingMs() <= 0) return '0';
+
+    const days = this.getSubmittedOfferRemainingDays();
+    return days > 1 ? `${days}` : `${this.getSubmittedOfferRemainingHours()}`;
+  }
+
+  getSubmittedOfferTimerUnit(): string {
+    if (!this.getSubmittedOfferDeadlineDate()) {
+      return this.lang === 'ar' ? 'غير محدد' : 'no date';
+    }
+
+    if (this.getSubmittedOfferRemainingMs() <= 0) {
+      return this.lang === 'ar' ? 'منتهي' : 'expired';
+    }
+
+    const days = this.getSubmittedOfferRemainingDays();
+    return days > 1
+      ? (this.lang === 'ar' ? 'أيام متبقية' : 'days left')
+      : (this.lang === 'ar' ? 'ساعات متبقية' : 'hours left');
+  }
+
+  getSubmittedOfferTimerHint(): string {
+    if (!this.getSubmittedOfferDeadlineDate()) {
+      return this.lang === 'ar'
+        ? 'لم يتم العثور على موعد نهائي للعروض المرسلة.'
+        : 'No submitted offer deadline was found.';
+    }
+
+    if (this.getSubmittedOfferRemainingMs() <= 0) {
+      return this.lang === 'ar'
+        ? 'انتهت مدة استقبال عروض الخبراء.'
+        : 'The submitted offer window has ended.';
+    }
+
+    return '';
+  }
+
+  getSubmittedOfferDeadlineLabel(): string {
+    const deadline = this.getSubmittedOfferDeadlineDate();
+    if (!deadline) return '-';
+
+    return deadline.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+  }
+
+  getSubmittedOfferDeadlineProgress(): number {
+    const deadline = this.getSubmittedOfferDeadlineDate();
+    if (!deadline) return 0;
+
+    const remainingRatio = Math.max(
+      0,
+      Math.min(1, this.getSubmittedOfferRemainingMs() / this.defaultOfferDeadlineWindowMs)
+    );
+
+    return remainingRatio <= 0 ? 0 : Math.max(6, Math.min(100, Math.round(remainingRatio * 100)));
+  }
+
+  getSubmittedOfferTimerClass(): string {
+    if (!this.getSubmittedOfferDeadlineDate()) return 'pd-offer-timer--neutral';
+
+    const remainingRatio = Math.max(
+      0,
+      Math.min(1, this.getSubmittedOfferRemainingMs() / this.defaultOfferDeadlineWindowMs)
+    );
+    const elapsedRatio = 1 - remainingRatio;
+
+    if (elapsedRatio >= 1) return 'pd-offer-timer--expired';
+    if (elapsedRatio < 1 / 3) return 'pd-offer-timer--healthy';
+    if (elapsedRatio < 2 / 3) return 'pd-offer-timer--warning';
+    return 'pd-offer-timer--danger';
+  }
+
+  getSubmittedOfferTimerColor(): string {
+    switch (this.getSubmittedOfferTimerClass()) {
+      case 'pd-offer-timer--healthy':
+        return '#16a34a';
+      case 'pd-offer-timer--warning':
+        return '#d97706';
+      case 'pd-offer-timer--danger':
+      case 'pd-offer-timer--expired':
+        return '#e11d48';
+      default:
+        return '#98a2b3';
+    }
+  }
+
+  getSubmittedOfferTimerBackground(): string {
+    return `conic-gradient(${this.getSubmittedOfferTimerColor()} ${this.getSubmittedOfferDeadlineProgress()}%, #edf1f7 0)`;
   }
 
   getAwardDisabledReason(invite: CreatedProjectProposalInvite | null): string {
@@ -2541,6 +2670,7 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
   private loadProject(uuid: string): void {
     this.project = null;
     this.invitedInsighters = [];
+    this.submittedOfferDeadline = null;
     this.reviewSubmissions = [];
     this.reviewChangeNotes = {};
     this.documentFilesSubject.next([]);
@@ -2575,6 +2705,7 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
   private loadSubmittedInsighters(projectUuid: string): void {
     if (!projectUuid) {
       this.invitedInsighters = [];
+      this.submittedOfferDeadline = null;
       return;
     }
 
@@ -2583,11 +2714,27 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
       .subscribe({
         next: (result: ProjectMatchListResponse) => {
           this.invitedInsighters = result.submitted || [];
+          this.submittedOfferDeadline = this.getFarthestSubmittedOfferDeadline(this.invitedInsighters);
         },
         error: () => {
           this.invitedInsighters = [];
+          this.submittedOfferDeadline = null;
         },
       });
+  }
+
+  private getFarthestSubmittedOfferDeadline(invites: CreatedProjectProposalInvite[]): string | null {
+    return invites.reduce<{ value: string | null; time: number }>(
+      (latest, invite) => {
+        const time = this.getDateTime(invite.deadline_offer);
+        if (time > latest.time) {
+          return { value: invite.deadline_offer, time };
+        }
+
+        return latest;
+      },
+      { value: null, time: 0 }
+    ).value;
   }
 
   private loadProjectReviewSubmissions(projectUuid: string, force = false): void {
@@ -3294,7 +3441,11 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
       ).getTime();
     }
 
-    const date = new Date(value);
+    const date = new Date(
+      /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(normalized)
+        ? normalized.replace(' ', 'T')
+        : normalized
+    );
     return Number.isNaN(date.getTime()) ? 0 : date.getTime();
   }
 
@@ -3392,6 +3543,10 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
 
   override ngOnDestroy(): void {
     this.clearRematchMatchDelay();
+    if (this.deadlineTicker) {
+      clearInterval(this.deadlineTicker);
+      this.deadlineTicker = null;
+    }
     this.documentFilesSubject.complete();
     this.reviewSubmissionsSubject.complete();
     super.ngOnDestroy();

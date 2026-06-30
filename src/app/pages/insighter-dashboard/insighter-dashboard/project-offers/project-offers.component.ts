@@ -582,7 +582,8 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
       return false;
     }
 
-    return this.getResolvedStatus(offer) !== 'offered';
+    return this.getResolvedStatus(offer) !== 'awarded'
+      && this.getDisplayStatus(offer) !== 'awarded';
   }
 
   isOfferTimedOut(offer: ProjectOffer | null | undefined): boolean {

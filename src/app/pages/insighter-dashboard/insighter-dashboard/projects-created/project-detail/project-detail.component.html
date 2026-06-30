@@ -206,7 +206,7 @@
           <details class="pd-section pd-section--accordion pd-section--scope" *ngIf="p.scopes?.length">
             <summary class="pd-section__head pd-section__summary">
               <span class="pd-section__title-icon" aria-hidden="true"><i class="pi pi-list"></i></span>
-              <h6 class="pd-section__title">{{ lang === 'ar' ? 'النطاقات' : 'Scopes' }}</h6>
+              <h6 class="pd-section__title">{{ lang === 'ar' ? 'نطاقات العمل' : 'Scopes' }}</h6>
               <span class="pd-section__eyebrow">{{ lang === 'ar' ? 'تفاصيل العمل' : 'Work Scope' }}</span>
               <span class="pd-section__chevron" aria-hidden="true">
                 <i class="pi pi-chevron-down"></i>
@@ -743,6 +743,34 @@
           <p class="pd-aside-card__hint">
             {{ getProjectActionsHint(p) }}
           </p>
+
+          <div *ngIf="shouldShowSubmittedOfferTimer(p)"
+               class="d-flex align-items-center gap-3 bg-white border rounded-3 p-4 my-4">
+            <div class="d-grid flex-shrink-0 rounded-circle p-2"
+                 [style.width.px]="82"
+                 [style.height.px]="82"
+                 [style.place-items]="'center'"
+                 [style.background]="getSubmittedOfferTimerBackground()"
+                 [attr.aria-label]="lang === 'ar' ? 'الوقت المتبقي حتى انتهاء استقبال العروض' : 'Time remaining until submitted offer deadline'">
+              <div class="d-flex align-items-center flex-column justify-content-center bg-white rounded-circle text-center"
+                   [style.width.px]="66"
+                   [style.height.px]="66">
+                <strong class="text-dark fw-bold lh-1" [style.font-size.px]="23">{{ getSubmittedOfferTimerValue() }}</strong>
+                <span class="text-gray-600 fw-bold text-uppercase lh-1 mt-1" [style.font-size.px]="9">{{ getSubmittedOfferTimerUnit() }}</span>
+              </div>
+            </div>
+            <div class="min-w-0">
+              <span class="d-block fw-bold text-uppercase mb-1"
+                    [style.color]="getSubmittedOfferTimerColor()"
+                    [style.font-size.px]="10">
+                {{ lang === 'ar' ? 'مهلة العروض' : 'Offer timeout' }}
+              </span>
+              <strong class="d-block text-dark fw-bold text-truncate">{{ getSubmittedOfferDeadlineLabel() }}</strong>
+              <ng-container *ngIf="getSubmittedOfferTimerHint() as submittedOfferTimerHint">
+                <small class="d-block text-gray-600 fw-semibold mt-1">{{ submittedOfferTimerHint }}</small>
+              </ng-container>
+            </div>
+          </div>
 
           <section class="pd-payment-panel"
                    *ngIf="shouldShowProjectPayment(p) && p.order as order"
