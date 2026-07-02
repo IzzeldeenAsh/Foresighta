@@ -14,7 +14,7 @@ export class FooterComponent extends BaseComponent {
     super(injector);
   }
   getFooterLink(): string {
-    const url= 'https://insightabusiness.com/' + this.lang;
+    const url= 'http://localhost:3000/' + this.lang;
     return url;
   }
 }

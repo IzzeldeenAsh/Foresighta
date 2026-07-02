@@ -2,8 +2,8 @@
 
 - Source visual truth: `/var/folders/bp/jypbddkj1g758_mdbfx68vzw0000gn/T/TemporaryItems/NSIRD_screencaptureui_pg5R5S/Screenshot 2026-06-23 at 8.10.05 AM.png`
 - Implementation routes:
-  - `https://app.insightabusiness.com/app/insighter-dashboard/project-offers`
-  - `https://app.insightabusiness.com/app/insighter-dashboard/on-work-projects`
+  - `http://localhost:4200/app/insighter-dashboard/project-offers`
+  - `http://localhost:4200/app/insighter-dashboard/on-work-projects`
 - Implementation screenshots: authenticated Google Chrome Computer Use captures from June 23, 2026 (session-backed; not persisted to the filesystem)
 - Viewport: desktop, approximately 1524 × 768
 - State: proposals populated with two rows; accepted projects verified in its available empty state

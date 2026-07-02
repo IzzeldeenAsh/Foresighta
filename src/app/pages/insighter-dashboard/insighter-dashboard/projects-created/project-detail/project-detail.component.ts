@@ -1660,13 +1660,13 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
   getProfileUrl(insighterUuid: string | null | undefined): string {
     if (!insighterUuid) return '#';
     const locale = this.lang === 'ar' ? 'ar' : 'en';
-    return `https://insightabusiness.com/${locale}/profile/${insighterUuid}?entity=insighter`;
+    return `http://localhost:3000/${locale}/profile/${insighterUuid}?entity=insighter`;
   }
 
   getCompanyProfileUrl(companyUuid: string | null | undefined): string {
     if (!companyUuid) return '#';
     const locale = this.lang === 'ar' ? 'ar' : 'en';
-    return `https://insightabusiness.com/${locale}/profile/${companyUuid}`;
+    return `http://localhost:3000/${locale}/profile/${companyUuid}`;
   }
 
   toggleMatchDetails(matchUuid: string, event?: Event): void {

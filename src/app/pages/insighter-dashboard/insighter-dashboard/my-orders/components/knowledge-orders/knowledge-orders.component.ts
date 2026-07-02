@@ -19,7 +19,7 @@ export class KnowledgeOrdersComponent {
   @Input() totalPages$!: Observable<number>;
   @Input() currentPage = 1;
   @Input() isLoading$!: Observable<boolean>;
-  @Input() clientBaseUrl: string = 'https://insightabusiness.com';
+  @Input() clientBaseUrl: string = 'http://localhost:3000';
   @Input() mode: OrderListMode = 'knowledge';
 
 

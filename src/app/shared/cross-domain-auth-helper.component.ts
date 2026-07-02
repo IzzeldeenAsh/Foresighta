@@ -36,7 +36,7 @@ export class CrossDomainAuthHelperComponent implements OnInit {
    */
   private handleMessage(event: MessageEvent): void {
     // We should add origin validation in production
-    // if (event.origin !== 'https://insightabusiness.com') return;
+    // if (event.origin !== 'http://localhost:3000') return;
     
     const data = event.data;
     if (data && data.type === 'AUTH_TOKEN' && data.token) {

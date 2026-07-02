@@ -71,7 +71,7 @@
                     </ng-container>
                   </div>
                   <a *ngIf="insighter.uuid; else justInsighterName"
-                     [href]="'https://insightabusiness.com/' + lang + '/profile/' + insighter.uuid + '?entity=insighter'"
+                     [href]="'http://localhost:3000/' + lang + '/profile/' + insighter.uuid + '?entity=insighter'"
                      target="_blank"
                      class="text-info text-decoration-none fs-7 me-2">
                     {{ insighter.name }}

@@ -16,7 +16,7 @@ export interface LanguageResponse {
   providedIn: 'root'
 })
 export class LanguagesService {
-  private apiUrl = 'https://api.insightabusiness.com/api/common/setting/language/list';
+  private apiUrl = 'https://api.foresighta.co/api/common/setting/language/list';
   private isLoadingSubject = new BehaviorSubject<boolean>(false);
   public isLoading$: Observable<boolean> = this.isLoadingSubject.asObservable();
   currentLang: string = 'en';
