@@ -3,6 +3,7 @@ import { Observable } from 'rxjs';
 import { Order } from '../../my-orders.service';
 import * as OrderViewUtils from '../../utils/order-view.utils';
 
+import { environment } from '../../../../../../../environments/environment';
 type Language = 'ar' | 'en';
 type OrderListMode = 'knowledge' | 'project';
 
@@ -19,7 +20,7 @@ export class KnowledgeOrdersComponent {
   @Input() totalPages$!: Observable<number>;
   @Input() currentPage = 1;
   @Input() isLoading$!: Observable<boolean>;
-  @Input() clientBaseUrl: string = 'https://insightabusiness.com';
+  @Input() clientBaseUrl: string = environment.mainAppUrl;
   @Input() mode: OrderListMode = 'knowledge';
 
 

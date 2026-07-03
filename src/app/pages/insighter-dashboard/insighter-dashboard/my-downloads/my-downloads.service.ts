@@ -4,6 +4,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { TranslationService } from 'src/app/modules/i18n';
 import { Injectable } from '@angular/core';
 
+import { environment } from '../../../../../environments/environment';
 // Types & Interfaces
 export interface Document {
   uuid: string;
@@ -72,10 +73,10 @@ export interface LibraryStatistics {
   providedIn: 'root'
 })
 export class MyDownloadsService {
-  private readonly API_URL = 'https://api.insightabusiness.com/api/account/library/my-knowledge';
-  private readonly STATISTICS_URL = 'https://api.insightabusiness.com/api/account/library/my-knowledge/statistics';
-  private readonly DOWNLOAD_KNOWLEDGE_URL = 'https://api.insightabusiness.com/api/account/library/my-knowledge/download';
-  private readonly DOWNLOAD_DOCUMENT_URL = 'https://api.insightabusiness.com/api/account/library/my-knowledge/document/download';
+  private readonly API_URL = `${environment.apiBaseUrl}/account/library/my-knowledge`;
+  private readonly STATISTICS_URL = `${environment.apiBaseUrl}/account/library/my-knowledge/statistics`;
+  private readonly DOWNLOAD_KNOWLEDGE_URL = `${environment.apiBaseUrl}/account/library/my-knowledge/download`;
+  private readonly DOWNLOAD_DOCUMENT_URL = `${environment.apiBaseUrl}/account/library/my-knowledge/document/download`;
 
   private isLoadingSubject = new BehaviorSubject<boolean>(false);
   public isLoading$ = this.isLoadingSubject.asObservable();

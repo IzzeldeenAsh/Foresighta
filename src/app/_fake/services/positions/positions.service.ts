@@ -4,6 +4,7 @@ import { BehaviorSubject, Observable, throwError } from 'rxjs';
 import { catchError, finalize, map } from 'rxjs/operators';
 import { TranslationService } from 'src/app/modules/i18n/translation.service';
 
+import { environment } from '../../../../environments/environment';
 export interface Position {
   id: number;
   name: string;
@@ -32,9 +33,9 @@ export interface PaginatedResponse<T> {
   providedIn: 'root'
 })
 export class PositionsService {
-  private apiUrl = 'https://api.insightabusiness.com/api/admin/setting/position';
-  private createApi = 'https://api.insightabusiness.com/api/admin/setting/position';
-  private updateDeleteApi = 'https://api.insightabusiness.com/api/admin/setting/position';
+  private apiUrl = `${environment.apiBaseUrl}/admin/setting/position`;
+  private createApi = `${environment.apiBaseUrl}/admin/setting/position`;
+  private updateDeleteApi = `${environment.apiBaseUrl}/admin/setting/position`;
   private isLoadingSubject = new BehaviorSubject<boolean>(false);
   public isLoading$: Observable<boolean> = this.isLoadingSubject.asObservable();
   currentLang: string = 'en';

@@ -4,6 +4,7 @@ import { BehaviorSubject, Observable, throwError } from 'rxjs';
 import { TranslationService } from 'src/app/modules/i18n/translation.service';
 import { map, catchError, finalize } from 'rxjs/operators';
 
+import { environment } from '../../../../environments/environment';
 export interface Topic {
   id: number;
   name: string;
@@ -57,7 +58,7 @@ export interface PaginatedTopicResponse {
   providedIn: 'root'
 })
 export class TopicsService {
-  private insightaHost = 'https://api.insightabusiness.com';
+  private insightaHost = environment.apiHost;
   private apiUrl = `${this.insightaHost}/api/common/setting/topic/list`;
   private createApi = `${this.insightaHost}/api/admin/setting/topic`;
   private updateDeleteApi = `${this.insightaHost}/api/admin/setting/topic`;

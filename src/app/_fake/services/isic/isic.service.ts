@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { BehaviorSubject, Observable, catchError, finalize, map, throwError } from 'rxjs';
 
+import { environment } from '../../../../environments/environment';
 @Injectable({
   providedIn: 'root'
 })
@@ -42,7 +43,7 @@ export class IsicService {
       'Accept-Language': 'en'
     });
 
-    return this.http.get<any>('https://api.insightabusiness.com/api/common/setting/department/list', { headers }).pipe(
+    return this.http.get<any>(`${environment.apiBaseUrl}/common/setting/department/list`, { headers }).pipe(
       map(res => res),  // Ensure that the response is always an array or fallback to an empty array
       catchError(this.handleError),
       finalize(() => this.setLoading(false))

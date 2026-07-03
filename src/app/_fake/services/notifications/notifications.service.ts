@@ -3,6 +3,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { BehaviorSubject, Observable, catchError, finalize, map, throwError } from 'rxjs';
 import { TranslationService } from 'src/app/modules/i18n';
 
+import { environment } from '../../../../environments/environment';
 interface NotificationData {
   message: string;
   type: string;
@@ -28,7 +29,7 @@ export interface Notification {
   providedIn: 'root'
 })
 export class NotificationsService {
-  private apiUrl = 'https://api.insightabusiness.com/api/account/notification';
+  private apiUrl = `${environment.apiBaseUrl}/account/notification`;
   private isLoadingSubject = new BehaviorSubject<boolean>(false);
   public isLoading$: Observable<boolean> = this.isLoadingSubject.asObservable();
   currentLang: string = 'en';

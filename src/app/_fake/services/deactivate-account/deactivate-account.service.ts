@@ -3,11 +3,12 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { BehaviorSubject, Observable, catchError, finalize, map, throwError } from 'rxjs';
 import { TranslationService } from 'src/app/modules/i18n/translation.service';
 
+import { environment } from '../../../../environments/environment';
 @Injectable({
   providedIn: 'root'
 })
 export class DeactivateAccountService {
-  private readonly baseUrl = 'https://api.insightabusiness.com/api';
+  private readonly baseUrl = environment.apiBaseUrl;
   private isLoadingSubject = new BehaviorSubject<boolean>(false);
   public isLoading$: Observable<boolean> = this.isLoadingSubject.asObservable();
   currentLang: string = "en";

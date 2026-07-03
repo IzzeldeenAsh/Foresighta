@@ -3,6 +3,7 @@ import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { BehaviorSubject, Observable, catchError, finalize, map, throwError } from 'rxjs';
 import { TranslationService } from 'src/app/modules/i18n/translation.service';
 import { RequestResponse } from './request.interface';
+import { environment } from '../../../../environments/environment';
 export interface IVerificationQuestion {
   id: number;
   question: string;
@@ -42,8 +43,8 @@ export interface PaginatedResponse<T> {
   providedIn: 'root'
 })
 export class RequestsService {
-  private apiUrl = 'https://api.insightabusiness.com/api/admin/request'; // POST endpoint for requests
-  private verificationQuestionsUrl = 'https://api.insightabusiness.com/api/common/setting/verification-question/list';
+  private apiUrl = `${environment.apiBaseUrl}/admin/request`; // POST endpoint for requests
+  private verificationQuestionsUrl = `${environment.apiBaseUrl}/common/setting/verification-question/list`;
   private isLoadingSubject = new BehaviorSubject<boolean>(false);
   public isLoading$: Observable<boolean> = this.isLoadingSubject.asObservable();
   private currentLang: string = 'en';
@@ -58,7 +59,7 @@ export class RequestsService {
   }
 
   getRequestVerificationQuestion(requestId: number): Observable<any> {
-    const url = `https://api.insightabusiness.com/api/admin/request/verification/question/${requestId}`;
+    const url = `${environment.apiBaseUrl}/admin/request/verification/question/${requestId}`;
     const headers = new HttpHeaders({
       'Accept': 'application/json',
       'Accept-Language': 'en'
@@ -73,7 +74,7 @@ export class RequestsService {
   }
 
   sendVerificationAnswers(requestId: number, verificationAnswers: VerificationAnswer[]): Observable<any> {
-    const url = `https://api.insightabusiness.com/api/admin/request/action/company/verified/question/${requestId}`;
+    const url = `${environment.apiBaseUrl}/admin/request/action/company/verified/question/${requestId}`;
     const body = {
       verification_answers: verificationAnswers
     };
@@ -232,7 +233,7 @@ export class RequestsService {
       'Accept-Language': 'en'
     });
 
-    const url = `https://api.insightabusiness.com/api/admin/request/action/company/deactivate-delete/${requestId}`;
+    const url = `${environment.apiBaseUrl}/admin/request/action/company/deactivate-delete/${requestId}`;
     const body = {
       staff_notes: staffNotes,
       status: status

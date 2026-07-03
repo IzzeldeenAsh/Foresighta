@@ -5,6 +5,7 @@ import { TranslationService } from 'src/app/modules/i18n';
 
 
 
+import { environment } from '../../../../environments/environment';
 export interface Notification {
   id: string;
   message: string;
@@ -34,7 +35,7 @@ export interface Notification {
   providedIn: 'root'
 })
 export class NotificationsService {
-  private apiUrl = 'https://api.insightabusiness.com/api/account/notification';
+  private apiUrl = `${environment.apiBaseUrl}/account/notification`;
   private isLoadingSubject = new BehaviorSubject<boolean>(false);
   public isLoading$: Observable<boolean> = this.isLoadingSubject.asObservable();
   currentLang: string = 'en';

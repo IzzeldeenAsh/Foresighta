@@ -6,6 +6,7 @@ import { catchError, finalize, map } from 'rxjs/operators';
 import { TranslationService } from 'src/app/modules/i18n/translation.service';
 import { Permission } from '../permissions/permissions.service';
 
+import { environment } from '../../../../environments/environment';
 export interface Role {
   id: number;
   name: string;
@@ -17,10 +18,10 @@ export interface Role {
   providedIn: 'root'
 })
 export class RolesService {
-  private apiUrl = 'https://api.insightabusiness.com/api/admin/account/role/list';
-  private userRoleUrl = 'https://api.insightabusiness.com/api/admin/account/role/user';
-  private rolePermissionsApi = 'https://api.insightabusiness.com/api/admin/account/permission/role';
-  private syncRolePermissionsApi = 'https://api.insightabusiness.com/api/admin/account/permission/role/sync';
+  private apiUrl = `${environment.apiBaseUrl}/admin/account/role/list`;
+  private userRoleUrl = `${environment.apiBaseUrl}/admin/account/role/user`;
+  private rolePermissionsApi = `${environment.apiBaseUrl}/admin/account/permission/role`;
+  private syncRolePermissionsApi = `${environment.apiBaseUrl}/admin/account/permission/role/sync`;
   private isLoadingSubject = new BehaviorSubject<boolean>(false);
   public isLoading$: Observable<boolean> = this.isLoadingSubject.asObservable();
   currentLang: string = 'en';
@@ -117,7 +118,7 @@ export class RolesService {
     });
 
     this.setLoading(true);
-    const url = `https://api.insightabusiness.com/api/admin/account/role/user/sync/${userId}`;
+    const url = `${environment.apiBaseUrl}/admin/account/role/user/sync/${userId}`;
     return this.http.put<any>(url, { roles }, { headers }).pipe(
       catchError(error => this.handleError(error)),
       finalize(() => this.setLoading(false))

@@ -3,6 +3,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { BehaviorSubject, Observable, catchError, finalize, map, throwError } from 'rxjs';
 import { TranslationService } from 'src/app/modules/i18n';
 
+import { environment } from '../../../../../environments/environment';
 export interface KnowledgeDocument {
   file_name: string;
   file_extension: string;
@@ -149,16 +150,16 @@ export interface InsighterStatisticsResponse {
   providedIn: 'root'
 })
 export class MyOrdersService {
-  private readonly API_URL = 'https://api.insightabusiness.com/api/account/order/knowledge';
-  private readonly MEETING_API_URL = 'https://api.insightabusiness.com/api/account/order/meeting';
-  private readonly PROJECT_API_URL = 'https://api.insightabusiness.com/api/account/order/project';
-  private readonly COMPANY_KNOWLEDGE_API_URL = 'https://api.insightabusiness.com/api/company/order/knowledge';
-  private readonly INSIGHTER_KNOWLEDGE_API_URL = 'https://api.insightabusiness.com/api/insighter/order/knowledge';
-  private readonly COMPANY_MEETING_API_URL = 'https://api.insightabusiness.com/api/company/order/meeting';
-  private readonly INSIGHTER_MEETING_API_URL = 'https://api.insightabusiness.com/api/insighter/order/meeting';
-  private readonly COMPANY_PROJECT_API_URL = 'https://api.insightabusiness.com/api/company/order/project';
-  private readonly INSIGHTER_PROJECT_API_URL = 'https://api.insightabusiness.com/api/insighter/order/project';
-  private readonly INSIGHTER_STATISTICS_API_URL = 'https://api.insightabusiness.com/api/insighter/order/statistics';
+  private readonly API_URL = `${environment.apiBaseUrl}/account/order/knowledge`;
+  private readonly MEETING_API_URL = `${environment.apiBaseUrl}/account/order/meeting`;
+  private readonly PROJECT_API_URL = `${environment.apiBaseUrl}/account/order/project`;
+  private readonly COMPANY_KNOWLEDGE_API_URL = `${environment.apiBaseUrl}/company/order/knowledge`;
+  private readonly INSIGHTER_KNOWLEDGE_API_URL = `${environment.apiBaseUrl}/insighter/order/knowledge`;
+  private readonly COMPANY_MEETING_API_URL = `${environment.apiBaseUrl}/company/order/meeting`;
+  private readonly INSIGHTER_MEETING_API_URL = `${environment.apiBaseUrl}/insighter/order/meeting`;
+  private readonly COMPANY_PROJECT_API_URL = `${environment.apiBaseUrl}/company/order/project`;
+  private readonly INSIGHTER_PROJECT_API_URL = `${environment.apiBaseUrl}/insighter/order/project`;
+  private readonly INSIGHTER_STATISTICS_API_URL = `${environment.apiBaseUrl}/insighter/order/statistics`;
 
   private isLoadingSubject = new BehaviorSubject<boolean>(false);
   public isLoading$ = this.isLoadingSubject.asObservable();

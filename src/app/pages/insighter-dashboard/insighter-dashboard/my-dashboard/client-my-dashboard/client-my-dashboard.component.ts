@@ -7,6 +7,7 @@ import { ProfileService } from 'src/app/_fake/services/get-profile/get-profile.s
 import { Subject, takeUntil } from 'rxjs';
 import { TranslateService } from '@ngx-translate/core';
 
+import { environment } from '../../../../../../environments/environment';
 @Component({
   selector: 'app-client-my-dashboard',
   templateUrl: './client-my-dashboard.component.html',
@@ -128,12 +129,12 @@ export class ClientMyDashboardComponent extends BaseComponent implements OnInit,
 
 
   redirectToExperts(): void {
-    window.open(`https://insightabusiness.com/${this.lang}/home?search_type=insighter&accuracy=any`, '_blank');
+    window.open(`${environment.mainAppUrl}/${this.lang}/home?search_type=insighter&accuracy=any`, '_blank');
   }
   redirectToKnowledge(type: string): void {
     const currentLang = this.lang; 
     
-    window.open(`https://insightabusiness.com/${currentLang}/home?search_type=knowledge&type=${type}`, '_blank');
+    window.open(`${environment.mainAppUrl}/${currentLang}/home?search_type=knowledge&type=${type}`, '_blank');
   }
 
   loadWalletBalance(): void {

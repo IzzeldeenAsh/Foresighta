@@ -3,6 +3,7 @@ import { BaseComponent } from 'src/app/modules/base.component';
 import { ReadLaterService, ReadLaterItem, ReadLaterResponse } from './read-later.service';
 import Swal from 'sweetalert2';
 
+import { environment } from '../../../../../environments/environment';
 @Component({
   selector: 'app-read-later',
   templateUrl: './read-later.component.html',
@@ -122,7 +123,7 @@ export class ReadLaterComponent extends BaseComponent implements OnInit {
   }
 
   viewKnowledge(item: ReadLaterItem): void {
-    const url = `https://insightabusiness.com/${this.lang}/knowledge/${item.type}/${item.slug}`;
+    const url = `${environment.mainAppUrl}/${this.lang}/knowledge/${item.type}/${item.slug}`;
     window.open(url, '_blank');
   }
 

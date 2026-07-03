@@ -10,6 +10,7 @@ import Swal from 'sweetalert2';
 import { TranslationService } from "src/app/modules/i18n";
 import { UserRequestsService, UserRequest } from "src/app/_fake/services/user-requests/user-requests.service";
 
+import { environment } from '../../../environments/environment';
 @Component({
   selector: "app-review-insighter-knowledge",
   templateUrl: "./review-insighter-knowledge.component.html",
@@ -151,7 +152,7 @@ export class ReviewInsighterKnowledgeComponent extends BaseComponent implements 
     });
 
     // Using the company API endpoint for getting knowledge
-    const knowledgeSubscription = this.http.get<any>(`https://api.insightabusiness.com/api/company/library/knowledge/${this.knowledgeId}`, { headers })
+    const knowledgeSubscription = this.http.get<any>(`${environment.apiBaseUrl}/company/library/knowledge/${this.knowledgeId}`, { headers })
       .subscribe({
         next: (response) => {
           this.knowledge = response.data;
@@ -343,7 +344,7 @@ export class ReviewInsighterKnowledgeComponent extends BaseComponent implements 
     if (!targetRequestId) { return; }
 
     // Use request ID instead of knowledge ID if available
-    const apiEndpoint = `https://api.insightabusiness.com/api/company/insighter/request/knowledge/accept/${targetRequestId}`;
+    const apiEndpoint = `${environment.apiBaseUrl}/company/insighter/request/knowledge/accept/${targetRequestId}`;
 
     this.http.post(apiEndpoint, body, { headers })
       .subscribe({
@@ -433,7 +434,7 @@ export class ReviewInsighterKnowledgeComponent extends BaseComponent implements 
   getShareableLink(): string {
     const knowledgeType = this.knowledge?.type?.toLowerCase() || 'knowledge';
     const slug = this.knowledge?.slug || '';
-    return `https://insightabusiness.com/${this.lang}/knowledge/${knowledgeType}/${slug}`;
+    return `${environment.mainAppUrl}/${this.lang}/knowledge/${knowledgeType}/${slug}`;
   }
 
   getSocialShareTitle(): string {

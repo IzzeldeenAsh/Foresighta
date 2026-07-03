@@ -1,3 +1,4 @@
+import { environment } from '../../../../../../environments/environment';
 import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
 import { Observable } from 'rxjs';
 import { Order } from '../../my-orders/my-orders.service';
@@ -13,6 +14,7 @@ type SalesListMode = 'knowledge' | 'project';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class SoldKnowledgeDetailsComponent {
+  env = environment;
   @Input() lang: Language = 'en';
   @Input() salesOrders$!: Observable<Order[]>;
   @Input() salesTotalPages$!: Observable<number>;

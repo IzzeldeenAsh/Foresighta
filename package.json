@@ -12,7 +12,9 @@
     "dev:ssr": "ng run demo1:serve-ssr",
     "serve:ssr": "node dist/demo1/server/main.js",
     "build:ssr": "node --max-old-space-size=8192 node_modules/.bin/ng build && node --max-old-space-size=8192 node_modules/.bin/ng run demo1:server",
-    "prerender": "ng run demo1:prerender"
+    "prerender": "ng run demo1:prerender",
+    "build:prod": "node --max-old-space-size=8192 node_modules/.bin/ng build --configuration production",
+    "build:stage": "node --max-old-space-size=8192 node_modules/.bin/ng build --configuration staging"
   },
   "private": true,
   "dependencies": {

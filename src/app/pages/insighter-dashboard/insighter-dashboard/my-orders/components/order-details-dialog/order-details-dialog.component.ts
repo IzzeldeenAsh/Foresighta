@@ -3,6 +3,7 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { Order, PaymentInfo } from '../../my-orders.service';
 import * as OrderViewUtils from '../../utils/order-view.utils';
 
+import { environment } from '../../../../../../../environments/environment';
 type Language = 'ar' | 'en';
 
 @Component({
@@ -14,7 +15,7 @@ type Language = 'ar' | 'en';
 export class OrderDetailsDialogComponent {
   @Input() lang: Language = 'en';
   @Input() order: Order | null = null;
-  @Input() clientBaseUrl: string = 'https://insightabusiness.com';
+  @Input() clientBaseUrl: string = environment.mainAppUrl;
 
   private _visible = false;
 

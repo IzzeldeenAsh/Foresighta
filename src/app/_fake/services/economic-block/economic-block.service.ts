@@ -4,6 +4,7 @@ import { BehaviorSubject, Observable, throwError } from 'rxjs';
 import { catchError, finalize, map } from 'rxjs/operators';
 import { TranslationService } from 'src/app/modules/i18n';
 
+import { environment } from '../../../../environments/environment';
 export interface EconomicBloc {
   id: number;
   name: string;
@@ -35,10 +36,10 @@ export interface AdminEconomicBlocResponse {
   providedIn: 'root'
 })
 export class EconomicBlockService {
-  private apiUrl = 'https://api.insightabusiness.com/api/common/setting/economic-bloc/list';
-  private adminApiUrl = 'https://api.insightabusiness.com/api/admin/setting/economic-bloc';
-  private createApi = 'https://api.insightabusiness.com/api/admin/setting/economic-bloc';
-  private updateDeleteApi = 'https://api.insightabusiness.com/api/admin/setting/economic-bloc';
+  private apiUrl = `${environment.apiBaseUrl}/common/setting/economic-bloc/list`;
+  private adminApiUrl = `${environment.apiBaseUrl}/admin/setting/economic-bloc`;
+  private createApi = `${environment.apiBaseUrl}/admin/setting/economic-bloc`;
+  private updateDeleteApi = `${environment.apiBaseUrl}/admin/setting/economic-bloc`;
   private isLoadingSubject = new BehaviorSubject<boolean>(false);
   public isLoading$: Observable<boolean> = this.isLoadingSubject.asObservable();
   currentLang: string = 'en';

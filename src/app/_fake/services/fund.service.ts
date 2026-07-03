@@ -4,6 +4,7 @@ import { BehaviorSubject, Observable, throwError } from 'rxjs';
 import { catchError, finalize, map } from 'rxjs/operators';
 import { TranslationService } from 'src/app/modules/i18n/translation.service';
 
+import { environment } from '../../../environments/environment';
 export interface InsighterWallet {
   id: number;
   uuid: string;
@@ -124,7 +125,7 @@ export interface PaginatedResponse<T> {
   providedIn: 'root'
 })
 export class FundService {
-  private baseUrl = 'https://api.insightabusiness.com/api/admin/fund';
+  private baseUrl = `${environment.apiBaseUrl}/admin/fund`;
   private isLoadingSubject = new BehaviorSubject<boolean>(false);
   public isLoading$: Observable<boolean> = this.isLoadingSubject.asObservable();
   currentLang: string = 'en';

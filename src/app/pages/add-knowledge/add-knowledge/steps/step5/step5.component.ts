@@ -9,6 +9,7 @@ import { TooltipModule } from 'primeng/tooltip';
 import { PaymentService, PaymentDetailsResponse } from 'src/app/_fake/services/payment/payment.service';
 import { KnowledgeService, Knowledge } from 'src/app/_fake/services/knowledge/knowledge.service';
 
+import { environment } from '../../../../../../environments/environment';
 @Component({
   selector: 'app-step5',
   templateUrl: './step5.component.html',
@@ -769,7 +770,7 @@ export class Step5Component extends BaseComponent implements OnInit {
     if (!this.publishedKnowledge) return '';
     const knowledgeType = this.publishedKnowledge.type?.toLowerCase() || 'statistic';
     const slug = this.publishedKnowledge.slug || '';
-    return `https://insightabusiness.com/${this.lang}/knowledge/${knowledgeType}/${slug}`;
+    return `${environment.mainAppUrl}/${this.lang}/knowledge/${knowledgeType}/${slug}`;
   }
 
   getSocialShareTitle(): string {

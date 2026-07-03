@@ -3,6 +3,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { BehaviorSubject, Observable, catchError, finalize, map, throwError } from 'rxjs';
 import { TranslationService } from 'src/app/modules/i18n/translation.service';
 
+import { environment } from '../../../../environments/environment';
 export interface VerificationQuestion {
   id: number;
   question: string;
@@ -18,9 +19,9 @@ export interface VerificationQuestionResponse {
   providedIn: 'root'
 })
 export class QuestionsService {
-  private apiUrl = 'https://api.insightabusiness.com/api/common/setting/verification-question/list';
-  private createApi = 'https://api.insightabusiness.com/api/admin/setting/verification-question';
-  private updateDeleteApi = 'https://api.insightabusiness.com/api/admin/setting/verification-question';
+  private apiUrl = `${environment.apiBaseUrl}/common/setting/verification-question/list`;
+  private createApi = `${environment.apiBaseUrl}/admin/setting/verification-question`;
+  private updateDeleteApi = `${environment.apiBaseUrl}/admin/setting/verification-question`;
   private isLoadingSubject = new BehaviorSubject<boolean>(false);
   public isLoading$: Observable<boolean> = this.isLoadingSubject.asObservable();
   currentLang: string = 'en';

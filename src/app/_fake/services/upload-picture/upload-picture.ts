@@ -4,11 +4,12 @@ import { MessageService } from 'primeng/api';
 import { catchError } from 'rxjs/operators';
 import { Observable, throwError } from 'rxjs';
 
+import { environment } from '../../../../environments/environment';
 @Injectable({
   providedIn: 'root',
 })
 export class FileUploadService {
-  private uploadUrl = 'https://api.insightabusiness.com/api/account/profile/photo';
+  private uploadUrl = `${environment.apiBaseUrl}/account/profile/photo`;
 
   constructor(private http: HttpClient) { }
 

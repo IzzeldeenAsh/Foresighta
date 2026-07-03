@@ -6,6 +6,7 @@ import { BehaviorSubject, Observable, throwError, of } from 'rxjs';
 import { catchError, finalize, map } from 'rxjs/operators';
 import { TranslationService } from 'src/app/modules/i18n/translation.service';
 
+import { environment } from '../../../../environments/environment';
 export interface Document {
   id: string;
   name: string;
@@ -19,7 +20,7 @@ export interface DocumentResponse {
   providedIn: 'root'
 })
 export class DocumentsService {
-  private apiUrl = 'https://api.insightabusiness.com/api/common/setting/insighter/document-type/list';
+  private apiUrl = `${environment.apiBaseUrl}/common/setting/insighter/document-type/list`;
   private isLoadingSubject = new BehaviorSubject<boolean>(false);
   public isLoading$: Observable<boolean> = this.isLoadingSubject.asObservable();
   currentLang: string = "en";

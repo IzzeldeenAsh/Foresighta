@@ -4,6 +4,7 @@ import { WalletService, Transaction, TransactionResponse, User, ChartDataPoint }
 import { BaseComponent } from 'src/app/modules/base.component';
 import { UIChart } from 'primeng/chart';
 
+import { environment } from '../../../../../environments/environment';
 @Component({
   selector: 'app-wallet',
   templateUrl: './wallet.component.html',
@@ -516,7 +517,7 @@ export class WalletComponent extends BaseComponent implements OnInit, OnDestroy,
   // Profile redirect method
   redirectToProfile(user: User | undefined): void {
     if (user?.uuid) {
-      const profileUrl = `https://insightabusiness.com/${this.lang}/profile/${user.uuid}?entity=insighter`;
+      const profileUrl = `${environment.mainAppUrl}/${this.lang}/profile/${user.uuid}?entity=insighter`;
       window.open(profileUrl, '_blank');
     }
   }

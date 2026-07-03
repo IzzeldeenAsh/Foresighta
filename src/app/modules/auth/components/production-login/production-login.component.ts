@@ -7,6 +7,7 @@ import { ProductionLoginService } from "./production-login.service";
 import { ProductionCookieService } from "./production-cookie.service";
 import { first } from "rxjs/operators";
 
+import { environment } from '../../../../../environments/environment';
 @Component({
   selector: "app-production-login",
   templateUrl: "./production-login.component.html",
@@ -150,7 +151,7 @@ export class ProductionLoginComponent extends BaseComponent implements OnInit, O
         `Path=/`,
         `Max-Age=${60 * 60}`, // 1 hour
         `SameSite=None`,
-        `Domain=.insightabusiness.com`,
+        `Domain=${environment.appDomain}`,
         `Secure`
       ];
     }
@@ -271,11 +272,11 @@ export class ProductionLoginComponent extends BaseComponent implements OnInit, O
 
     if (isLocalhost) {
       // For localhost, use localhost:3000 (typical Next.js dev server)
-      return `https://insightabusiness.com/${this.selectedLang}/home`;
+      return `${environment.mainAppUrl}/${this.selectedLang}/home`;
     }
 
     // For production, redirect to www.insightabusiness.com
-    return `https://www.insightabusiness.com/${this.selectedLang}/home`;
+    return `${environment.mainAppUrl}/${this.selectedLang}/home`;
   }
 
   private handleLoginError(error: any): void {

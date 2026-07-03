@@ -25,6 +25,7 @@ import {
   ChartComponent
 } from 'ng-apexcharts';
 
+import { environment } from '../../../../../../environments/environment';
 interface Insighter {
   id: number;
   name: string;
@@ -743,7 +744,7 @@ export class MyCompanyComponent extends BaseComponent implements OnInit {
 
   navigateToInsighterProfile(insighterId: string, verified: boolean): void {
     if(verified){
-      window.open(`https://insightabusiness.com/${this.lang}/profile/${insighterId}?entity=insighter`, '_blank');
+      window.open(`${environment.mainAppUrl}/${this.lang}/profile/${insighterId}?entity=insighter`, '_blank');
     }else{
       this.showError('Error', 'This insighter is not verified');
     }

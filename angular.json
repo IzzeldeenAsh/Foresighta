@@ -13,7 +13,6 @@
           "strict": true
         }
       },
-      
       "root": "",
       "sourceRoot": "src",
       "prefix": "app",
@@ -23,7 +22,7 @@
           "options": {
             "outputPath": "dist/demo1/browser",
             "allowedCommonJsDependencies": [
-              "object-path", 
+              "object-path",
               "apexcharts",
               "clipboard.js",
               "prismjs",
@@ -58,7 +57,7 @@
             ],
             "scripts": [
               "node_modules/jquery/dist/jquery.min.js",
-               "node_modules/bootstrap/dist/js/bootstrap.bundle.min.js"
+              "node_modules/bootstrap/dist/js/bootstrap.bundle.min.js"
             ]
           },
           "configurations": {
@@ -92,6 +91,27 @@
               "namedChunks": true,
               "preserveSymlinks": true,
               "commonChunk": false
+            },
+            "staging": {
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "6mb",
+                  "maximumError": "10mb"
+                },
+                {
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "35kb",
+                  "maximumError": "50kb"
+                }
+              ],
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.staging.ts"
+                }
+              ],
+              "outputHashing": "all"
             }
           },
           "defaultConfiguration": "production"
@@ -104,6 +124,9 @@
             },
             "development": {
               "buildTarget": "demo1:build:development"
+            },
+            "staging": {
+              "buildTarget": "demo1:build:staging"
             }
           },
           "defaultConfiguration": "development"
@@ -127,7 +150,6 @@
               "src/assets"
             ],
             "styles": [
-           
               "src/styles.scss"
             ],
             "scripts": []
@@ -166,6 +188,15 @@
               "sourceMap": true,
               "extractLicenses": false,
               "vendorChunk": true
+            },
+            "staging": {
+              "outputHashing": "media",
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.staging.ts"
+                }
+              ]
             }
           },
           "defaultConfiguration": "production"

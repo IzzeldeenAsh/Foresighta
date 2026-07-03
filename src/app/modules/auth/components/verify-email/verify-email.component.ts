@@ -6,6 +6,7 @@ import { Subscription } from 'rxjs';
 import { TranslationService } from "src/app/modules/i18n";
 
 
+import { environment } from '../../../../../environments/environment';
 @Component({
   selector: "app-verify-email",
   templateUrl: "./verify-email.component.html",
@@ -25,7 +26,7 @@ export class VerifyEmailComponent extends BaseComponent implements OnInit, OnDes
   error: boolean = false;
   loading: boolean = true;
 
-  private insightaHost: string = "https://api.insightabusiness.com";
+  private insightaHost: string = environment.apiHost;
   verified: boolean = false;
   showSignUpButton: boolean = false;
 
@@ -128,7 +129,7 @@ export class VerifyEmailComponent extends BaseComponent implements OnInit, OnDes
             // so always go through Next.js callback to set token on :3000 domain.
             const token = this.getTokenFromCookie();
             if (token) {
-              window.location.href = `https://insightabusiness.com/${this.lang}/callback?token=${encodeURIComponent(token)}&returnUrl=${encodeURIComponent(signUpReturnUrl)}`;
+              window.location.href = `${environment.mainAppUrl}/${this.lang}/callback?token=${encodeURIComponent(token)}&returnUrl=${encodeURIComponent(signUpReturnUrl)}`;
             } else {
               window.location.href = signUpReturnUrl;
             }
@@ -137,7 +138,7 @@ export class VerifyEmailComponent extends BaseComponent implements OnInit, OnDes
 
           // Fallback: redirect to Next.js callback URL with token from cookies
           const token = this.getTokenFromCookie();
-          window.location.href = `https://insightabusiness.com/${this.lang}/callback/${token}`;
+          window.location.href = `${environment.mainAppUrl}/${this.lang}/callback/${token}`;
           this.verificationStatusKey = 'AUTH.VERIFY_EMAIL.EMAIL_SUCCESSFULLY_VERIFIED';
           this.verificationStatus = this.translationService.getTranslation(this.verificationStatusKey);
           this.verified = true;
@@ -246,7 +247,7 @@ export class VerifyEmailComponent extends BaseComponent implements OnInit, OnDes
         'Path=/',
         'Max-Age=-1',
         'SameSite=None',
-        'Domain=.insightabusiness.com',
+        `Domain=${environment.appDomain}`,
         'Secure'
       ];
     }

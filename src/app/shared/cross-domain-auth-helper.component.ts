@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
+import { environment } from '../../environments/environment';
 @Component({
   selector: 'app-cross-domain-auth-helper',
   standalone: true,
@@ -36,7 +37,7 @@ export class CrossDomainAuthHelperComponent implements OnInit {
    */
   private handleMessage(event: MessageEvent): void {
     // We should add origin validation in production
-    // if (event.origin !== 'https://insightabusiness.com') return;
+    // if (event.origin !== environment.mainAppUrl) return;
     
     const data = event.data;
     if (data && data.type === 'AUTH_TOKEN' && data.token) {

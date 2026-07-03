@@ -1,6 +1,7 @@
 import { Component, Injector, Input } from '@angular/core';
 import { BaseComponent } from 'src/app/modules/base.component';
 
+import { environment } from '../../../../../environments/environment';
 @Component({
   selector: 'app-footer',
   templateUrl: './footer.component.html',
@@ -14,7 +15,7 @@ export class FooterComponent extends BaseComponent {
     super(injector);
   }
   getFooterLink(): string {
-    const url= 'https://insightabusiness.com/' + this.lang;
+    const url= `${environment.mainAppUrl}/` + this.lang;
     return url;
   }
 }

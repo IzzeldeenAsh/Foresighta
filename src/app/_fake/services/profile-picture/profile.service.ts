@@ -2,13 +2,14 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
+import { environment } from '../../../../environments/environment';
 @Injectable({
   providedIn: 'root',
 })
 export class ProfileService {
-  private uploadUrl = 'https://api.insightabusiness.com/api/account/profile/photo';
-  private removeUrl = 'https://api.insightabusiness.com/api/account/profile/photo/remove';
-  private updateLogo = 'https://api.insightabusiness.com/api/account/profile/company/logo';
+  private uploadUrl = `${environment.apiBaseUrl}/account/profile/photo`;
+  private removeUrl = `${environment.apiBaseUrl}/account/profile/photo/remove`;
+  private updateLogo = `${environment.apiBaseUrl}/account/profile/company/logo`;
 
   constructor(private http: HttpClient) { }
 

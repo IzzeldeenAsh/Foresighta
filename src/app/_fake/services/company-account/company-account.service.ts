@@ -4,6 +4,7 @@ import { BehaviorSubject, Observable, throwError } from 'rxjs';
 import { TranslationService } from 'src/app/modules/i18n/translation.service';
 import { map, catchError, finalize } from 'rxjs/operators';
 
+import { environment } from '../../../../environments/environment';
 export interface AccountExistResponse {
   data?: {
     name: string;
@@ -102,7 +103,7 @@ export interface DashboardStatisticsResponse {
   providedIn: 'root'
 })
 export class CompanyAccountService {
-  private insightaHost = 'https://api.insightabusiness.com';
+  private insightaHost = environment.apiHost;
   private accountExistApi = `${this.insightaHost}/api/company/account/exist`;
   private inviteInsighterApi = `${this.insightaHost}/api/company/insighter`;
   private companyOrderKnowledgeStatisticsApi = `${this.insightaHost}/api/company/order/knowledge/statistics`;

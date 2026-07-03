@@ -3,13 +3,14 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { BehaviorSubject, Observable, catchError, finalize, map, throwError } from 'rxjs';
 import { TranslationService } from 'src/app/modules/i18n/translation.service';
 
+import { environment } from '../../../../environments/environment';
 @Injectable({
   providedIn: 'root'
 })
 export class TransferCorporateAccountService {
-  private apiUrl = 'https://api.insightabusiness.com/api/company/transfer/account/invitation';
+  private apiUrl = `${environment.apiBaseUrl}/company/transfer/account/invitation`;
   private isLoadingSubject = new BehaviorSubject<boolean>(false);
-  private searchInsighterUrl = 'https://api.insightabusiness.com/api/insighter/search/insighter';
+  private searchInsighterUrl = `${environment.apiBaseUrl}/insighter/search/insighter`;
   public isLoading$: Observable<boolean> = this.isLoadingSubject.asObservable();
   currentLang: string = "en";
 
@@ -57,7 +58,7 @@ export class TransferCorporateAccountService {
     formData.append('code', code);
 
     this.setLoading(true);
-    return this.http.post<any>('https://api.insightabusiness.com/api/company/transfer/account/verification', formData, { headers }).pipe(
+    return this.http.post<any>(`${environment.apiBaseUrl}/company/transfer/account/verification`, formData, { headers }).pipe(
       map((res) => res),
       catchError((error) => this.handleError(error)),
       finalize(() => this.setLoading(false))

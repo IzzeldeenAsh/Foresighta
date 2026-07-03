@@ -7,6 +7,7 @@ import { ICreateAccount } from '../../create-account.helper';
 import { TranslateService } from '@ngx-translate/core';
 import { CommonService } from 'src/app/_fake/services/common/common.service';
 
+import { environment } from '../../../../../environments/environment';
 @Component({
   selector: 'app-step1',
   templateUrl: './step1.component.html',
@@ -31,7 +32,7 @@ export class Step1Component implements OnInit, OnDestroy {
     // Initial update to parent with default values
     this.updateParentModel(this.defaultValues, this.form.valid);
     const lang = this.translateService.currentLang;
-    this.insighterLink = `https://insightabusiness.com/${lang}/insighter`;
+    this.insighterLink = `${environment.mainAppUrl}/${lang}/insighter`;
   }
 
   initForm() {

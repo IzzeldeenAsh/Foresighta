@@ -5,6 +5,7 @@ import { map, catchError } from 'rxjs';
 import { ProfileService } from 'src/app/_fake/services/get-profile/get-profile.service';
 import { of } from 'rxjs';
 
+import { environment } from '../../../environments/environment';
 @Injectable({ providedIn: 'root' })
 export class authGuard  {
   constructor(
@@ -64,7 +65,7 @@ export class authGuard  {
       map(user => {
         if(user.roles.includes('admin') || user.roles.includes('staff')){
           if (typeof window !== 'undefined') {
-            window.location.replace('https://insightabusiness.com/en/dashboard');
+            window.location.replace(`${environment.mainAppUrl}/en/dashboard`);
           }
           return false;
         }

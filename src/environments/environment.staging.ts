@@ -1,3 +1,5 @@
+// Staging environment — foresighta.co domains, test keys.
+// Used via: ng build --configuration staging
 // This file can be replaced during build by using the `fileReplacements` array.
 // `ng build` replaces `environment.ts` with `environment.prod.ts`.
 // The list of file replacements can be found in `angular.json`.
@@ -10,21 +12,21 @@ export const environment = {
   apiUrl: 'api',
 
   // Realtime (Pusher) configuration
-  pusherKey: (window as any)?.__env?.PUSHER_KEY || '41745ad5e299f4af9e36',
+  pusherKey: (window as any)?.__env?.PUSHER_KEY || '81566bb993a074e07d41',
   pusherCluster: (window as any)?.__env?.PUSHER_CLUSTER || 'eu',
-  pusherAuthEndpoint: (window as any)?.__env?.PUSHER_AUTH_ENDPOINT || 'https://api.insightabusiness.com/broadcasting/auth',
+  pusherAuthEndpoint: (window as any)?.__env?.PUSHER_AUTH_ENDPOINT || 'https://api.foresighta.co/broadcasting/auth',
 
   // API configuration for sharing authentication between domains
-  apiBaseUrl: 'https://api.insightabusiness.com/api',
-  apiHost: 'https://api.insightabusiness.com',
-  appDomain: '.insightabusiness.com',
-  mainAppUrl: 'https://insightabusiness.com',
-  subAppUrl: 'https://app.insightabusiness.com',
+  apiBaseUrl: 'https://api.foresighta.co/api',
+  apiHost: 'https://api.foresighta.co',
+  appDomain: '.foresighta.co',
+  mainAppUrl: 'https://foresighta.co',
+  subAppUrl: 'https://app.foresighta.co',
 
   // Cookie configuration
   cookieOptions: {
     secure: true, // Require HTTPS in production
-    domain: '.insightabusiness.com',
+    domain: '.foresighta.co',
     path: '/',
     sameSite: 'Lax'
   },

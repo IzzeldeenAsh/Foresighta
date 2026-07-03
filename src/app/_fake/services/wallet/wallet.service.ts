@@ -5,6 +5,7 @@ import { map, catchError } from "rxjs/operators";
 import { TranslationService } from "src/app/modules/i18n";
 import { Company } from "./transactions.service";
 
+import { environment } from '../../../../environments/environment';
 export interface WalletBalanceResponse {
   data: {
     balance: number;
@@ -143,7 +144,7 @@ export interface StatisticsResponse {
   providedIn: "root",
 })
 export class WalletService {
-  private readonly BASE_URL = "https://api.insightabusiness.com/api/account/wallet";
+  private readonly BASE_URL = `${environment.apiBaseUrl}/account/wallet`;
   currentLang: string = "";
 
   constructor(

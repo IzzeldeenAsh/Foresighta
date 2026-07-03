@@ -12,6 +12,7 @@ import {
 } from 'rxjs';
 import { TranslationService } from 'src/app/modules/i18n/translation.service';
 
+import { environment } from '../../../../environments/environment';
 export interface ConsultingField {
   id: number;
   name: string;
@@ -25,9 +26,9 @@ export interface ConsultingField {
   providedIn: 'root',
 })
 export class ConsultingFieldsService {
-  private apiUrl = 'https://api.insightabusiness.com/api/common/setting/consulting-field/list';
-  private createApi = 'https://api.insightabusiness.com/api/admin/setting/consulting-field';
-  private updateDeleteApi = 'https://api.insightabusiness.com/api/admin/setting/consulting-field';
+  private apiUrl = `${environment.apiBaseUrl}/common/setting/consulting-field/list`;
+  private createApi = `${environment.apiBaseUrl}/admin/setting/consulting-field`;
+  private updateDeleteApi = `${environment.apiBaseUrl}/admin/setting/consulting-field`;
   private isLoadingSubject = new BehaviorSubject<boolean>(false);
   public isLoading$: Observable<boolean> = this.isLoadingSubject.asObservable();
   currentLang: string = 'en';

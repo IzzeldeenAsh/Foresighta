@@ -6,7 +6,7 @@ import { environment } from '../../../../../environments/environment';
 import { AuthModel } from '../../models/auth.model';
 
 const API_USERS_URL = `auth`;
-const API_GENERALREGISTER = 'https://api.insightabusiness.com/api/auth/register';
+const API_GENERALREGISTER = `${environment.apiBaseUrl}/auth/register`;
 
 @Injectable({
   providedIn: 'root',
@@ -18,7 +18,7 @@ export class AuthHTTPService {
     private http: HttpClient
   ) { }
 
-  private apiUrlLogin = 'https://api.insightabusiness.com/api/auth/login';
+  private apiUrlLogin = `${environment.apiBaseUrl}/auth/login`;
 
   // public methods
   login(email: string, password: string, lang: string): Observable<any> {

@@ -1,3 +1,4 @@
+import { environment } from '../../../../../../environments/environment';
 import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
 import { Observable } from 'rxjs';
 import { Order } from '../../my-orders/my-orders.service';
@@ -12,6 +13,7 @@ type Language = 'ar' | 'en';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class SoldMeetingDetailsComponent {
+  env = environment;
   @Input() lang: Language = 'en';
   @Input() meetingSalesOrders$!: Observable<Order[]>;
   @Input() meetingSalesTotalPages$!: Observable<number>;

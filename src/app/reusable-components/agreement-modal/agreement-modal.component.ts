@@ -9,6 +9,7 @@ import { finalize } from 'rxjs/operators';
 import { GuidelinesService, GuidelineDetail } from '../../_fake/services/guidelines/guidelines.service';
 import { BaseComponent } from 'src/app/modules/base.component';
 
+import { environment } from '../../../environments/environment';
 @Component({
   selector: 'app-agreement-modal',
   standalone: true,
@@ -303,7 +304,7 @@ export class AgreementModalComponent extends BaseComponent implements OnChanges 
       this.submitting = false;
       return;
     }
-    const url = `https://api.insightabusiness.com/api/account/agreement/accept/${finalUuid}`;
+    const url = `${environment.apiBaseUrl}/account/agreement/accept/${finalUuid}`;
     const headers = new HttpHeaders({
       Accept: 'application/json',
       'Accept-Language': this.lang,

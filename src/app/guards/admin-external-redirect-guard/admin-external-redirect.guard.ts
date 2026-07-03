@@ -5,7 +5,8 @@ import { catchError, first, map } from 'rxjs/operators';
 import { ProfileService } from 'src/app/_fake/services/get-profile/get-profile.service';
 import { AuthService } from 'src/app/modules/auth/services/auth.service';
 
-const ADMIN_DASHBOARD_URL = 'https://insightabusiness.com/en/dashboard';
+import { environment } from '../../../environments/environment';
+const ADMIN_DASHBOARD_URL = `${environment.mainAppUrl}/en/dashboard`;
 
 function isTokenExpired(token: string): boolean {
   try {

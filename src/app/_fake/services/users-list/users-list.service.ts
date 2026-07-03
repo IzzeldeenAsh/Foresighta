@@ -5,11 +5,12 @@ import { catchError, finalize, map } from 'rxjs/operators';
 import { TranslationService } from 'src/app/modules/i18n/translation.service';
 import { IKnoldgProfile } from 'src/app/_fake/models/profile.interface';
 
+import { environment } from '../../../../environments/environment';
 @Injectable({
   providedIn: 'root'
 })
 export class UsersListService {
-  private apiUrl = 'https://api.insightabusiness.com/api/admin/account';
+  private apiUrl = `${environment.apiBaseUrl}/admin/account`;
 
   private isLoadingSubject = new BehaviorSubject<boolean>(false);
   public isLoading$ = this.isLoadingSubject.asObservable();

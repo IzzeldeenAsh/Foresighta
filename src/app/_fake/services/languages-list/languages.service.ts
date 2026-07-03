@@ -3,6 +3,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { BehaviorSubject, Observable, catchError, finalize, map, throwError } from 'rxjs';
 import { TranslationService } from '../../../modules/i18n/translation.service';
 
+import { environment } from '../../../../environments/environment';
 export interface Language {
   id: string;
   name: string;
@@ -16,7 +17,7 @@ export interface LanguageResponse {
   providedIn: 'root'
 })
 export class LanguagesService {
-  private apiUrl = 'https://api.insightabusiness.com/api/common/setting/language/list';
+  private apiUrl = `${environment.apiBaseUrl}/common/setting/language/list`;
   private isLoadingSubject = new BehaviorSubject<boolean>(false);
   public isLoading$: Observable<boolean> = this.isLoadingSubject.asObservable();
   currentLang: string = 'en';

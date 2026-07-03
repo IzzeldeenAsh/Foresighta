@@ -4,6 +4,7 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { FileSizePipe } from './file-size.pipe';
 import { trigger, transition, style, animate } from '@angular/animations';
 
+import { environment } from '../../../environments/environment';
 interface FilePreview {
   file: File;
   name: string;
@@ -37,7 +38,7 @@ export class FileUploaderComponent {
   @Input() maxFileSize: number = 10; // MB
   @Input() acceptedFiles: string = '';
   @Input() lang: string = 'en';
-  @Input() uploadUrl: string = 'https://insightabusiness.com';
+  @Input() uploadUrl: string = environment.mainAppUrl;
   @Output() onFileUploaded = new EventEmitter<File[]>();
   @Output() onFileRemoved = new EventEmitter<File>();
 

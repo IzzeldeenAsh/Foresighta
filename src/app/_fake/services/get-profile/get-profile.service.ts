@@ -5,6 +5,7 @@ import { map, catchError, finalize, tap, shareReplay } from "rxjs/operators";
 import { TranslationService } from "src/app/modules/i18n";
 import { Router } from "@angular/router";
 
+import { environment } from '../../../../environments/environment';
 interface UserType {
   id: string;
   name: string;
@@ -18,7 +19,7 @@ interface UserType {
   providedIn: "root",
 })
 export class ProfileService {
-  private readonly API_URL = "https://api.insightabusiness.com/api/account/profile";
+  private readonly API_URL = `${environment.apiBaseUrl}/account/profile`;
   private profileCache$: Observable<any> | null = null;
   private profileSubject = new BehaviorSubject<any | null>(null);
   private isLoadingSubject = new BehaviorSubject<boolean>(false);

@@ -42,6 +42,7 @@ import { CountriesService, Country } from "src/app/_fake/services/countries/coun
 import { ProfileService } from "src/app/_fake/services/get-profile/get-profile.service";
 import { GuidelinesService } from "src/app/_fake/services/guidelines/guidelines.service";
 
+import { environment } from '../../../../../../environments/environment';
 @Component({
   selector: "app-upgrade-to-company",
   templateUrl: "./upgrade-to-company.component.html",
@@ -608,7 +609,7 @@ export class UpgradeToCompanyComponent
     if (email) {
       this.gettingCodeLoader = true;
       const getCodeSub = this.http
-        .post("https://api.insightabusiness.com/api/auth/company/code/send", {
+        .post(`${environment.apiBaseUrl}/auth/company/code/send`, {
           verified_email: email,
         }, {
           headers: {

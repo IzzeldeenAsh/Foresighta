@@ -4,6 +4,7 @@ import { BehaviorSubject, Observable, throwError } from 'rxjs';
 import { catchError, finalize, map } from 'rxjs/operators';
 import { TranslationService } from 'src/app/modules/i18n/translation.service';
 
+import { environment } from '../../../environments/environment';
 export interface Role {
   id: number;
   name: string;
@@ -16,9 +17,9 @@ export interface Role {
   providedIn: 'root'
 })
 export class RolesService {
-  private apiUrl = 'https://api.insightabusiness.com/api/admin/account/role/list';
-  private createApi = 'https://api.insightabusiness.com/api/admin/account/role';
-  private updateDeleteApi = 'https://api.insightabusiness.com/api/admin/account/role';
+  private apiUrl = `${environment.apiBaseUrl}/admin/account/role/list`;
+  private createApi = `${environment.apiBaseUrl}/admin/account/role`;
+  private updateDeleteApi = `${environment.apiBaseUrl}/admin/account/role`;
   private isLoadingSubject = new BehaviorSubject<boolean>(false);
   public isLoading$: Observable<boolean> = this.isLoadingSubject.asObservable();
   currentLang: string = 'en';

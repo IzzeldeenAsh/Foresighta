@@ -4,6 +4,7 @@ import { BehaviorSubject, Observable, throwError, of } from 'rxjs';
 import { catchError, finalize, map } from 'rxjs/operators';
 import { TranslationService } from 'src/app/modules/i18n/translation.service';
 
+import { environment } from '../../../../environments/environment';
 export interface Country {
   id: number;
   region_id: number;
@@ -28,9 +29,9 @@ export interface Country {
   providedIn: 'root'
 })
 export class CountriesService {
-  private apiUrl = 'https://api.insightabusiness.com/api/common/setting/country/list';
-  private createApi = 'https://api.insightabusiness.com/api/admin/setting/country';
-  private updateDeleteApi = 'https://api.insightabusiness.com/api/admin/setting/country';
+  private apiUrl = `${environment.apiBaseUrl}/common/setting/country/list`;
+  private createApi = `${environment.apiBaseUrl}/admin/setting/country`;
+  private updateDeleteApi = `${environment.apiBaseUrl}/admin/setting/country`;
   private isLoadingSubject = new BehaviorSubject<boolean>(false);
   public isLoading$: Observable<boolean> = this.isLoadingSubject.asObservable();
   currentLang: string = 'en';

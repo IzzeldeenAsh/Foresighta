@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { BehaviorSubject, Observable, catchError, finalize, map, throwError } from 'rxjs';
 import { TranslationService } from 'src/app/modules/i18n';
+import { environment } from '../../../../environments/environment';
 // models/type.model.ts
 export interface Type {
   key: string;
@@ -71,8 +72,8 @@ export interface RequestsPageResponse {
   providedIn: 'root'
 })
 export class UserRequestsService {
-  private apiUrl = 'https://api.insightabusiness.com/api/account/request';
-  private insighterRequestsUrl = 'https://api.insightabusiness.com/api/company/insighter/request';
+  private apiUrl = `${environment.apiBaseUrl}/account/request`;
+  private insighterRequestsUrl = `${environment.apiBaseUrl}/company/insighter/request`;
   private isLoadingSubject = new BehaviorSubject<boolean>(false);
   public isLoading$: Observable<boolean> = this.isLoadingSubject.asObservable();
   currentLang: string = 'en';
@@ -232,7 +233,7 @@ export class UserRequestsService {
    * @returns Observable of the request response
    */
   sendActivationRequest(comments: string, parentId: string): Observable<any> {
-    const url = 'https://api.insightabusiness.com/api/company/request/activate';
+    const url = `${environment.apiBaseUrl}/company/request/activate`;
     const formData = new FormData();
     formData.append('comments', comments);
     formData.append('parent_id', parentId);
@@ -256,7 +257,7 @@ export class UserRequestsService {
    * @returns Observable of the request response
    */
   sendVerificationRequest(comments: string, parentId: string): Observable<any> {
-    const url = 'https://api.insightabusiness.com/api/company/request/verified';
+    const url = `${environment.apiBaseUrl}/company/request/verified`;
     const formData = new FormData();
     formData.append('comments', comments);
     formData.append('parent_id', parentId);
@@ -280,7 +281,7 @@ export class UserRequestsService {
    * @returns Observable of the request response
    */
   sendDeactivateAndDeleteRequest(comments: string, parentId: string): Observable<any> {
-    const url = 'https://api.insightabusiness.com/api/company/request/deactivate-delete';
+    const url = `${environment.apiBaseUrl}/company/request/deactivate-delete`;
     const formData = new FormData();
     formData.append('comments', comments);
     formData.append('parent_id', parentId);
@@ -304,7 +305,7 @@ export class UserRequestsService {
    * @returns Observable of the request response
    */
   sendDeactivateAndDeleteRequestInsighter(comments: string, parentId: string): Observable<any> {
-    const url = 'https://api.insightabusiness.com/api/insighter/request/deactivate-delete';
+    const url = `${environment.apiBaseUrl}/insighter/request/deactivate-delete`;
     const formData = new FormData();
     formData.append('comments', comments);
     formData.append('parent_id', parentId);
@@ -328,7 +329,7 @@ export class UserRequestsService {
    * @returns Observable of the request response
    */
   sendReactivateRequest(type: string): Observable<any> {
-    const url = type === 'company' ? 'https://api.insightabusiness.com/api/company/activate' : 'https://api.insightabusiness.com/api/insighter/activate';
+    const url = type === 'company' ? `${environment.apiBaseUrl}/company/activate` : `${environment.apiBaseUrl}/insighter/activate`;
 
     const headers = new HttpHeaders({
       'Accept': 'application/json',
@@ -376,7 +377,7 @@ export class UserRequestsService {
    * @returns Observable of the request response
    */
   sendKnowledgeReviewRequest(comments: string, parentId: string, knowledgeId: string): Observable<any> {
-    const url = 'https://api.insightabusiness.com/api/insighter/request/knowledge/review';
+    const url = `${environment.apiBaseUrl}/insighter/request/knowledge/review`;
 
     const formData = new FormData();
     formData.append('comments', comments);

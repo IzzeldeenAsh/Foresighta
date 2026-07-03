@@ -404,7 +404,7 @@ export class SignUpComponent extends BaseComponent implements OnInit {
         `Path=/`,
         `Max-Age=${60 * 60}`, // 1 hour
         `SameSite=None`,
-        `Domain=.insightabusiness.com`,
+        `Domain=${environment.appDomain}`,
         `Secure`
       ];
     }
@@ -432,7 +432,7 @@ export class SignUpComponent extends BaseComponent implements OnInit {
         `Path=/`,
         `Max-Age=${60 * 60}`, // 1 hour
         `SameSite=None`,
-        `Domain=.insightabusiness.com`,
+        `Domain=${environment.appDomain}`,
         `Secure`
       ];
     }
@@ -461,7 +461,7 @@ export class SignUpComponent extends BaseComponent implements OnInit {
         `Path=/`,
         `Max-Age=${60 * 60}`, // 1 hour
         `SameSite=None`,
-        `Domain=.insightabusiness.com`,
+        `Domain=${environment.appDomain}`,
         `Secure`,
       ];
     }
@@ -702,7 +702,7 @@ export class SignUpComponent extends BaseComponent implements OnInit {
         "Path=/",
         "Max-Age=-1",
         "SameSite=None",
-        "Domain=.insightabusiness.com",
+        `Domain=${environment.appDomain}`,
         "Secure",
       ];
     }
@@ -713,7 +713,7 @@ export class SignUpComponent extends BaseComponent implements OnInit {
     const signUpReturnUrl = this.getSignUpReturnUrlFromCookie();
     const token = this.authService.getTokenFromCookie();
     const lang = this.lang || this.selectedLang || "en";
-    const nextBase = environment.mainAppUrl || "https://insightabusiness.com";
+    const nextBase = environment.mainAppUrl || environment.mainAppUrl;
 
     if (signUpReturnUrl) {
       this.clearSignUpReturnUrlCookie();

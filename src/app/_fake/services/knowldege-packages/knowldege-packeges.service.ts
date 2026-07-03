@@ -3,6 +3,7 @@ import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable, throwError, map, catchError, finalize } from 'rxjs';
 import { TranslationService } from 'src/app/modules/i18n';
 
+import { environment } from '../../../../environments/environment';
 @Injectable({
   providedIn: 'root'
 })
@@ -10,7 +11,7 @@ export class KnowldegePackegesService {
   currentLang: string = 'en';
   private isLoadingSubject = new BehaviorSubject<boolean>(false);
   public isLoading$: Observable<boolean> = this.isLoadingSubject.asObservable();
-  private baseUrl = 'https://api.insightabusiness.com/api/insighter/library';
+  private baseUrl = `${environment.apiBaseUrl}/insighter/library`;
 
   constructor(
     private http: HttpClient,

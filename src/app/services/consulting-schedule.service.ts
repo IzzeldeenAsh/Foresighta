@@ -36,7 +36,7 @@ export interface ScheduleResponse {
   providedIn: 'root'
 })
 export class ConsultingScheduleService {
-  private readonly baseUrl = 'https://api.insightabusiness.com'
+  private readonly baseUrl = environment.apiHost
   private currentLang = signal('en');
 
   constructor(

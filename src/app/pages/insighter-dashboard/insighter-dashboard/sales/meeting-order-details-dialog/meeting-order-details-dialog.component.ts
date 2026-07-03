@@ -1,3 +1,4 @@
+import { environment } from '../../../../../../environments/environment';
 import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { Order, PaymentInfo } from '../../my-orders/my-orders.service';
@@ -12,6 +13,7 @@ type Language = 'ar' | 'en';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class MeetingOrderDetailsDialogComponent {
+  env = environment;
   @Input() lang: Language = 'en';
   @Input() order: Order | null = null;
 

@@ -6,6 +6,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { AuthService } from '../../modules/auth/services/auth.service';
 import { ProfileService } from 'src/app/_fake/services/get-profile/get-profile.service';
 
+import { environment } from '../../../environments/environment';
 @Injectable({ providedIn: 'root' })
 export class PaymentGuard implements CanActivate {
   constructor(
@@ -52,7 +53,7 @@ export class PaymentGuard implements CanActivate {
       'Accept-Language': 'en'
     });
 
-    return this.http.get<any>('https://api.insightabusiness.com/api/insighter/payment/account/details', { headers }).pipe(
+    return this.http.get<any>(`${environment.apiBaseUrl}/insighter/payment/account/details`, { headers }).pipe(
       map(response => {
         if (response && response.data && response.data.primary) {
           const primaryData = response.data.primary;

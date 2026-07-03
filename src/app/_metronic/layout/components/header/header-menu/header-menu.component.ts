@@ -5,8 +5,8 @@ import { LayoutInitService } from '../../../core/layout-init.service';
 import { LayoutService } from '../../../core/layout.service';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { BaseComponent } from 'src/app/modules/base.component';
-import data from 'src/assets/app-settings.json';
 
+import { environment } from '../../../../../../environments/environment';
 interface Industry {
   id: number;
   name: string;
@@ -54,7 +54,7 @@ export class HeaderMenuComponent extends BaseComponent implements OnInit {
       top_sub_industry: 1
     };
 
-    this.http.post<IndustriesResponse>('https://api.insightabusiness.com/api/platform/industries/menu', body, { headers })
+    this.http.post<IndustriesResponse>(`${environment.apiBaseUrl}/platform/industries/menu`, body, { headers })
       .subscribe({
         next: (response) => {
           this.industries = response.data;

@@ -4,6 +4,7 @@ import { BehaviorSubject, Observable, throwError } from 'rxjs';
 import { catchError, finalize, map } from 'rxjs/operators';
 import { TranslationService } from 'src/app/modules/i18n/translation.service';
 
+import { environment } from '../../../../environments/environment';
 export interface Tag {
   id: number;
   name: string;
@@ -77,7 +78,7 @@ export interface CreateSuggestTagResponse {
   providedIn: 'root'
 })
 export class TagsService {
-  private insightaHost = 'https://api.insightabusiness.com';
+  private insightaHost = environment.apiHost;
   private apiUrl = `${this.insightaHost}/api/common/setting/tag/list`;
   private createApi = `${this.insightaHost}/api/admin/setting/tag`;
   private updateDeleteApi = `${this.insightaHost}/api/admin/setting/tag`;

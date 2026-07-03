@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 
+import { environment } from '../environments/environment';
 @Component({
   selector: 'app-cors-test',
   standalone: true,
@@ -37,7 +38,7 @@ export class CorsTestComponent implements OnInit {
     this.result = null;
 
     // Test a specific API endpoint that's causing CORS issues
-    const url = 'https://api.insightabusiness.com/api/common/setting/country/list';
+    const url = `${environment.apiBaseUrl}/common/setting/country/list`;
     const headers = new HttpHeaders({
       'Accept': 'application/json',
       'Content-Type': 'application/json',

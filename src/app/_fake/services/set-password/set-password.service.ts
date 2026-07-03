@@ -3,6 +3,7 @@ import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable, catchError, finalize, map, throwError } from 'rxjs';
 import { TranslationService } from 'src/app/modules/i18n';
 
+import { environment } from '../../../../environments/environment';
 export interface SetPasswordPayload {
   password: string;
   password_confirmation: string;
@@ -13,8 +14,8 @@ export interface SetPasswordPayload {
   providedIn: 'root',
 })
 export class SetPasswordService {
-  private readonly sendCodeUrl = 'https://api.insightabusiness.com/api/account/password/code/send';
-  private readonly setPasswordUrl = 'https://api.insightabusiness.com/api/account/password/set';
+  private readonly sendCodeUrl = `${environment.apiBaseUrl}/account/password/code/send`;
+  private readonly setPasswordUrl = `${environment.apiBaseUrl}/account/password/set`;
 
   private isLoadingSubject = new BehaviorSubject<boolean>(false);
   public isLoading$: Observable<boolean> = this.isLoadingSubject.asObservable();

@@ -6,6 +6,7 @@ import {environment} from 'src/environments/environment';
   templateUrl: './help-drawer.component.html',
 })
 export class HelpDrawerComponent implements OnInit {
+  env = environment;
   appThemeName: string = 'tst';
   appPurchaseUrl: string = 'tstl';
 

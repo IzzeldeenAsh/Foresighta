@@ -18,6 +18,7 @@ import { UserRequestsService, UserRequest } from "src/app/_fake/services/user-re
 import { Meta, Title } from '@angular/platform-browser';
 import { ComponentCanDeactivate } from "src/app/guards/pending-changes.guard";
 
+import { environment } from '../../../../environments/environment';
 @Component({
   selector: "app-view-my-knowledge",
   templateUrl: "./view-my-knowledge.component.html",
@@ -729,7 +730,7 @@ export class ViewMyKnowledgeComponent extends BaseComponent implements OnInit, C
   getShareableLink(): string {
     const knowledgeType = this.knowledge.type?.toLowerCase() || 'statistic';
     const slug = this.knowledge.slug || '';
-    return `https://insightabusiness.com/${this.lang}/knowledge/${knowledgeType}/${slug}`;
+    return `${environment.mainAppUrl}/${this.lang}/knowledge/${knowledgeType}/${slug}`;
   }
 
   getSocialShareTitle(): string {
@@ -985,7 +986,7 @@ export class ViewMyKnowledgeComponent extends BaseComponent implements OnInit, C
         "name": "Insightabusiness.com",
         "logo": {
           "@type": "ImageObject",
-          "url": "https://insightabusiness.com/assets/logo.png"
+          "url": `${environment.mainAppUrl}/assets/logo.png`
         }
       },
       "mainEntityOfPage": {

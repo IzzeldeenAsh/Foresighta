@@ -7,6 +7,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { BaseComponent } from 'src/app/modules/base.component';
 import Swal from 'sweetalert2';
 
+import { environment } from '../../../../environments/environment';
 @Component({
   selector: 'app-review-knowledge-details',
   templateUrl: './review-knowledge-details.component.html',
@@ -25,7 +26,7 @@ export class ReviewKnowledgeDetailsComponent extends BaseComponent implements On
   documents: any[] = [];
   activeDocumentId: number | null = null;
   knowledge: any;
-  private readonly DOWNLOAD_DOCUMENT_URL = 'https://api.insightabusiness.com/api/company/insighter/knowledge/document/download';
+  private readonly DOWNLOAD_DOCUMENT_URL = `${environment.apiBaseUrl}/company/insighter/knowledge/document/download`;
 
   constructor(
     injector: Injector,
@@ -61,7 +62,7 @@ export class ReviewKnowledgeDetailsComponent extends BaseComponent implements On
         });
 
         // Use company API endpoint to get knowledge data
-        this.http.get<any>(`https://api.insightabusiness.com/api/company/library/knowledge/${this.knowledgeId}`, { headers })
+        this.http.get<any>(`${environment.apiBaseUrl}/company/library/knowledge/${this.knowledgeId}`, { headers })
           .subscribe({
             next: (response) => {
               this.knowledge = response.data;

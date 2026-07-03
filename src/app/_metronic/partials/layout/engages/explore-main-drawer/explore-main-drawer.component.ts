@@ -6,6 +6,7 @@ import { environment } from 'src/environments/environment';
   templateUrl: './explore-main-drawer.component.html',
 })
 export class ExploreMainDrawerComponent implements OnInit {
+  env = environment;
   appThemeName: string = 'sts';
   appPurchaseUrl: string ='sts';
   appPreviewUrl: string ='sts';

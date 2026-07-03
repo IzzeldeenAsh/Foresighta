@@ -4,12 +4,13 @@ import { Observable, throwError, BehaviorSubject } from 'rxjs';
 import { catchError, finalize, map } from 'rxjs/operators';
 import { TranslationService } from 'src/app/modules/i18n/translation.service';
 
+import { environment } from '../../../../environments/environment';
 @Injectable({
   providedIn: 'root'
 })
 export class PasswordResetService {
-  private forgetPasswordUrl = 'https://api.insightabusiness.com/api/auth/password/forget';
-  private resetPasswordUrl = 'https://api.insightabusiness.com/api/auth/password/reset';
+  private forgetPasswordUrl = `${environment.apiBaseUrl}/auth/password/forget`;
+  private resetPasswordUrl = `${environment.apiBaseUrl}/auth/password/reset`;
   private isLoadingSubject = new BehaviorSubject<boolean>(false);
   public isLoading$ = this.isLoadingSubject.asObservable();
   currentLang: string = 'en';

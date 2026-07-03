@@ -3,6 +3,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { BehaviorSubject, Observable, catchError, finalize, map, throwError } from 'rxjs';
 import { TranslationService } from 'src/app/modules/i18n';
 
+import { environment } from '../../../../../environments/environment';
 export interface Insighter {
   uuid: string;
   name: string;
@@ -60,7 +61,7 @@ export interface ReadLaterResponse {
   providedIn: 'root'
 })
 export class ReadLaterService {
-  private readonly API_URL = 'https://api.insightabusiness.com/api/account/favorite/knowledge';
+  private readonly API_URL = `${environment.apiBaseUrl}/account/favorite/knowledge`;
 
   private isLoadingSubject = new BehaviorSubject<boolean>(false);
   public isLoading$ = this.isLoadingSubject.asObservable();

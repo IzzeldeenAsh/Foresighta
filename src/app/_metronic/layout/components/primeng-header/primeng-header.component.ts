@@ -59,6 +59,7 @@ interface IndustriesResponse {
   ]
 })
 export class PrimengHeaderComponent implements OnInit, OnDestroy {
+  env = environment;
   @ViewChild('mobileUserDropdown') mobileUserDropdown: ElementRef;
   @ViewChild('mobileUserDropdownMenu') mobileUserDropdownMenu: ElementRef;
   @ViewChild('userDropdownMenu') userDropdownMenu: ElementRef;
@@ -118,7 +119,7 @@ export class PrimengHeaderComponent implements OnInit, OnDestroy {
     searchParams.set('search_type', searchType);
 
     // Navigate to the React app's search page
-    const searchUrl = `https://insightabusiness.com/${this.lang}/home?${searchParams.toString()}`;
+    const searchUrl = `${environment.mainAppUrl}/${this.lang}/home?${searchParams.toString()}`;
     window.location.href = searchUrl;
   }
 
@@ -430,7 +431,7 @@ export class PrimengHeaderComponent implements OnInit, OnDestroy {
       top_sub_industry: 1
     };
 
-    this.http.post<IndustriesResponse>('https://api.insightabusiness.com/api/platform/industries/menu', body, { headers })
+    this.http.post<IndustriesResponse>(`${environment.apiBaseUrl}/platform/industries/menu`, body, { headers })
       .subscribe({
         next: (response) => {
           this.industries = response.data;
@@ -442,7 +443,7 @@ export class PrimengHeaderComponent implements OnInit, OnDestroy {
   }
 
   getIndustryUrl(industry: Industry): string {
-    return `https://insightabusiness.com/${this.lang}/industry/${industry.id}/${industry.slug}`;
+    return `${environment.mainAppUrl}/${this.lang}/industry/${industry.id}/${industry.slug}`;
   }
 
   initializeMenu() {
@@ -468,7 +469,7 @@ export class PrimengHeaderComponent implements OnInit, OnDestroy {
         iconClass: 'text-primary',
         iconType: 'outline',
         expanded: false,
-        routerLink: `https://insightabusiness.com/${this.lang}/industries/report`
+        routerLink: `${environment.mainAppUrl}/${this.lang}/industries/report`
       },
       {
         label: this.translate.instant('MENU.INSIGHTS'),
@@ -476,7 +477,7 @@ export class PrimengHeaderComponent implements OnInit, OnDestroy {
         iconClass: 'text-primary',
         iconType: 'outline',
         expanded: false,
-        routerLink: `https://insightabusiness.com/${this.lang}/industries/insight`
+        routerLink: `${environment.mainAppUrl}/${this.lang}/industries/insight`
       },
 
       {
@@ -485,7 +486,7 @@ export class PrimengHeaderComponent implements OnInit, OnDestroy {
         iconClass: 'text-primary',
         iconType: 'outline',
         expanded: false,
-        routerLink: `https://insightabusiness.com/${this.lang}/industries/data`
+        routerLink: `${environment.mainAppUrl}/${this.lang}/industries/data`
       },
       {
         label: this.translate.instant('MENU.MANUAL'),
@@ -493,7 +494,7 @@ export class PrimengHeaderComponent implements OnInit, OnDestroy {
         iconClass: 'text-primary',
         iconType: 'outline',
         expanded: false,
-        routerLink: `https://insightabusiness.com/${this.lang}/industries/manual`
+        routerLink: `${environment.mainAppUrl}/${this.lang}/industries/manual`
       },
       {
         label: this.translate.instant('MENU.COURSES'),
@@ -501,7 +502,7 @@ export class PrimengHeaderComponent implements OnInit, OnDestroy {
         iconClass: 'text-primary',
         iconType: 'outline',
         expanded: false,
-        routerLink: `https://insightabusiness.com/${this.lang}/industries/course`
+        routerLink: `${environment.mainAppUrl}/${this.lang}/industries/course`
       }
     ];
 
@@ -619,7 +620,7 @@ export class PrimengHeaderComponent implements OnInit, OnDestroy {
       //   'Accept-Language': this.lang || 'en'
       // });
 
-      // this.http.put('https://api.insightabusiness.com/api/account/notification/read', {}, { headers })
+      // this.http.put(`${environment.apiBaseUrl}/account/notification/read`, {}, { headers })
       //   .subscribe({
       //     next: () => {
       //       // Refresh notifications from API

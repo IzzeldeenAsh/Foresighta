@@ -3,12 +3,13 @@ import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable, catchError, finalize, map, throwError } from 'rxjs';
 import { TranslationService } from 'src/app/modules/i18n';
 
+import { environment } from '../../../../environments/environment';
 @Injectable({
   providedIn: 'root'
 })
 export class InsighterRegistraionService {
-  private individuial_insighter = 'https://api.insightabusiness.com/api/account/insighter/individual/register'
-  private company_insighter = 'https://api.insightabusiness.com/api/account/insighter/company/register'
+  private individuial_insighter = `${environment.apiBaseUrl}/account/insighter/individual/register`
+  private company_insighter = `${environment.apiBaseUrl}/account/insighter/company/register`
   private isLoadingSubject = new BehaviorSubject<boolean>(false);
   public isLoading$: Observable<boolean> =
     this.isLoadingSubject.asObservable();

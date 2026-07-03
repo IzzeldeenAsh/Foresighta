@@ -17,6 +17,7 @@ import { HttpClient, HttpHeaders } from "@angular/common/http";
   styleUrls: ["./login.component.scss"],
 })
 export class LoginComponent extends BaseComponent implements OnInit, OnDestroy {
+  env = environment;
   private readonly angularRoutePrefixes = [
     "/app/",
     "/admin-dashboard/",
@@ -321,7 +322,7 @@ export class LoginComponent extends BaseComponent implements OnInit, OnDestroy {
     const effectiveLang = this.selectedLang || 'en';
     this.cookieService.setPreferredLanguage(effectiveLang);
 
-    window.location.href = `https://insightabusiness.com/${effectiveLang}/dashboard`;
+    window.location.href = `${environment.mainAppUrl}/${effectiveLang}/dashboard`;
   }
 
   private setReturnUrlCookie(url: string): void {
@@ -341,7 +342,7 @@ export class LoginComponent extends BaseComponent implements OnInit, OnDestroy {
         `Path=/`,
         `Max-Age=${60 * 60}`, // 1 hour
         `SameSite=None`,
-        `Domain=.insightabusiness.com`,
+        `Domain=${environment.appDomain}`,
         `Secure`
       ];
     }
@@ -428,7 +429,7 @@ export class LoginComponent extends BaseComponent implements OnInit, OnDestroy {
         'Accept': 'application/json',
         'Accept-Language': this.selectedLang || 'en',
       });
-      return this.http.post('https://api.insightabusiness.com/api/account/timezone/set',
+      return this.http.post(`${environment.apiBaseUrl}/account/timezone/set`,
         { timezone: userTimezone },
         { headers }
       );

@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 
+import { environment } from '../../environments/environment';
 export interface CookieOptions {
   domain?: string;
   path?: string;
@@ -13,7 +14,7 @@ export interface CookieOptions {
   providedIn: 'root'
 })
 export class CookieService {
-  private readonly DEFAULT_DOMAIN = '.insightabusiness.com';
+  private readonly DEFAULT_DOMAIN = environment.appDomain;
   private readonly DEFAULT_PATH = '/';
   private readonly DEFAULT_MAX_AGE = 60 * 60 * 24 * 365; // 1 year
 

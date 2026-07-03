@@ -12,6 +12,7 @@ import { IndustryService } from 'src/app/_fake/services/industries/industry.serv
 import { ConsultingFieldTreeService } from 'src/app/_fake/services/consulting-fields-tree/consulting-fields-tree.service';
 import { TreeNode } from 'src/app/reusable-components/shared-tree-selector/TreeNode';
 import { CountriesService, Country } from 'src/app/_fake/services/countries/countries.service';
+import { environment } from '../../../../../environments/environment';
 @Component({
   selector: 'app-step2',
   templateUrl: './step2.component.html',
@@ -70,7 +71,7 @@ export class Step2Component implements OnInit, OnChanges, OnDestroy {
 
       return timer(500).pipe( // Debounce for 500ms
         switchMap(() => {
-          return this.http.post<{ exists: boolean }>('https://api.insightabusiness.com/api/account/insighter/company/name-exists', {
+          return this.http.post<{ exists: boolean }>(`${environment.apiBaseUrl}/account/insighter/company/name-exists`, {
             legal_name: control.value.trim()
           }, {
             headers: new HttpHeaders({

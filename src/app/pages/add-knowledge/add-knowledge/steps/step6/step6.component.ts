@@ -6,6 +6,7 @@ import { KnowledgeService, Knowledge } from 'src/app/_fake/services/knowledge/kn
 import { TranslateService } from '@ngx-translate/core';
 import { ProjectProgressCelebrationService } from 'src/app/reusable-components/project-progress-celebration/project-progress-celebration.service';
 
+import { environment } from '../../../../../../environments/environment';
 @Component({
   selector: 'app-step6',
   templateUrl: './step6.component.html',
@@ -289,7 +290,7 @@ export class Step6Component extends BaseComponent implements OnInit {
     if (!this.publishedKnowledge) return '';
     const knowledgeType = this.publishedKnowledge.type?.toLowerCase() || 'statistic';
     const slug = this.publishedKnowledge.slug || '';
-    return `https://insightabusiness.com/${this.lang}/knowledge/${knowledgeType}/${slug}`;
+    return `${environment.mainAppUrl}/${this.lang}/knowledge/${knowledgeType}/${slug}`;
   }
 
   getSocialShareTitle(): string {

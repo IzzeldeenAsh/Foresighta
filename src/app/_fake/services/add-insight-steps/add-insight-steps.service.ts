@@ -5,6 +5,7 @@ import { catchError, finalize, map, tap } from "rxjs/operators";
 import { TranslationService } from "src/app/modules/i18n";
 import { KnowledgeService } from "../knowledge/knowledge.service";
 
+import { environment } from '../../../../environments/environment';
 export interface CreateKnowledgeRequest {
   type: string;
   title: string;
@@ -155,7 +156,7 @@ export interface DocumentUploadResponse {
   providedIn: "root",
 })
 export class AddInsightStepsService {
-  private insightaHost = "https://api.insightabusiness.com";
+  private insightaHost = environment.apiHost;
   private apiUrl = `${this.insightaHost}/api/insighter/library/knowledge`;
   private suggestTopicUrl = `${this.insightaHost}/api/insighter/topic/suggest`;
 
@@ -597,7 +598,7 @@ export class AddInsightStepsService {
 
     this.setLoading(true);
     return this.http
-      .put(`https://api.insightabusiness.com/api/insighter/library/knowledge/abstract/document/${knowledgeId}`, request, {
+      .put(`${environment.apiBaseUrl}/insighter/library/knowledge/abstract/document/${knowledgeId}`, request, {
         headers,
       })
       .pipe(

@@ -3,11 +3,12 @@ import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable, catchError, finalize, map, throwError } from 'rxjs';
 import { TranslationService } from 'src/app/modules/i18n';
 
+import { environment } from '../../../../environments/environment';
 @Injectable({
   providedIn: 'root'
 })
 export class ChangePasswordService {
-  private apiUrl = 'https://api.insightabusiness.com/api/account/password/change';
+  private apiUrl = `${environment.apiBaseUrl}/account/password/change`;
   private isLoadingSubject = new BehaviorSubject<boolean>(false);
   public isLoading$: Observable<boolean> = this.isLoadingSubject.asObservable();
   currentLang: string = 'en'

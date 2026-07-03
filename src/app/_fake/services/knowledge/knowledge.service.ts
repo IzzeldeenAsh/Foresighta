@@ -5,6 +5,7 @@ import { catchError, finalize, map, tap } from 'rxjs/operators';
 import { TranslationService } from 'src/app/modules/i18n';
 import { DocumentListResponse, DocumentUrlResponse, RawDocumentListResponse, Chapter } from '../add-insight-steps/add-insight-steps.service';
 
+import { environment } from '../../../../environments/environment';
 export interface Tag {
   id: number;
   name: string;
@@ -120,7 +121,7 @@ export interface KnowledgeStatusStatisticsResponse {
   providedIn: 'root'
 })
 export class KnowledgeService {
-  private baseUrl = 'https://api.insightabusiness.com';
+  private baseUrl = environment.apiHost;
   private apiUrl = `${this.baseUrl}/api/insighter/library/knowledge`;
   private isLoadingSubject = new BehaviorSubject<boolean>(false);
   public isLoading$: Observable<boolean> = this.isLoadingSubject.asObservable();

@@ -87,7 +87,9 @@ npm run serve:ssr          # Serve SSR build
 
 ### Environment Configuration
 
-Development uses mock services (`isMockEnabled: true`) with local API endpoints. Production connects to `https://api.insightabusiness.com/api`.
+All environment-specific values (API URLs, app URLs, cookie domain, Pusher keys) live in `src/environments/environment.ts` (local dev), `environment.staging.ts` (foresighta.co), and `environment.prod.ts` (insightabusiness.com), selected via `ng build --configuration staging|production` (`fileReplacements` in angular.json). Never hardcode environment URLs in code or templates — use `environment.apiBaseUrl`, `environment.apiHost`, `environment.mainAppUrl` (Next.js app), `environment.subAppUrl` (this app), `environment.appDomain`.
+
+Build commands: `npm run build:prod`, `npm run build:stage`.
 
 Cookie configuration supports cross-subdomain authentication with secure settings for production deployment.
 
