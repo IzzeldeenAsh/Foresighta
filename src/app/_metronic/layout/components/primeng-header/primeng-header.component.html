@@ -113,11 +113,11 @@
               [style.padding-right]="lang === 'ar' ? '12px' : '40px'"
             />
             <button 
+              *ngIf="hasSearchQuery()"
               type="button" 
               class="btn btn-link search-icon-btn"
               [class.search-icon-right]="lang !== 'ar'"
               [class.search-icon-left]="lang === 'ar'"
-              [disabled]="!hasSearchQuery()"
               (click)="handleSearch()"
             >
               <i class="ki-outline ki-magnifier fs-3"></i>
