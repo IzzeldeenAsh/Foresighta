@@ -112,10 +112,12 @@ export class PrimengHeaderComponent implements OnInit, OnDestroy {
    * @param searchType Type of search (knowledge or insighter)
    */
   handleSearch(query: string = this.searchQuery, searchType: 'knowledge' | 'insighter' = 'knowledge') {
-    const searchParams = new URLSearchParams();
-    if (query.trim()) {
-      searchParams.set('keyword', query.trim());
+    if (!query.trim()) {
+      return;
     }
+
+    const searchParams = new URLSearchParams();
+    searchParams.set('keyword', query.trim());
     searchParams.set('search_type', searchType);
 
     // Navigate to the React app's search page
@@ -148,6 +150,10 @@ export class PrimengHeaderComponent implements OnInit, OnDestroy {
   onSearchInput(event: Event) {
     const target = event.target as HTMLInputElement;
     this.searchQuery = target.value;
+  }
+
+  hasSearchQuery(): boolean {
+    return this.searchQuery.trim().length > 0;
   }
 
   /**

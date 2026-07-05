@@ -744,7 +744,11 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
     return !!invite?.offer?.uuid
       && !this.offerActionUuid
       && this.isOfferTechnicalAccepted(invite)
-      && this.isLastProposalDeadlinePassed();
+      && (this.hasSingleSubmittedOffer() || this.isLastProposalDeadlinePassed());
+  }
+
+  hasSingleSubmittedOffer(): boolean {
+    return this.invitedInsighters.length === 1;
   }
 
   shouldShowSubmittedOfferTimer(project: CreatedProject | null = this.project): boolean {
@@ -875,7 +879,7 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
         : 'The offer can only be awarded after it is technically accepted.';
     }
 
-    if (!this.isLastProposalDeadlinePassed()) {
+    if (!this.hasSingleSubmittedOffer() && !this.isLastProposalDeadlinePassed()) {
       return this.lang === 'ar'
         ? 'يمكن ترسية العرض بعد انتهاء الموعد النهائي لاستلام العروض.'
         : 'The offer can be awarded once the proposal deadline has passed.';

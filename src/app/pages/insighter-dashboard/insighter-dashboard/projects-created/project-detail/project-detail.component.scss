@@ -1094,6 +1094,49 @@
   }
 }
 
+.pd-offer-timer__ring {
+  position: relative;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border: 1px solid #edf1f7;
+    border-top-color: var(--pd-timer-color);
+    border-radius: inherit;
+    animation: pd-offer-timer-spin 1.8s linear infinite;
+  }
+}
+
+.pd-offer-timer--danger {
+  .pd-offer-timer__ring {
+    animation: pd-offer-timer-pulse 1.25s ease-in-out infinite;
+  }
+}
+
+.pd-offer-timer--expired {
+  .pd-offer-timer__ring::before {
+    animation: none;
+  }
+}
+
+@keyframes pd-offer-timer-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pd-offer-timer-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.035);
+  }
+}
+
 .pd-action-panel {
   margin-top: 18px;
   padding: 18px;

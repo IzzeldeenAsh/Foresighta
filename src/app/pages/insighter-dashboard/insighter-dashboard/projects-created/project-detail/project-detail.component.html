@@ -745,8 +745,10 @@
           </p>
 
           <div *ngIf="shouldShowSubmittedOfferTimer(p)"
-               class="d-flex align-items-center gap-3 bg-white border rounded-3 p-4 my-4">
-            <div class="d-grid flex-shrink-0 rounded-circle p-2"
+               class="pd-offer-timer d-flex align-items-center gap-3 bg-white border rounded-3 p-4 my-4"
+               [ngClass]="getSubmittedOfferTimerClass()"
+               [style.--pd-timer-color]="getSubmittedOfferTimerColor()">
+            <div class="pd-offer-timer__ring d-grid flex-shrink-0 rounded-circle p-2"
                  [style.width.px]="82"
                  [style.height.px]="82"
                  [style.place-items]="'center'"
@@ -762,7 +764,8 @@
             <div class="min-w-0">
               <span class="d-block fw-bold text-uppercase mb-1"
                     [style.color]="getSubmittedOfferTimerColor()"
-                    [style.font-size.px]="10">
+                    [style.font-size.px]="10"
+                    [style.letter-spacing]="0">
                 {{ lang === 'ar' ? 'مهلة العروض' : 'Offer timeout' }}
               </span>
               <strong class="d-block text-dark fw-bold text-truncate">{{ getSubmittedOfferDeadlineLabel() }}</strong>
