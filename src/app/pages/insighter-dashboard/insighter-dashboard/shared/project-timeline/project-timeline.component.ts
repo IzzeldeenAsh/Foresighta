@@ -145,6 +145,10 @@ export class ProjectTimelineComponent {
     return step.state === 'locked';
   }
 
+  isPending(step: ProjectTimelineStep): boolean {
+    return !this.isCompleted(step) && !this.isActive(step);
+  }
+
   isReadonlyContractStatus(step: ProjectTimelineStep): boolean {
     return !this.isClient
       && step.key === TIMELINE_STEP.CONTRACTING

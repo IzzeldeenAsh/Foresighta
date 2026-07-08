@@ -46,7 +46,7 @@
   overflow: hidden;
 
   &--completed {
-    border-color: #a7f3cf;
+    border-color: #a7f3cf !important;
     background: #ffffff;
   }
 
@@ -55,6 +55,10 @@
     background:
       linear-gradient(180deg, rgba(255, 251, 245, 0.7) 0%, #ffffff 60%),
       #ffffff;
+  }
+
+  &--pending {
+    border-color: #fddca6 !important;
   }
 
   &--active {

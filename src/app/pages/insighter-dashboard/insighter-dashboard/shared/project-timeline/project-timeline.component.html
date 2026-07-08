@@ -7,6 +7,7 @@
 
       <div class="card pd-tl-card"
            [class.pd-tl-card--completed]="isCompleted(step)"
+           [class.pd-tl-card--pending]="isPending(step)"
            [class.pd-tl-card--locked]="isLocked(step)"
            [class.pd-tl-card--active]="isActive(step)"
            [attr.data-bs-theme]="isActive(step) ? 'light' : null">
