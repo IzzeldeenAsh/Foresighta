@@ -465,9 +465,11 @@ export class NotificationsInnerComponent extends BaseComponent implements OnInit
 
     // 1) Precise routing by Pusher event name (realtime).
     switch (n.event_name) {
-      // Insighter receives, param = proposal.uuid
+      // Insighter receives, param = proposal-match uuid. The unified details
+      // route now needs the project uuid, which the payload doesn't carry,
+      // so land on the unified projects list.
       case 'project.match.invited':
-        this.navigateTo(param ? `${offersBase}/details/${param}` : offersBase);
+        this.navigateTo(offersBase);
         return true;
 
       // Client receives, param = proposal.uuid (no client proposal-detail route -> list)
@@ -529,8 +531,8 @@ export class NotificationsInnerComponent extends BaseComponent implements OnInit
 
     // 2) REST fallback (no event_name): distinguish by sub_type; use role where ambiguous.
     switch (n.sub_type) {
-      case 'project_proposal':                    // match.invited (insighter), proposal.uuid
-        this.navigateTo(param ? `${offersBase}/details/${param}` : offersBase);
+      case 'project_proposal':                    // match.invited (insighter), match uuid -> list
+        this.navigateTo(offersBase);
         return true;
       case 'project_review_submission':           // client, project.uuid
         this.navigateTo(param ? `${clientBase}/${param}` : clientBase);

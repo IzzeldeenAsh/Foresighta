@@ -4,6 +4,7 @@ import { BehaviorSubject, Observable, throwError } from 'rxjs';
 import { catchError, finalize, map } from 'rxjs/operators';
 import { TranslationService } from 'src/app/modules/i18n/translation.service';
 import { environment } from 'src/environments/environment';
+import { ProjectTimeline } from '../project-timeline/project-timeline.model';
 
 export type CreatedProjectType = 'ad_hoc' | 'frame_work_agreement' | 'urgent_request' | string;
 export type CreatedProjectStatus =
@@ -177,6 +178,7 @@ export interface CreatedProject {
   order?: CreatedProjectOrder | null;
   contract_uuid?: string | null;
   contract?: CreatedProjectContract | null;
+  offer?: CreatedProjectSubmittedOffer | null;
   can_rematch?: boolean;
   matching_mode?: string | null;
 }
@@ -206,7 +208,9 @@ export interface CreatedProjectSubmittedOffer {
   uuid: string;
   proposed_price: string | number | null;
   payment_plan?: string | null;
+  down_payment_percentage?: string | number | null;
   down_payment: string | number | null;
+  final_payment_percentage?: string | number | null;
   final_payment: string | number | null;
   estimated_hours: string | number | null;
   cover_letter: string | null;
@@ -429,6 +433,15 @@ export class ProjectsCreatedService {
       map(response => this.mapProject(response?.data ?? response)),
       catchError(error => throwError(() => error)),
       finalize(() => this.setLoading(false))
+    );
+  }
+
+  getTimeline(uuid: string): Observable<ProjectTimeline> {
+    return this.http.get<any>(`${this.baseUrl}/timeline/${uuid}`, {
+      headers: this.getHeaders(),
+    }).pipe(
+      map(response => response?.data ?? response),
+      catchError(error => throwError(() => error))
     );
   }
 
@@ -779,8 +792,28 @@ export class ProjectsCreatedService {
       order: p?.order && typeof p.order === 'object' ? this.mapProjectOrder(p.order) : null,
       contract_uuid: p?.contract_uuid ?? p?.contract?.uuid ?? null,
       contract: p?.contract && typeof p.contract === 'object' ? this.mapProjectContract(p.contract) : null,
+      offer: this.mapSubmittedOffer(p?.offer, p?.contract_uuid ?? p?.contract?.uuid),
       can_rematch: typeof p?.can_rematch === 'boolean' ? p.can_rematch : undefined,
       matching_mode: p?.matching_mode ?? null,
+    };
+  }
+
+  private mapSubmittedOffer(offer: any, fallbackContractUuid?: any): CreatedProjectSubmittedOffer | null {
+    if (!offer || typeof offer !== 'object') return null;
+
+    return {
+      uuid: this.stringifyValue(offer?.uuid),
+      proposed_price: offer?.proposed_price ?? null,
+      payment_plan: offer?.payment_plan ?? null,
+      down_payment_percentage: offer?.down_payment_percentage ?? null,
+      down_payment: offer?.down_payment ?? null,
+      final_payment_percentage: offer?.final_payment_percentage ?? null,
+      final_payment: offer?.final_payment ?? null,
+      estimated_hours: offer?.estimated_hours ?? null,
+      cover_letter: offer?.cover_letter ?? null,
+      status: offer?.status ?? null,
+      files: this.sanitizeFiles(offer?.files),
+      contract_uuid: offer?.contract_uuid ?? fallbackContractUuid ?? null,
     };
   }
 
@@ -866,18 +899,7 @@ export class ProjectsCreatedService {
           country: item.insighter?.country ?? null,
           company: item.insighter?.company ?? null,
         } : null,
-        offer: item?.offer ? {
-          uuid: this.stringifyValue(item.offer?.uuid),
-          proposed_price: item.offer?.proposed_price ?? null,
-          payment_plan: item.offer?.payment_plan ?? null,
-          down_payment: item.offer?.down_payment ?? null,
-          final_payment: item.offer?.final_payment ?? null,
-          estimated_hours: item.offer?.estimated_hours ?? null,
-          cover_letter: item.offer?.cover_letter ?? null,
-          status: item.offer?.status ?? null,
-          files: this.sanitizeFiles(item.offer?.files),
-          contract_uuid: item.offer?.contract_uuid ?? item?.contract_uuid ?? item?.contract?.uuid ?? null,
-        } : null,
+        offer: this.mapSubmittedOffer(item?.offer, item?.contract_uuid ?? item?.contract?.uuid),
       }))
       .filter((invite: CreatedProjectProposalInvite) => !!invite.uuid || !!invite.insighter?.uuid);
   }

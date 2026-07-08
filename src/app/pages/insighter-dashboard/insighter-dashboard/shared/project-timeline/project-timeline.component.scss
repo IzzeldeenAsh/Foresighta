@@ -1,0 +1,373 @@
+:host {
+  display: block;
+}
+
+.pd-timeline__list {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset-block: 13px;
+    inset-inline-end: 12px;
+    width: 1px;
+    background: linear-gradient(
+      180deg,
+      #22c55e 0%,
+      #22c55e var(--pd-timeline-progress, 0%),
+      #bfdbfe var(--pd-timeline-progress, 0%),
+      #e5e7eb 100%
+    );
+    z-index: 0;
+  }
+}
+
+.pd-timeline-step {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+/* ---- Step card ---- */
+.pd-tl-card {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  margin-inline-end: 16px;
+  margin-bottom: 2px;
+  padding: 22px;
+  border-radius: 10px !important;
+  border: 1px solid #e5eaf3;
+  background: #ffffff;
+  overflow: hidden;
+
+  &--completed {
+    border-color: #a7f3cf;
+    background: #ffffff;
+  }
+
+  &--locked {
+    border-color: #fddca6;
+    background:
+      linear-gradient(180deg, rgba(255, 251, 245, 0.7) 0%, #ffffff 60%),
+      #ffffff;
+  }
+
+  &--active {
+    border: 0 !important;
+    background: linear-gradient(180deg, #1858fd 0%, #003fde 100%);
+    box-shadow: 0 18px 32px rgba(24, 88, 253, 0.24);
+  }
+
+  &__body {
+    gap: 12px;
+  }
+
+  &__icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    flex: 0 0 40px;
+    border-radius: 50%;
+    color: #7c8aa8;
+    background: #f7f8fa;
+    border: 1px solid #e5eaf0;
+
+    i {
+      color: inherit;
+    }
+  }
+
+  &--active &__icon {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.28);
+  }
+
+  &__step {
+    font-size: 12px;
+    color: #98a2b3;
+  }
+
+  &__title {
+    font-size: 14px;
+    font-weight: 500;
+    color: #1f2a44;
+  }
+
+  &__hint {
+    font-size: 12px;
+    line-height: 1.45;
+    color: #98a2b3;
+  }
+
+  &__meta {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #667085;
+
+    i {
+      color: #98a2b3;
+    }
+  }
+
+  &__amount {
+    display: flex;
+    flex-direction: column;
+
+    &-caption {
+      font-size: 11px;
+      color: #98a2b3;
+    }
+
+    &-value {
+      font-size: 20px;
+      font-weight: 700;
+      color: #1f2a44;
+    }
+  }
+
+  &__action {
+    margin-top: 4px;
+    padding-block: 9px;
+  }
+
+  &__readonly-action {
+    margin-top: 4px;
+    padding-block: 9px;
+    cursor: default;
+
+    &:disabled {
+      opacity: 1;
+      color: #ffffff;
+    }
+  }
+
+  &__error {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 10px 12px;
+    border: 1px solid #fecaca;
+    border-radius: 10px;
+    background: #fff1f2;
+    color: #b42318;
+    font-size: 12px;
+    line-height: 1.45;
+  }
+
+  /* Active (blue) card — invert text colors */
+  &--active &__step,
+  &--active &__meta,
+  &--active &__meta i,
+  &--active &__amount-caption,
+  &--active &__hint {
+    color: rgba(255, 255, 255, 0.78);
+  }
+
+  &--active &__title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #ffffff;
+  }
+
+  &--active &__amount-value {
+    color: #ffffff;
+  }
+}
+
+/* ---- Party (insighter / client identity) ---- */
+.pd-tl-party {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  &__link {
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: inherit;
+    text-decoration: none;
+
+    &:hover,
+    &:focus {
+      .pd-tl-party__name {
+        text-decoration: underline;
+      }
+    }
+  }
+
+  &__avatar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    flex: 0 0 34px;
+    border-radius: 50%;
+    overflow: hidden;
+    font-size: 12px;
+    font-weight: 700;
+    color: #475467;
+    background: #eef2f7;
+    border: 1px solid #e3e8f0;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+  }
+
+  &__name {
+    font-size: 13px;
+    font-weight: 600;
+    color: #344054;
+  }
+}
+
+.pd-tl-card--active .pd-tl-party__name {
+  color: #ffffff;
+}
+
+/* ---- Status badge ---- */
+.pd-tl-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid transparent;
+  white-space: nowrap;
+
+  &--success {
+    color: #12805c;
+    background: #e7f8f0;
+    border-color: #b6ebd4;
+  }
+
+  &--warning {
+    color: #b25e09;
+    background: #fff4e5;
+    border-color: #fcd9a6;
+  }
+
+  &--primary {
+    color: #1d4ed8;
+    background: #e8f0ff;
+    border-color: #c7dbff;
+  }
+
+  &--muted {
+    color: #667085;
+    background: #f2f4f7;
+    border-color: #e4e7ec;
+  }
+}
+
+/* On the active (blue) card, badge switches to a glass look */
+.pd-tl-card--active .pd-tl-badge {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.28);
+}
+
+/* ---- Timeline dots ---- */
+.pd-timeline-dot {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 25px;
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  border: 1px solid #d7deea;
+  background: #ffffff;
+
+  > div {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #cbd5e1;
+  }
+
+  &--completed {
+    border-color: #22c55e;
+    background: #dcfce7;
+
+    > div {
+      background: #22c55e;
+    }
+  }
+
+  &--active {
+    border-color: #bfdbfe;
+    background: #eaf3ff;
+
+    > div {
+      background: #2285ff;
+    }
+  }
+
+  &--warning {
+    border-color: rgba(255, 181, 71, 0.5);
+    background: rgba(255, 181, 71, 0.15);
+
+    > div {
+      background: #ffb547;
+    }
+  }
+
+  &--pending {
+    border-color: #dbe3ef;
+    background: #ffffff;
+
+    > div {
+      background: #d8dee9;
+    }
+  }
+}
+
+/* ---- Glass button (on the active blue card) ---- */
+.pd-glass-btn {
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: #fff;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+
+  &:hover,
+  &:focus {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.4);
+    color: #fff;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18);
+
+    i {
+      color: #fff !important;
+    }
+  }
+
+  &:active {
+    transform: translateY(0);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
+  }
+
+  &:disabled {
+    opacity: 0.65;
+  }
+}

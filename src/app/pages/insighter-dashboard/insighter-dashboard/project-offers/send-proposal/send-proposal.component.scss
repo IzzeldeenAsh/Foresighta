@@ -1779,4 +1779,10 @@
   .po-drawer__aside {
     padding: 20px;
   }
+
+  .po-section {
+    &__eyebrow {
+      display: none;
+    }
+  }
 }

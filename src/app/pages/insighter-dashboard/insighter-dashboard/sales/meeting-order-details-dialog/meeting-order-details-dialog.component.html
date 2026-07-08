@@ -19,9 +19,9 @@
           </h5>
           <div class="text-muted fs-7">{{ order.date | date:'medium' }}</div>
         </div>
-        <div class="text-end">
-          <div class="fs-2 fw-bold text-dark " [ngClass]="{'badge badge-light-success': order.amount === 0, 'badge badge-light-info': order.amount > 0}">
-            {{ order.amount === 0 ? (lang === 'ar' ? 'مجاني' : 'Free') : '$'+ order.amount }}
+        <div class="text-end" *ngIf="utils.shouldShowSinglePaymentAmount(order)">
+          <div class="fs-2 fw-bold text-dark " [ngClass]="{'badge badge-light-success': utils.getDisplayPaymentAmount(order) === 0, 'badge badge-light-info': utils.getDisplayPaymentAmount(order) > 0}">
+            {{ utils.getDisplayPaymentAmount(order) === 0 ? (lang === 'ar' ? 'مجاني' : 'Free') : '$'+ utils.getDisplayPaymentAmount(order) }}
           </div>
         </div>
       </div>

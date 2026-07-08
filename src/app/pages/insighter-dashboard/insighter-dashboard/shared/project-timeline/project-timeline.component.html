@@ -1,0 +1,142 @@
+<div class="pd-timeline" *ngIf="visibleSteps.length"
+     [attr.dir]="lang === 'ar' ? 'rtl' : 'ltr'">
+  <div class="pd-timeline__list" [style.--pd-timeline-progress]="progress">
+
+    <div class="pd-timeline-step"
+         *ngFor="let step of visibleSteps; trackBy: trackByStep">
+
+      <div class="card pd-tl-card"
+           [class.pd-tl-card--completed]="isCompleted(step)"
+           [class.pd-tl-card--locked]="isLocked(step)"
+           [class.pd-tl-card--active]="isActive(step)"
+           [attr.data-bs-theme]="isActive(step) ? 'light' : null">
+
+        <!-- Header: icon + status badge -->
+        <div class="d-flex flex-stack">
+          <div class="pd-tl-card__icon">
+            <ng-container *ngIf="isActive(step); else staticIcon">
+              <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"
+                   width="30" height="30" aria-hidden="true">
+                <rect x="40" y="35" width="4" height="10" fill="#fff">
+                  <animateTransform attributeType="xml" attributeName="transform" type="translate"
+                    values="0 0; 0 20; 0 0" begin="0" dur="0.6s" repeatCount="indefinite"></animateTransform>
+                </rect>
+                <rect x="50" y="35" width="4" height="10" fill="#fff">
+                  <animateTransform attributeType="xml" attributeName="transform" type="translate"
+                    values="0 0; 0 20; 0 0" begin="0.2s" dur="0.6s" repeatCount="indefinite"></animateTransform>
+                </rect>
+                <rect x="60" y="35" width="4" height="10" fill="#fff">
+                  <animateTransform attributeType="xml" attributeName="transform" type="translate"
+                    values="0 0; 0 20; 0 0" begin="0.4s" dur="0.6s" repeatCount="indefinite"></animateTransform>
+                </rect>
+              </svg>
+            </ng-container>
+            <ng-template #staticIcon>
+              <i class="ki-outline {{ iconClass(step) }} lh-0 fs-2"></i>
+            </ng-template>
+          </div>
+
+          <span class="pd-tl-badge" [ngClass]="'pd-tl-badge--' + badge(step).tone">
+            {{ badge(step).label }}
+          </span>
+        </div>
+
+        <!-- Body -->
+        <div class="d-flex flex-column gap-2 pd-tl-card__body">
+          <div class="d-flex flex-column">
+            <span class="pd-tl-card__step">{{ stepNumberLabel(step) }}</span>
+            <span class="pd-tl-card__title">{{ step.title }}</span>
+          </div>
+
+          <!-- Party (awarded insighter / client) -->
+          <div class="pd-tl-party" *ngIf="isParty(step) && step.party as party">
+            <a *ngIf="party.uuid; else readonlyParty"
+               class="pd-tl-party__link"
+               [href]="partyProfileUrl(party.uuid)"
+              target="_blank"
+              rel="noopener noreferrer">
+              <span class="pd-tl-party__avatar">
+                <img *ngIf="partyAvatar(party) as avatar; else partyInitialsTpl" [src]="avatar" [alt]="party.name || ''">
+              </span>
+              <span class="pd-tl-party__name text-truncate">{{ party.legal_name || party.name }}</span>
+            </a>
+
+            <ng-template #readonlyParty>
+              <span class="pd-tl-party__avatar">
+                <img *ngIf="partyAvatar(party) as avatar; else partyInitialsTpl" [src]="avatar" [alt]="party.name || ''">
+              </span>
+              <span class="pd-tl-party__name text-truncate">{{ party.legal_name || party.name }}</span>
+            </ng-template>
+
+            <ng-template #partyInitialsTpl>{{ partyInitials(step) }}</ng-template>
+          </div>
+
+          <!-- Payment amount (payment steps only, when present) -->
+          <div class="pd-tl-card__amount" *ngIf="showAmount(step)">
+            <span class="pd-tl-card__amount-caption">{{ lang === 'ar' ? 'المبلغ' : 'Amount' }}</span>
+            <strong class="pd-tl-card__amount-value">{{ amountLabel(step) }}</strong>
+          </div>
+
+          <!-- Draft delivery date -->
+          <div class="pd-tl-card__meta" *ngIf="isDraft(step) && dateLabel(step)">
+            <i class="ki-outline ki-calendar fs-7"></i>
+            <span>{{ lang === 'ar' ? 'التاريخ:' : 'Date:' }} {{ dateLabel(step) }}</span>
+          </div>
+
+          <!-- Locked close reason (client close step) -->
+          <span class="pd-tl-card__hint"
+                *ngIf="isClient && step.key === STEP.CLOSED_PROJECT && isLocked(step) && closeDisabledReason">
+            {{ closeDisabledReason }}
+          </span>
+
+          <!-- Action button -->
+          <button type="button"
+                  *ngIf="actionType(step) as action"
+                  class="btn btn-sm fw-bold w-100 d-flex align-items-center justify-content-center gap-2 pd-tl-card__action"
+                  [ngClass]="isActive(step) || action === 'close_project' ? 'text-white pd-glass-btn' : 'btn-light-primary'"
+                  [disabled]="actionDisabled(step)"
+                  (click)="onAction(step)">
+            <span *ngIf="actionDisabled(step) && action === 'close_project'"
+                  class="spinner-border spinner-border-sm"></span>
+            <i *ngIf="!(actionDisabled(step) && action === 'close_project')"
+               class="ki-outline {{ actionIcon(step) }} fs-6"
+               [class.text-white]="isActive(step) || action === 'close_project'"></i>
+            <span>{{ actionLabel(step) }}</span>
+          </button>
+
+          <!-- Read-only contract state (insighter side) -->
+          <button type="button"
+                  *ngIf="isReadonlyContractStatus(step)"
+                  class="btn btn-sm fw-bold w-100 d-flex align-items-center justify-content-center gap-2 pd-tl-card__readonly-action pd-glass-btn"
+                  disabled
+                  aria-disabled="true">
+            <i class="ki-outline ki-lock-2 fs-6 text-white"></i>
+            <span>{{ readonlyContractStatusLabel() }}</span>
+          </button>
+
+          <!-- Read-only draft review state (insighter side) -->
+          <button type="button"
+                  *ngIf="isReadonlyDraftReviewStatus(step)"
+                  class="btn btn-sm fw-bold w-100 d-flex align-items-center justify-content-center gap-2 pd-tl-card__readonly-action pd-glass-btn"
+                  disabled
+                  aria-disabled="true">
+            <i class="ki-outline ki-time fs-6 text-white"></i>
+            <span>{{ readonlyDraftReviewStatusLabel() }}</span>
+          </button>
+
+          <!-- Close error (client close step) -->
+          <div class="pd-tl-card__error"
+               *ngIf="isClient && step.key === STEP.CLOSED_PROJECT && closeError">
+            <i class="ki-outline ki-information-5 fs-6"></i>
+            <span>{{ closeError }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="pd-timeline-dot" [ngClass]="dotModifier(step)">
+        <div></div>
+      </div>
+    </div>
+
+  </div>
+</div>

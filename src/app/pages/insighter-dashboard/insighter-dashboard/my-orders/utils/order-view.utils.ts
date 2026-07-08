@@ -2,7 +2,7 @@ import { KnowledgeDocument, Orderable, Order, PaymentInfo } from '../my-orders.s
 
 type Language = 'ar' | 'en';
 
-type OrderPaymentFields = Pick<Order, 'payment' | 'payments' | 'invoice_no'>;
+type OrderPaymentFields = Pick<Order, 'payment' | 'payments' | 'invoice_no' | 'amount'>;
 
 export function getOrderPayments(order: OrderPaymentFields | null | undefined): PaymentInfo[] {
   if (!order) {
@@ -28,9 +28,29 @@ export function getPrimaryPayment(order: OrderPaymentFields | null | undefined):
     || payments[0];
 }
 
+export function shouldShowSinglePaymentAmount(order: OrderPaymentFields | null | undefined): boolean {
+  return getOrderPayments(order).length <= 1;
+}
+
+export function getDisplayPaymentAmount(order: OrderPaymentFields | null | undefined): number {
+  const payment = getPrimaryPayment(order);
+
+  return typeof payment?.amount === 'number' ? payment.amount : order?.amount || 0;
+}
+
 export function getOrderInvoiceNo(order: OrderPaymentFields | null | undefined): string {
   const paymentWithInvoice = getOrderPayments(order).find(payment => Boolean(payment.invoice_no));
   return paymentWithInvoice?.invoice_no || order?.invoice_no || '';
+}
+
+export function getInvoiceRouteIdentifier(order: Order | null | undefined): string {
+  const payments = getOrderPayments(order);
+
+  if (payments.length > 1) {
+    return order?.order_no || getOrderInvoiceNo(order);
+  }
+
+  return getOrderInvoiceNo(order) || order?.order_no || '';
 }
 
 export function getFileIconByExtension(fileExtension: string): string {

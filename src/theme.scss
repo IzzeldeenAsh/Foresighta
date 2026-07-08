@@ -6,3 +6,50 @@
 .p-datatable .p-component-overlay {
     background-color: rgb(255 255 255 / 73%) !important;
 }
+
+@media (max-width: 767px) {
+    .pd-proposal-drawer__body {
+        padding-bottom: 148px;
+    }
+
+    .pd-proposal-drawer__aside {
+        position: fixed;
+        inset-inline: 0;
+        bottom: 0;
+        z-index: 2;
+        overflow: visible;
+        background: transparent;
+        pointer-events: none;
+    }
+
+    .pd-proposal-drawer__aside-card {
+        position: relative;
+        z-index: 1;
+        padding: 16px 20px calc(16px + env(safe-area-inset-bottom));
+        border: 2px solid #dce5f0;
+        border-bottom: 0;
+        border-radius: 24px 24px 0 0;
+        background: #fff;
+        pointer-events: auto;
+    }
+
+    .pd-proposal-drawer__aside-card > :is(
+        .pd-proposal-drawer__aside-title,
+        .pd-proposal-drawer__aside-hint,
+        .pd-aside-table-wrap,
+        .pd-proposal-files
+    ) {
+        display: none;
+    }
+
+    .pd-proposal-drawer__aside-card .row {
+        margin-bottom: 0 !important;
+    }
+
+    .pd-proposal-drawer__aside-card .btn {
+        min-height: 48px;
+        border-radius: 10px;
+        font-size: 15px;
+        font-weight: 700;
+    }
+}

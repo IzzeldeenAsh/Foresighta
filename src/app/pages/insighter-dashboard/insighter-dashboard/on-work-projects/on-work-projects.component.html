@@ -383,6 +383,11 @@
                 *ngIf="tab.value === 'reviews' && isDrawerTabDisabled(tab.value)"
                 class="ki-outline ki-lock-2 fs-6 po-drawer-tab__lock"
                 aria-hidden="true"></i>
+              <i
+                *ngIf="!isDrawerTabDisabled(tab.value)"
+                class="ki-outline po-drawer-tab__icon"
+                [ngClass]="tab.iconClass"
+                aria-hidden="true"></i>
               <span>{{ lang === 'ar' ? tab.labelAr : tab.labelEn }}</span>
               <ng-container *ngIf="tab.value === 'documents'">
                 <ng-container *ngIf="unreadDocumentsCount$ | async as unreadDocumentsCount">
@@ -954,6 +959,79 @@
                 </div>
               </ng-template>
 
+              <section class="po-section owp-contract-tab owp-documents-contract">
+                <div class="po-section__head">
+                  <h6 class="po-section__title">{{ lang === 'ar' ? 'العقد' : 'Contract' }}</h6>
+                  <span class="po-section__eyebrow">{{ lang === 'ar' ? 'مراجعة وتوقيع' : 'Review & Signature' }}</span>
+                </div>
+
+                <ng-container *ngIf="hasContract(project); else noContract">
+                  <p-progressBar *ngIf="contractDetailsLoading" mode="indeterminate" [style]="{ height: '3px' }"></p-progressBar>
+
+                  <div class="po-detail-card po-detail-card--offer owp-contract-panel">
+                    <div class="po-detail-card__header">
+                      <span class="po-detail-card__icon">
+                        <i class="ki-outline ki-document fs-4"></i>
+                      </span>
+                      <div class="po-detail-card__copy">
+                        <div class="po-detail-card__title">
+                          {{ contractDetails?.name || (lang === 'ar' ? 'عقد المشروع' : 'Project Contract') }}
+                        </div>
+                        <div class="po-detail-card__subtitle">
+                          {{ lang === 'ar'
+                            ? 'راجع العقد ضمن سياق تفاصيل المشروع، ثم افتحه للتوقيع أو المتابعة.'
+                            : 'Review the contract in project context, then open it to sign or continue.' }}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="po-detail-card__body">
+                      <div class="owp-contract-status-grid">
+                        <div
+                          class="owp-contract-status"
+                          [class.owp-contract-status--signed]="isContractSigned(project)"
+                          [class.owp-contract-status--warning]="isContractWaiting(project)">
+                          <span>{{ lang === 'ar' ? 'حالة العقد' : 'Contract Status' }}</span>
+                          <strong>
+                            <i class="ki-outline fs-5" [ngClass]="getSignatureSummaryIcon(project)"></i>
+                            {{ getSignatureSummaryLabel(project) }}
+                          </strong>
+                        </div>
+                        <div class="owp-contract-status">
+                          <span>{{ lang === 'ar' ? 'نوع العقد' : 'Contract Type' }}</span>
+                          <strong>{{ getContractTypeLabel(contractDetails) }}</strong>
+                        </div>
+                      </div>
+
+                      <div *ngIf="contractDetailsError" class="alert alert-warning mt-4 mb-0">
+                        {{ lang === 'ar' ? 'تعذر تحميل ملخص العقد. لا يزال بإمكانك فتح صفحة العقد.' : 'Could not load the contract summary. You can still open the contract page.' }}
+                      </div>
+
+                      <button
+                        type="button"
+                        class="btn btn-info mt-5"
+                        [disabled]="!canOpenContract(project)"
+                        (click)="viewContract(project)">
+                        <i class="ki-outline ki-document fs-6 me-1"></i>
+                        {{ lang === 'ar' ? 'فتح العقد' : 'Open Contract' }}
+                      </button>
+                    </div>
+                  </div>
+                </ng-container>
+
+                <ng-template #noContract>
+                  <div class="po-empty po-empty--compact">
+                    <i class="ki-outline ki-information-2 fs-2x text-warning mb-3"></i>
+                    <h6 class="fw-semibold text-gray-800 mb-2">
+                      {{ lang === 'ar' ? 'العقد غير متاح' : 'Contract unavailable' }}
+                    </h6>
+                    <p class="text-gray-500 fs-7 mb-0">
+                      {{ lang === 'ar' ? 'لم يتم العثور على عقد لهذا المشروع بعد.' : 'No contract was found for this project yet.' }}
+                    </p>
+                  </div>
+                </ng-template>
+              </section>
+
               <p-dialog
                 [(visible)]="documentUploadDialogVisible"
                 [modal]="true"
@@ -1054,7 +1132,7 @@
                 <button
                   type="button"
                   class="owp-review-request-trigger"
-                  (click)="reviewRequestDialogVisible = true">
+                  (click)="openReviewRequestDialog()">
                   <span class="owp-review-request-trigger__icon" aria-hidden="true">
                     <i class="pi pi-comments"></i>
                   </span>
@@ -1153,7 +1231,8 @@
                     <select name="reviewRequestType" [(ngModel)]="reviewRequestType">
                       <option
                         *ngFor="let option of reviewRequestTypeOptions; trackBy: trackByReviewTypeOption"
-                        [ngValue]="option.value">
+                        [ngValue]="option.value"
+                        [disabled]="isReviewRequestTypeDisabled(option.value)">
                         {{ lang === 'ar' ? option.labelAr : option.labelEn }}
                       </option>
                     </select>
@@ -1173,6 +1252,11 @@
                   <div class="owp-inline-alert" *ngIf="hasPendingReviewForType(reviewRequestType)">
                     <i class="ki-outline ki-time fs-5"></i>
                     <span>{{ lang === 'ar' ? 'يوجد طلب مراجعة معلق لهذا النوع.' : 'A pending review already exists for this type.' }}</span>
+                  </div>
+
+                  <div class="owp-inline-alert" *ngIf="isReviewRequestTypeDisabled(reviewRequestType)">
+                    <i class="ki-outline ki-check-circle fs-5"></i>
+                    <span>{{ lang === 'ar' ? 'تم اعتماد هذا النوع من المراجعة بالفعل.' : 'This review type is already approved.' }}</span>
                   </div>
 
                   <div class="pd-review-compose">
@@ -1237,78 +1321,6 @@
               </app-project-discussion>
             </ng-container>
 
-            <section *ngSwitchCase="'contract'" class="po-section owp-contract-tab">
-              <div class="po-section__head">
-                <h6 class="po-section__title">{{ lang === 'ar' ? 'العقد' : 'Contract' }}</h6>
-                <span class="po-section__eyebrow">{{ lang === 'ar' ? 'مراجعة وتوقيع' : 'Review & Signature' }}</span>
-              </div>
-
-              <ng-container *ngIf="hasContract(project); else noContract">
-                <p-progressBar *ngIf="contractDetailsLoading" mode="indeterminate" [style]="{ height: '3px' }"></p-progressBar>
-
-                <div class="po-detail-card po-detail-card--offer owp-contract-panel">
-                  <div class="po-detail-card__header">
-                    <span class="po-detail-card__icon">
-                      <i class="ki-outline ki-document fs-4"></i>
-                    </span>
-                    <div class="po-detail-card__copy">
-                      <div class="po-detail-card__title">
-                        {{ contractDetails?.name || (lang === 'ar' ? 'عقد المشروع' : 'Project Contract') }}
-                      </div>
-                      <div class="po-detail-card__subtitle">
-                        {{ lang === 'ar'
-                          ? 'راجع العقد ضمن سياق تفاصيل المشروع، ثم افتحه للتوقيع أو المتابعة.'
-                          : 'Review the contract in project context, then open it to sign or continue.' }}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="po-detail-card__body">
-                    <div class="owp-contract-status-grid">
-                      <div
-                        class="owp-contract-status"
-                        [class.owp-contract-status--signed]="isContractSigned(project)"
-                        [class.owp-contract-status--warning]="isContractWaiting(project)">
-                        <span>{{ lang === 'ar' ? 'حالة العقد' : 'Contract Status' }}</span>
-                        <strong>
-                          <i class="ki-outline fs-5" [ngClass]="getSignatureSummaryIcon(project)"></i>
-                          {{ getSignatureSummaryLabel(project) }}
-                        </strong>
-                      </div>
-                      <div class="owp-contract-status">
-                        <span>{{ lang === 'ar' ? 'نوع العقد' : 'Contract Type' }}</span>
-                        <strong>{{ getContractTypeLabel(contractDetails) }}</strong>
-                      </div>
-                    </div>
-
-                    <div *ngIf="contractDetailsError" class="alert alert-warning mt-4 mb-0">
-                      {{ lang === 'ar' ? 'تعذر تحميل ملخص العقد. لا يزال بإمكانك فتح صفحة العقد.' : 'Could not load the contract summary. You can still open the contract page.' }}
-                    </div>
-
-                    <button
-                      type="button"
-                      class="btn btn-info mt-5"
-                      [disabled]="!canOpenContract(project)"
-                      (click)="viewContract(project)">
-                      <i class="ki-outline ki-document fs-6 me-1"></i>
-                      {{ lang === 'ar' ? 'فتح العقد' : 'Open Contract' }}
-                    </button>
-                  </div>
-                </div>
-              </ng-container>
-
-              <ng-template #noContract>
-                <div class="po-empty po-empty--compact">
-                  <i class="ki-outline ki-information-2 fs-2x text-warning mb-3"></i>
-                  <h6 class="fw-semibold text-gray-800 mb-2">
-                    {{ lang === 'ar' ? 'العقد غير متاح' : 'Contract unavailable' }}
-                  </h6>
-                  <p class="text-gray-500 fs-7 mb-0">
-                    {{ lang === 'ar' ? 'لم يتم العثور على عقد لهذا المشروع بعد.' : 'No contract was found for this project yet.' }}
-                  </p>
-                </div>
-              </ng-template>
-            </section>
           </ng-container>
         </div>
       </div>
@@ -1324,45 +1336,56 @@
               : 'Review the project details and documents first, then continue to the contract when needed.' }}
           </p>
 
-          <button
-            type="button"
-            class="btn btn-info w-100 mb-3"
-            [disabled]="!canOpenContract(project)"
-            (click)="viewContract(project)">
-            <i class="ki-outline ki-document fs-6 me-1"></i>
-            {{ lang === 'ar' ? 'فتح العقد' : 'Open Contract' }}
-          </button>
+          <app-project-timeline
+            *ngIf="isDetailsPage && showInsighterTimeline"
+            class="d-block mb-4"
+            audience="insighter"
+            [steps]="timelineSteps"
+            [lang]="lang"
+            (stepAction)="onInsighterTimelineAction($event)">
+          </app-project-timeline>
 
-          <div class="po-aside-table-wrap">
-            <table class="po-aside-table">
-              <tbody>
-                <tr>
-                  <th scope="row">{{ lang === 'ar' ? 'الخدمة' : 'Service' }}</th>
-                  <td>{{ project.project.service?.name || '-' }}</td>
-                </tr>
-                <tr>
-                  <th scope="row">{{ lang === 'ar' ? 'نوع المشروع' : 'Project Type' }}</th>
-                  <td>{{ getTypeLabel(project.project.type) }}</td>
-                </tr>
-                <tr>
-                  <th scope="row">{{ lang === 'ar' ? 'موعد التسليم' : 'Deadline' }}</th>
-                  <td>{{ formatDate(project.project.deadline) }}</td>
-                </tr>
-                <tr>
-                  <th scope="row">{{ lang === 'ar' ? 'لغة المشروع' : 'Project Language' }}</th>
-                  <td>{{ getLanguageLabel(project.project.language) }}</td>
-                </tr>
-                <tr>
-                  <th scope="row">{{ lang === 'ar' ? 'العقد' : 'Contract' }}</th>
-                  <td>
-                    <span class="badge" [ngClass]="getContractStatusClass(project)">
-                      {{ getContractStatusLabel(project) }}
-                    </span>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+          <ng-container *ngIf="!isDetailsPage">
+            <button
+              type="button"
+              class="btn btn-info w-100 mb-3"
+              [disabled]="!canOpenContract(project)"
+              (click)="viewContract(project)">
+              <i class="ki-outline ki-document fs-6 me-1"></i>
+              {{ lang === 'ar' ? 'فتح العقد' : 'Open Contract' }}
+            </button>
+
+            <div class="po-aside-table-wrap">
+              <table class="po-aside-table">
+                <tbody>
+                  <tr>
+                    <th scope="row">{{ lang === 'ar' ? 'الخدمة' : 'Service' }}</th>
+                    <td>{{ project.project.service?.name || '-' }}</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">{{ lang === 'ar' ? 'نوع المشروع' : 'Project Type' }}</th>
+                    <td>{{ getTypeLabel(project.project.type) }}</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">{{ lang === 'ar' ? 'موعد التسليم' : 'Deadline' }}</th>
+                    <td>{{ formatDate(project.project.deadline) }}</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">{{ lang === 'ar' ? 'لغة المشروع' : 'Project Language' }}</th>
+                    <td>{{ getLanguageLabel(project.project.language) }}</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">{{ lang === 'ar' ? 'العقد' : 'Contract' }}</th>
+                    <td>
+                      <span class="badge" [ngClass]="getContractStatusClass(project)">
+                        {{ getContractStatusLabel(project) }}
+                      </span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </ng-container>
         </div>
       </aside>
     </div>

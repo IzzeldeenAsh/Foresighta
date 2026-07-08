@@ -14,7 +14,7 @@ import { DrawerTab, OnWorkProjectsComponent } from './on-work-projects.component
 })
 export class OnWorkProjectDetailsComponent extends OnWorkProjectsComponent implements OnInit {
   private readonly detailTabParam = 'tab';
-  private readonly detailTabValues: DrawerTab[] = ['overview', 'documents', 'reviews', 'discussion', 'contract'];
+  private readonly detailTabValues: DrawerTab[] = ['overview', 'documents', 'reviews', 'discussion'];
 
   constructor(
     injector: Injector,
@@ -37,6 +37,7 @@ export class OnWorkProjectDetailsComponent extends OnWorkProjectsComponent imple
         }
 
         this.selectProject(this.createProjectShell(uuid));
+        this.loadInsighterTimeline(uuid);
         super.setDrawerTab('documents', false);
         this.setDrawerTab(this.getCurrentTabFromUrl());
       });
@@ -52,7 +53,7 @@ export class OnWorkProjectDetailsComponent extends OnWorkProjectsComponent imple
   }
 
   override closeDrawer(): void {
-    this.detailsRouter.navigate(['/app/insighter-dashboard/on-work-projects']);
+    this.detailsRouter.navigate(['/app/insighter-dashboard/project-offers']);
   }
 
   protected override onDrawerTabChanged(tab: DrawerTab): void {
@@ -61,6 +62,10 @@ export class OnWorkProjectDetailsComponent extends OnWorkProjectsComponent imple
 
   private getCurrentTabFromUrl(): DrawerTab {
     const tab = this.route.snapshot.queryParamMap.get(this.detailTabParam) || '';
+    if (tab === 'contract') {
+      return 'documents';
+    }
+
     return this.isValidDetailTab(tab) ? tab : 'overview';
   }
 

@@ -364,3 +364,125 @@
   color: #50cd89;
   opacity: 1;
 }
+
+@media (max-width: 767px) {
+  .icn-shell {
+    gap: 14px;
+  }
+
+  .icn-header,
+  .icn-contract-panel,
+  .icn-pending {
+    border-radius: 14px;
+  }
+
+  .icn-header {
+    align-items: flex-start;
+    padding: 16px;
+  }
+
+  .icn-header__copy span {
+    font-size: 11px;
+    letter-spacing: 0.06em;
+  }
+
+  .icn-header__copy strong {
+    font-size: 17px;
+    line-height: 1.18;
+  }
+
+  .icn-pending {
+    padding: 18px 16px;
+  }
+
+  .icn-pending__icon {
+    width: 54px;
+    height: 54px;
+    border-radius: 16px;
+  }
+
+  .icn-pending__copy h3 {
+    margin: 4px 0 6px;
+    font-size: 1.2rem;
+  }
+
+  .icn-pending__copy p {
+    font-size: 13px;
+    line-height: 1.55;
+  }
+
+  .icn-contract-panel {
+    padding: 16px;
+  }
+
+  .icn-panel-head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+
+  .icn-panel-head h3 {
+    margin-top: 4px;
+    font-size: 1.4rem;
+    line-height: 1.18;
+  }
+
+  .icn-status {
+    align-self: flex-start;
+  }
+
+  .icn-contract-meta {
+    gap: 6px;
+    margin-top: 8px;
+  }
+
+  .icn-contract-meta small {
+    min-height: 24px;
+    padding: 5px 9px;
+    font-size: 11px;
+  }
+
+  .icn-agreement {
+    height: auto;
+    min-height: 280px;
+    max-height: 58vh;
+    padding: 16px;
+    border-radius: 12px;
+    font-size: 14px;
+    line-height: 1.65;
+  }
+
+  .icn-file-wrap {
+    gap: 12px;
+  }
+
+  .icn-file-preview--image {
+    max-height: 52vh;
+  }
+
+  .icn-file-preview--pdf {
+    min-height: 52vh;
+  }
+
+  .icn-file-card {
+    align-items: flex-start;
+    min-height: 0;
+    padding: 16px;
+  }
+
+  .icn-file-card__icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 16px;
+  }
+
+  .icn-file-card__copy strong {
+    font-size: 15px;
+  }
+
+  .icn-file-card__copy small {
+    font-size: 12px;
+    line-height: 1.45;
+  }
+}

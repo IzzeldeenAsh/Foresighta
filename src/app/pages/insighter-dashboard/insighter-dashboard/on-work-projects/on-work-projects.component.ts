@@ -1,7 +1,7 @@
 import { Component, Injector, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
-import { BehaviorSubject, Observable } from 'rxjs';
-import { finalize, map, shareReplay, takeUntil } from 'rxjs/operators';
+import { BehaviorSubject, forkJoin, Observable, of } from 'rxjs';
+import { catchError, finalize, map, shareReplay, takeUntil } from 'rxjs/operators';
 import {
   ProjectContract,
   ProjectFileUploadType,
@@ -15,10 +15,15 @@ import {
   ProjectReviewSubmissionPriorityValue,
   ProjectReviewSubmissionType,
 } from 'src/app/_fake/services/project-offers/project-offers.service';
+import {
+  ProjectTimelineStep,
+  TIMELINE_STEP,
+  TimelineStepActionEvent,
+} from 'src/app/_fake/services/project-timeline/project-timeline.model';
 import { BaseComponent } from 'src/app/modules/base.component';
 
 type ViewMode = 'grid' | 'list';
-export type DrawerTab = 'overview' | 'documents' | 'reviews' | 'discussion' | 'contract';
+export type DrawerTab = 'overview' | 'documents' | 'reviews' | 'discussion';
 
 interface ProjectFileTypeOption {
   value: ProjectFileUploadType;
@@ -57,6 +62,7 @@ interface DrawerTabOption {
   value: DrawerTab;
   labelEn: string;
   labelAr: string;
+  iconClass: string;
 }
 
 const PROJECT_FILE_GROUP_META: Record<string, Omit<ProjectDeliveryDocumentGroup, 'files'>> = {
@@ -121,6 +127,9 @@ export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
   viewMode: ViewMode = 'list';
   drawerVisible = false;
   selectedProject: ProjectOffer | null = null;
+  timelineSteps: ProjectTimelineStep[] = [];
+  showInsighterTimeline = false;
+  private rawTimelineSteps: ProjectTimelineStep[] = [];
   activeDrawerTab: DrawerTab = 'overview';
   openingFileUuid: string | null = null;
   contractDetails: ProjectContract | null = null;
@@ -169,11 +178,10 @@ export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
     { key: 'urgent_request', labelEn: 'Urgent Request', labelAr: 'طلب عاجل' },
   ];
   drawerTabOptions: DrawerTabOption[] = [
-    { value: 'overview', labelEn: 'Overview', labelAr: 'نظرة عامة' },
-    { value: 'documents', labelEn: 'Shared Documents', labelAr: 'المستندات' },
-    { value: 'reviews', labelEn: 'Review Request', labelAr: 'طلب المراجعة' },
-    { value: 'discussion', labelEn: 'Discussion', labelAr: 'النقاش' },
-    { value: 'contract', labelEn: 'Contract', labelAr: 'العقد' },
+    { value: 'overview', labelEn: 'Overview', labelAr: 'نظرة عامة', iconClass: 'ki-element-7' },
+    { value: 'documents', labelEn: 'Shared Documents', labelAr: 'المستندات', iconClass: 'ki-document' },
+    { value: 'reviews', labelEn: 'Review Request', labelAr: 'طلب المراجعة', iconClass: 'ki-check-square' },
+    { value: 'discussion', labelEn: 'Discussion', labelAr: 'النقاش', iconClass: 'ki-messages' },
   ];
   projectFileTypeOptions: ProjectFileTypeOption[] = [
     { value: 'first_draft', labelEn: 'First Draft', labelAr: 'المسودة الأولى' },
@@ -265,6 +273,60 @@ export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
     this.projectDetailsRequestId++;
     this.reviewSubmissionsRequestId++;
     this.resetUnreadStatsStreams();
+    this.resetTimeline();
+  }
+
+  protected resetTimeline(): void {
+    this.rawTimelineSteps = [];
+    this.timelineSteps = [];
+    this.showInsighterTimeline = false;
+  }
+
+  loadInsighterTimeline(projectUuid: string): void {
+    if (!projectUuid) {
+      this.resetTimeline();
+      return;
+    }
+
+    forkJoin({
+      timeline: this.projectOffersService.getProjectTimeline(projectUuid),
+      reviews: this.getReviewSubmissionsRequest(projectUuid).pipe(catchError(() => of([] as ProjectReviewSubmission[]))),
+    })
+      .pipe(takeUntil(this.unsubscribe$))
+      .subscribe({
+        next: ({ timeline, reviews }) => {
+          this.rawTimelineSteps = timeline?.steps ?? [];
+          this.reviewSubmissions = reviews;
+          this.reviewSubmissionsSubject.next(reviews);
+          this.loadedReviewProjectUuid = projectUuid;
+          this.timelineSteps = this.applyDraftReviewState(this.rawTimelineSteps, reviews);
+          this.showInsighterTimeline = this.timelineSteps.some(step => step?.display);
+        },
+        error: () => {
+          this.resetTimeline();
+        },
+      });
+  }
+
+  onInsighterTimelineAction(event: TimelineStepActionEvent): void {
+    if (event.action === 'open_review') {
+      this.openTimelineReview(event.step);
+      return;
+    }
+
+    if (event.action === 'view_contract') {
+      this.openTimelineContract(event.step);
+    }
+  }
+
+  private openTimelineReview(step: ProjectTimelineStep): void {
+    this.setDrawerTab('reviews');
+
+    const reviewType = this.getTimelineReviewType(step);
+    if (reviewType) {
+      this.reviewRequestType = reviewType;
+      this.reviewRequestDialogVisible = true;
+    }
   }
 
   setDrawerTab(tab: DrawerTab, syncUrl = true): void {
@@ -278,9 +340,7 @@ export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
 
     this.activeDrawerTab = tab;
 
-    if (tab === 'contract') {
-      this.loadContractDetails();
-    } else if (tab === 'documents') {
+    if (tab === 'documents') {
       this.loadDocumentsWorkspace();
     } else if (tab === 'reviews') {
       this.loadReviewWorkspace();
@@ -293,6 +353,22 @@ export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
 
   viewContract(project: ProjectOffer | null | undefined = this.selectedProject): void {
     const contractUuid = this.getContractUuid(project);
+    if (!contractUuid) {
+      this.showError(
+        this.lang === 'ar' ? 'تعذر فتح العقد' : 'Cannot open contract',
+        this.lang === 'ar' ? 'لم يتم العثور على معرّف العقد.' : 'Contract identifier was not found.'
+      );
+      return;
+    }
+
+    this.router.navigate(
+      ['/app/insighter-dashboard/project-offers/contract', contractUuid],
+      { queryParams: { returnUrl: '/app/insighter-dashboard/project-offers' } }
+    );
+  }
+
+  private openTimelineContract(step: ProjectTimelineStep): void {
+    const contractUuid = this.getTimelineContractUuid(step) || this.getContractUuid(this.selectedProject);
     if (!contractUuid) {
       this.showError(
         this.lang === 'ar' ? 'تعذر فتح العقد' : 'Cannot open contract',
@@ -637,6 +713,20 @@ export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
     ));
   }
 
+  hasApprovedReviewForType(type: ProjectReviewSubmissionType = this.reviewRequestType): boolean {
+    const normalizedType = this.normalizeProjectFileType(type);
+    return this.reviewSubmissions.some(review => (
+      this.normalizeProjectFileType(review.status || '') === 'approved'
+      && this.getReviewType(review) === normalizedType
+    ));
+  }
+
+  isReviewRequestTypeDisabled(type: ProjectReviewSubmissionType): boolean {
+    const normalizedType = this.normalizeProjectFileType(type);
+    return ['first_draft', 'final_draft'].includes(normalizedType)
+      && this.hasApprovedReviewForType(type);
+  }
+
   isProjectClosed(project: ProjectOffer | null | undefined = this.selectedProject): boolean {
     return this.normalizeProjectFileType(project?.status || '') === 'closed';
   }
@@ -652,7 +742,16 @@ export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
       && !this.reviewRequestSubmitting
       && (this.reviewRequestNote || '').trim()
       && !this.hasPendingReviewForType(this.reviewRequestType)
+      && !this.isReviewRequestTypeDisabled(this.reviewRequestType)
     );
+  }
+
+  openReviewRequestDialog(): void {
+    if (this.isReviewRequestTypeDisabled(this.reviewRequestType)) {
+      this.reviewRequestType = this.getFirstAvailableReviewRequestType();
+    }
+
+    this.reviewRequestDialogVisible = true;
   }
 
   onProjectFilesSelected(event: Event): void {
@@ -731,11 +830,19 @@ export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
     const projectUuid = this.getProjectUuid(this.selectedProject);
     const note = (this.reviewRequestNote || '').trim();
 
-    if (!projectUuid || !note || this.isProjectClosed() || this.hasPendingReviewForType(this.reviewRequestType)) {
+    if (
+      !projectUuid
+      || !note
+      || this.isProjectClosed()
+      || this.hasPendingReviewForType(this.reviewRequestType)
+      || this.isReviewRequestTypeDisabled(this.reviewRequestType)
+    ) {
       this.showError(
         this.lang === 'ar' ? 'تعذر إرسال طلب المراجعة' : 'Cannot request review',
         this.isProjectClosed()
           ? (this.lang === 'ar' ? 'لا يمكن طلب مراجعة لمشروع مغلق.' : 'Review requests are disabled for closed projects.')
+          : this.isReviewRequestTypeDisabled(this.reviewRequestType)
+          ? (this.lang === 'ar' ? 'تم اعتماد هذا النوع من المراجعة بالفعل.' : 'This review type is already approved.')
           : this.lang === 'ar'
           ? 'يرجى كتابة ملاحظة والتأكد من عدم وجود طلب معلق لنفس النوع.'
           : 'Add a note and make sure there is no pending request for the same type.'
@@ -1148,6 +1255,7 @@ export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
 
   private loadDocumentsWorkspace(): void {
     this.loadInsighterProjectDetails();
+    this.loadContractDetails();
   }
 
   private loadReviewWorkspace(): void {
@@ -1177,7 +1285,7 @@ export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
 
           if (this.isDrawerTabDisabled(this.activeDrawerTab)) {
             this.setDrawerTab('overview');
-          } else if (this.activeDrawerTab === 'contract') {
+          } else if (this.activeDrawerTab === 'documents') {
             this.loadContractDetails(project);
           } else if (this.activeDrawerTab === 'reviews') {
             this.loadProjectReviewSubmissions();
@@ -1198,6 +1306,9 @@ export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
     const projectUuid = this.getProjectUuid(this.selectedProject);
     if (!projectUuid || this.reviewSubmissionsLoading) return;
     if (!force && this.loadedReviewProjectUuid === projectUuid) return;
+    if (force) {
+      this.reviewSubmissionsRequest$ = null;
+    }
 
     const requestId = ++this.reviewSubmissionsRequestId;
     this.reviewSubmissionsLoading = true;
@@ -1210,6 +1321,10 @@ export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
           this.reviewSubmissions = reviews;
           this.reviewSubmissionsSubject.next(reviews);
           this.loadedReviewProjectUuid = projectUuid;
+          if (this.rawTimelineSteps.length) {
+            this.timelineSteps = this.applyDraftReviewState(this.rawTimelineSteps, reviews);
+            this.showInsighterTimeline = this.timelineSteps.some(step => step?.display);
+          }
           this.reviewSubmissionsLoading = false;
         },
         error: err => {
@@ -1363,6 +1478,97 @@ export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
       || project?.project?.contract_uuid
       || project?.offer?.contract_uuid
       || '';
+  }
+
+  private getTimelineContractUuid(step: ProjectTimelineStep | null | undefined): string {
+    if (!step?.meta || Array.isArray(step.meta)) {
+      return '';
+    }
+
+    return typeof step.meta.contract_uuid === 'string' ? step.meta.contract_uuid : '';
+  }
+
+  private getTimelineReviewType(step: ProjectTimelineStep | null | undefined): ProjectReviewSubmissionType | null {
+    if (step?.state !== 'in_progress') {
+      return null;
+    }
+
+    if (step.status === 'pending' || step.status === 'changes_requested' || step.status === 'approved') {
+      return null;
+    }
+
+    if (step?.key === TIMELINE_STEP.FIRST_DRAFT) {
+      return 'first_draft';
+    }
+
+    if (step?.key === TIMELINE_STEP.FINAL_DRAFT) {
+      return 'final_draft';
+    }
+
+    return null;
+  }
+
+  private applyDraftReviewState(
+    steps: ProjectTimelineStep[],
+    reviews: ProjectReviewSubmission[]
+  ): ProjectTimelineStep[] {
+    return (steps || []).map(step => {
+      const reviewType = this.getDraftReviewTypeForTimelineStep(step);
+      if (!reviewType) {
+        return step;
+      }
+
+      const reviewStatus = this.getDraftTimelineReviewStatus(reviewType, reviews);
+      if (!reviewStatus) {
+        return step;
+      }
+
+      return {
+        ...step,
+        status: reviewStatus,
+        state: reviewStatus === 'approved' ? 'completed' : 'in_progress',
+      };
+    });
+  }
+
+  private getDraftReviewTypeForTimelineStep(
+    step: ProjectTimelineStep | null | undefined
+  ): ProjectReviewSubmissionType | null {
+    if (step?.key === TIMELINE_STEP.FIRST_DRAFT) {
+      return 'first_draft';
+    }
+
+    if (step?.key === TIMELINE_STEP.FINAL_DRAFT) {
+      return 'final_draft';
+    }
+
+    return null;
+  }
+
+  private getDraftTimelineReviewStatus(
+    type: ProjectReviewSubmissionType,
+    reviews: ProjectReviewSubmission[]
+  ): 'approved' | 'pending' | 'changes_requested' | null {
+    const matchingReviews = (reviews || []).filter(review => this.getReviewType(review) === type);
+
+    if (matchingReviews.some(review => this.normalizeProjectFileType(review.status || '') === 'approved')) {
+      return 'approved';
+    }
+
+    if (matchingReviews.some(review => this.normalizeProjectFileType(review.status || '') === 'pending')) {
+      return 'pending';
+    }
+
+    if (matchingReviews.some(review => this.normalizeProjectFileType(review.status || '') === 'changes_requested')) {
+      return 'changes_requested';
+    }
+
+    return null;
+  }
+
+  private getFirstAvailableReviewRequestType(): ProjectReviewSubmissionType {
+    return this.reviewRequestTypeOptions.find(option => !this.isReviewRequestTypeDisabled(option.value))?.value
+      || 'session_completed';
   }
 
   private getProjectUuid(project: ProjectOffer | null | undefined): string {

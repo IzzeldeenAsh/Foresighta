@@ -1,7 +1,7 @@
 import { Component, OnInit, Injector } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { BaseComponent } from 'src/app/modules/base.component';
-import { MyOrdersService, OrdersResponse, Order } from '../insighter-dashboard/insighter-dashboard/my-orders/my-orders.service';
+import { MyOrdersService, OrdersResponse, Order, PaymentInfo } from '../insighter-dashboard/insighter-dashboard/my-orders/my-orders.service';
 import { ProfileService } from 'src/app/_fake/services/get-profile/get-profile.service';
 import { InvoiceData } from 'src/app/reusable-components/invoice-viewer/invoice-viewer.component';
 import { forkJoin, catchError, of, Observable } from 'rxjs';
@@ -190,11 +190,14 @@ export class InvoicePageComponent extends BaseComponent implements OnInit {
                 billingAddress = this.getBillingAddress(foundOrder, orderNo);
               }
 
+              const invoicePayments = this.getInvoicePayments(foundOrder, orderNo);
+
               this.invoiceData = {
                 order_no: foundOrder.order_no,
                 invoice_no: this.getInvoiceNo(foundOrder, orderNo),
                 date: foundOrder.date,
-                amount: foundOrder.amount,
+                amount: this.getInvoiceAmount(foundOrder, invoicePayments),
+                payments: invoicePayments,
                 service: foundOrder.service,
                 orderable: foundOrder.orderable,
                 userProfile: billToProfile,
@@ -229,7 +232,35 @@ export class InvoicePageComponent extends BaseComponent implements OnInit {
 
   private getInvoiceNo(order: Order, identifier: string): string {
     const matchedPayment = OrderViewUtils.getOrderPayments(order).find(payment => payment.invoice_no === identifier);
+    if (!matchedPayment && OrderViewUtils.getOrderPayments(order).length > 1 && order.order_no === identifier) {
+      return order.order_no;
+    }
+
     return matchedPayment?.invoice_no || OrderViewUtils.getOrderInvoiceNo(order) || order.order_no;
+  }
+
+  private getInvoicePayments(order: Order, identifier: string): PaymentInfo[] {
+    const payments = OrderViewUtils.getOrderPayments(order);
+    const matchedPayment = payments.find(payment => payment.invoice_no === identifier);
+
+    if (matchedPayment) {
+      return [matchedPayment];
+    }
+
+    if (payments.length > 0 && (order.order_no === identifier || order.invoice_no === identifier)) {
+      return payments;
+    }
+
+    const primaryPayment = OrderViewUtils.getPrimaryPayment(order);
+    return primaryPayment ? [primaryPayment] : [];
+  }
+
+  private getInvoiceAmount(order: Order, payments = OrderViewUtils.getOrderPayments(order)): number {
+    if (payments.length > 0) {
+      return payments.reduce((total, payment) => total + (typeof payment.amount === 'number' ? payment.amount : 0), 0);
+    }
+
+    return order.amount;
   }
 
   private getBillingAddress(order: Order, identifier: string): InvoiceData['billingAddress'] {

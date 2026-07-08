@@ -82,7 +82,9 @@
               <ng-container *ngIf="isMeetingOrder">
                 <tr>
                   <td class="meeting-item" style="padding-top:8px;">{{ meetingTitle }}</td>
-                  <td class="amount" style="padding-top:8px;">${{ invoiceData.amount.toFixed(2) }}</td>
+                  <td class="amount" style="padding-top:8px;">
+                    <ng-container *ngIf="!hasMultiplePayments">${{ invoiceData.amount.toFixed(2) }}</ng-container>
+                  </td>
                 </tr>
                 <tr *ngFor="let detail of meetingDetails">
                   <td class="sub-item">
@@ -90,12 +92,22 @@
                   </td>
                   <td class="amount sub-item-amount">{{ detail.value }}</td>
                 </tr>
+                <ng-container *ngIf="hasMultiplePayments">
+                  <tr *ngFor="let payment of paymentRows">
+                    <td class="sub-item">
+                      &nbsp;&nbsp;&nbsp;&nbsp;• {{ payment.label }}<ng-container *ngIf="payment.invoiceNo">: {{ payment.invoiceNo }}</ng-container>
+                    </td>
+                    <td class="amount sub-item-amount">${{ payment.amount.toFixed(2) }}</td>
+                  </tr>
+                </ng-container>
               </ng-container>
 
               <ng-container *ngIf="isProjectOrder">
                 <tr>
                   <td class="knowledge-item" style="padding-top:8px;">{{ projectTitle }}</td>
-                  <td class="amount" style="padding-top:8px;">${{ invoiceData.amount.toFixed(2) }}</td>
+                  <td class="amount" style="padding-top:8px;">
+                    <ng-container *ngIf="!hasMultiplePayments">${{ invoiceData.amount.toFixed(2) }}</ng-container>
+                  </td>
                 </tr>
                 <tr *ngIf="projectNo">
                   <td class="sub-item">
@@ -103,6 +115,14 @@
                   </td>
                   <td class="amount sub-item-amount">-</td>
                 </tr>
+                <ng-container *ngIf="hasMultiplePayments">
+                  <tr *ngFor="let payment of paymentRows">
+                    <td class="sub-item">
+                      &nbsp;&nbsp;&nbsp;&nbsp;• {{ payment.label }}<ng-container *ngIf="payment.invoiceNo">: {{ payment.invoiceNo }}</ng-container>
+                    </td>
+                    <td class="amount sub-item-amount">${{ payment.amount.toFixed(2) }}</td>
+                  </tr>
+                </ng-container>
               </ng-container>
 
               <ng-container *ngIf="!isMeetingOrder && !isProjectOrder">

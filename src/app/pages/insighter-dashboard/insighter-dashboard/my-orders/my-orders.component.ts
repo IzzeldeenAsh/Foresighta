@@ -234,7 +234,7 @@ export class MyOrdersComponent extends BaseComponent implements OnInit {
 
   downloadInvoice(order: Order): void {
     // Open invoice in a new tab
-    const orderNumber = OrderViewUtils.getOrderInvoiceNo(order) || order.order_no;
+    const orderNumber = OrderViewUtils.getInvoiceRouteIdentifier(order);
     const url = this.router.serializeUrl(
       this.router.createUrlTree(['/app/invoice', orderNumber])
     );

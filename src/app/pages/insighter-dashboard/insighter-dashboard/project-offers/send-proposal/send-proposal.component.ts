@@ -24,6 +24,7 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
 
   proposal: ProjectOffer | null = null;
 
+  /** Route param — project UUID used to load details from /insighter/project/show. */
   proposalUuid: string | null = null;
   hourlyRate: number | null = null;
   isLoading: boolean = false;
@@ -152,10 +153,20 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
       return;
     }
 
+    // The add-offer endpoint expects the proposal-match UUID from the loaded details.
+    const matchUuid = this.proposal?.match_uuid;
+    if (!matchUuid) {
+      this.showError(
+        this.lang === 'ar' ? 'تعذر إرسال العرض' : 'Cannot submit offer',
+        this.lang === 'ar' ? 'لم يتم العثور على معرّف المقترح.' : 'Proposal identifier was not found.'
+      );
+      return;
+    }
+
     this.isSubmitting = true;
     const payload = this.buildProposalFormData();
 
-    this.projectOffersService.submitProposalOffer(this.proposalUuid, payload)
+    this.projectOffersService.submitProposalOffer(matchUuid, payload)
       .pipe(takeUntil(this.unsubscribe$))
       .subscribe({
         next: (res) => {

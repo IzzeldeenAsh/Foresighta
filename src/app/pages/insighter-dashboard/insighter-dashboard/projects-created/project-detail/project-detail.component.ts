@@ -30,6 +30,10 @@ import {
   RematchPropertiesPayload,
   SubmitRematchProposalPayload,
 } from 'src/app/_fake/services/projects-created/projects-created.service';
+import {
+  ProjectTimelineStep,
+  TimelineStepActionEvent,
+} from 'src/app/_fake/services/project-timeline/project-timeline.model';
 
 type ProjectDetailTab = 'overview' | 'documents' | 'reviews' | 'discussion';
 type RematchWizardStep =
@@ -144,6 +148,7 @@ const PROJECT_FILE_GROUP_ORDER = ['first_draft', 'final_draft', 'samples', 'docu
 })
 export class ProjectDetailComponent extends BaseComponent implements OnInit, OnDestroy {
   project: CreatedProject | null = null;
+  timelineSteps: ProjectTimelineStep[] = [];
   invitedInsighters: CreatedProjectProposalInvite[] = [];
   activeTab: ProjectDetailTab = 'overview';
   isLoading: boolean = false;
@@ -959,6 +964,41 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
 
   openReviewsTab(): void {
     this.setActiveTab('reviews');
+  }
+
+  private loadTimeline(uuid: string): void {
+    if (!uuid) {
+      this.timelineSteps = [];
+      return;
+    }
+
+    this.projectsCreatedService.getTimeline(uuid)
+      .pipe(takeUntil(this.unsubscribe$))
+      .subscribe({
+        next: timeline => {
+          this.timelineSteps = timeline?.steps ?? [];
+        },
+        error: () => {
+          this.timelineSteps = [];
+        },
+      });
+  }
+
+  onTimelineAction(event: TimelineStepActionEvent): void {
+    switch (event.action) {
+      case 'view_contract':
+        this.viewContract();
+        break;
+      case 'pay':
+        this.openProjectPaymentDialog();
+        break;
+      case 'open_review':
+        this.openReviewsTab();
+        break;
+      case 'close_project':
+        this.closeProject();
+        break;
+    }
   }
 
   viewContract(): void {
@@ -2003,6 +2043,41 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
     return this.getInviteActionStatus(invite) === 'offered' && !!invite?.offer;
   }
 
+  getAwardedOfferStatusLabel(status: string | null | undefined): string {
+    const labels: Record<string, { en: string; ar: string }> = {
+      pending: { en: 'Pending', ar: 'قيد الانتظار' },
+      technical_accepted: { en: 'Technical Accepted', ar: 'مقبول فنياً' },
+      technical_rejected: { en: 'Technical Rejected', ar: 'مرفوض فنياً' },
+      awarded: { en: 'Awarded', ar: 'تمت الترسية' },
+      not_selected: { en: 'Not Selected', ar: 'غير مختار' },
+    };
+
+    const key = this.normalizeValue(status) || 'pending';
+    const match = labels[key];
+    if (!match) return this.humanizeValue(key) || '-';
+    return this.lang === 'ar' ? match.ar : match.en;
+  }
+
+  getAwardedOfferStatusBadgeClass(status: string | null | undefined): string {
+    switch (this.normalizeValue(status) || 'pending') {
+      case 'technical_accepted':
+      case 'awarded':
+        return 'badge-light-success';
+      case 'technical_rejected':
+        return 'badge-light-danger';
+      case 'not_selected':
+        return 'badge-light-gray';
+      case 'pending':
+      default:
+        return 'badge-light-warning';
+    }
+  }
+
+  getSubmittedOfferFiles(offer: CreatedProjectSubmittedOffer | null | undefined): CreatedProjectFile[] {
+    const files = offer?.files;
+    return Array.isArray(files) ? files : [];
+  }
+
   canStartRematch(project: CreatedProject | null = this.project): boolean {
     if (!project) return false;
 
@@ -2689,6 +2764,7 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
       .pipe(
         tap(project => {
           this.project = project;
+          this.loadTimeline(project.uuid);
           this.loadSubmittedInsighters(project.uuid);
           this.documentFilesSubject.next(this.collectProjectDocumentFiles(project));
           this.primeReviewSubmissionStats(project.uuid);
@@ -3200,6 +3276,7 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
       .subscribe({
         next: project => {
           this.project = project;
+          this.loadTimeline(project.uuid);
           this.loadSubmittedInsighters(project.uuid);
           if (this.shouldShowProjectPayment(project)) {
             this.loadProjectWalletBalance(project);

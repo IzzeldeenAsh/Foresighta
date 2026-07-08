@@ -45,6 +45,7 @@ export interface Orderable {
 
 export interface PaymentInfo {
   method: string;
+  type?: string;
   provider: string | null;
   amount: number;
   currency: string;

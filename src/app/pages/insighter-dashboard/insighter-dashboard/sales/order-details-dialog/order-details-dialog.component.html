@@ -19,15 +19,15 @@
           </h5>
           <div class="text-muted fs-7">{{ order.date | date:'medium' }}</div>
         </div>
-        <div class="text-end">
+        <div class="text-end" *ngIf="utils.shouldShowSinglePaymentAmount(order)">
           <div class="fs-4 fw-bold text-success badge badge-light-success">
-            {{ order.amount === 0 ? (lang === 'ar' ? 'مجاني' : 'Free') : '$'+ order.amount }}
+            {{ utils.getDisplayPaymentAmount(order) === 0 ? (lang === 'ar' ? 'مجاني' : 'Free') : '$'+ utils.getDisplayPaymentAmount(order) }}
           </div>
         </div>
       </div>
 
       <div class="d-flex justify-content-between align-items-center">
-        <div class="payment-method-display d-inline-flex align-items-center bg-white rounded border px-3 py-2" *ngIf="order.amount > 0">
+        <div class="payment-method-display d-inline-flex align-items-center bg-white rounded border px-3 py-2" *ngIf="utils.getDisplayPaymentAmount(order) > 0">
           <ng-container *ngIf="utils.shouldShowCardLogo(utils.getPrimaryPayment(order));">
             <div class="me-2" [innerHTML]="cardLogoSvg(utils.getPrimaryPayment(order))" style="width: 24px; height: 16px; display: flex; align-items: center;"></div>
           </ng-container>

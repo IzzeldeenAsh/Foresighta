@@ -325,6 +325,10 @@
   gap: 16px;
 }
 
+.owp-documents-contract {
+  margin-top: 4px;
+}
+
 .owp-doc-workspace > .po-document-group {
   .po-document-list {
     grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));

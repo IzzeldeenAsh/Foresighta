@@ -6,6 +6,7 @@ export interface InvoiceData {
   invoice_no?: string;
   date: string;
   amount: number;
+  payments?: InvoicePayment[];
   service: string;
   orderable: any;
   userProfile?: {
@@ -25,6 +26,15 @@ export interface InvoiceData {
   } | string | null;
 }
 
+export interface InvoicePayment {
+  amount: number;
+  invoice_no?: string | null;
+  type?: string;
+  method?: string;
+  provider_card_last_number?: string | null;
+  provider_card_brand?: string | null;
+}
+
 @Component({
   selector: 'app-invoice-viewer',
   templateUrl: './invoice-viewer.component.html',
@@ -35,6 +45,7 @@ export class InvoiceViewerComponent extends BaseComponent implements OnInit, OnD
 
   invoiceDate = '';
   serviceRows: Array<{name: string, amount: number}> = [];
+  paymentRows: Array<{label: string, invoiceNo: string, amount: number}> = [];
   subtotal = 0;
   isMeetingOrder = false;
   isProjectOrder = false;
@@ -79,6 +90,7 @@ export class InvoiceViewerComponent extends BaseComponent implements OnInit, OnD
     this.isMeetingOrder = this.invoiceData.service === 'meeting_service';
     this.isProjectOrder = this.invoiceData.service === 'project_service';
     this.serviceRows = [];
+    this.paymentRows = this.getPaymentRows();
     this.subtotal = this.invoiceData.amount;
 
     if (this.isMeetingOrder) {
@@ -140,6 +152,30 @@ export class InvoiceViewerComponent extends BaseComponent implements OnInit, OnD
         totalPrice: pkg.totalPrice
       }));
     }
+  }
+
+  get hasMultiplePayments(): boolean {
+    return this.paymentRows.length > 1;
+  }
+
+  private getPaymentRows(): Array<{label: string, invoiceNo: string, amount: number}> {
+    const payments = this.invoiceData.payments || [];
+
+    return payments.map((payment, index) => ({
+      label: payment.type
+        ? this.formatPaymentType(payment.type)
+        : `Payment #${index + 1}`,
+      invoiceNo: payment.invoice_no || '',
+      amount: payment.amount
+    }));
+  }
+
+  private formatPaymentType(type: string): string {
+    return type
+      .replace(/_/g, ' ')
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
   }
 
   printOrSaveAsPDF(): void {

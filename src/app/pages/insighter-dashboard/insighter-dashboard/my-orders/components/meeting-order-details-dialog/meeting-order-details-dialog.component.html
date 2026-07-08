@@ -20,8 +20,8 @@
           <div class="text-muted fs-7">{{ order.date | date:'medium' }}</div>
         </div>
         <div class="text-end">
-          <div class="fs-2 fw-bold text-dark">
-            {{ order.amount === 0 ? (lang === 'ar' ? 'مجاني' : 'Free') : '$'+ order.amount }}
+          <div *ngIf="utils.shouldShowSinglePaymentAmount(order)" class="fs-2 fw-bold text-dark">
+            {{ utils.getDisplayPaymentAmount(order) === 0 ? (lang === 'ar' ? 'مجاني' : 'Free') : '$'+ utils.getDisplayPaymentAmount(order) }}
           </div>
           <span class="badge" [ngClass]="utils.getStatusBadgeClass(order.status)">{{ order.status }}</span>
         </div>

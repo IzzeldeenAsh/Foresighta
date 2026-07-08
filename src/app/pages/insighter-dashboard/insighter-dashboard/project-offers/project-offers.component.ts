@@ -13,13 +13,15 @@ import {
   ProjectOffersPaginatedResponse,
   ProjectOffersFilters,
   ProjectOffersService,
-  ProjectOfferReadStatus,
   ProjectOfferStatistics,
   ProjectOfferType,
 } from 'src/app/_fake/services/project-offers/project-offers.service';
 
 type ViewMode = 'grid' | 'list';
 export type DrawerTab = 'overview' | 'documents' | 'offer' | 'discussion';
+/** Virtual chip value — awarded projects are filtered by stage, not action_status. */
+export const ACTIVE_PROJECTS_FILTER = 'active_projects';
+type StatusChipValue = ProjectOfferActionStatus | typeof ACTIVE_PROJECTS_FILTER;
 
 interface ProjectTypeMeta {
   key: ProjectOfferType;
@@ -55,8 +57,8 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
   offerReadImageUrl = 'https://res.cloudinary.com/dsiku9ipv/image/upload/v1777637418/job-offer_8062313_lqbkuq.png';
   offerUnreadImageUrl = 'https://res.cloudinary.com/dsiku9ipv/image/upload/v1779196244/job-offer_8062313_lqbkuq_belled_zx6gpr.png';
   selectedActionStatus: ProjectOfferActionStatus | null = null;
-  selectedReadStatus: ProjectOfferReadStatus | null = null;
-  projectStatistics: ProjectOfferStatistics = { total: 0, statuses: [] };
+  activeProjectsOnly = false;
+  projectStatistics: ProjectOfferStatistics = { total: 0, statuses: [], active_projects_total: 0 };
   projectStatisticsLoaded = false;
 
   currentPage: number = 1;
@@ -80,26 +82,25 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
   private chipRailDragTarget: HTMLElement | null = null;
   private chipRailDragPointerId: number | null = null;
   private chipRailDragStartX = 0;
+  private chipRailDragStartY = 0;
   private chipRailDragStartScrollLeft = 0;
   private chipRailDragMoved = false;
   private suppressChipClick = false;
+  private readonly chipRailDragThreshold = 10;
 
   projectTypeOptions: ProjectTypeMeta[] = [
     { key: 'ad_hoc', labelEn: 'Ad Hoc', labelAr: 'خاص' },
     { key: 'frame_work_agreement', labelEn: 'Framework Agreement', labelAr: 'اتفاقية إطارية' },
     { key: 'urgent_request', labelEn: 'Urgent Request', labelAr: 'طلب عاجل' },
   ];
-  actionStatusOptions: StatusFilterOption<ProjectOfferActionStatus>[] = [
+  actionStatusOptions: StatusFilterOption<StatusChipValue>[] = [
     { value: 'pending', labelEn: 'Pending', labelAr: 'قيد الانتظار', iconClass: 'pi-clock' },
     { value: 'viewed', labelEn: 'Viewed', labelAr: 'تمت المشاهدة', iconClass: 'pi-eye' },
+    { value: 'interested', labelEn: 'Interested', labelAr: 'مهتم', iconClass: 'pi-thumbs-up' },
     { value: 'offered', labelEn: 'Offered', labelAr: 'تم تقديم العرض', iconClass: 'pi-send' },
-    { value: 'awarded', labelEn: 'Awarded', labelAr: 'تم الترسية', iconClass: 'pi-star' },
-    { value: 'technical_rejected', labelEn: 'Technical Rejected', labelAr: 'مرفوض فنياً', iconClass: 'pi-times-circle' },
+    { value: ACTIVE_PROJECTS_FILTER, labelEn: 'Awarded Projects', labelAr: 'المشاريع النشطة', iconClass: 'pi-star' },
     { value: 'expired', labelEn: 'Expired', labelAr: 'منتهي', iconClass: 'pi-clock' },
-  ];
-  readStatusOptions: StatusFilterOption<ProjectOfferReadStatus>[] = [
-    { value: 'not_read', labelEn: 'Unread', labelAr: 'غير مقروء', iconClass: 'ki-notification-on' },
-    { value: 'read', labelEn: 'Read', labelAr: 'مقروء', iconClass: 'ki-eye' },
+    { value: 'not_interested', labelEn: 'Not Interested', labelAr: 'غير مهتم', iconClass: 'pi-times-circle' },
   ];
   drawerTabOptions: DrawerTabOption[] = [
     { value: 'overview', labelEn: 'Overview', labelAr: 'نظرة عامة', iconClass: 'ki-element-7' },
@@ -143,11 +144,22 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
     return this.projectStatisticsLoaded ? this.projectStatistics.total : this.totalRecords;
   }
 
-  getActionStatusCount(status: ProjectOfferActionStatus | null | undefined): number {
+  getActionStatusCount(status: StatusChipValue | null | undefined): number | null {
+    if (status === ACTIVE_PROJECTS_FILTER) {
+      return this.projectStatisticsLoaded ? (this.projectStatistics.active_projects_total ?? 0) : 0;
+    }
     if (!status || !this.projectStatisticsLoaded) return 0;
     const key = this.normalizeStatusKey(status);
     const match = this.projectStatistics.statuses.find(item => this.normalizeStatusKey(item.status) === key);
     return match?.total ?? 0;
+  }
+
+  isStatusChipActive(value: StatusChipValue): boolean {
+    if (value === ACTIVE_PROJECTS_FILTER) {
+      return this.activeProjectsOnly;
+    }
+
+    return !this.activeProjectsOnly && this.selectedActionStatus === value;
   }
 
   private normalizeStatusKey(value: string): string {
@@ -159,7 +171,9 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
       .pipe(takeUntil(this.unsubscribe$))
       .subscribe({
         next: (res: ProjectOffersPaginatedResponse) => {
-          this.offers = res.data || [];
+          const data = res.data || [];
+
+          this.offers = data;
           this.totalRecords = res.meta?.total ?? 0;
           this.rows = res.meta?.per_page ?? 10;
           this.currentPage = res.meta?.current_page ?? page;
@@ -176,15 +190,17 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
     this.loadOffers(page);
   }
 
-  onActionStatusChange(actionStatus: ProjectOfferActionStatus | null): void {
+  onActionStatusChange(actionStatus: StatusChipValue | null): void {
     if (this.suppressChipClick) return;
-    this.selectedActionStatus = actionStatus;
-    this.resetPaginationAndReload();
-  }
 
-  onReadStatusChange(readStatus: ProjectOfferReadStatus | null): void {
-    if (this.suppressChipClick) return;
-    this.selectedReadStatus = this.selectedReadStatus === readStatus ? null : readStatus;
+    if (actionStatus === ACTIVE_PROJECTS_FILTER) {
+      this.activeProjectsOnly = true;
+      this.selectedActionStatus = null;
+    } else {
+      this.activeProjectsOnly = false;
+      this.selectedActionStatus = actionStatus;
+    }
+
     this.resetPaginationAndReload();
   }
 
@@ -207,10 +223,10 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
     this.chipRailDragTarget = rail;
     this.chipRailDragPointerId = event.pointerId;
     this.chipRailDragStartX = event.clientX;
+    this.chipRailDragStartY = event.clientY;
     this.chipRailDragStartScrollLeft = rail.scrollLeft;
     this.chipRailDragMoved = false;
-    rail.setPointerCapture(event.pointerId);
-    rail.classList.add('is-dragging');
+    this.suppressChipClick = false;
   }
 
   onChipRailPointerMove(event: PointerEvent): void {
@@ -220,14 +236,20 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
       return;
     }
 
-    const distance = event.clientX - this.chipRailDragStartX;
-    if (Math.abs(distance) > 4) {
+    const distanceX = event.clientX - this.chipRailDragStartX;
+    const distanceY = event.clientY - this.chipRailDragStartY;
+    const isHorizontalDrag = Math.abs(distanceX) > this.chipRailDragThreshold
+      && Math.abs(distanceX) > Math.abs(distanceY);
+
+    if (isHorizontalDrag && !this.chipRailDragMoved) {
       this.chipRailDragMoved = true;
       this.suppressChipClick = true;
+      this.chipRailDragTarget.setPointerCapture(event.pointerId);
+      this.chipRailDragTarget.classList.add('is-dragging');
     }
 
     if (this.chipRailDragMoved) {
-      this.chipRailDragTarget.scrollLeft = this.chipRailDragStartScrollLeft - distance;
+      this.chipRailDragTarget.scrollLeft = this.chipRailDragStartScrollLeft - distanceX;
       event.preventDefault();
     }
   }
@@ -263,7 +285,34 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
       return;
     }
 
+    if (this.isActiveProject(offer)) {
+      this.openProjectWorkspace(offer);
+      return;
+    }
+
     this.router.navigate(['/app/insighter-dashboard/project-offers/details', detailsUuid]);
+  }
+
+  isActiveProject(offer: ProjectOffer | null | undefined): boolean {
+    return (offer?.stage || '').toLowerCase() === 'project';
+  }
+
+  /** Awarded project that hasn't been closed yet — used to gate the "Active Project" marker. */
+  isOpenActiveProject(offer: ProjectOffer | null | undefined): boolean {
+    return this.isActiveProject(offer) && this.getProjectWorkflowStatus(offer) !== 'closed';
+  }
+
+  openProjectWorkspace(offer: ProjectOffer | null | undefined = this.selectedOffer): void {
+    const projectUuid = offer?.project?.uuid || offer?.uuid;
+    if (!projectUuid) {
+      this.showError(
+        this.lang === 'ar' ? 'تعذر فتح المشروع' : 'Cannot open project',
+        this.lang === 'ar' ? 'لم يتم العثور على معرّف المشروع.' : 'Project identifier was not found.'
+      );
+      return;
+    }
+
+    this.router.navigate(['/app/insighter-dashboard/on-work-projects/details', projectUuid]);
   }
 
   loadOfferDetails(offer: ProjectOffer): void {
@@ -315,8 +364,11 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
   }
 
   getStatusBadgeClass(offer: ProjectOffer): string {
-    const status = this.getDisplayStatus(offer);
-    switch (status) {
+    return this.getStatusBadgeClassFor(this.getDisplayStatus(offer));
+  }
+
+  getStatusBadgeClassFor(status: string | null | undefined): string {
+    switch ((status || '').toLowerCase()) {
       case 'viewed':
         return 'badge-light-viewed';
       case 'pending':
@@ -325,7 +377,23 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
       case 'accepted':
       case 'approved':
       case 'offered':
+      case 'interested':
+      case 'active_project':
+      case 'contract_signed':
+      case 'completed':
         return 'badge-light-success';
+      case 'closed':
+        return 'badge-light-closed';
+      case 'in_progress':
+        return 'badge-light-progress';
+      case 'payment':
+        return 'badge-light-payment';
+      case 'in_review':
+        return 'badge-light-review';
+      case 'contract_pending':
+      case 'contract_waiting_client':
+      case 'contract_waiting_insighter':
+        return 'badge-light-signature';
       case 'awarded':
         return 'badge-light-info';
       case 'rejected':
@@ -333,19 +401,71 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
       case 'cancelled':
       case 'expired':
       case 'not_selected':
+      case 'not_interested':
       case 'technical_rejected':
         return 'badge-light-danger';
       case 'submitted':
       case 'contract':
-      case 'closed':
+      case 'contracting':
         return 'badge-light-primary';
       default:
         return 'badge-light-info';
     }
   }
 
+  getStatusIconClassFor(status: string | null | undefined): string {
+    switch ((status || '').toLowerCase()) {
+      case 'viewed':
+        return 'pi-eye';
+      case 'pending':
+      case 'invited':
+        return 'pi-clock';
+      case 'interested':
+        return 'pi-thumbs-up';
+      case 'offered':
+        return 'pi-send';
+      case 'awarded':
+      case 'active_project':
+        return 'pi-star';
+      case 'accepted':
+      case 'approved':
+      case 'contract_signed':
+      case 'completed':
+      case 'closed':
+        return 'pi-check-circle';
+      case 'in_progress':
+        return 'pi-spinner';
+      case 'payment':
+        return 'pi-credit-card';
+      case 'in_review':
+        return 'pi-search';
+      case 'contract':
+      case 'contracting':
+      case 'contract_pending':
+      case 'contract_waiting_client':
+      case 'contract_waiting_insighter':
+        return 'pi-pencil';
+      case 'rejected':
+      case 'declined':
+      case 'cancelled':
+      case 'expired':
+      case 'not_selected':
+      case 'not_interested':
+      case 'technical_rejected':
+        return 'pi-times-circle';
+      case 'submitted':
+        return 'pi-send';
+      default:
+        return 'pi-info-circle';
+    }
+  }
+
   getStatusLabel(offer: ProjectOffer): string {
-    const status = this.getDisplayStatus(offer);
+    return this.getStatusLabelFor(this.getPrimaryStatus(offer));
+  }
+
+  getStatusLabelFor(status: string | null | undefined): string {
+    const normalized = (status || '').toLowerCase();
     const labels: { [k: string]: { en: string; ar: string } } = {
       pending: { en: 'Pending', ar: 'قيد الانتظار' },
       invited: { en: 'Invited', ar: 'مدعو' },
@@ -353,6 +473,13 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
       offered: { en: 'Offered', ar: 'تم تقديم العرض' },
       awarded: { en: 'Awarded', ar: 'تم الترسية' },
       technical_rejected: { en: 'Technical Rejected', ar: 'مرفوض فنياً' },
+      interested: { en: 'Interested', ar: 'مهتم' },
+      not_interested: { en: 'Not Interested', ar: 'غير مهتم' },
+      active_project: { en: 'Active Project', ar: 'مشروع نشط' },
+      contracting: { en: 'Contracting', ar: 'التعاقد' },
+      payment: { en: 'Payment', ar: 'الدفع' },
+      in_progress: { en: 'In Progress', ar: 'قيد التنفيذ' },
+      in_review: { en: 'In Review', ar: 'قيد المراجعة' },
       accepted: { en: 'Accepted', ar: 'مقبول' },
       approved: { en: 'Approved', ar: 'موافق' },
       rejected: { en: 'Rejected', ar: 'مرفوض' },
@@ -360,13 +487,115 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
       cancelled: { en: 'Cancelled', ar: 'ملغي' },
       submitted: { en: 'Submitted', ar: 'مُرسل' },
       contract: { en: 'Contract', ar: 'العقد' },
+      contract_pending: { en: 'Contract Pending', ar: 'العقد قيد الانتظار' },
+      contract_waiting_client: { en: 'Waiting for Client Signature', ar: 'بانتظار توقيع العميل' },
+      contract_waiting_insighter: { en: 'Waiting for Your Signature', ar: 'بانتظار توقيعك' },
+      contract_signed: { en: 'Contract Signed', ar: 'تم توقيع العقد' },
+      completed: { en: 'Completed', ar: 'مكتمل' },
       closed: { en: 'Closed', ar: 'مغلق' },
       expired: { en: 'Expired', ar: 'منتهي' },
       not_selected: { en: 'Not Selected', ar: 'غير مختار' },
     };
-    const match = labels[status];
-    if (!match) return this.humanizeValue(status) || '-';
+    const match = labels[normalized];
+    if (!match) return this.humanizeValue(normalized) || '-';
     return this.lang === 'ar' ? match.ar : match.en;
+  }
+
+  getProposalStatusRows(offer: ProjectOffer | null | undefined): Array<{ label: string; status: string }> {
+    const proposals = offer?.proposals?.length
+      ? offer.proposals
+      : [{
+        action_status: offer?.action_status ?? null,
+        status: offer?.proposal_status ?? null,
+      }];
+
+    return proposals
+      .map((proposal, index, list) => {
+        const status = (proposal?.action_status || proposal?.status || '').toLowerCase();
+        if (!status) return null;
+
+        const proposalLabel = list.length > 1
+          ? (this.lang === 'ar' ? `العرض ${list.length - index}:` : `Proposal ${list.length - index}:`)
+          : '';
+
+        return {
+          label: `${proposalLabel}${proposalLabel ? ' ' : ''}${this.getProposalStatusLabel(status)}`,
+          status,
+        };
+      })
+      .filter((row): row is { label: string; status: string } => !!row);
+  }
+
+  trackByProposalStatusRow(index: number, row: { label: string; status: string }): string {
+    return `${row.status}-${row.label}-${index}`;
+  }
+
+  /** Underlying workflow status of an awarded project (payment, in_progress, ...). */
+  getActiveProjectSubStatus(offer: ProjectOffer | null | undefined): string | null {
+    if (!offer || !this.isActiveProject(offer)) {
+      return null;
+    }
+
+    const status = (offer.project_status || offer.project?.status || offer.status || '').toLowerCase();
+    return status && status !== 'closed' ? status : null;
+  }
+
+  getPrimaryProposalStatus(offer: ProjectOffer | null | undefined): string | null {
+    return (offer?.action_status || offer?.proposal_status || '').toLowerCase() || null;
+  }
+
+  getProjectWorkflowStatus(offer: ProjectOffer | null | undefined): string | null {
+    if (!offer || !this.isActiveProject(offer)) {
+      return null;
+    }
+
+    return (offer.project_status || offer.project?.status || offer.status || '').toLowerCase() || null;
+  }
+
+  getContractWorkflowStatus(offer: ProjectOffer | null | undefined): string | null {
+    const contract = offer?.contract || offer?.project?.contract;
+    if (!contract) {
+      return null;
+    }
+
+    if (contract.user_sign_at && contract.insighter_sign_at) {
+      return (contract.status || 'contract_signed').toLowerCase();
+    }
+
+    if (contract.user_sign_at && !contract.insighter_sign_at) {
+      return 'contract_waiting_insighter';
+    }
+
+    if (!contract.user_sign_at && contract.insighter_sign_at) {
+      return 'contract_waiting_client';
+    }
+
+    return (contract.status || 'contract_pending').toLowerCase();
+  }
+
+  getPrimaryStatus(offer: ProjectOffer | null | undefined): string {
+    if (!offer) {
+      return '';
+    }
+
+    if (this.isActiveProject(offer)) {
+      const contractStatus = this.getContractWorkflowStatus(offer);
+      if (
+        contractStatus === 'contract_waiting_client'
+        || contractStatus === 'contract_waiting_insighter'
+        || contractStatus === 'contract_pending'
+      ) {
+        return contractStatus;
+      }
+
+      return this.getProjectWorkflowStatus(offer) || 'active_project';
+    }
+
+    return (offer.offer?.status || offer.action_status || offer.proposal_status || offer.status || '').toLowerCase();
+  }
+
+  getProposalStatusLabel(status: string | null | undefined): string {
+    return this.getStatusLabelFor(status);
   }
 
   getTypeLabel(type: ProjectOfferType | null | undefined): string {
@@ -578,7 +807,7 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
   }
 
   shouldShowOfferTimer(offer: ProjectOffer | null | undefined): boolean {
-    if (!offer) {
+    if (!offer || this.isActiveProject(offer)) {
       return false;
     }
 
@@ -904,8 +1133,8 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
   onSendProposal(): void {
     if (!this.selectedOffer) return;
 
-    const offerUuid = this.selectedOffer.uuid;
-    if (!offerUuid) {
+    const projectUuid = this.getProposalDetailsUuid(this.selectedOffer);
+    if (!projectUuid) {
       this.showError(
         this.lang === 'ar' ? 'تعذر فتح صفحة العرض' : 'Cannot open proposal page',
         this.lang === 'ar' ? 'لم يتم العثور على معرّف العرض.' : 'Offer identifier was not found.'
@@ -913,7 +1142,7 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
       return;
     }
 
-    this.router.navigate(['/app/insighter-dashboard/project-offers/send-proposal', offerUuid]);
+    this.router.navigate(['/app/insighter-dashboard/project-offers/send-proposal', projectUuid]);
   }
 
   hasContractAction(offer: ProjectOffer | null | undefined): boolean {
@@ -1000,10 +1229,19 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
       return;
     }
 
+    const matchUuid = this.selectedOffer.match_uuid;
+    if (!matchUuid) {
+      this.showError(
+        this.lang === 'ar' ? 'تعذر رفض العرض' : 'Cannot reject offer',
+        this.lang === 'ar' ? 'لم يتم العثور على معرّف المقترح.' : 'Proposal identifier was not found.'
+      );
+      return;
+    }
+
     const offerUuid = this.selectedOffer.uuid;
     this.rejectingOfferUuid = offerUuid;
 
-    this.projectOffersService.declineOffer(offerUuid)
+    this.projectOffersService.declineOffer(matchUuid)
       .pipe(takeUntil(this.unsubscribe$))
       .subscribe({
         next: (response: ProjectOfferActionResponse) => {
@@ -1020,7 +1258,7 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
           if (this.selectedOffer) {
             this.selectedOffer = {
               ...this.selectedOffer,
-              action_status: 'declined',
+              action_status: 'not_interested',
             };
           }
 
@@ -1158,16 +1396,16 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
   }
 
   canRejectOffer(offer: ProjectOffer | null): boolean {
-    if (!offer?.uuid) {
+    if (!offer?.match_uuid || this.isActiveProject(offer)) {
       return false;
     }
 
     const status = this.getResolvedStatus(offer);
-    return ['pending', 'viewed'].includes(status);
+    return ['pending', 'viewed', 'interested'].includes(status);
   }
 
   canSendOffer(offer: ProjectOffer | null): boolean {
-    if (!offer?.uuid) {
+    if (!offer?.match_uuid || this.isActiveProject(offer)) {
       return false;
     }
 
@@ -1175,7 +1413,7 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
   }
 
   canInterestOffer(offer: ProjectOffer | null): boolean {
-    if (!offer?.uuid) {
+    if (!offer?.match_uuid || this.isActiveProject(offer)) {
       return false;
     }
 
@@ -1264,9 +1502,12 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
   }
 
   private getActiveFilters(): ProjectOffersFilters {
+    if (this.activeProjectsOnly) {
+      return { stage: 'project' };
+    }
+
     return {
       action_status: this.selectedActionStatus,
-      read_status: this.selectedReadStatus,
     };
   }
 
@@ -1277,11 +1518,11 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
   }
 
   private getProposalDetailsUuid(offer: ProjectOffer): string {
-    return offer.uuid || offer.project_proposal_uuid || '';
+    return offer.project?.uuid || offer.uuid || '';
   }
 
   private getProposalInterestUuid(offer: ProjectOffer): string {
-    return offer.uuid || offer.project_proposal_uuid || '';
+    return offer.match_uuid || '';
   }
 
   private getContractUuid(offer: ProjectOffer | null | undefined): string {
@@ -1291,9 +1532,12 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
   private mergeOfferDetails(summary: ProjectOffer, details: ProjectOffer): ProjectOffer {
     return {
       ...details,
-      uuid: summary.uuid || details.uuid,
+      uuid: details.uuid || summary.uuid,
       status: details.status ?? summary.status,
-      action_status: summary.action_status ?? details.action_status,
+      action_status: details.action_status ?? summary.action_status,
+      match_uuid: details.match_uuid ?? summary.match_uuid,
+      stage: details.stage ?? summary.stage,
+      proposals: details.proposals?.length ? details.proposals : summary.proposals,
       created_at: details.created_at ?? summary.created_at,
       updated_at: details.updated_at ?? summary.updated_at,
       invited_at: details.invited_at ?? summary.invited_at,
@@ -1316,19 +1560,49 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
 
   private markOfferAsViewed(offer: ProjectOffer): void {
     const offerUuid = offer?.uuid;
-    const projectUuid = offer?.project?.uuid;
 
-    if (!offerUuid || !projectUuid || !this.isInsighterUnread(offer) || this.markingViewedOfferUuids.has(offerUuid)) {
+    if (!offerUuid || this.markingViewedOfferUuids.has(offerUuid)) {
+      return;
+    }
+
+    // Awarded projects use the project read receipt; proposal-stage items are
+    // "read" once their match moves from pending to viewed.
+    if (this.isActiveProject(offer)) {
+      const projectUuid = offer?.project?.uuid;
+      if (!projectUuid || !this.isInsighterUnread(offer)) {
+        return;
+      }
+
+      this.markingViewedOfferUuids.add(offerUuid);
+
+      this.projectOffersService.markInsighterProjectAsRead(projectUuid)
+        .pipe(takeUntil(this.unsubscribe$))
+        .subscribe({
+          next: () => {
+            this.updateOfferInsighterReadState(offerUuid, true);
+          },
+          error: () => {
+            this.markingViewedOfferUuids.delete(offerUuid);
+          },
+          complete: () => {
+            this.markingViewedOfferUuids.delete(offerUuid);
+          },
+        });
+      return;
+    }
+
+    const matchUuid = offer?.match_uuid;
+    if (!matchUuid || this.getResolvedStatus(offer) !== 'pending') {
       return;
     }
 
     this.markingViewedOfferUuids.add(offerUuid);
 
-    this.projectOffersService.markInsighterProjectAsRead(projectUuid)
+    this.projectOffersService.markProjectAsViewed(matchUuid)
       .pipe(takeUntil(this.unsubscribe$))
       .subscribe({
         next: () => {
-          this.updateOfferInsighterReadState(offerUuid, true);
+          this.updateOfferActionStatus(offerUuid, 'viewed');
         },
         error: () => {
           this.markingViewedOfferUuids.delete(offerUuid);
@@ -1409,11 +1683,11 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
   }
 
   private getResolvedStatus(offer: ProjectOffer): string {
-    return (offer?.action_status || offer?.status || '').toLowerCase();
+    return (offer?.action_status || offer?.proposal_status || offer?.status || '').toLowerCase();
   }
 
   private getDisplayStatus(offer: ProjectOffer): string {
-    return (offer?.offer?.status || this.getResolvedStatus(offer) || '').toLowerCase();
+    return this.getPrimaryStatus(offer);
   }
 
   private humanizeValue(value: string): string {

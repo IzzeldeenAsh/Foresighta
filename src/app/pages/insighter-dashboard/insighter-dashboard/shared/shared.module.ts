@@ -3,11 +3,13 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { PageHeaderComponent } from './page-header/page-header.component';
 import { ProjectDiscussionComponent } from './project-discussion/project-discussion.component';
+import { ProjectTimelineComponent } from './project-timeline/project-timeline.component';
 
 @NgModule({
   declarations: [
     PageHeaderComponent,
-    ProjectDiscussionComponent
+    ProjectDiscussionComponent,
+    ProjectTimelineComponent
   ],
   imports: [
     CommonModule,
@@ -15,7 +17,8 @@ import { ProjectDiscussionComponent } from './project-discussion/project-discuss
   ],
   exports: [
     PageHeaderComponent,
-    ProjectDiscussionComponent
+    ProjectDiscussionComponent,
+    ProjectTimelineComponent
   ]
 })
 export class InsighterDashboardSharedModule { }

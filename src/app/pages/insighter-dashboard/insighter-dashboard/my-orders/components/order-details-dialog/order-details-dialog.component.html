@@ -19,9 +19,9 @@
           </h5>
           <div class="text-muted fs-7">{{ order.date | date:'medium' }}</div>
         </div>
-        <div class="text-end">
+        <div class="text-end" *ngIf="utils.shouldShowSinglePaymentAmount(order)">
           <div class="fs-2 fw-bold text-dark">
-            {{ order.amount === 0 ? (lang === 'ar' ? 'مجاني' : 'Free') : '$'+ order.amount }}
+            {{ utils.getDisplayPaymentAmount(order) === 0 ? (lang === 'ar' ? 'مجاني' : 'Free') : '$'+ utils.getDisplayPaymentAmount(order) }}
           </div>
         </div>
       </div>

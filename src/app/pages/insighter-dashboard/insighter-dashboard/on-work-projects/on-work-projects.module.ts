@@ -13,11 +13,13 @@ import { InsighterDashboardSharedModule } from '../shared/shared.module';
 import { OnWorkProjectDetailsComponent } from './on-work-project-details.component';
 import { OnWorkProjectsComponent } from './on-work-projects.component';
 
+// Backward-compatible routes: the list moved into the unified projects page;
+// old links/notifications keep working. Details stays as the active-project workspace.
 const routes: Routes = [
   {
     path: '',
-    component: OnWorkProjectsComponent,
     pathMatch: 'full',
+    redirectTo: '/app/insighter-dashboard/project-offers',
   },
   {
     path: 'details/:uuid',
