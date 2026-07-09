@@ -22,6 +22,7 @@ export const TIMELINE_STEP = {
   FINAL_PAYMENT: 'final_payment',
   FULL_PAYMENT_AT_END: 'full_payment_at_end',
   CLOSED_PROJECT: 'closed_project',
+  CANCELLED_PROJECT: 'cancelled_project',
 } as const;
 
 export type TimelineStepKey =
@@ -36,8 +37,10 @@ export type TimelineAudience = 'client' | 'insighter';
 /** Actions a timeline step can request from its host component. */
 export type TimelineActionType =
   | 'view_contract'
+  | 'view_offer'
   | 'pay'
   | 'open_review'
+  | 'view_reviews'
   | 'close_project';
 
 export interface TimelineParty {

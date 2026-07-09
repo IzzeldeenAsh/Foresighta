@@ -17,7 +17,7 @@ type ContractStepState = 'waiting_user' | 'waiting_insighter' | 'completed' | nu
 interface TimelineBadge {
   label: string;
   cssClass: string;
-  tone: 'success' | 'warning' | 'primary' | 'muted';
+  tone: 'success' | 'warning' | 'primary' | 'muted' | 'danger';
 }
 
 /**
@@ -45,6 +45,8 @@ export class ProjectTimelineComponent {
   @Input() closeDisabledReason = '';
   @Input() contractState: ContractStepState = null;
   @Input() paymentButtonLabel = '';
+  @Input() canViewOffer = false;
+  @Input() canViewContract = true;
 
   @Output() stepAction = new EventEmitter<TimelineStepActionEvent>();
 
@@ -204,10 +206,28 @@ export class ProjectTimelineComponent {
   }
 
   stepNumberLabel(step: ProjectTimelineStep): string {
+    if (step.key === TIMELINE_STEP.CANCELLED_PROJECT) {
+      return '';
+    }
+
     const stepWord = this.lang === 'ar' ? 'الخطوة' : 'Step';
+    const displayStepNo = this.displayStepNumber(step);
+
     return step.key === TIMELINE_STEP.CLOSED_PROJECT
       ? (this.lang === 'ar' ? 'الخطوة الأخيرة' : 'Final Step')
-      : `${stepWord} ${step.step_no}`;
+      : `${stepWord} ${displayStepNo}`;
+  }
+
+  private displayStepNumber(step: ProjectTimelineStep): number | string {
+    if (step.key === TIMELINE_STEP.CONTRACTING && this.hasVisiblePartyStep()) {
+      return 2;
+    }
+
+    return step.step_no ?? '';
+  }
+
+  private hasVisiblePartyStep(): boolean {
+    return this.visibleSteps.some(item => this.isParty(item));
   }
 
   iconClass(step: ProjectTimelineStep): string {
@@ -229,6 +249,8 @@ export class ProjectTimelineComponent {
         return 'ki-file-right';
       case TIMELINE_STEP.CLOSED_PROJECT:
         return 'ki-check-circle';
+      case TIMELINE_STEP.CANCELLED_PROJECT:
+        return 'ki-cross-circle';
       default:
         return 'ki-abstract-26';
     }
@@ -236,6 +258,9 @@ export class ProjectTimelineComponent {
 
   /** Dot color bucket. */
   dotModifier(step: ProjectTimelineStep): string {
+    if (step.status === 'cancelled' || step.key === TIMELINE_STEP.CANCELLED_PROJECT) {
+      return 'pd-timeline-dot--danger';
+    }
     if (this.isCompleted(step)) {
       return 'pd-timeline-dot--completed';
     }
@@ -251,6 +276,10 @@ export class ProjectTimelineComponent {
 
   badge(step: ProjectTimelineStep): TimelineBadge {
     const ar = this.lang === 'ar';
+
+    if (step.status === 'cancelled' || step.key === TIMELINE_STEP.CANCELLED_PROJECT) {
+      return { label: ar ? 'ملغي' : 'Cancelled', cssClass: '', tone: 'danger' };
+    }
 
     // Contract step reflects the signature stage for the client.
     if (this.isClient && step.key === TIMELINE_STEP.CONTRACTING && this.isActive(step)) {
@@ -294,7 +323,11 @@ export class ProjectTimelineComponent {
   /** Which action (if any) this step exposes for the current audience. */
   actionType(step: ProjectTimelineStep): TimelineActionType | null {
     if (this.isDraft(step) && this.isCompleted(step)) {
-      return null;
+      return 'view_reviews';
+    }
+
+    if (step.key === TIMELINE_STEP.CONTRACTING && this.isCompleted(step) && this.canViewContract) {
+      return 'view_contract';
     }
 
     if (this.isClient) {
@@ -332,9 +365,14 @@ export class ProjectTimelineComponent {
     const ar = this.lang === 'ar';
     switch (this.actionType(step)) {
       case 'view_contract':
+        if (this.isCompleted(step)) {
+          return ar ? 'عرض العقد' : 'View Contract';
+        }
         return this.isClient
           ? (ar ? 'بانتظار توقيعك' : 'Waiting your sign')
           : (ar ? 'بانتظار توقيعك' : 'Waiting your Signature');
+      case 'view_offer':
+        return ar ? 'عرض العرض' : 'View Offer';
       case 'pay':
         return this.paymentButtonLabel || (ar ? 'ادفع الآن' : 'Pay Now');
       case 'open_review':
@@ -347,6 +385,8 @@ export class ProjectTimelineComponent {
             : (ar ? 'إرسال المسودة الأولى' : 'Submit First Draft');
         }
         return ar ? 'فتح المراجعة' : 'Open Review';
+      case 'view_reviews':
+        return ar ? 'عرض المراجعات' : 'View Reviews';
       case 'close_project':
         return this.closeSubmitting
           ? (ar ? 'جاري الإغلاق...' : 'Closing...')
@@ -359,7 +399,9 @@ export class ProjectTimelineComponent {
   actionIcon(step: ProjectTimelineStep): string {
     switch (this.actionType(step)) {
       case 'view_contract':
-        return 'ki-notepad-edit';
+        return this.isCompleted(step) ? 'ki-document' : 'ki-notepad-edit';
+      case 'view_offer':
+        return 'ki-briefcase';
       case 'pay':
         return 'ki-credit-cart';
       case 'open_review':
@@ -369,6 +411,8 @@ export class ProjectTimelineComponent {
         if (this.isActiveDraftSubmission(step)) {
           return 'ki-file-up';
         }
+        return 'ki-eye';
+      case 'view_reviews':
         return 'ki-eye';
       case 'close_project':
         return 'ki-check';
@@ -383,6 +427,12 @@ export class ProjectTimelineComponent {
 
   readonlyDraftReviewStatusLabel(): string {
     return this.lang === 'ar' ? 'بانتظار مراجعة العميل' : "Waiting Client's Review";
+  }
+
+  cancelledByClientLabel(): string {
+    return this.lang === 'ar'
+      ? 'تم إلغاء هذا المشروع من قبل العميل.'
+      : 'This project has been cancelled by the client.';
   }
 
   actionDisabled(step: ProjectTimelineStep): boolean {
@@ -415,9 +465,33 @@ export class ProjectTimelineComponent {
     return party.avatar || party.image || null;
   }
 
-  partyProfileUrl(uuid: string | null | undefined): string {
+  partyDisplayName(party: TimelineParty | null | undefined): string {
+    return party?.legal_name || party?.name || '-';
+  }
+
+  partyProfileUrl(step: ProjectTimelineStep | null | undefined): string {
+    const uuid = step?.party?.uuid;
     const locale = this.lang === 'ar' ? 'ar' : 'en';
-    return uuid ? `${environment.mainAppUrl}/${locale}/profile/${uuid}?entity=insighter` : '';
+    if (!uuid) {
+      return '';
+    }
+
+    return `${environment.mainAppUrl}/${locale}/profile/${uuid}?entity=insighter`;
+  }
+
+  viewOfferLabel(): string {
+    return this.lang === 'ar' ? 'عرض العرض' : 'View Offer';
+  }
+
+  viewProfileLabel(): string {
+    return this.lang === 'ar' ? 'عرض الملف' : 'View Profile';
+  }
+
+  onOfferAction(step: ProjectTimelineStep): void {
+    if (!this.canViewOffer) {
+      return;
+    }
+    this.stepAction.emit({ key: step.key, action: 'view_offer', step });
   }
 
   onAction(step: ProjectTimelineStep): void {

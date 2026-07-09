@@ -155,6 +155,7 @@ export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
   projectFilesUploading = false;
   documentUploadDialogVisible = false;
   reviewRequestDialogVisible = false;
+  offerDrawerVisible = false;
   reviewRequestType: ProjectReviewSubmissionType = 'first_draft';
   reviewRequestPriority: ProjectReviewSubmissionPriorityValue = 'normal';
   reviewRequestNote = '';
@@ -299,7 +300,7 @@ export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
           this.reviewSubmissions = reviews;
           this.reviewSubmissionsSubject.next(reviews);
           this.loadedReviewProjectUuid = projectUuid;
-          this.timelineSteps = this.applyDraftReviewState(this.rawTimelineSteps, reviews);
+          this.timelineSteps = this.buildTimelineSteps(this.rawTimelineSteps, reviews);
           this.showInsighterTimeline = this.timelineSteps.some(step => step?.display);
         },
         error: () => {
@@ -314,8 +315,18 @@ export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
       return;
     }
 
+    if (event.action === 'view_reviews') {
+      this.setDrawerTab('reviews');
+      return;
+    }
+
     if (event.action === 'view_contract') {
       this.openTimelineContract(event.step);
+      return;
+    }
+
+    if (event.action === 'view_offer') {
+      this.openProjectOfferDrawer();
     }
   }
 
@@ -365,6 +376,22 @@ export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
       ['/app/insighter-dashboard/project-offers/contract', contractUuid],
       { queryParams: { returnUrl: '/app/insighter-dashboard/project-offers' } }
     );
+  }
+
+  openProjectOfferDrawer(): void {
+    if (!this.selectedProject?.offer) {
+      this.showError(
+        this.lang === 'ar' ? 'تعذر فتح العرض' : 'Cannot open offer',
+        this.lang === 'ar' ? 'لم يتم العثور على تفاصيل العرض.' : 'Offer details were not found.'
+      );
+      return;
+    }
+
+    this.offerDrawerVisible = true;
+  }
+
+  closeProjectOfferDrawer(): void {
+    this.offerDrawerVisible = false;
   }
 
   private openTimelineContract(step: ProjectTimelineStep): void {
@@ -525,6 +552,85 @@ export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
       ...this.getProposalFiles(project, 'scopes'),
       ...this.getProposalFiles(project, 'offer'),
     ];
+  }
+
+  getOfferFiles(project: ProjectOffer | null | undefined = this.selectedProject): ProjectOfferFile[] {
+    const files = project?.offer?.files;
+    return Array.isArray(files) ? files : [];
+  }
+
+  getOfferStatusLabel(status: string | null | undefined): string {
+    return this.getMappedLabel(status, {
+      pending: { en: 'Pending', ar: 'قيد الانتظار' },
+      accepted: { en: 'Accepted', ar: 'مقبول' },
+      approved: { en: 'Approved', ar: 'موافق عليه' },
+      awarded: { en: 'Awarded', ar: 'تمت الترسية' },
+      selected: { en: 'Selected', ar: 'مختار' },
+      rejected: { en: 'Rejected', ar: 'مرفوض' },
+      declined: { en: 'Declined', ar: 'مرفوض' },
+      cancelled: { en: 'Cancelled', ar: 'ملغي' },
+      not_selected: { en: 'Not Selected', ar: 'غير مختار' },
+    });
+  }
+
+  getOfferStatusBadgeClass(status: string | null | undefined): string {
+    switch (this.normalizeProjectFileType(status || '')) {
+      case 'accepted':
+      case 'approved':
+      case 'awarded':
+      case 'selected':
+        return 'badge-light-success';
+      case 'rejected':
+      case 'declined':
+      case 'cancelled':
+      case 'not_selected':
+        return 'badge-light-danger';
+      case 'pending':
+      default:
+        return 'badge-light-warning';
+    }
+  }
+
+  formatMoney(value: string | number | null | undefined): string {
+    if (value === null || value === undefined || value === '') {
+      return '-';
+    }
+
+    const numericValue = typeof value === 'number' ? value : Number(value);
+    if (Number.isNaN(numericValue)) {
+      return `${value}`;
+    }
+
+    return numericValue.toLocaleString('en-US', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    });
+  }
+
+  shouldShowDownPayment(offer: any): boolean {
+    const paymentPlan = this.normalizePaymentPlan(offer?.payment_plan);
+    if (paymentPlan) return paymentPlan === 'full_at_start' || paymentPlan === 'partial';
+
+    return this.hasPaymentAmount(offer?.down_payment);
+  }
+
+  shouldShowFinalPayment(offer: any): boolean {
+    const paymentPlan = this.normalizePaymentPlan(offer?.payment_plan);
+    if (paymentPlan) return paymentPlan === 'full_at_end' || paymentPlan === 'partial';
+
+    return this.hasPaymentAmount(offer?.final_price ?? offer?.final_payment);
+  }
+
+  getDownPaymentAmount(offer: any): string | number | null | undefined {
+    return this.normalizePaymentPlan(offer?.payment_plan) === 'full_at_start'
+      ? offer?.proposed_price
+      : offer?.down_payment;
+  }
+
+  getFinalPaymentAmount(offer: any): string | number | null | undefined {
+    return this.normalizePaymentPlan(offer?.payment_plan) === 'full_at_end'
+      ? offer?.proposed_price
+      : (offer?.final_price ?? offer?.final_payment);
   }
 
   getProjectDeliveryFiles(project: ProjectOffer | null | undefined = this.selectedProject): ProjectOfferFile[] {
@@ -729,6 +835,15 @@ export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
 
   isProjectClosed(project: ProjectOffer | null | undefined = this.selectedProject): boolean {
     return this.normalizeProjectFileType(project?.status || '') === 'closed';
+  }
+
+  isProjectCancelled(project: ProjectOffer | null | undefined = this.selectedProject): boolean {
+    return this.normalizeProjectFileType(
+      project?.project_status
+        || project?.project?.status
+        || project?.status
+        || ''
+    ) === 'cancelled';
   }
 
   isDrawerTabDisabled(tab: DrawerTab): boolean {
@@ -1255,7 +1370,6 @@ export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
 
   private loadDocumentsWorkspace(): void {
     this.loadInsighterProjectDetails();
-    this.loadContractDetails();
   }
 
   private loadReviewWorkspace(): void {
@@ -1285,8 +1399,6 @@ export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
 
           if (this.isDrawerTabDisabled(this.activeDrawerTab)) {
             this.setDrawerTab('overview');
-          } else if (this.activeDrawerTab === 'documents') {
-            this.loadContractDetails(project);
           } else if (this.activeDrawerTab === 'reviews') {
             this.loadProjectReviewSubmissions();
           }
@@ -1322,7 +1434,7 @@ export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
           this.reviewSubmissionsSubject.next(reviews);
           this.loadedReviewProjectUuid = projectUuid;
           if (this.rawTimelineSteps.length) {
-            this.timelineSteps = this.applyDraftReviewState(this.rawTimelineSteps, reviews);
+            this.timelineSteps = this.buildTimelineSteps(this.rawTimelineSteps, reviews);
             this.showInsighterTimeline = this.timelineSteps.some(step => step?.display);
           }
           this.reviewSubmissionsLoading = false;
@@ -1531,6 +1643,57 @@ export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
     });
   }
 
+  private buildTimelineSteps(
+    steps: ProjectTimelineStep[],
+    reviews: ProjectReviewSubmission[]
+  ): ProjectTimelineStep[] {
+    const reviewAwareSteps = this.applyDraftReviewState(steps, reviews);
+
+    if (!this.isProjectCancelled()) {
+      return reviewAwareSteps;
+    }
+
+    const completedVisibleSteps = reviewAwareSteps.filter(step => this.isCompletedTimelineStepBeforeCancellation(step));
+    const hasCancelledStep = reviewAwareSteps.some(step => step.key === TIMELINE_STEP.CANCELLED_PROJECT);
+
+    if (hasCancelledStep) {
+      return reviewAwareSteps;
+    }
+
+    return [
+      ...reviewAwareSteps.map(step => this.isCompletedTimelineStepBeforeCancellation(step)
+        ? step
+        : { ...step, display: false, state: null }),
+      this.buildCancelledTimelineStep(completedVisibleSteps),
+    ];
+  }
+
+  private isCompletedTimelineStepBeforeCancellation(step: ProjectTimelineStep | null | undefined): boolean {
+    return !!step?.display
+      && step.key !== TIMELINE_STEP.CLOSED_PROJECT
+      && step.key !== TIMELINE_STEP.CANCELLED_PROJECT
+      && step.state === 'completed';
+  }
+
+  private buildCancelledTimelineStep(visibleSteps: ProjectTimelineStep[]): ProjectTimelineStep {
+    const lastVisibleStepNo = visibleSteps
+      .map(step => Number(step.step_no || 0))
+      .reduce((max, stepNo) => Math.max(max, stepNo), 0);
+
+    return {
+      key: TIMELINE_STEP.CANCELLED_PROJECT,
+      step_no: lastVisibleStepNo + 1,
+      title: this.lang === 'ar' ? 'تم إلغاء المشروع' : 'Project Cancelled',
+      display: true,
+      status: 'cancelled',
+      state: 'completed',
+      amount: null,
+      date: null,
+      party: null,
+      meta: {},
+    };
+  }
+
   private getDraftReviewTypeForTimelineStep(
     step: ProjectTimelineStep | null | undefined
   ): ProjectReviewSubmissionType | null {
@@ -1611,6 +1774,16 @@ export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
 
   private normalizeProjectFileType(value: string): string {
     return (value || '').trim().toLowerCase().replace(/[-\s]+/g, '_');
+  }
+
+  private normalizePaymentPlan(value: unknown): string {
+    return String(value || '').trim().toLowerCase();
+  }
+
+  private hasPaymentAmount(value: string | number | null | undefined): boolean {
+    if (value === null || value === undefined || value === '') return false;
+    const numericValue = typeof value === 'number' ? value : Number(value);
+    return !Number.isNaN(numericValue) && numericValue > 0;
   }
 
   private getReviewPriorityRank(review: ProjectReviewSubmission | null | undefined): number {

@@ -70,13 +70,6 @@
   opacity: 0.55;
 }
 
-.owp-contract-tab {
-  .p-progressbar {
-    margin-bottom: 16px;
-    border-radius: 999px;
-  }
-}
-
 .po-details-page {
   .po-drawer__topbar {
     display: flex;
@@ -249,84 +242,68 @@
   }
 }
 
-.owp-contract-panel {
-  margin-top: 4px;
+::ng-deep .owp-offer-drawer {
+  top: 0 !important;
+  height: 100dvh !important;
+  max-width: 100vw;
+  max-height: 100dvh !important;
+  z-index: 1325 !important;
+
+  .p-sidebar-header {
+    display: none;
+  }
+
+  .p-sidebar-content {
+    height: 100%;
+    padding: 0;
+    overflow: hidden;
+    background: #f8fafc;
+  }
 }
 
-.owp-contract-status-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+.owp-offer-drawer__topbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 18px 22px 0;
+}
+
+.owp-offer-drawer__body {
+  height: calc(100% - 58px);
+  overflow-y: auto;
+  padding: 16px 28px 36px;
 
   @media (max-width: 575px) {
-    grid-template-columns: 1fr;
+    padding: 14px 18px 28px;
   }
 }
 
-.owp-contract-status {
+.owp-offer-drawer__hero {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
-  min-width: 0;
-  padding: 14px 16px;
-  border: 1px solid #e8eef6;
-  border-radius: 12px;
-  background: #f8fafc;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+  padding-bottom: 22px;
+  border-bottom: 1px solid #e4e9f2;
+}
 
-  span {
-    color: #64748b;
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    line-height: 1.2;
-    text-transform: uppercase;
-  }
-
-  strong {
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
-    overflow-wrap: anywhere;
-    color: #0f172a;
-    font-size: 14px;
-    font-weight: 800;
-    line-height: 1.3;
-  }
-
-  &--signed {
-    border-color: #bbf7d0;
-    background: #f0fdf4;
-
-    span,
-    strong {
-      color: #15803d;
-    }
-
-    i {
-      color: #16a34a;
-      flex-shrink: 0;
-    }
-  }
-
-  &--warning {
-    border-color: #fde68a;
-    background: #fffbeb;
-
-    span,
-    strong,
-    i {
-      color: #b45309;
-    }
-  }
+.owp-offer-drawer__pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: #ecfdf5;
+  color: #047857;
+  font-size: 12px;
+  font-weight: 800;
 }
 
 .owp-doc-workspace {
   display: grid;
   gap: 16px;
-}
-
-.owp-documents-contract {
-  margin-top: 4px;
 }
 
 .owp-doc-workspace > .po-document-group {
@@ -378,7 +355,7 @@
     width: 100%;
     height: 100%;
     object-fit: cover;
-    object-position: top;
+    object-position: top center;
   }
 
   .po-document-item__uploader-name {

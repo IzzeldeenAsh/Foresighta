@@ -1417,7 +1417,7 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
       return false;
     }
 
-    return this.getResolvedStatus(offer) === 'pending';
+    return ['pending', 'viewed'].includes(this.getResolvedStatus(offer));
   }
 
   isRejectingSelectedOffer(): boolean {

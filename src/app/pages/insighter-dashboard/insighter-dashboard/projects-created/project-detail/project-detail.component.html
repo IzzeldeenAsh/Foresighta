@@ -466,111 +466,6 @@
             </div>
           </details>
 
-          <!-- Offer -->
-          <details class="pd-section pd-section--accordion pd-section--offer" *ngIf="p.offer as submittedOffer">
-            <summary class="pd-section__head pd-section__summary">
-              <span class="pd-section__title-icon" aria-hidden="true"><i class="pi pi-briefcase"></i></span>
-              <h6 class="pd-section__title">{{ lang === 'ar' ? 'العرض' : 'Offer' }}</h6>
-              <span class="pd-section__eyebrow">{{ lang === 'ar' ? 'العرض الفائز' : 'Awarded Offer' }}</span>
-              <span class="pd-section__chevron" aria-hidden="true">
-                <i class="pi pi-chevron-down"></i>
-              </span>
-            </summary>
-
-            <div class="pd-detail-card" *ngIf="submittedOffer.cover_letter">
-              <div class="pd-detail-card__header">
-                <span class="pd-detail-card__icon"><i class="ki-outline ki-note-2 fs-4"></i></span>
-                <div class="pd-detail-card__copy">
-                  <div class="pd-detail-card__title">{{ lang === 'ar' ? 'خطاب العرض' : 'Cover Letter' }}</div>
-                  <div class="pd-detail-card__subtitle">
-                    {{ lang === 'ar' ? 'النص الذي تم إرساله مع العرض.' : 'The message sent with the offer.' }}
-                  </div>
-                </div>
-              </div>
-              <div class="pd-detail-card__body">
-                <p class="pd-section__text mb-0">{{ submittedOffer.cover_letter }}</p>
-              </div>
-            </div>
-
-            <div class="pd-detail-card mt-4">
-              <div class="pd-detail-card__header">
-                <span class="pd-detail-card__icon"><i class="ki-outline ki-status fs-4"></i></span>
-                <div class="pd-detail-card__copy">
-                  <div class="pd-detail-card__title">{{ lang === 'ar' ? 'حالة العرض' : 'Offer Status' }}</div>
-                  <div class="pd-detail-card__subtitle">
-                    <span class="badge" [ngClass]="getAwardedOfferStatusBadgeClass(submittedOffer.status)">
-                      {{ getAwardedOfferStatusLabel(submittedOffer.status) }}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div class="pd-document-group mt-4" *ngIf="getSubmittedOfferFiles(submittedOffer).length">
-              <div class="pd-document-group__head">
-                <div>
-                  <h6 class="pd-document-group__title">{{ lang === 'ar' ? 'مرفقات العرض' : 'Offer Attachments' }}</h6>
-                </div>
-              </div>
-              <div class="pd-document-list">
-                <button type="button"
-                        class="pd-document-card"
-                        *ngFor="let file of getSubmittedOfferFiles(submittedOffer); trackBy: trackByFile"
-                        [disabled]="isOpeningFile(file)"
-                        [attr.aria-label]="getProjectFileName(file)"
-                        [attr.title]="getProjectFileName(file)"
-                        (click)="openProjectFile(file)">
-                  <img class="pd-document-card__icon"
-                       [src]="getFileTypeIconPath(getProjectFileExtension(file))"
-                       [alt]="getProjectFileExtension(file) || 'file'"
-                       loading="lazy"
-                       (error)="onFileIconLoadError($event)">
-                  <span class="pd-document-card__scope">{{ getProjectFileName(file) }}</span>
-                </button>
-              </div>
-            </div>
-
-            <div class="pd-proposal-drawer__stats mt-4">
-              <div class="pd-proposal-drawer__stat pd-proposal-drawer__stat--price">
-                <span class="pd-proposal-drawer__stat-icon">
-                  <i class="ki-outline ki-dollar fs-4"></i>
-                </span>
-                <span class="pd-proposal-drawer__stat-copy">
-                  <span class="pd-proposal-drawer__stat-label">{{ lang === 'ar' ? 'سعر العرض' : 'Offer Price' }}</span>
-                  <span class="pd-proposal-drawer__stat-value">{{ formatPrice(submittedOffer.proposed_price) }}</span>
-                </span>
-              </div>
-              <div class="pd-proposal-drawer__stat pd-proposal-drawer__stat--hours">
-                <span class="pd-proposal-drawer__stat-icon">
-                  <i class="ki-outline ki-time fs-4"></i>
-                </span>
-                <span class="pd-proposal-drawer__stat-copy">
-                  <span class="pd-proposal-drawer__stat-label">{{ lang === 'ar' ? 'الساعات التقديرية' : 'Working Hours' }}</span>
-                  <span class="pd-proposal-drawer__stat-value">{{ getEstimatedHours(submittedOffer.estimated_hours) }}</span>
-                </span>
-              </div>
-              <div class="pd-proposal-drawer__stat pd-proposal-drawer__stat--down"
-                   *ngIf="shouldShowDownPayment(submittedOffer)">
-                <span class="pd-proposal-drawer__stat-icon">
-                  <i class="ki-outline ki-wallet fs-4"></i>
-                </span>
-                <span class="pd-proposal-drawer__stat-copy">
-                  <span class="pd-proposal-drawer__stat-label">{{ lang === 'ar' ? 'الدفعة الأولى' : 'Down Payment' }}</span>
-                  <span class="pd-proposal-drawer__stat-value">{{ formatPrice(getDownPaymentAmount(submittedOffer)) }}</span>
-                </span>
-              </div>
-              <div class="pd-proposal-drawer__stat pd-proposal-drawer__stat--final"
-                   *ngIf="shouldShowFinalPayment(submittedOffer)">
-                <span class="pd-proposal-drawer__stat-icon">
-                  <i class="ki-outline ki-bank fs-4"></i>
-                </span>
-                <span class="pd-proposal-drawer__stat-copy">
-                  <span class="pd-proposal-drawer__stat-label">{{ lang === 'ar' ? 'الدفعة النهائية' : 'Final Payment' }}</span>
-                  <span class="pd-proposal-drawer__stat-value">{{ formatPrice(getFinalPaymentAmount(submittedOffer)) }}</span>
-                </span>
-              </div>
-            </div>
-          </details>
           </ng-container>
 
           <ng-container *ngIf="activeTab === 'documents'">
@@ -845,7 +740,7 @@
       </div>
 
       <!-- Aside -->
-      <aside class="pd-aside" *ngIf="!isProjectCancelled(p)">
+      <aside class="pd-aside">
         <div class="pd-aside-card">
           <div class="pd-aside-card__title">
             {{ lang === 'ar' ? 'إجراءات المشروع' : 'Project Actions' }}
@@ -853,6 +748,15 @@
           <p class="pd-aside-card__hint">
             {{ getProjectActionsHint(p) }}
           </p>
+
+          <div class="pd-cancelled-panel" *ngIf="isProjectCancelled(p)">
+            <i class="ki-outline ki-information-5 fs-5"></i>
+            <span>
+              {{ lang === 'ar'
+                ? 'تم إلغاء هذا المشروع. يمكنك مراجعة الدعوات والعروض المرسلة فقط.'
+                : 'This project was cancelled. Invitations and submitted offers remain available for review.' }}
+            </span>
+          </div>
 
           <div *ngIf="shouldShowSubmittedOfferTimer(p)"
                class="pd-offer-timer d-flex align-items-center gap-3 bg-white border rounded-3 p-4 my-4"
@@ -1009,6 +913,8 @@
             [closeDisabledReason]="getCloseProjectDisabledReason(p)"
             [contractState]="getContractStepState(p)"
             [paymentButtonLabel]="getProjectPaymentButtonLabel(p.order)"
+            [canViewOffer]="!!p.offer"
+            [canViewContract]="hasContractAction(p)"
             (stepAction)="onTimelineAction($event)">
           </app-project-timeline>
 
@@ -1020,7 +926,7 @@
             {{ lang === 'ar' ? 'عرض العقد' : 'View Contract' }}
           </button>
 
-          <span *ngIf="!hasContractAction(p)"
+          <span *ngIf="!hasContractAction(p) && !isProjectCancelled(p)"
                 class="d-block w-100 mt-3"
                 [pTooltip]="getRematchDisabledReason(p)"
                 tooltipPosition="top"
@@ -1748,7 +1654,11 @@
           <div class="pd-proposal-drawer__hero">
             <div class="pd-proposal-drawer__eyebrow">
               <span class="pd-proposal-drawer__pill">
-                {{ lang === 'ar' ? 'عرض مقدم' : 'Submitted Offer' }}
+                {{
+                  isAwardedOfferDrawer()
+                    ? (lang === 'ar' ? 'العرض الفائز' : 'Awarded Offer')
+                    : (lang === 'ar' ? 'عرض مقدم' : 'Submitted Offer')
+                }}
               </span>
               <span class="badge" [ngClass]="getOfferStatusBadgeClass(invite)">
                 {{ getOfferStatusLabel(invite) }}
@@ -1841,15 +1751,31 @@
       <aside class="pd-proposal-drawer__aside">
         <div class="pd-proposal-drawer__aside-card">
           <div class="pd-proposal-drawer__aside-title">
-            {{ lang === 'ar' ? 'إجراء العرض' : 'Offer Action' }}
+            {{
+              isAwardedOfferDrawer()
+                ? (lang === 'ar' ? 'تفاصيل العرض' : 'Offer Details')
+                : (lang === 'ar' ? 'إجراء العرض' : 'Offer Action')
+            }}
           </div>
           <p class="pd-proposal-drawer__aside-hint">
-            {{ lang === 'ar'
-              ? 'راجع تفاصيل العرض ثم أضفه إلى القائمة المختصرة أو ارفضه فنياً. تتم الترسية من العروض المقبولة فنياً.'
-              : 'Review the offer, then shortlist or technically reject it. Award only from technically accepted offers.' }}
+            {{
+              isAwardedOfferDrawer()
+                ? (lang === 'ar'
+                    ? 'راجع تفاصيل العرض الذي تمت ترسيته لهذا المشروع.'
+                    : 'Review the offer awarded for this project.')
+                : (lang === 'ar'
+                    ? 'راجع تفاصيل العرض ثم أضفه إلى القائمة المختصرة أو ارفضه فنياً. تتم الترسية من العروض المقبولة فنياً.'
+                    : 'Review the offer, then shortlist or technically reject it. Award only from technically accepted offers.')
+            }}
           </p>
 
-          <div class="row g-2 mb-2" *ngIf="getOfferStatus(invite) !== 'technical_accepted' && getOfferStatus(invite) !== 'technical_rejected'">
+          <div class="pd-offer-readonly-note" *ngIf="isOfferReadOnlyProject()">
+            <i class="ki-outline ki-information-5 fs-6"></i>
+            <span>{{ getOfferReadOnlyMessage() }}</span>
+          </div>
+
+          <div class="row g-2 mb-2"
+               *ngIf="!isOfferReadOnlyProject() && !isAwardedOfferDrawer() && getOfferStatus(invite) !== 'technical_accepted' && getOfferStatus(invite) !== 'technical_rejected'">
             <div class="col-12">
               <button type="button"
                       class="btn btn-light-success w-100"
@@ -1879,7 +1805,7 @@
             </div>
           </div>
 
-          <ng-container *ngIf="isOfferTechnicalAccepted(invite)">
+          <ng-container *ngIf="!isOfferReadOnlyProject() && !isAwardedOfferDrawer() && isOfferTechnicalAccepted(invite)">
             <button type="button"
                     class="btn btn-info w-100"
                     [disabled]="!canAwardOffer(invite)"

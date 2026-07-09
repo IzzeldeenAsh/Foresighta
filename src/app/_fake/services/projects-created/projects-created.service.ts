@@ -905,12 +905,14 @@ export class ProjectsCreatedService {
   }
 
   private mapProjectMatchList(response: any): ProjectMatchListResponse {
+    const data = response?.data && typeof response.data === 'object' ? response.data : response;
+
     // `submitted` shares the same shape as a project `invited` entry (it carries the
     // offer, deadline_offer and action/submission status), so reuse the invite mapper.
-    const submitted = this.mapProjectInvites(response?.submitted);
+    const submitted = this.mapProjectInvites(data?.submitted);
 
-    const unsubmitted = Array.isArray(response?.unsubmitted)
-      ? response.unsubmitted.map((group: any) => ({
+    const unsubmitted = Array.isArray(data?.unsubmitted)
+      ? data.unsubmitted.map((group: any) => ({
           proposalUuid: this.stringifyValue(group?.proposal_uuid),
           matches: (Array.isArray(group?.matches) ? group.matches : [])
             .map((item: any) => this.mapProposalMatch(item))

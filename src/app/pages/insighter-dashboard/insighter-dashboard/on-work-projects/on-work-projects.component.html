@@ -959,79 +959,6 @@
                 </div>
               </ng-template>
 
-              <section class="po-section owp-contract-tab owp-documents-contract">
-                <div class="po-section__head">
-                  <h6 class="po-section__title">{{ lang === 'ar' ? 'العقد' : 'Contract' }}</h6>
-                  <span class="po-section__eyebrow">{{ lang === 'ar' ? 'مراجعة وتوقيع' : 'Review & Signature' }}</span>
-                </div>
-
-                <ng-container *ngIf="hasContract(project); else noContract">
-                  <p-progressBar *ngIf="contractDetailsLoading" mode="indeterminate" [style]="{ height: '3px' }"></p-progressBar>
-
-                  <div class="po-detail-card po-detail-card--offer owp-contract-panel">
-                    <div class="po-detail-card__header">
-                      <span class="po-detail-card__icon">
-                        <i class="ki-outline ki-document fs-4"></i>
-                      </span>
-                      <div class="po-detail-card__copy">
-                        <div class="po-detail-card__title">
-                          {{ contractDetails?.name || (lang === 'ar' ? 'عقد المشروع' : 'Project Contract') }}
-                        </div>
-                        <div class="po-detail-card__subtitle">
-                          {{ lang === 'ar'
-                            ? 'راجع العقد ضمن سياق تفاصيل المشروع، ثم افتحه للتوقيع أو المتابعة.'
-                            : 'Review the contract in project context, then open it to sign or continue.' }}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div class="po-detail-card__body">
-                      <div class="owp-contract-status-grid">
-                        <div
-                          class="owp-contract-status"
-                          [class.owp-contract-status--signed]="isContractSigned(project)"
-                          [class.owp-contract-status--warning]="isContractWaiting(project)">
-                          <span>{{ lang === 'ar' ? 'حالة العقد' : 'Contract Status' }}</span>
-                          <strong>
-                            <i class="ki-outline fs-5" [ngClass]="getSignatureSummaryIcon(project)"></i>
-                            {{ getSignatureSummaryLabel(project) }}
-                          </strong>
-                        </div>
-                        <div class="owp-contract-status">
-                          <span>{{ lang === 'ar' ? 'نوع العقد' : 'Contract Type' }}</span>
-                          <strong>{{ getContractTypeLabel(contractDetails) }}</strong>
-                        </div>
-                      </div>
-
-                      <div *ngIf="contractDetailsError" class="alert alert-warning mt-4 mb-0">
-                        {{ lang === 'ar' ? 'تعذر تحميل ملخص العقد. لا يزال بإمكانك فتح صفحة العقد.' : 'Could not load the contract summary. You can still open the contract page.' }}
-                      </div>
-
-                      <button
-                        type="button"
-                        class="btn btn-info mt-5"
-                        [disabled]="!canOpenContract(project)"
-                        (click)="viewContract(project)">
-                        <i class="ki-outline ki-document fs-6 me-1"></i>
-                        {{ lang === 'ar' ? 'فتح العقد' : 'Open Contract' }}
-                      </button>
-                    </div>
-                  </div>
-                </ng-container>
-
-                <ng-template #noContract>
-                  <div class="po-empty po-empty--compact">
-                    <i class="ki-outline ki-information-2 fs-2x text-warning mb-3"></i>
-                    <h6 class="fw-semibold text-gray-800 mb-2">
-                      {{ lang === 'ar' ? 'العقد غير متاح' : 'Contract unavailable' }}
-                    </h6>
-                    <p class="text-gray-500 fs-7 mb-0">
-                      {{ lang === 'ar' ? 'لم يتم العثور على عقد لهذا المشروع بعد.' : 'No contract was found for this project yet.' }}
-                    </p>
-                  </div>
-                </ng-template>
-              </section>
-
               <p-dialog
                 [(visible)]="documentUploadDialogVisible"
                 [modal]="true"
@@ -1342,6 +1269,8 @@
             audience="insighter"
             [steps]="timelineSteps"
             [lang]="lang"
+            [canViewOffer]="!!project.offer"
+            [canViewContract]="canOpenContract(project)"
             (stepAction)="onInsighterTimelineAction($event)">
           </app-project-timeline>
 
@@ -1390,6 +1319,136 @@
       </aside>
     </div>
 </ng-template>
+
+<p-sidebar
+  [(visible)]="offerDrawerVisible"
+  position="right"
+  appendTo="body"
+  [modal]="true"
+  [dismissible]="true"
+  [blockScroll]="false"
+  [baseZIndex]="1320"
+  [showCloseIcon]="false"
+  [style]="{ width: 'min(720px, 100vw)' }"
+  styleClass="owp-offer-drawer"
+  (onHide)="closeProjectOfferDrawer()">
+  <ng-container *ngIf="selectedProject as project">
+    <ng-container *ngIf="project.offer as offer">
+      <div class="owp-offer-drawer__topbar">
+        <button type="button"
+                class="po-iconbtn"
+                (click)="closeProjectOfferDrawer()"
+                [attr.aria-label]="lang === 'ar' ? 'إغلاق' : 'Close'">
+          <i class="ki-outline ki-cross fs-3"></i>
+        </button>
+      </div>
+
+      <div class="owp-offer-drawer__body" [attr.dir]="lang === 'ar' ? 'rtl' : 'ltr'">
+        <div class="owp-offer-drawer__hero">
+          <span class="owp-offer-drawer__pill">{{ lang === 'ar' ? 'تفاصيل العرض' : 'Offer Details' }}</span>
+          <span class="badge" [ngClass]="getOfferStatusBadgeClass(offer.status)">
+            {{ getOfferStatusLabel(offer.status) }}
+          </span>
+        </div>
+
+        <section class="po-section">
+          <div class="po-section__head">
+            <h6 class="po-section__title">{{ lang === 'ar' ? 'خطاب العرض' : 'Cover Letter' }}</h6>
+            <span class="po-section__eyebrow">{{ lang === 'ar' ? 'العرض المرسل' : 'Submitted Offer' }}</span>
+          </div>
+          <div class="po-detail-card po-detail-card--offer">
+            <div class="po-detail-card__body">
+              <p class="po-section__text mb-0">{{ offer.cover_letter || '-' }}</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="po-section mt-5">
+          <div class="po-section__head">
+            <h6 class="po-section__title">{{ lang === 'ar' ? 'التفاصيل التجارية' : 'Commercial Details' }}</h6>
+            <span class="po-section__eyebrow">{{ lang === 'ar' ? 'السعر والمدة' : 'Price & Time' }}</span>
+          </div>
+
+          <div class="po-offer-summary-grid">
+            <div class="po-offer-summary-card po-offer-summary-card--price">
+              <span class="po-offer-summary-card__icon">
+                <i class="ki-outline ki-dollar fs-4"></i>
+              </span>
+              <span class="po-offer-summary-card__copy">
+                <span class="po-offer-summary-card__label">{{ lang === 'ar' ? 'السعر المقترح' : 'Proposed Price' }}</span>
+                <span class="po-offer-summary-card__value">${{ formatMoney(offer.proposed_price) }}</span>
+              </span>
+            </div>
+
+            <div class="po-offer-summary-card po-offer-summary-card--hours">
+              <span class="po-offer-summary-card__icon">
+                <i class="ki-outline ki-time fs-4"></i>
+              </span>
+              <span class="po-offer-summary-card__copy">
+                <span class="po-offer-summary-card__label">{{ lang === 'ar' ? 'الساعات المقدرة' : 'Working Hours' }}</span>
+                <span class="po-offer-summary-card__value">{{ offer.estimated_hours || '-' }}</span>
+              </span>
+            </div>
+
+            <div class="po-offer-summary-card po-offer-summary-card--down"
+                 *ngIf="shouldShowDownPayment(offer)">
+              <span class="po-offer-summary-card__icon">
+                <i class="ki-outline ki-wallet fs-4"></i>
+              </span>
+              <span class="po-offer-summary-card__copy">
+                <span class="po-offer-summary-card__label">{{ lang === 'ar' ? 'الدفعة المقدمة' : 'Down Payment' }}</span>
+                <span class="po-offer-summary-card__value">${{ formatMoney(getDownPaymentAmount(offer)) }}</span>
+              </span>
+            </div>
+
+            <div class="po-offer-summary-card po-offer-summary-card--final"
+                 *ngIf="shouldShowFinalPayment(offer)">
+              <span class="po-offer-summary-card__icon">
+                <i class="ki-outline ki-bank fs-4"></i>
+              </span>
+              <span class="po-offer-summary-card__copy">
+                <span class="po-offer-summary-card__label">{{ lang === 'ar' ? 'الدفعة النهائية' : 'Final Payment' }}</span>
+                <span class="po-offer-summary-card__value">${{ formatMoney(getFinalPaymentAmount(offer)) }}</span>
+              </span>
+            </div>
+          </div>
+        </section>
+
+        <section class="po-section mt-5" *ngIf="getOfferFiles(project).length">
+          <div class="po-document-group">
+            <div class="po-document-group__head">
+              <span class="po-document-group__icon po-document-group__icon--offer"><i class="ki-outline ki-paper-clip fs-5"></i></span>
+              <div>
+                <h6>{{ lang === 'ar' ? 'مرفقات العرض' : 'Offer Attachments' }}</h6>
+                <span>{{ getOfferFiles(project).length }} {{ lang === 'ar' ? 'ملف' : 'file(s)' }}</span>
+              </div>
+            </div>
+            <div class="po-document-list">
+              <button type="button"
+                      class="po-document-item"
+                      *ngFor="let file of getOfferFiles(project); trackBy: trackByFile"
+                      [disabled]="isOpeningFile(file)"
+                      [attr.aria-label]="getProjectFileName(file)"
+                      [attr.title]="getProjectFileName(file)"
+                      (click)="openProjectFile(file)">
+                <img class="po-document-item__icon"
+                     [src]="getFileTypeIconPath(getProjectFileExtension(file))"
+                     [alt]="getProjectFileExtension(file) || 'file'"
+                     loading="lazy"
+                     (error)="onFileIconLoadError($event)">
+                <span class="po-document-item__scope">{{ file.scope || getProjectFileName(file) }}</span>
+                <span class="po-document-item__copy">
+                  <strong>{{ getProjectFileName(file) }}</strong>
+                  <small>{{ file.uploadBy || '-' }} &middot; {{ formatDate(file.upload_date) }}</small>
+                </span>
+              </button>
+            </div>
+          </div>
+        </section>
+      </div>
+    </ng-container>
+  </ng-container>
+</p-sidebar>
 
 <p-sidebar
   *ngIf="!isDetailsPage"

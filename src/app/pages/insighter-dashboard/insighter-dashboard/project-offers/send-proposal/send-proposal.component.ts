@@ -4,6 +4,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { takeUntil } from 'rxjs/operators';
 import { BaseComponent } from 'src/app/modules/base.component';
 import {
+  InsighterProjectAccountSettings,
   ProjectOffer,
   ProjectOfferFile,
   ProjectOfferScope,
@@ -566,6 +567,27 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
         },
         error: (err) => this.handleServerErrors(err),
       });
+
+    this.loadDefaultHourlyRate();
+  }
+
+  private loadDefaultHourlyRate(): void {
+    this.projectOffersService.getAccountSettings()
+      .pipe(takeUntil(this.unsubscribe$))
+      .subscribe({
+        next: (settings) => {
+          const rate = this.getHourlyRateFromSettings(settings);
+          if (rate !== null && (this.hourlyRate === null || this.hourlyRate === undefined)) {
+            this.hourlyRate = rate;
+          }
+        },
+        error: () => undefined,
+      });
+  }
+
+  private getHourlyRateFromSettings(settings: InsighterProjectAccountSettings | null | undefined): number | null {
+    const rate = Number(settings?.hourly_rate);
+    return isFinite(rate) && rate > 0 ? rate : null;
   }
 
   private humanizeValue(value: string): string {

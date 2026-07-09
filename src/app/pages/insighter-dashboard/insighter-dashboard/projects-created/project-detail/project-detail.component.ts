@@ -32,6 +32,8 @@ import {
 } from 'src/app/_fake/services/projects-created/projects-created.service';
 import {
   ProjectTimelineStep,
+  TIMELINE_STEP,
+  TimelineParty,
   TimelineStepActionEvent,
 } from 'src/app/_fake/services/project-timeline/project-timeline.model';
 
@@ -154,6 +156,7 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
   isLoading: boolean = false;
   proposalDrawerVisible: boolean = false;
   selectedInvite: CreatedProjectProposalInvite | null = null;
+  proposalDrawerMode: 'proposal' | 'awarded' = 'proposal';
   openingFileUuid: string | null = null;
   offerActionUuid: string | null = null;
   offerActionKind: ProjectOfferTechnicalDecisionStatus | 'award' | null = null;
@@ -620,13 +623,27 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
 
   openProposalDrawer(invite: CreatedProjectProposalInvite): void {
     if (!this.canViewSubmittedOffer(invite)) return;
+    this.proposalDrawerMode = 'proposal';
     this.selectedInvite = invite;
+    this.proposalDrawerVisible = true;
+  }
+
+  openAwardedOfferDrawer(step?: ProjectTimelineStep): void {
+    if (!this.project?.offer) return;
+
+    this.proposalDrawerMode = 'awarded';
+    this.selectedInvite = this.createAwardedOfferInvite(step?.party || null);
     this.proposalDrawerVisible = true;
   }
 
   closeProposalDrawer(): void {
     this.proposalDrawerVisible = false;
     this.selectedInvite = null;
+    this.proposalDrawerMode = 'proposal';
+  }
+
+  isAwardedOfferDrawer(): boolean {
+    return this.proposalDrawerMode === 'awarded';
   }
 
   makeOfferTechnicalDecision(
@@ -728,6 +745,7 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
     invite: CreatedProjectProposalInvite | null,
     status: ProjectOfferTechnicalDecisionStatus
   ): boolean {
+    if (this.isOfferReadOnlyProject()) return false;
     if (!invite?.offer?.uuid || this.offerActionUuid) return false;
     const currentStatus = this.getOfferStatus(invite);
     return currentStatus !== status && !['awarded', 'not_selected', 'closed', 'cancelled', 'expired'].includes(currentStatus);
@@ -746,10 +764,34 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
   }
 
   canAwardOffer(invite: CreatedProjectProposalInvite | null): boolean {
+    if (this.isOfferReadOnlyProject()) return false;
     return !!invite?.offer?.uuid
       && !this.offerActionUuid
       && this.isOfferTechnicalAccepted(invite)
       && (this.hasSingleSubmittedOffer() || this.isLastProposalDeadlinePassed());
+  }
+
+  isOfferReadOnlyProject(project: CreatedProject | null = this.project): boolean {
+    return ['cancelled', 'closed', 'expired'].includes(this.normalizeValue(project?.status));
+  }
+
+  getOfferReadOnlyMessage(project: CreatedProject | null = this.project): string {
+    switch (this.normalizeValue(project?.status)) {
+      case 'cancelled':
+        return this.lang === 'ar'
+          ? 'تم إلغاء هذا المشروع. يمكنك مراجعة العروض فقط.'
+          : 'This project was cancelled. Submitted offers are available for review only.';
+      case 'closed':
+        return this.lang === 'ar'
+          ? 'تم إغلاق هذا المشروع. يمكنك مراجعة العروض فقط.'
+          : 'This project is closed. Submitted offers are available for review only.';
+      case 'expired':
+        return this.lang === 'ar'
+          ? 'انتهت صلاحية هذا المشروع. يمكنك مراجعة العروض فقط.'
+          : 'This project expired. Submitted offers are available for review only.';
+      default:
+        return '';
+    }
   }
 
   hasSingleSubmittedOffer(): boolean {
@@ -931,10 +973,24 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
   }
 
   shouldShowProjectTimeline(project: CreatedProject | null = this.project): boolean {
+    if (this.isProjectCancelled(project)) {
+      return this.wasCancelledAfterAward(project);
+    }
+
     return this.isContractingStatus(project)
       || this.isPaymentStatusOnly(project)
       || this.isProjectWorkStatus(project)
       || this.isProjectClosed(project);
+  }
+
+  private wasCancelledAfterAward(project: CreatedProject | null = this.project): boolean {
+    if (!project) return false;
+
+    const stage = this.normalizeValue(project.stage);
+    return stage === 'project'
+      || this.hasContractAction(project)
+      || !!project.order
+      || !!project.offer;
   }
 
   getContractSignatureState(
@@ -955,8 +1011,17 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
   }
 
   shouldShowInvitedInsightersPanel(project: CreatedProject | null = this.project): boolean {
+    if (this.shouldShowProjectTimeline(project)) {
+      return false;
+    }
+
     const status = this.normalizeValue(project?.status);
     const stage = this.normalizeValue(project?.stage);
+
+    if (status === 'cancelled') {
+      return true;
+    }
+
     const hiddenStates = ['contract', 'payment', 'contracting', 'in_progress', 'in_review', 'closed'];
 
     return !hiddenStates.includes(status) && !hiddenStates.includes(stage);
@@ -976,7 +1041,7 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
       .pipe(takeUntil(this.unsubscribe$))
       .subscribe({
         next: timeline => {
-          this.timelineSteps = timeline?.steps ?? [];
+          this.timelineSteps = this.normalizeTimelineSteps(timeline?.steps ?? []);
         },
         error: () => {
           this.timelineSteps = [];
@@ -984,15 +1049,68 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
       });
   }
 
+  private normalizeTimelineSteps(steps: ProjectTimelineStep[]): ProjectTimelineStep[] {
+    const allSteps = steps || [];
+    const completedVisibleSteps = allSteps.filter(step => this.isCompletedTimelineStepBeforeCancellation(step));
+
+    if (!this.isProjectCancelled(this.project) || !this.wasCancelledAfterAward(this.project)) {
+      return allSteps;
+    }
+
+    const hasCancelledStep = allSteps.some(step => step.key === TIMELINE_STEP.CANCELLED_PROJECT);
+    if (hasCancelledStep) {
+      return allSteps;
+    }
+
+    const timelineBeforeCancellation = allSteps.map(step => this.isCompletedTimelineStepBeforeCancellation(step)
+      ? step
+      : { ...step, display: false, state: null });
+
+    return [
+      ...timelineBeforeCancellation,
+      this.buildCancelledTimelineStep(completedVisibleSteps),
+    ];
+  }
+
+  private isCompletedTimelineStepBeforeCancellation(step: ProjectTimelineStep | null | undefined): boolean {
+    return !!step?.display
+      && step.key !== TIMELINE_STEP.CLOSED_PROJECT
+      && step.key !== TIMELINE_STEP.CANCELLED_PROJECT
+      && step.state === 'completed';
+  }
+
+  private buildCancelledTimelineStep(visibleSteps: ProjectTimelineStep[]): ProjectTimelineStep {
+    const lastVisibleStepNo = visibleSteps
+      .map(step => Number(step.step_no || 0))
+      .reduce((max, stepNo) => Math.max(max, stepNo), 0);
+
+    return {
+      key: TIMELINE_STEP.CANCELLED_PROJECT,
+      step_no: lastVisibleStepNo + 1,
+      title: this.lang === 'ar' ? 'تم إلغاء المشروع' : 'Project Cancelled',
+      display: true,
+      status: 'cancelled',
+      state: 'completed',
+      amount: null,
+      date: null,
+      party: null,
+      meta: {},
+    };
+  }
+
   onTimelineAction(event: TimelineStepActionEvent): void {
     switch (event.action) {
       case 'view_contract':
         this.viewContract();
         break;
+      case 'view_offer':
+        this.openAwardedOfferDrawer(event.step);
+        break;
       case 'pay':
         this.openProjectPaymentDialog();
         break;
       case 'open_review':
+      case 'view_reviews':
         this.openReviewsTab();
         break;
       case 'close_project':
@@ -3394,6 +3512,39 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
 
   private getProjectContractUuid(project: CreatedProject | null | undefined): string {
     return project?.contract?.uuid || project?.contract_uuid || '';
+  }
+
+  private createAwardedOfferInvite(party: TimelineParty | null): CreatedProjectProposalInvite {
+    const offer = this.project?.offer;
+    const partyName = party?.legal_name || party?.name || '-';
+
+    return {
+      uuid: offer?.uuid || this.project?.uuid || '',
+      action_status: 'offered',
+      submission_status: 'submitted',
+      deadline_offer: this.project?.last_proposal_deadline || null,
+      total_matches: null,
+      match_score: 0,
+      matches: {},
+      is_match_all: false,
+      is_match_before: false,
+      is_invited_before: false,
+      status: 'awarded',
+      insighter: {
+        uuid: party?.uuid || '',
+        name: partyName,
+        profile_photo_url: party?.avatar || party?.image || null,
+        roles: [],
+        country: null,
+        company: null,
+      },
+      offer: offer
+        ? {
+            ...offer,
+            status: offer.status || 'awarded',
+          }
+        : null,
+    };
   }
 
   private formatProjectCurrency(amount: string | number | null | undefined, currency: string | null | undefined): string {
