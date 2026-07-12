@@ -4,10 +4,14 @@ import { Observable } from 'rxjs';
 import { environment } from 'src/environments/environment';
 import { TranslationService } from '../modules/i18n';
 
+export type MeetingPlace = 'online' | 'physically' | 'both';
+
 export interface TimeSlot {
   start_time: string;
   end_time: string;
   rate: number | string;
+  place?: MeetingPlace;
+  place_name?: string;
 }
 
 export interface DayAvailability {
@@ -26,6 +30,8 @@ export interface AvailabilityException {
 export interface ScheduleAvailability {
   availability: DayAvailability[];
   availability_exceptions: AvailabilityException[];
+  has_physical_service?: boolean;
+  default_physical_location?: string | null;
 }
 
 export interface ScheduleResponse {

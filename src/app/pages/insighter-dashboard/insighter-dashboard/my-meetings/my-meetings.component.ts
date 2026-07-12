@@ -492,6 +492,10 @@ export class MyMeetingsComponent extends BaseComponent implements OnInit {
     return `${hours}:${minutes}`;
   }
 
+  getLocationMapUrl(location: string): string {
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location)}`;
+  }
+
   formatDate(dateString: string): string {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', {

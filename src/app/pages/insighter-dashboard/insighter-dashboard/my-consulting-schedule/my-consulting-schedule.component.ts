@@ -219,8 +219,59 @@ export class MyConsultingScheduleComponent extends BaseComponent implements OnIn
   private initializeForm(): void {
     this.scheduleForm = this.fb.group({
       availability: this.fb.array([]),
-      exceptions: this.fb.array([], { validators: this.duplicateExceptionValidator.bind(this) })
-    });
+      exceptions: this.fb.array([], { validators: this.duplicateExceptionValidator.bind(this) }),
+      default_physical_location: ['']
+    }, { validators: this.physicalLocationRequiredValidator.bind(this) });
+  }
+
+  // True when any active day has a time slot that offers an on-site (physical) place.
+  // Drives has_physical_service and the visibility/requirement of the physical location field.
+  get hasPhysicalService(): boolean {
+    return this.computeHasPhysicalService(this.availabilityFormArray);
+  }
+
+  private computeHasPhysicalService(availability: FormArray | null | undefined): boolean {
+    if (!availability) {
+      return false;
+    }
+    for (let i = 0; i < availability.length; i++) {
+      const dayGroup = availability.at(i) as FormGroup;
+      if (!dayGroup.get('active')?.value) {
+        continue;
+      }
+      const timesArray = dayGroup.get('times') as FormArray;
+      for (let j = 0; j < timesArray.length; j++) {
+        const timeGroup = timesArray.at(j) as FormGroup;
+        if (timeGroup.get('on_site')?.value) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  // Form-level validator: default_physical_location is required when any slot is on-site.
+  // Reads the availability array from the passed control so it is safe to run during
+  // form construction (before this.scheduleForm is assigned).
+  private physicalLocationRequiredValidator(control: AbstractControl): ValidationErrors | null {
+    const group = control as FormGroup;
+    const availability = group.get('availability') as FormArray | null;
+    const location = (group.get('default_physical_location')?.value || '').toString().trim();
+    if (this.computeHasPhysicalService(availability) && !location) {
+      return { physicalLocationRequired: true };
+    }
+    return null;
+  }
+
+  // Per-slot validator: at least one of Online / On Site must be selected.
+  private atLeastOnePlaceValidator(control: AbstractControl): ValidationErrors | null {
+    const group = control as FormGroup;
+    const online = group.get('online')?.value;
+    const onSite = group.get('on_site')?.value;
+    if (!online && !onSite) {
+      return { placeRequired: true };
+    }
+    return null;
   }
   
   // Custom validator to check for duplicate exceptions on the same date and time
@@ -319,7 +370,7 @@ export class MyConsultingScheduleComponent extends BaseComponent implements OnIn
   }
 
   get availabilityFormArray(): FormArray {
-    return this.scheduleForm.get('availability') as FormArray;
+    return this.scheduleForm?.get('availability') as FormArray;
   }
 
   get exceptionsFormArray(): FormArray {
@@ -346,6 +397,10 @@ export class MyConsultingScheduleComponent extends BaseComponent implements OnIn
         console.log('Availability exceptions:', response.data.availability_exceptions);
         
         this.exceptions.set(response.data.availability_exceptions || []);
+        this.scheduleForm.get('default_physical_location')?.setValue(
+          response.data.default_physical_location || '',
+          { emitEvent: false }
+        );
         this.buildForm();
         this.loading.set(false);
       },
@@ -421,11 +476,14 @@ export class MyConsultingScheduleComponent extends BaseComponent implements OnIn
   }
 
   private createTimeSlotFormGroup(timeSlot: TimeSlot): FormGroup {
+    const place = timeSlot.place || 'online';
     const group = this.fb.group({
       start_time: [this.parseTimeString(timeSlot.start_time), Validators.required],
       end_time: [this.parseTimeString(timeSlot.end_time), Validators.required],
-      rate: [timeSlot.rate || 0]
-    }, { validators: this.perfectHourValidator.bind(this) });
+      rate: [timeSlot.rate || 0],
+      online: [place === 'online' || place === 'both'],
+      on_site: [place === 'physically' || place === 'both']
+    }, { validators: [this.perfectHourValidator.bind(this), this.atLeastOnePlaceValidator.bind(this)] });
     
     // Add subscription to start_time changes to synchronize end_time minutes
     const startTimeControl = group.get('start_time');
@@ -845,10 +903,27 @@ export class MyConsultingScheduleComponent extends BaseComponent implements OnIn
         }
       });
     } else {
+      // Keep the button enabled: surface the errors by marking fields touched & dirty
+      this.scheduleForm.markAllAsTouched();
+      this.markAllAsDirty(this.scheduleForm);
       if(this.lang === 'en'){
         this.showError('Error','Please fill in all required fields');
       }else{
         this.showError('يرجى إدخال جميع الحقول المطلوبة');
+      }
+    }
+  }
+
+  // Recursively mark every control dirty so required-field messages appear on save
+  private markAllAsDirty(control: AbstractControl): void {
+    control.markAsDirty();
+    const anyControl = control as any;
+    if (anyControl.controls) {
+      const children = anyControl.controls;
+      if (Array.isArray(children)) {
+        children.forEach((child: AbstractControl) => this.markAllAsDirty(child));
+      } else {
+        Object.keys(children).forEach(key => this.markAllAsDirty(children[key]));
       }
     }
   }
@@ -886,7 +961,9 @@ export class MyConsultingScheduleComponent extends BaseComponent implements OnIn
   private processFormData(formValue: any): any {
     const processedData: {
       availability: DayAvailability[],
-      availability_exceptions: AvailabilityException[]
+      availability_exceptions: AvailabilityException[],
+      has_physical_service?: boolean,
+      default_physical_location?: string | null
     } = {
       availability: [],
       availability_exceptions: []
@@ -910,24 +987,39 @@ export class MyConsultingScheduleComponent extends BaseComponent implements OnIn
             const startTime = this.formatTimeString(timeSlot.start_time);
             const endTime = this.formatTimeString(timeSlot.end_time);
             const rate = timeSlot.rate || 0;
-            
+            const place = timeSlot.online && timeSlot.on_site
+              ? 'both'
+              : timeSlot.on_site
+                ? 'physically'
+                : 'online';
+
             if (startTime && endTime) {
-              // Add the time slot with rate
+              // Add the time slot with rate and place
               processedTimes.push({
                 start_time: startTime,
                 end_time: endTime,
-                rate: rate
+                rate: rate,
+                place: place
               });
             }
           });
-          
+
           dayEntry.times = processedTimes;
         }
-        
+
         // Add to the availability array
         processedData.availability.push(dayEntry);
       });
     }
+
+    // Derive insighter-level physical service flag + location from the slots' places
+    const hasPhysicalService = processedData.availability.some(
+      day => day.active && day.times.some(time => time.place === 'physically' || time.place === 'both')
+    );
+    processedData.has_physical_service = hasPhysicalService;
+    processedData.default_physical_location = hasPhysicalService
+      ? (formValue.default_physical_location || '').toString().trim()
+      : null;
 
     // Process exceptions (duplicates already removed before calling this method)
     if (formValue.exceptions) {

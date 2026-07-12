@@ -157,11 +157,29 @@
                   </div>
 
                   <!-- Client Meeting Status and Action Buttons -->
-                  <div class="mb-3 d-flex align-items-center justify-content-between">
+                  <div class="mb-3 d-flex align-items-center gap-2">
                     @if (meeting.status !== 'pending') {
                       <span class="badge" [ngClass]="getStatusClass(meeting.status)">
                         {{ ('MEETINGS.STATUS.' + meeting.status.toUpperCase()) | translate }}
                       </span>
+                    }
+                    @if (meeting.place) {
+                      @if ((meeting.place === 'physically' || meeting.place === 'both') && meeting.meeting_location) {
+                        <a class="badge badge-light-primary meeting-place-badge d-inline-flex align-items-center gap-1"
+                           [href]="getLocationMapUrl(meeting.meeting_location)"
+                           target="_blank"
+                           rel="noopener"
+                           [pTooltip]="meeting.meeting_location"
+                           tooltipPosition="top">
+                          <i class="pi pi-map-marker" style="font-size: .8rem;"></i>
+                          {{ ('MEETINGS.PLACE.' + meeting.place.toUpperCase()) | translate }}: {{ meeting.meeting_location | truncateText:24 }}
+                        </a>
+                      } @else {
+                        <span class="badge badge-light-primary d-inline-flex align-items-center gap-1">
+                          <i class="pi" [ngClass]="meeting.place === 'physically' ? 'pi-map-marker' : 'pi-video'" style="font-size: .8rem;"></i>
+                          {{ ('MEETINGS.PLACE.' + meeting.place.toUpperCase()) | translate }}
+                        </span>
+                      }
                     }
                   </div>
 
@@ -471,14 +489,32 @@
                   </div>
 
                   <!-- Sent Meeting Status and Action Buttons -->
-                  <div class="mb-3 d-flex align-items-center">
+                  <div class="mb-3 d-flex align-items-center flex-wrap gap-2">
                     <span class="badge" [ngClass]="getStatusClass(meeting.status)">
                       {{ ('INSIGHTER.MEETINGS.STATUS.' + meeting.status.toUpperCase()) | translate }}
                     </span>
                     @if (meeting.rate !== '0') {
-                      <span class="ms-2 badge badge-light-info">
+                      <span class="badge badge-light-info">
                         {{ 'INSIGHTER.MEETINGS.RATE' | translate }}: {{ meeting.rate | currency }}
                       </span>
+                    }
+                    @if (meeting.place) {
+                      @if ((meeting.place === 'physically' || meeting.place === 'both') && meeting.meeting_location) {
+                        <a class="badge badge-light-primary meeting-place-badge d-inline-flex align-items-center gap-1"
+                           [href]="getLocationMapUrl(meeting.meeting_location)"
+                           target="_blank"
+                           rel="noopener"
+                           [pTooltip]="meeting.meeting_location"
+                           tooltipPosition="top">
+                          <i class="pi pi-map-marker" style="font-size: .8rem;"></i>
+                          {{ ('MEETINGS.PLACE.' + meeting.place.toUpperCase()) | translate }}: {{ meeting.meeting_location | truncateText:24 }}
+                        </a>
+                      } @else {
+                        <span class="badge badge-light-primary d-inline-flex align-items-center gap-1">
+                          <i class="pi" [ngClass]="meeting.place === 'physically' ? 'pi-map-marker' : 'pi-video'" style="font-size: .8rem;"></i>
+                          {{ ('MEETINGS.PLACE.' + meeting.place.toUpperCase()) | translate }}
+                        </span>
+                      }
                     }
                   </div>
 

@@ -1504,6 +1504,12 @@ export const locale = {
       "DESCRIPTION": "الرجاء تحديد مواعيد منتظمة للجلسات الاستشارية. يمكنك تحديد ما قد يستثنى منها",
       "AVAILABLE_DAYS": "المواعيد المتاحة",
       "EXCEPTION_DAYS": "المواعيد المستثناة",
+      "ONLINE": "عن بُعد",
+      "ON_SITE": "حضورياً",
+      "PLACE_REQUIRED": "اختر واحداً على الأقل من: عن بُعد / حضورياً",
+      "PHYSICAL_LOCATION": "الموقع الحضوري",
+      "PHYSICAL_LOCATION_PLACEHOLDER": "أدخل عنوان الجلسات الحضورية",
+      "PHYSICAL_LOCATION_REQUIRED": "الموقع الحضوري مطلوب عند اختيار حضورياً",
       "NOTE_ONE_YEAR": "",
       "DAYS": {
         "MONDAY": "الاثنين",
@@ -1533,6 +1539,11 @@ export const locale = {
     },
     "MEETINGS": {
       "TITLE": "جلساتي الاستشارية",
+      "PLACE": {
+        "ONLINE": "عن بُعد",
+        "PHYSICALLY": "حضورياً",
+        "BOTH": "كلاهما"
+      },
       "RATE": "التكلفة",
       "JOIN": "انضم",
       "JOIN_MEETING": "انضم للجلسة الاستشارية",

@@ -1582,6 +1582,12 @@ Your wealth of insight is valued and many are eager to learn from it.
       "DESCRIPTION": "Set your availability for consulting sessions. Define your weekly schedule and add exception days when needed.",
       "AVAILABLE_DAYS": "Available Days",
       "EXCEPTION_DAYS": "Exception Days",
+      "ONLINE": "Online",
+      "ON_SITE": "On Site",
+      "PLACE_REQUIRED": "Select at least one of Online / On Site",
+      "PHYSICAL_LOCATION": "Physical Location",
+      "PHYSICAL_LOCATION_PLACEHOLDER": "Enter the address for on-site sessions",
+      "PHYSICAL_LOCATION_REQUIRED": "Physical location is required when On Site is selected",
       "DAYS": {
         "MONDAY": "Monday",
         "TUESDAY": "Tuesday",
@@ -1611,6 +1617,11 @@ Your wealth of insight is valued and many are eager to learn from it.
     },
     "MEETINGS": {
       "TITLE": "Client Sessions",
+      "PLACE": {
+        "ONLINE": "Online",
+        "PHYSICALLY": "On Site",
+        "BOTH": "Both"
+      },
       "JOIN": "Join",
       "JOINING": "Joining",
       "JOINT_MEETING": "Join Session",

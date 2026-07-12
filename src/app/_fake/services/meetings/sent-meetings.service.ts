@@ -29,6 +29,9 @@ export interface SentMeeting {
     company: any;
   };
   rate: string;
+  place?: string;
+  place_name?: string;
+  meeting_location?: string | null;
 }
 
 export interface SentMeetingResponse {

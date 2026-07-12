@@ -23,6 +23,9 @@ export interface Meeting {
     country: string | null;
   };
   rate: string;
+  place?: string;
+  place_name?: string;
+  meeting_location?: string | null;
 }
 
 export interface MeetingResponse {

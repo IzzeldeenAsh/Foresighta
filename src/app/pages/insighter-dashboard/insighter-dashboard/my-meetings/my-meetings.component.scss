@@ -295,6 +295,24 @@
     }
   }
 
+  // Place badge doubles as a Google Maps link when a physical location is set
+  .meeting-place-badge {
+    text-decoration: none;
+    cursor: pointer;
+    transition: filter 0.15s ease-in-out;
+
+    &:hover,
+    &:focus-visible {
+      filter: brightness(0.94);
+      text-decoration: none;
+    }
+
+    &:focus-visible {
+      outline: 2px solid #009ef7;
+      outline-offset: 1px;
+    }
+  }
+
   .meeting-description {
     p {
       color: #7e8299 !important;

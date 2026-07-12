@@ -84,9 +84,32 @@
                       </small>
                     </div>
                   </div>
-                 
-                  
-                  <button 
+
+                  <div class="place-checkboxes">
+                    <div class="place-checkbox">
+                      <p-checkbox
+                        formControlName="online"
+                        [binary]="true"
+                        [inputId]="'online-' + dayIndex + '-' + timeIndex"
+                      ></p-checkbox>
+                      <label [for]="'online-' + dayIndex + '-' + timeIndex">
+                        {{ 'CONSULTING_SCHEDULE.ONLINE' | translate }}
+                      </label>
+                    </div>
+                    <div class="place-checkbox">
+                      <p-checkbox
+                        formControlName="on_site"
+                        [binary]="true"
+                        [inputId]="'onsite-' + dayIndex + '-' + timeIndex"
+                      ></p-checkbox>
+                      <label [for]="'onsite-' + dayIndex + '-' + timeIndex">
+                        {{ 'CONSULTING_SCHEDULE.ON_SITE' | translate }}
+                      </label>
+                    </div>
+                  </div>
+
+
+                  <button
                     *ngIf="getTimesFormArray(dayIndex).length > 1"
                     type="button" 
                     class="btn-remove"
@@ -118,6 +141,13 @@
                     </small>
                   </div>
                 </div>
+                <div *ngIf="timeSlot.errors?.['placeRequired'] && (timeSlot.touched || timeSlot.dirty)" class="validation-error-row">
+                  <div class="validation-error">
+                    <small class="error-message" style="color: #f44336;">
+                      {{ 'CONSULTING_SCHEDULE.PLACE_REQUIRED' | translate }}
+                    </small>
+                  </div>
+                </div>
                 
                 <!-- Validation Error Message for Rate - New Row -->
                 <div *ngIf="timeSlot.get('rate')?.errors?.['min']" class="validation-error-row">
@@ -145,6 +175,8 @@
         </div>
       </div>
 
+      <!-- Right column: Exception Days + Physical Location -->
+      <div class="schedule-right-column">
       <!-- Exception Days Section -->
       <div class="section exception-days-section">
         <h3>{{ 'CONSULTING_SCHEDULE.EXCEPTION_DAYS' | translate }}</h3>
@@ -246,12 +278,35 @@
         </div>
       </div>
 
+      <!-- Physical Location Section (shown when any slot is On Site) -->
+      <div class="section physical-location-section" *ngIf="hasPhysicalService">
+        <h3>{{ 'CONSULTING_SCHEDULE.PHYSICAL_LOCATION' | translate }}</h3>
+        <input
+          type="text"
+          formControlName="default_physical_location"
+          maxlength="255"
+          class="location-field"
+          [placeholder]="'CONSULTING_SCHEDULE.PHYSICAL_LOCATION_PLACEHOLDER' | translate"
+        />
+        <div
+          *ngIf="scheduleForm.errors?.['physicalLocationRequired'] && (scheduleForm.get('default_physical_location')?.touched || scheduleForm.get('default_physical_location')?.dirty)"
+          class="validation-error-row"
+        >
+          <div class="validation-error">
+            <small class="error-message" style="color: #f44336;">
+              {{ 'CONSULTING_SCHEDULE.PHYSICAL_LOCATION_REQUIRED' | translate }}
+            </small>
+          </div>
+        </div>
+      </div>
+      </div>
+
      </div>
     <!-- Save Button -->
-    <button 
-      type="submit" 
+    <button
+      type="submit"
       class="btn-save"
-      [disabled]="saving() || !scheduleForm.valid"
+      [disabled]="saving()"
     >
       <span *ngIf="!saving()">{{ 'CONSULTING_SCHEDULE.SAVE' | translate }}</span>
       <span *ngIf="saving()">{{ 'CONSULTING_SCHEDULE.SAVING' | translate }}</span>
