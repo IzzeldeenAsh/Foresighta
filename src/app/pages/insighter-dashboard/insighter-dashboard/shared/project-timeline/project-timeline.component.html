@@ -105,6 +105,45 @@
               <span>{{ lang === 'ar' ? 'التاريخ:' : 'Date:' }} {{ dateLabel(step) }}</span>
             </div>
 
+            <!-- Payment date (all visible payment-plan variants) -->
+            <div class="pd-tl-payment-date" *ngIf="isPayment(step)">
+              <span class="pd-tl-payment-date__label">{{ lang === 'ar' ? 'تاريخ الدفع' : 'Payment date' }}</span>
+              <time *ngIf="step.date; else missingPaymentDate"
+                    [attr.datetime]="step.date">
+                {{ dateLabel(step) }}
+              </time>
+              <ng-template #missingPaymentDate>
+                <span class="pd-tl-payment-date__empty" [attr.aria-label]="lang === 'ar' ? 'تاريخ الدفع غير متاح' : 'Payment date unavailable'">—</span>
+              </ng-template>
+            </div>
+
+            <!-- Completed contract signature timestamps -->
+            <div class="pd-tl-signatures" *ngIf="showContractSignatures(step)">
+              <div class="pd-tl-signatures__row" *ngIf="contractSignatureAt(step, 'client_sign_at')">
+                <span class="pd-tl-signatures__marker" aria-hidden="true">
+                  <i class="ki-outline ki-check fs-8"></i>
+                </span>
+                <span class="pd-tl-signatures__details">
+                  <span class="pd-tl-signatures__label">{{ lang === 'ar' ? 'توقيع العميل' : 'Client signed' }}</span>
+                  <time [attr.datetime]="contractSignatureDateTime(step, 'client_sign_at')">
+                    {{ contractSignatureDateLabel(step, 'client_sign_at') }}
+                  </time>
+                </span>
+              </div>
+
+              <div class="pd-tl-signatures__row" *ngIf="contractSignatureAt(step, 'insighter_sign_at')">
+                <span class="pd-tl-signatures__marker" aria-hidden="true">
+                  <i class="ki-outline ki-check fs-8"></i>
+                </span>
+                <span class="pd-tl-signatures__details">
+                  <span class="pd-tl-signatures__label">{{ lang === 'ar' ? 'توقيع الخبير' : 'Insighter signed' }}</span>
+                  <time [attr.datetime]="contractSignatureDateTime(step, 'insighter_sign_at')">
+                    {{ contractSignatureDateLabel(step, 'insighter_sign_at') }}
+                  </time>
+                </span>
+              </div>
+            </div>
+
             <!-- Locked close reason (client close step) -->
             <span class="pd-tl-card__hint"
                   *ngIf="isClient && step.key === STEP.CLOSED_PROJECT && isLocked(step) && closeDisabledReason">

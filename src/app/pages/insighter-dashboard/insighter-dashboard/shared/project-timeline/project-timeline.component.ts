@@ -193,8 +193,8 @@ export class ProjectTimelineComponent {
       return '';
     }
 
-    const parsed = new Date(step.date);
-    if (isNaN(parsed.getTime())) {
+    const parsed = this.parseTimelineDate(step.date);
+    if (!parsed) {
       return step.date;
     }
 
@@ -203,6 +203,67 @@ export class ProjectTimelineComponent {
       month: 'short',
       year: 'numeric',
     }).format(parsed);
+  }
+
+  showContractSignatures(step: ProjectTimelineStep): boolean {
+    return step.key === TIMELINE_STEP.CONTRACTING
+      && this.isCompleted(step)
+      && !!(this.contractSignatureAt(step, 'client_sign_at') || this.contractSignatureAt(step, 'insighter_sign_at'));
+  }
+
+  contractSignatureAt(
+    step: ProjectTimelineStep,
+    key: 'client_sign_at' | 'insighter_sign_at',
+  ): string {
+    if (!step.meta || Array.isArray(step.meta)) {
+      return '';
+    }
+
+    const value = step.meta[key];
+    return typeof value === 'string' ? value : '';
+  }
+
+  contractSignatureDateLabel(
+    step: ProjectTimelineStep,
+    key: 'client_sign_at' | 'insighter_sign_at',
+  ): string {
+    const value = this.contractSignatureAt(step, key);
+    if (!value) {
+      return '';
+    }
+
+    const parsed = this.parseTimelineDate(value);
+    if (!parsed) {
+      return value;
+    }
+
+    const locale = this.lang === 'ar' ? 'ar' : 'en-GB';
+    const date = new Intl.DateTimeFormat(locale, {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    }).format(parsed);
+    const time = new Intl.DateTimeFormat(locale, {
+      hour: 'numeric',
+      minute: '2-digit',
+    }).format(parsed);
+
+    return `${date} · ${time}`;
+  }
+
+  contractSignatureDateTime(
+    step: ProjectTimelineStep,
+    key: 'client_sign_at' | 'insighter_sign_at',
+  ): string {
+    return this.contractSignatureAt(step, key).replace(' ', 'T');
+  }
+
+  private parseTimelineDate(value: string): Date | null {
+    // The timeline API returns SQL-style local timestamps. Normalizing the
+    // separator keeps parsing consistent across browsers without changing the
+    // timezone represented to the user.
+    const parsed = new Date(value.replace(' ', 'T'));
+    return isNaN(parsed.getTime()) ? null : parsed;
   }
 
   stepNumberLabel(step: ProjectTimelineStep): string {

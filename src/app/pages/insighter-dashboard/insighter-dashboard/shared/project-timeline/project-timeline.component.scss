@@ -390,6 +390,103 @@
   }
 }
 
+/* ---- Completed contract signature history ---- */
+.pd-tl-signatures {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding: 12px;
+  border: 1px solid #e4eee9;
+  border-radius: 9px;
+  background: #f8fcfa;
+
+  &__row {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    min-width: 0;
+  }
+
+  &__marker {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    flex: 0 0 22px;
+    border-radius: 50%;
+    color: #12805c;
+    background: #e1f6ec;
+
+    i,
+    i::before {
+      color: inherit;
+    }
+  }
+
+  &__details {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+  }
+
+  &__label {
+    color: #344054;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.35;
+  }
+
+  time {
+    color: #667085;
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.35;
+  }
+}
+
+/* ---- Payment date ---- */
+.pd-tl-payment-date {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 10px;
+  border-top: 1px solid #edf0f4;
+  font-size: 11px;
+  line-height: 1.4;
+
+  &__label {
+    color: #98a2b3;
+  }
+
+  time {
+    color: #344054;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    text-align: end;
+  }
+
+  &__empty {
+    color: #98a2b3;
+    font-weight: 600;
+  }
+}
+
+.pd-tl-card--active .pd-tl-payment-date {
+  border-top-color: rgba(255, 255, 255, 0.2);
+
+  &__label,
+  &__empty {
+    color: rgba(255, 255, 255, 0.7);
+  }
+
+  time {
+    color: #ffffff;
+  }
+}
+
 /* ---- Status badge ---- */
 .pd-tl-badge {
   display: inline-flex;
@@ -497,11 +594,11 @@
   }
 
   &--pending {
-    border-color: #dbe3ef;
-    background: #ffffff;
+    border-color: rgba(255, 181, 71, 0.5);
+    background: rgba(255, 181, 71, 0.15);
 
     > div {
-      background: #d8dee9;
+      background: #ffb547;
     }
   }
 }
