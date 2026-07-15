@@ -1,4 +1,6 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { finalize } from 'rxjs';
 import {
   ProjectTimelineStep,
   TIMELINE_STEP,
@@ -51,6 +53,11 @@ export class ProjectTimelineComponent {
   @Output() stepAction = new EventEmitter<TimelineStepActionEvent>();
 
   readonly STEP = TIMELINE_STEP;
+
+  /** Step key whose "Request Another Service" link is resolving its company profile. */
+  requestServiceLoadingKey: string | null = null;
+
+  constructor(private http: HttpClient) {}
 
   get visibleSteps(): ProjectTimelineStep[] {
     return this.orderVisibleSteps(this.normalizeClosedStep((this.steps || []).filter(step => step?.display)));
@@ -546,6 +553,88 @@ export class ProjectTimelineComponent {
 
   viewProfileLabel(): string {
     return this.lang === 'ar' ? 'عرض الملف' : 'View Profile';
+  }
+
+  meetLabel(): string {
+    return this.lang === 'ar' ? 'اجتماع' : 'Meet';
+  }
+
+  requestServiceLabel(): string {
+    return this.lang === 'ar' ? 'طلب خدمة أخرى' : 'Request Another Service';
+  }
+
+  /** Deep link into the party profile's "Meet" tab on the main app. */
+  partyMeetUrl(step: ProjectTimelineStep | null | undefined): string {
+    const uuid = step?.party?.uuid;
+    if (!uuid) {
+      return '';
+    }
+    const locale = this.lang === 'ar' ? 'ar' : 'en';
+    return `${environment.mainAppUrl}/${locale}/profile/${uuid}?entity=insighter&tab=meet`;
+  }
+
+  /** A party with a `legal_name` is a company; otherwise it is an individual insighter. */
+  private partyRole(step: ProjectTimelineStep | null | undefined): 'company' | 'insighter' {
+    return step?.party?.legal_name ? 'company' : 'insighter';
+  }
+
+  isRequestServiceLoading(step: ProjectTimelineStep | null | undefined): boolean {
+    return !!step && this.requestServiceLoadingKey === step.key;
+  }
+
+  /**
+   * Opens the project wizard pre-scoped to this insighter/company. For an
+   * insighter the profile uuid equals the party uuid; for a company we first
+   * resolve the company profile uuid from the platform profile endpoint.
+   */
+  onRequestAnotherService(step: ProjectTimelineStep | null | undefined): void {
+    const uuid = step?.party?.uuid;
+    if (!step || !uuid || this.requestServiceLoadingKey) {
+      return;
+    }
+
+    const role = this.partyRole(step);
+    if (role === 'insighter') {
+      this.openRequestServiceWizard(uuid, 'insighter', uuid);
+      return;
+    }
+
+    this.requestServiceLoadingKey = step.key;
+    const headers = new HttpHeaders({
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'Accept-Language': this.lang === 'ar' ? 'ar' : 'en',
+      'X-Timezone': Intl.DateTimeFormat().resolvedOptions().timeZone,
+    });
+
+    this.http
+      .get<any>(`${environment.apiBaseUrl}/platform/insighter/profile/${uuid}`, { headers })
+      .pipe(finalize(() => (this.requestServiceLoadingKey = null)))
+      .subscribe({
+        next: response => {
+          const data = response?.data ?? response;
+          const companyUuid = data?.company?.uuid || uuid;
+          this.openRequestServiceWizard(uuid, 'company', companyUuid);
+        },
+        error: () => {
+          this.openRequestServiceWizard(uuid, 'company', uuid);
+        },
+      });
+  }
+
+  private openRequestServiceWizard(
+    specifiedInsighter: string,
+    role: 'company' | 'insighter',
+    profileUuid: string
+  ): void {
+    const locale = this.lang === 'ar' ? 'ar' : 'en';
+    const params = new URLSearchParams({
+      specified_insighter: specifiedInsighter,
+      specified_insighter_role: role,
+      specified_insighter_profile_uuid: profileUuid,
+    });
+    const url = `${environment.mainAppUrl}/${locale}/project/wizard/project-type?${params.toString()}`;
+    window.open(url, '_blank', 'noopener,noreferrer');
   }
 
   onOfferAction(step: ProjectTimelineStep): void {

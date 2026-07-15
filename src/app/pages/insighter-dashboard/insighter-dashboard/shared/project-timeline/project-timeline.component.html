@@ -23,7 +23,14 @@
                 <span class="pd-tl-party__avatar">
                   <img *ngIf="partyAvatar(party) as avatar; else partyInitialsTpl" [src]="avatar" [alt]="partyDisplayName(party)">
                 </span>
-                <span class="pd-tl-party__name text-truncate">{{ partyDisplayName(party) }}</span>
+                <a *ngIf="partyProfileUrl(step) as profileUrl; else partyNamePlainTpl"
+                   class="pd-tl-party__name pd-tl-party__name--link text-truncate"
+                   [href]="profileUrl"
+                   target="_blank"
+                   rel="noopener noreferrer">{{ partyDisplayName(party) }}</a>
+                <ng-template #partyNamePlainTpl>
+                  <span class="pd-tl-party__name text-truncate">{{ partyDisplayName(party) }}</span>
+                </ng-template>
                 <ng-template #partyInitialsTpl>{{ partyInitials(step) }}</ng-template>
               </div>
             </div>
@@ -37,13 +44,23 @@
                 <span>{{ viewOfferLabel() }}</span>
               </button>
 
-              <a *ngIf="partyProfileUrl(step)"
-                 class="pd-tl-party-action pd-tl-party-action--profile"
-                 [href]="partyProfileUrl(step)"
+              <button *ngIf="step.party?.uuid"
+                      type="button"
+                      class="pd-tl-party-action pd-tl-party-action--offer"
+                      [disabled]="isRequestServiceLoading(step)"
+                      (click)="onRequestAnotherService(step)">
+                <i class="ki-outline ki-briefcase fs-6" *ngIf="!isRequestServiceLoading(step)"></i>
+                <span class="spinner-border spinner-border-sm" *ngIf="isRequestServiceLoading(step)" aria-hidden="true"></span>
+                <span>{{ requestServiceLabel() }}</span>
+              </button>
+
+              <a *ngIf="partyMeetUrl(step)"
+                 class="pd-tl-party-action pd-tl-party-action--meet"
+                 [href]="partyMeetUrl(step)"
                  target="_blank"
                  rel="noopener noreferrer">
-                <i class="ki-outline ki-profile-circle fs-6"></i>
-                <span>{{ viewProfileLabel() }}</span>
+                <i class="ki-outline ki-calendar-tick fs-6"></i>
+                <span>{{ meetLabel() }}</span>
               </a>
             </div>
           </div>
