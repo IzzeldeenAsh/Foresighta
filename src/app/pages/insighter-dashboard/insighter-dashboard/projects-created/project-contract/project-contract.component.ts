@@ -46,6 +46,7 @@ export class ProjectContractComponent extends BaseComponent implements OnInit {
   selectedFile: File | null = null;
   errorMessage = '';
   successMessage = '';
+  private hasLoadedFullContract = false;
 
   constructor(
     injector: Injector,
@@ -136,6 +137,7 @@ export class ProjectContractComponent extends BaseComponent implements OnInit {
       )
       .subscribe({
         next: contract => {
+          this.hasLoadedFullContract = true;
           this.applyContractState(contract);
           if (!this.contractHtml) {
             this.errorMessage = this.lang === 'ar'
@@ -270,6 +272,7 @@ export class ProjectContractComponent extends BaseComponent implements OnInit {
     this.contractLanguage = null;
     this.selectedCourtCountryId = null;
     this.canSignDefault = false;
+    this.hasLoadedFullContract = false;
 
     this.projectsCreatedService.getProject(this.projectUuid)
       .pipe(
@@ -302,7 +305,10 @@ export class ProjectContractComponent extends BaseComponent implements OnInit {
     this.projectsCreatedService.getProjectContract(this.contractUuid)
       .pipe(takeUntil(this.unsubscribe$))
       .subscribe({
-        next: contract => this.applyContractState(contract),
+        next: contract => {
+          this.hasLoadedFullContract = true;
+          this.applyContractState(contract);
+        },
         error: err => {
           if (!this.contract) {
             this.errorMessage = this.getServerErrorMessage(err);
@@ -321,13 +327,17 @@ export class ProjectContractComponent extends BaseComponent implements OnInit {
       this.selectedMode = contract.is_attach_type ? 'custom' : 'default';
     }
 
+    if (hasContractBody) {
+      this.errorMessage = '';
+    }
+
     if (!this.isContractSigned) return;
 
     this.successMessage = this.lang === 'ar'
       ? 'تم توقيع العقد من طرفك. بانتظار توقيع الخبير.'
       : 'You have signed this contract. Waiting for the insighter signature.';
 
-    if (!contract.is_attach_type && !hasContractBody) {
+    if (this.hasLoadedFullContract && !contract.is_attach_type && !hasContractBody) {
       this.errorMessage = this.lang === 'ar'
         ? 'لم يتم العثور على محتوى العقد.'
         : 'Contract content was not found.';
