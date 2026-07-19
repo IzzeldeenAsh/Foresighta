@@ -175,6 +175,7 @@ export interface CreatedProject {
   is_read?: boolean | null;
   read_at?: string | null;
   status?: CreatedProjectStatus | null;
+  cancelled_at?: string | null;
   order?: CreatedProjectOrder | null;
   contract_uuid?: string | null;
   contract?: CreatedProjectContract | null;
@@ -789,6 +790,7 @@ export class ProjectsCreatedService {
       is_read: this.toReadState(p?.is_read),
       read_at: p?.read_at ?? null,
       status: p?.status ?? null,
+      cancelled_at: p?.cancelled_at ?? null,
       order: p?.order && typeof p.order === 'object' ? this.mapProjectOrder(p.order) : null,
       contract_uuid: p?.contract_uuid ?? p?.contract?.uuid ?? null,
       contract: p?.contract && typeof p.contract === 'object' ? this.mapProjectContract(p.contract) : null,

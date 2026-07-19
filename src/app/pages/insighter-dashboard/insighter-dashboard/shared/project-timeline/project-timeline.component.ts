@@ -39,6 +39,9 @@ export class ProjectTimelineComponent {
   @Input() audience: TimelineAudience = 'client';
   @Input() lang: 'en' | 'ar' | string = 'en';
 
+  /** Project `cancelled_at` timestamp; shown on the cancelled step when present. */
+  @Input() cancelledAt: string | null = null;
+
   /** Client action / in-flight state (ignored for the insighter audience). */
   @Input() paymentSubmitting = false;
   @Input() closeSubmitting = false;
@@ -501,6 +504,26 @@ export class ProjectTimelineComponent {
     return this.lang === 'ar'
       ? 'تم إلغاء هذا المشروع من قبل العميل.'
       : 'This project has been cancelled by the client.';
+  }
+
+  /** Formatted `cancelled_at` (date + time), empty when the API omits it. */
+  cancelledAtLabel(): string {
+    if (!this.cancelledAt) {
+      return '';
+    }
+
+    const parsed = this.parseTimelineDate(this.cancelledAt);
+    if (!parsed) {
+      return this.cancelledAt;
+    }
+
+    return new Intl.DateTimeFormat(this.lang === 'ar' ? 'ar' : 'en-GB', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(parsed);
   }
 
   actionDisabled(step: ProjectTimelineStep): boolean {

@@ -1269,6 +1269,7 @@
             audience="insighter"
             [steps]="timelineSteps"
             [lang]="lang"
+            [cancelledAt]="project.project?.cancelled_at || null"
             [canViewOffer]="!!project.offer"
             [canViewContract]="canOpenContract(project)"
             (stepAction)="onInsighterTimelineAction($event)">

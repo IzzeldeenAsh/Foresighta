@@ -179,6 +179,7 @@ export class SalesComponent extends BaseComponent implements OnInit, OnDestroy, 
       'YEARLY': { en: 'Yearly', ar: 'سنوي' },
       'KNOWLEDGE': { en: 'Insights', ar: 'المستندات' },
       'MEETINGS': { en: 'Sessions', ar: 'الجلسات' },
+      'PROJECTS': { en: 'Projects', ar: 'المشاريع' },
       'TOTAL_AMOUNT': { en: 'Total Amount', ar: 'إجمالي المبلغ' },
       'EXPORT_TO_EXCEL': { en: 'Export to Excel', ar: 'تصدير إلى إكسل' },
       'INSIGHTER_NAME': { en: 'Insighter Name', ar: 'اسم الخبير' },
@@ -538,6 +539,10 @@ export class SalesComponent extends BaseComponent implements OnInit, OnDestroy, 
       const amount = this.periodStatistics!.meeting_booking_order_statistics[label]?.orders_amount || 0;
       return Math.max(0, amount); // Ensure no negative values
     });
+    const projectData = labels.map(label => {
+      const amount = this.periodStatistics!.project_order_statistics?.[label]?.orders_amount || 0;
+      return Math.max(0, amount); // Ensure no negative values
+    });
 
     // Create gradients function
     const createGradient = (ctx: CanvasRenderingContext2D, color1: string, color2: string) => {
@@ -589,6 +594,27 @@ export class SalesComponent extends BaseComponent implements OnInit, OnDestroy, 
           pointRadius: 4,
           pointHoverRadius: 6,
           pointHoverBackgroundColor: '#50C878',
+          pointHoverBorderColor: '#ffffff',
+          pointHoverBorderWidth: 3
+        },
+        {
+          label: this.getText('PROJECTS'),
+          data: projectData,
+          borderColor: '#F1416C',
+          backgroundColor: (ctx: any) => {
+            const chart = ctx.chart;
+            const {ctx: canvasCtx} = chart;
+            return createGradient(canvasCtx, 'rgba(241, 65, 108, 0.2)', 'rgba(241, 65, 108, 0)');
+          },
+          borderWidth: 2,
+          fill: true,
+          tension: 0.4,
+          pointBackgroundColor: '#F1416C',
+          pointBorderColor: '#ffffff',
+          pointBorderWidth: 2,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          pointHoverBackgroundColor: '#F1416C',
           pointHoverBorderColor: '#ffffff',
           pointHoverBorderWidth: 3
         }
@@ -1045,6 +1071,29 @@ export class SalesComponent extends BaseComponent implements OnInit, OnDestroy, 
 
       const meetingWS = XLSX.utils.aoa_to_sheet(meetingData);
       XLSX.utils.book_append_sheet(workbook, meetingWS, this.lang === 'ar' ? 'طلبات_الاجتماعات' : 'Meeting_Orders');
+
+      // Project Order Statistics Sheet
+      const projectHeaders = [
+        this.lang === 'ar' ? 'الفترة' : 'Period',
+        this.getText('TOTAL_ORDERS'),
+        this.getText('ORDERS_REVENUE'),
+        this.isCompany ? this.getText('COMPANY_NET_PROFIT') : this.getText('NET_PROFIT')
+      ];
+
+      const projectData = [
+        projectHeaders,
+        ...periodLabels.map(period => [
+          period,
+          this.periodStatistics!.project_order_statistics?.[period]?.orders_total || 0,
+          `$${this.periodStatistics!.project_order_statistics?.[period]?.orders_amount || 0}`,
+          `$${this.isCompany
+            ? this.periodStatistics!.project_order_statistics?.[period]?.company_orders_amount || 0
+            : this.periodStatistics!.project_order_statistics?.[period]?.insighter_orders_amount || 0}`
+        ])
+      ];
+
+      const projectWS = XLSX.utils.aoa_to_sheet(projectData);
+      XLSX.utils.book_append_sheet(workbook, projectWS, this.lang === 'ar' ? 'طلبات_المشاريع' : 'Project_Orders');
 
       // Generate filename with current date and period
       const currentDate = new Date();

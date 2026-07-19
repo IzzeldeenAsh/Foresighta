@@ -906,6 +906,7 @@
             audience="client"
             [steps]="timelineSteps"
             [lang]="lang"
+            [cancelledAt]="p.cancelled_at || null"
             [paymentSubmitting]="projectCheckoutSubmitting"
             [closeSubmitting]="projectCloseSubmitting"
             [closeError]="projectCloseError"

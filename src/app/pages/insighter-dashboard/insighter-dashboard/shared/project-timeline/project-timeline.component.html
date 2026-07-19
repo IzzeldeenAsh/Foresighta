@@ -39,28 +39,34 @@
               <button type="button"
                       *ngIf="canViewOffer"
                       class="pd-tl-party-action pd-tl-party-action--offer"
+                      [pTooltip]="viewOfferLabel()"
+                      tooltipPosition="top"
+                      [attr.aria-label]="viewOfferLabel()"
                       (click)="onOfferAction(step)">
-                <i class="ki-outline ki-briefcase fs-6"></i>
-                <span>{{ viewOfferLabel() }}</span>
+                <i class="ki-outline ki-briefcase fs-4"></i>
               </button>
 
               <button *ngIf="step.party?.uuid"
                       type="button"
                       class="pd-tl-party-action pd-tl-party-action--offer"
+                      [pTooltip]="requestServiceLabel()"
+                      tooltipPosition="top"
+                      [attr.aria-label]="requestServiceLabel()"
                       [disabled]="isRequestServiceLoading(step)"
                       (click)="onRequestAnotherService(step)">
-                <i class="ki-outline ki-briefcase fs-6" *ngIf="!isRequestServiceLoading(step)"></i>
+                <i class="ki-outline ki-add-files fs-4" *ngIf="!isRequestServiceLoading(step)"></i>
                 <span class="spinner-border spinner-border-sm" *ngIf="isRequestServiceLoading(step)" aria-hidden="true"></span>
-                <span>{{ requestServiceLabel() }}</span>
               </button>
 
               <a *ngIf="partyMeetUrl(step)"
                  class="pd-tl-party-action pd-tl-party-action--meet"
+                 [pTooltip]="meetLabel()"
+                 tooltipPosition="top"
+                 [attr.aria-label]="meetLabel()"
                  [href]="partyMeetUrl(step)"
                  target="_blank"
                  rel="noopener noreferrer">
-                <i class="ki-outline ki-calendar-tick fs-6"></i>
-                <span>{{ meetLabel() }}</span>
+                <i class="ki-outline ki-calendar-tick fs-4"></i>
               </a>
             </div>
           </div>
@@ -108,6 +114,12 @@
                  *ngIf="step.key === STEP.CANCELLED_PROJECT">
               <i class="ki-outline ki-information-5 fs-7"></i>
               <span>{{ cancelledByClientLabel() }}</span>
+            </div>
+
+            <div class="pd-tl-card__meta"
+                 *ngIf="step.key === STEP.CANCELLED_PROJECT && cancelledAtLabel()">
+              <i class="ki-outline ki-calendar fs-7"></i>
+              <span>{{ lang === 'ar' ? 'تاريخ الإلغاء:' : 'Cancelled on:' }} {{ cancelledAtLabel() }}</span>
             </div>
 
             <!-- Payment amount (payment steps only, when present) -->

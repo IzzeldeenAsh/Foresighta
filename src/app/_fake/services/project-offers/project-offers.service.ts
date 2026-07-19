@@ -187,6 +187,7 @@ export interface ProjectOffer {
     request_files: ProjectOfferFile[];
     file?: ProjectOfferFiles;
     status?: ProjectOfferProjectStatus | null;
+    cancelled_at?: string | null;
     contract_uuid?: string | null;
     contract?: ProjectContract | null;
   };
@@ -710,6 +711,7 @@ export class ProjectOffersService {
         created_at: project?.created_at ?? null,
         updated_at: project?.updated_at ?? null,
         status: projectStatus,
+        cancelled_at: project?.cancelled_at ?? null,
         is_read: this.toReadState(project?.is_read),
         read_at: project?.read_at ?? null,
         components: this.sanitizeBlocks(project?.components),

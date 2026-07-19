@@ -32,6 +32,7 @@ export interface PeriodStatisticsData {
   order_statistics: { [key: string]: OrderStatistics };
   knowledge_order_statistics: { [key: string]: OrderStatistics };
   meeting_booking_order_statistics: { [key: string]: OrderStatistics };
+  project_order_statistics: { [key: string]: OrderStatistics };
 }
 
 export interface TotalStatisticsData {
