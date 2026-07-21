@@ -295,7 +295,7 @@
       </div>
 
       <div class="form-actions">
-        <button type="submit" class="btn-save" [disabled]="saving()">
+        <button type="submit" class="btn-primary btn" [disabled]="saving()">
           <span *ngIf="!saving()">{{ 'CONSULTING_SCHEDULE.SAVE' | translate }}</span>
           <span *ngIf="saving()">{{ 'CONSULTING_SCHEDULE.SAVING' | translate }}</span>
         </button>

@@ -1220,7 +1220,7 @@ export class ConsultingScheduleComponent extends BaseComponent implements OnInit
                 start_time: startTime,
                 end_time: endTime,
                 rate: rate,
-                rate_physical: physicalRate,
+                rate_physical: physicalRate.toString(),
                 place: place
               });
             }
