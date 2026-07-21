@@ -1,4 +1,4 @@
-import { NgModule } from '@angular/core';
+import { CUSTOM_ELEMENTS_SCHEMA, NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Routes } from '@angular/router';
 import { AccountSettingsComponent } from './account-settings.component';
@@ -26,7 +26,6 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { SharedTreeSelectorComponent } from 'src/app/reusable-components/shared-tree-selector/shared-tree-selector.component';
 import { TruncateTextPipe } from 'src/app/pipes/truncate-pipe/truncate-text.pipe';
 import { DropdownModule } from 'primeng/dropdown';
-import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { CountryDropdownComponent } from 'src/app/reusable-components/country-dropdown/country-dropdown.component';
 import { PaymentSettingsComponent } from './payment-settings/payment-settings.component';
 import { SettingsTabsComponent } from './settings-tabs/settings-tabs.component';
@@ -133,4 +132,4 @@ const routes: Routes = [
   ],
   schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
-export class AccountSettingsModule { } 
+export class AccountSettingsModule {}

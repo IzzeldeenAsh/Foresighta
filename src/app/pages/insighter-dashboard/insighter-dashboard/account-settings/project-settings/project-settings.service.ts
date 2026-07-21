@@ -155,6 +155,7 @@ export class ProjectSettingsService {
   ): Observable<unknown> {
     return this.http.post(this.syncApiUrl, payload, {
       headers: this.getHeaders(),
+      responseType: 'text',
     });
   }
 
@@ -162,7 +163,7 @@ export class ProjectSettingsService {
     return this.http.post(
       this.activateApiUrl,
       { agreement: true },
-      { headers: this.getHeaders() }
+      { headers: this.getHeaders(), responseType: 'text' }
     );
   }
 
@@ -170,7 +171,7 @@ export class ProjectSettingsService {
     return this.http.post(
       this.deactivateApiUrl,
       { agreement: true },
-      { headers: this.getHeaders() }
+      { headers: this.getHeaders(), responseType: 'text' }
     );
   }
 
@@ -178,7 +179,7 @@ export class ProjectSettingsService {
     return this.http.post(
       this.acceptAgreementApiUrl,
       { agreement: true },
-      { headers: this.getHeaders() }
+      { headers: this.getHeaders(), responseType: 'text' }
     );
   }
 }

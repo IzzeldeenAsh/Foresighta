@@ -10,6 +10,7 @@ export interface TimeSlot {
   start_time: string;
   end_time: string;
   rate: number | string;
+  rate_physical?: number | string | null;
   place?: MeetingPlace;
   place_name?: string;
 }
@@ -81,4 +82,4 @@ export class ConsultingScheduleService {
       { headers: this.getHeaders() }
     );
   }
-} 
+}

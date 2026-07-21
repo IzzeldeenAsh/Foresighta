@@ -275,8 +275,13 @@ export class ConsultingScheduleComponent extends BaseComponent implements OnInit
     }
   }
 
-  // Limit rate value to maximum of 999
-  limitRateValueTo999(dayIndex: number, timeIndex: number, event: Event): void {
+  // Limit a meeting rate to the maximum accepted by this form.
+  limitRateValue(
+    dayIndex: number,
+    timeIndex: number,
+    controlName: 'rate' | 'rate_physical',
+    event: Event
+  ): void {
     const input = event.target as HTMLInputElement;
     let value = parseInt(input.value, 10);
     
@@ -292,7 +297,7 @@ export class ConsultingScheduleComponent extends BaseComponent implements OnInit
       const dayGroup = this.availabilityFormArray.at(dayIndex) as FormGroup;
       const timesArray = dayGroup.get('times') as FormArray;
       const timeGroup = timesArray.at(timeIndex) as FormGroup;
-      timeGroup.get('rate')?.setValue(value, { emitEvent: false });
+      timeGroup.get(controlName)?.setValue(value, { emitEvent: false });
     }
   }
 
@@ -310,6 +315,16 @@ export class ConsultingScheduleComponent extends BaseComponent implements OnInit
   // Drives has_physical_service and the visibility/requirement of the physical location field.
   get hasPhysicalService(): boolean {
     return this.computeHasPhysicalService(this.availabilityFormArray);
+  }
+
+  get activeDaysCount(): number {
+    if (!this.availabilityFormArray) {
+      return 0;
+    }
+
+    return this.availabilityFormArray.controls.filter(
+      day => day.get('active')?.value
+    ).length;
   }
 
   private computeHasPhysicalService(availability: FormArray | null | undefined): boolean {
@@ -354,6 +369,26 @@ export class ConsultingScheduleComponent extends BaseComponent implements OnInit
       return { placeRequired: true };
     }
     return null;
+  }
+
+  // Require the price that corresponds to every selected meeting type.
+  private meetingRatesValidator(control: AbstractControl): ValidationErrors | null {
+    const group = control as FormGroup;
+    const online = group.get('online')?.value;
+    const onSite = group.get('on_site')?.value;
+    const onlineRate = Number(group.get('rate')?.value);
+    const physicalRate = Number(group.get('rate_physical')?.value);
+    const errors: ValidationErrors = {};
+
+    if (online && (!Number.isFinite(onlineRate) || onlineRate < 10)) {
+      errors['onlineRateMin'] = true;
+    }
+
+    if (onSite && (!Number.isFinite(physicalRate) || physicalRate < 10)) {
+      errors['physicalRateMin'] = true;
+    }
+
+    return Object.keys(errors).length ? errors : null;
   }
   
   // Custom validator to check for duplicate exceptions on the same date and time
@@ -562,10 +597,17 @@ export class ConsultingScheduleComponent extends BaseComponent implements OnInit
     const group = this.fb.group({
       start_time: [this.parseTimeString(timeSlot.start_time), Validators.required],
       end_time: [this.parseTimeString(timeSlot.end_time), Validators.required],
-      rate: [timeSlot.rate ?? 10, [Validators.min(10)]],
+      rate: [timeSlot.rate ?? 10],
+      rate_physical: [timeSlot.rate_physical ?? timeSlot.rate ?? 10],
       online: [place === 'online' || place === 'both'],
       on_site: [place === 'physically' || place === 'both']
-    }, { validators: [this.perfectHourValidator.bind(this), this.atLeastOnePlaceValidator.bind(this)] });
+    }, {
+      validators: [
+        this.perfectHourValidator.bind(this),
+        this.atLeastOnePlaceValidator.bind(this),
+        this.meetingRatesValidator.bind(this)
+      ]
+    });
     
     // Add subscription to start_time changes to synchronize end_time minutes
     const startTimeControl = group.get('start_time');
@@ -674,10 +716,40 @@ export class ConsultingScheduleComponent extends BaseComponent implements OnInit
     } else {
       // Add a default time slot when day is activated
       if (timesArray.length === 0) {
-        const newTimeSlot = this.createTimeSlotFormGroup({ start_time: '09:00', end_time: '10:00', rate: 10 });
+        const newTimeSlot = this.createTimeSlotFormGroup({
+          start_time: '09:00',
+          end_time: '10:00',
+          rate: 10,
+          rate_physical: 10
+        });
         timesArray.push(newTimeSlot);
       }
     }
+  }
+
+  isDayPlaceEnabled(dayIndex: number, controlName: 'online' | 'on_site'): boolean {
+    const timesArray = this.getTimesFormArray(dayIndex);
+
+    return timesArray.length > 0 && timesArray.controls.every(
+      timeSlot => timeSlot.get(controlName)?.value === true
+    );
+  }
+
+  toggleDayPlace(dayIndex: number, controlName: 'online' | 'on_site'): void {
+    const timesArray = this.getTimesFormArray(dayIndex);
+    const enablePlace = !this.isDayPlaceEnabled(dayIndex, controlName);
+    const otherControlName = controlName === 'online' ? 'on_site' : 'online';
+
+    if (!enablePlace && !this.isDayPlaceEnabled(dayIndex, otherControlName)) {
+      return;
+    }
+
+    timesArray.controls.forEach(timeSlot => {
+      timeSlot.get(controlName)?.setValue(enablePlace);
+      timeSlot.markAsDirty();
+    });
+
+    this.scheduleForm.updateValueAndValidity();
   }
 
   addTimeSlot(dayIndex: number): void {
@@ -687,6 +759,8 @@ export class ConsultingScheduleComponent extends BaseComponent implements OnInit
     let startTime = '09:00';
     let endTime = '10:00';
     let rate = 10; // Default rate if no previous time slot exists
+    let physicalRate = 10;
+    let place: TimeSlot['place'] = 'online';
     
     // If there are existing time slots, use the end time of the last one as the start time
     // and also get the last entered rate value
@@ -694,6 +768,15 @@ export class ConsultingScheduleComponent extends BaseComponent implements OnInit
       const lastTimeSlot = timesArray.at(timesArray.length - 1) as FormGroup;
       const lastEndTime = lastTimeSlot.get('end_time')?.value;
       const lastRate = lastTimeSlot.get('rate')?.value;
+      const lastPhysicalRate = lastTimeSlot.get('rate_physical')?.value;
+      const lastOnline = lastTimeSlot.get('online')?.value;
+      const lastOnSite = lastTimeSlot.get('on_site')?.value;
+
+      place = lastOnline && lastOnSite
+        ? 'both'
+        : lastOnSite
+          ? 'physically'
+          : 'online';
       
       if (lastEndTime) {
         // Use the last end time as the new start time
@@ -710,15 +793,32 @@ export class ConsultingScheduleComponent extends BaseComponent implements OnInit
       if (lastRate !== undefined && lastRate !== null) {
         rate = Math.max(lastRate, 10);
       }
+
+      if (lastPhysicalRate !== undefined && lastPhysicalRate !== null) {
+        physicalRate = Math.max(lastPhysicalRate, 10);
+      }
     }
     
-    const newTimeSlot = this.createTimeSlotFormGroup({ start_time: startTime, end_time: endTime, rate: rate });
+    const newTimeSlot = this.createTimeSlotFormGroup({
+      start_time: startTime,
+      end_time: endTime,
+      rate,
+      rate_physical: physicalRate,
+      place
+    });
     timesArray.push(newTimeSlot);
   }
 
   removeTimeSlot(dayIndex: number, timeIndex: number): void {
     const dayGroup = this.availabilityFormArray.at(dayIndex) as FormGroup;
     const timesArray = dayGroup.get('times') as FormArray;
+
+    if (timesArray.length === 1) {
+      dayGroup.get('active')?.setValue(false);
+      timesArray.clear();
+      return;
+    }
+
     timesArray.removeAt(timeIndex);
   }
 
@@ -1106,7 +1206,8 @@ export class ConsultingScheduleComponent extends BaseComponent implements OnInit
           day.times.forEach((timeSlot: any) => {
             const startTime = this.formatTimeString(timeSlot.start_time);
             const endTime = this.formatTimeString(timeSlot.end_time);
-            const rate = timeSlot.rate || 0;
+            const rate = timeSlot.online ? (timeSlot.rate ?? 0) : 0;
+            const physicalRate = timeSlot.on_site ? (timeSlot.rate_physical ?? 0) : 0;
             const place = timeSlot.online && timeSlot.on_site
               ? 'both'
               : timeSlot.on_site
@@ -1119,6 +1220,7 @@ export class ConsultingScheduleComponent extends BaseComponent implements OnInit
                 start_time: startTime,
                 end_time: endTime,
                 rate: rate,
+                rate_physical: physicalRate,
                 place: place
               });
             }
@@ -1187,4 +1289,4 @@ export class ConsultingScheduleComponent extends BaseComponent implements OnInit
     this.exceptions.set([]);
     this.buildForm();
   }
-} 
+}

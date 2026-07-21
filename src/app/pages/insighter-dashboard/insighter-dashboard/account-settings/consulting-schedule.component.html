@@ -1,332 +1,320 @@
-<div class="p-24px">
+<div class="schedule-page">
   <div class="schedule-container">
-  <form [formGroup]="scheduleForm" (ngSubmit)="onSave()">
-     <div class="sections-row">
-       <!-- Available Days Section -->
-       <div class="section available-days-section">
-        <h3>{{ 'CONSULTING_SCHEDULE.AVAILABLE_DAYS' | translate }}</h3>
-        
-        <div formArrayName="availability">
-          <div 
-            *ngFor="let dayGroup of availabilityFormArray.controls; let dayIndex = index" 
-            class="day-row"
-            [formGroupName]="dayIndex"
-          >
-            <div class="day-checkbox">
-              <p-checkbox 
-                formControlName="active"
-                [binary]="true"
-                (onChange)="onDayToggle(dayIndex)"
-                [inputId]="'day-' + dayIndex"
-              ></p-checkbox>
-              <label [for]="'day-' + dayIndex">
-                {{ (weekDays[dayIndex].label || 'CONSULTING_SCHEDULE.DAYS.MONDAY') | translate }}
-              </label>
-            </div>
-            
-            <div *ngIf="dayGroup.get('active')?.value" class="time-slots" formArrayName="times">
-              <div 
-                *ngFor="let timeSlot of getTimesFormArray(dayIndex).controls; let timeIndex = index"
-                class="time-slot-container"
-                [formGroupName]="timeIndex"
+    <form [formGroup]="scheduleForm" (ngSubmit)="onSave()">
+      <div class="sections-row">
+        <section class="settings-card available-days-section">
+          <div class="section-heading">
+            <h2>{{ 'CONSULTING_SCHEDULE.AVAILABLE_DAYS' | translate }}</h2>
+            <span class="active-days-count">
+              {{ 'CONSULTING_SCHEDULE.ACTIVE_DAYS_COUNT' | translate:{ active: activeDaysCount, total: weekDays.length } }}
+            </span>
+          </div>
+
+          <div class="day-list" formArrayName="availability">
+            <article
+              *ngFor="let dayGroup of availabilityFormArray.controls; let dayIndex = index"
+              class="day-card"
+              [class.is-active]="dayGroup.get('active')?.value"
+              [formGroupName]="dayIndex"
+            >
+              <header class="day-card-header">
+                <div class="day-checkbox">
+                  <p-checkbox
+                    formControlName="active"
+                    [binary]="true"
+                    (onChange)="onDayToggle(dayIndex)"
+                    [inputId]="'day-' + dayIndex"
+                  ></p-checkbox>
+                  <label [for]="'day-' + dayIndex">
+                    {{ (weekDays[dayIndex].label || 'CONSULTING_SCHEDULE.DAYS.MONDAY') | translate }}
+                  </label>
+                </div>
+
+                <div class="place-toggles" *ngIf="dayGroup.get('active')?.value">
+                  <button
+                    type="button"
+                    class="place-toggle"
+                    [class.is-selected]="isDayPlaceEnabled(dayIndex, 'online')"
+                    [attr.aria-pressed]="isDayPlaceEnabled(dayIndex, 'online')"
+                    (click)="toggleDayPlace(dayIndex, 'online')"
+                  >
+                    <span class="toggle-check" aria-hidden="true">
+                      <i class="pi pi-check" *ngIf="isDayPlaceEnabled(dayIndex, 'online')"></i>
+                    </span>
+                    {{ 'CONSULTING_SCHEDULE.ONLINE' | translate }}
+                  </button>
+
+                  <button
+                    type="button"
+                    class="place-toggle"
+                    [class.is-selected]="isDayPlaceEnabled(dayIndex, 'on_site')"
+                    [attr.aria-pressed]="isDayPlaceEnabled(dayIndex, 'on_site')"
+                    (click)="toggleDayPlace(dayIndex, 'on_site')"
+                  >
+                    <span class="toggle-check" aria-hidden="true">
+                      <i class="pi pi-check" *ngIf="isDayPlaceEnabled(dayIndex, 'on_site')"></i>
+                    </span>
+                    {{ 'CONSULTING_SCHEDULE.ON_SITE' | translate }}
+                  </button>
+                </div>
+              </header>
+
+              <div
+                *ngIf="dayGroup.get('active')?.value"
+                class="day-card-body"
+                formArrayName="times"
               >
-                <div class="time-slot">
-                  <div class="time-inputs">
+                <div
+                  *ngFor="let timeSlot of getTimesFormArray(dayIndex).controls; let timeIndex = index"
+                  class="time-slot-container"
+                  [formGroupName]="timeIndex"
+                >
+                  <div
+                    class="slot-fields"
+                    [class.has-online]="timeSlot.get('online')?.value"
+                    [class.has-onsite]="timeSlot.get('on_site')?.value"
+                  >
+                    <div class="field-group time-field">
+                      <label>{{ 'CONSULTING_SCHEDULE.TIME' | translate }}</label>
+                      <div class="time-inputs">
+                        <p-calendar
+                          formControlName="start_time"
+                          [timeOnly]="true"
+                          [showTime]="true"
+                          hourFormat="24"
+                          dir="ltr"
+                          styleClass="slot-time-picker"
+                          appendTo="body"
+                          [readonlyInput]="true"
+                        ></p-calendar>
+
+                        <span class="time-separator">{{ 'CONSULTING_SCHEDULE.TO' | translate }}</span>
+
+                        <p-calendar
+                          formControlName="end_time"
+                          [timeOnly]="true"
+                          [showTime]="true"
+                          [showSeconds]="false"
+                          [stepMinute]="60"
+                          hourFormat="24"
+                          dir="ltr"
+                          styleClass="slot-time-picker"
+                          appendTo="body"
+                          [readonlyInput]="true"
+                        ></p-calendar>
+                      </div>
+                    </div>
+
+                    <div class="field-group rate-input" *ngIf="timeSlot.get('online')?.value">
+                      <label [for]="'online-rate-' + dayIndex + '-' + timeIndex">
+                        {{ 'CONSULTING_SCHEDULE.ONLINE_RATE' | translate }}
+                      </label>
+                      <div class="rate-control">
+                        <span class="currency-symbol">$</span>
+                        <input
+                          [id]="'online-rate-' + dayIndex + '-' + timeIndex"
+                          type="number"
+                          formControlName="rate"
+                          max="10000"
+                          min="10"
+                          step="10"
+                          (input)="limitRateValue(dayIndex, timeIndex, 'rate', $event)"
+                        />
+                      </div>
+                    </div>
+
+                    <div class="field-group rate-input" *ngIf="timeSlot.get('on_site')?.value">
+                      <label [for]="'physical-rate-' + dayIndex + '-' + timeIndex">
+                        {{ 'CONSULTING_SCHEDULE.ON_SITE_RATE' | translate }}
+                      </label>
+                      <div class="rate-control">
+                        <span class="currency-symbol">$</span>
+                        <input
+                          [id]="'physical-rate-' + dayIndex + '-' + timeIndex"
+                          type="number"
+                          formControlName="rate_physical"
+                          max="10000"
+                          min="10"
+                          step="10"
+                          (input)="limitRateValue(dayIndex, timeIndex, 'rate_physical', $event)"
+                        />
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      class="btn-remove slot-remove"
+                      [attr.aria-label]="'CONSULTING_SCHEDULE.DELETE_TIME_SLOT' | translate"
+                      [title]="'CONSULTING_SCHEDULE.DELETE_TIME_SLOT' | translate"
+                      (click)="removeTimeSlot(dayIndex, timeIndex)"
+                    >
+                      <i class="pi pi-trash"></i>
+                    </button>
+                  </div>
+
+                  <div class="slot-errors" *ngIf="timeSlot.invalid && (timeSlot.touched || timeSlot.dirty)">
+                    <small *ngIf="timeSlot.errors?.['perfectHour']">
+                      {{ 'CONSULTING_SCHEDULE.PERFECT_HOUR_ERROR' | translate }}
+                    </small>
+                    <small *ngIf="timeSlot.errors?.['invalidTimeRange']">
+                      {{ 'CONSULTING_SCHEDULE.INVALID_RANGE_ERROR' | translate }}
+                    </small>
+                    <small *ngIf="timeSlot.errors?.['duplicateTimeSlot']">
+                      {{ lang === 'ar' ? 'لا يمكن إضافة فترة زمنية مكررة في نفس اليوم' : 'Cannot add duplicate time slots for the same day' }}
+                    </small>
+                    <small *ngIf="timeSlot.errors?.['placeRequired']">
+                      {{ 'CONSULTING_SCHEDULE.PLACE_REQUIRED' | translate }}
+                    </small>
+                    <small *ngIf="timeSlot.errors?.['onlineRateMin']">
+                      {{ 'CONSULTING_SCHEDULE.ONLINE_RATE_MIN_ERROR' | translate }}
+                    </small>
+                    <small *ngIf="timeSlot.errors?.['physicalRateMin']">
+                      {{ 'CONSULTING_SCHEDULE.ON_SITE_RATE_MIN_ERROR' | translate }}
+                    </small>
+                  </div>
+                </div>
+
+                <button type="button" class="btn-add-slot" (click)="addTimeSlot(dayIndex)">
+                  <i class="pi pi-plus" aria-hidden="true"></i>
+                  {{ 'CONSULTING_SCHEDULE.ADD_TIME_SLOT' | translate }}
+                </button>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <div class="schedule-support-grid">
+          <section class="settings-card exception-days-section">
+            <div class="support-card-heading">
+              <h3>{{ 'CONSULTING_SCHEDULE.EXCEPTION_DAYS' | translate }}</h3>
+              <button type="button" class="btn-add-exception" (click)="addException()">
+                <i class="pi pi-plus" aria-hidden="true"></i>
+                {{ 'CONSULTING_SCHEDULE.ADD_EXCEPTION' | translate }}
+              </button>
+            </div>
+
+            <div formArrayName="exceptions" *ngIf="exceptionsFormArray.length > 0">
+              <div
+                *ngFor="let exceptionGroup of exceptionsFormArray.controls; let exceptionIndex = index"
+                class="exception-container"
+                [formGroupName]="exceptionIndex"
+              >
+                <div class="exception-fields">
+                  <div class="field-group exception-date">
+                    <label>{{ 'CONSULTING_SCHEDULE.DATE' | translate }}</label>
                     <p-calendar
-                      formControlName="start_time"
-                      [timeOnly]="true"
-                      [showTime]="true"
-                      hourFormat="24"
-                      placeholder="Start Time"
-                      dir="ltr"
-                      [style]="{'direction': 'ltr'}"
+                      formControlName="exception_date"
+                      dateFormat="yy-mm-dd"
+                      [placeholder]="'CONSULTING_SCHEDULE.SELECT_DATE' | translate"
+                      styleClass="date-calendar"
                       appendTo="body"
                       [readonlyInput]="true"
                     ></p-calendar>
-                    
-                    <span class="time-separator">{{ 'CONSULTING_SCHEDULE.TO' | translate }}</span>
-                    
-                    <p-calendar
-                      formControlName="end_time"
-                      [timeOnly]="true"
-                      [showTime]="true"
-                      [showSeconds]="false"
-                      [stepMinute]="60"
-                      hourFormat="24"
-                      placeholder="End Time"
-                      dir="ltr"
-                      [style]="{'direction': 'ltr'}"
-                      appendTo="body"
-                      [readonlyInput]="true"
+                  </div>
+
+                  <div class="field-group exception-time">
+                    <label>{{ 'CONSULTING_SCHEDULE.TIME' | translate }}</label>
+                    <div class="time-inputs">
+                      <p-calendar
+                        formControlName="start_time"
+                        [timeOnly]="true"
+                        [showTime]="true"
+                        hourFormat="24"
+                        dir="ltr"
+                        styleClass="slot-time-picker"
+                        appendTo="body"
+                        [readonlyInput]="true"
                       ></p-calendar>
-                  </div>
-                  
-                  <div class="rate-input d-flex flex-column">
-                  <div class="d-flex align-items-center">
-                    <span class="currency-symbol">$</span>
-                    <input 
-                      type="number" 
-                      formControlName="rate" 
-                      placeholder="Rate"
-                      max="999"
-                      min="10"
-                      step="10"
-                      class="rate-field no-validation-border"
-                      (input)="limitRateValueTo999(dayIndex, timeIndex, $event)"
-                    />
-                  </div>
-                    <div class="rate-note">
-                      <small class="text-muted" *ngIf="lang === 'en'">
-                        ( Minimum 10$ )
-                      </small>
-                      <small class="text-muted" *ngIf="lang === 'ar'">
-                        ( الحد الأدنى  10$ )
-                      </small>
+                      <span class="time-separator">{{ 'CONSULTING_SCHEDULE.TO' | translate }}</span>
+                      <p-calendar
+                        formControlName="end_time"
+                        [timeOnly]="true"
+                        [showTime]="true"
+                        [showSeconds]="false"
+                        [stepMinute]="60"
+                        hourFormat="24"
+                        dir="ltr"
+                        styleClass="slot-time-picker"
+                        appendTo="body"
+                        [readonlyInput]="true"
+                      ></p-calendar>
                     </div>
                   </div>
-
-                  <div class="place-checkboxes">
-                    <div class="place-checkbox">
-                      <p-checkbox
-                        formControlName="online"
-                        [binary]="true"
-                        [inputId]="'online-' + dayIndex + '-' + timeIndex"
-                      ></p-checkbox>
-                      <label [for]="'online-' + dayIndex + '-' + timeIndex">
-                        {{ 'CONSULTING_SCHEDULE.ONLINE' | translate }}
-                      </label>
-                    </div>
-                    <div class="place-checkbox">
-                      <p-checkbox
-                        formControlName="on_site"
-                        [binary]="true"
-                        [inputId]="'onsite-' + dayIndex + '-' + timeIndex"
-                      ></p-checkbox>
-                      <label [for]="'onsite-' + dayIndex + '-' + timeIndex">
-                        {{ 'CONSULTING_SCHEDULE.ON_SITE' | translate }}
-                      </label>
-                    </div>
-                  </div>
-
 
                   <button
-                    *ngIf="getTimesFormArray(dayIndex).length > 1"
-                    type="button" 
+                    type="button"
                     class="btn-remove"
-                    (click)="removeTimeSlot(dayIndex, timeIndex)"
+                    (click)="removeException(exceptionIndex)"
                   >
                     <i class="pi pi-trash"></i>
                   </button>
                 </div>
-                
-                <!-- Validation Error Message for Time Slot - New Row -->
-                <div *ngIf="timeSlot.errors?.['perfectHour']" class="validation-error-row">
-                  <div class="validation-error">
-                    <small class="error-message">
-                      {{ 'CONSULTING_SCHEDULE.PERFECT_HOUR_ERROR' | translate }}
-                    </small>
-                  </div>
+
+                <div class="slot-errors" *ngIf="exceptionGroup.invalid && (exceptionGroup.touched || exceptionGroup.dirty)">
+                  <small *ngIf="exceptionGroup.errors?.['perfectHour']">
+                    {{ 'CONSULTING_SCHEDULE.PERFECT_HOUR_ERROR' | translate }}
+                  </small>
+                  <small *ngIf="exceptionGroup.errors?.['invalidTimeRange']">
+                    {{ 'CONSULTING_SCHEDULE.INVALID_RANGE_ERROR' | translate }}
+                  </small>
+                  <small *ngIf="exceptionGroup.errors?.['duplicateException']">
+                    {{ lang === 'ar' ? 'لا يمكن إضافة يوم استثناء بنفس التاريخ والوقت' : 'Cannot add duplicate exception days at the same time' }}
+                  </small>
                 </div>
-                <div *ngIf="timeSlot.errors?.['invalidTimeRange']" class="validation-error-row">
-                  <div class="validation-error">
-                    <small class="error-message">
-                      {{ 'CONSULTING_SCHEDULE.INVALID_RANGE_ERROR' | translate }}
-                    </small>
-                  </div>
-                </div>
-                <div *ngIf="timeSlot.errors?.['duplicateTimeSlot']" class="validation-error-row">
-                  <div class="validation-error">
-                    <small class="error-message" style="color: #f44336;">
-                      {{ lang === 'ar' ? 'لا يمكن إضافة فترة زمنية مكررة في نفس اليوم' : 'Cannot add duplicate time slots for the same day' }}
-                    </small>
-                  </div>
-                </div>
-                <div *ngIf="timeSlot.errors?.['placeRequired'] && (timeSlot.touched || timeSlot.dirty)" class="validation-error-row">
-                  <div class="validation-error">
-                    <small class="error-message" style="color: #f44336;">
-                      {{ 'CONSULTING_SCHEDULE.PLACE_REQUIRED' | translate }}
-                    </small>
-                  </div>
-                </div>
-                
-                <!-- Validation Error Message for Rate - New Row -->
-                <div *ngIf="timeSlot.get('rate')?.errors?.['min']" class="validation-error-row">
-                  <div class="validation-error">
-                    <small class="error-message" style="color: #f44336;">
-                      {{ lang === 'ar' ? 'الحد الأدنى للسعر هو 10$' : 'Minimum price is $10' }}
-                    </small>
-                  </div>
-                </div>
-              
-              </div>
-              
-              <!-- Add Time Slot Button - placed after all time slots for the day -->
-              <div class="add-time-slot-row">
-                <button 
-                  type="button" 
-                  class="btn-add"
-                  (click)="addTimeSlot(dayIndex)"
-                >
-                  +
-                </button>
               </div>
             </div>
-          </div>
+
+            <div *ngIf="exceptionsFormArray.length === 0" class="empty-state">
+              <i class="pi pi-calendar-times" aria-hidden="true"></i>
+              <p>{{ 'CONSULTING_SCHEDULE.NO_EXCEPTIONS_DESC' | translate }}</p>
+            </div>
+          </section>
+
+          <section class="settings-card physical-location-section" *ngIf="hasPhysicalService">
+            <div class="support-card-heading">
+              <h3>{{ 'CONSULTING_SCHEDULE.PHYSICAL_LOCATION' | translate }}</h3>
+            </div>
+            <p class="support-card-description">
+              {{ 'CONSULTING_SCHEDULE.PHYSICAL_LOCATION_HELP' | translate }}
+            </p>
+            <input
+              type="text"
+              formControlName="default_physical_location"
+              maxlength="255"
+              class="location-field"
+              [placeholder]="'CONSULTING_SCHEDULE.PHYSICAL_LOCATION_PLACEHOLDER' | translate"
+            />
+            <div
+              *ngIf="scheduleForm.errors?.['physicalLocationRequired'] && (scheduleForm.get('default_physical_location')?.touched || scheduleForm.get('default_physical_location')?.dirty)"
+              class="slot-errors"
+            >
+              <small>{{ 'CONSULTING_SCHEDULE.PHYSICAL_LOCATION_REQUIRED' | translate }}</small>
+            </div>
+          </section>
         </div>
       </div>
 
-      <!-- Right column: Exception Days + Physical Location -->
-      <div class="schedule-right-column">
-      <!-- Exception Days Section -->
-      <div class="section exception-days-section">
-        <h3>{{ 'CONSULTING_SCHEDULE.EXCEPTION_DAYS' | translate }}</h3>
-        
-        <div formArrayName="exceptions" *ngIf="exceptionsFormArray.length > 0">
-          <div 
-            *ngFor="let exceptionGroup of exceptionsFormArray.controls; let exceptionIndex = index" 
-            class="exception-container"
-            [formGroupName]="exceptionIndex"
-          >
-            <div class="exception-row">
-              <p-calendar
-                formControlName="exception_date"
-                dateFormat="yy-mm-dd"
-                placeholder="Select Date"
-                styleClass="date-calendar"
-                appendTo="body"
-                [readonlyInput]="true"
-              ></p-calendar>
-              
-              <div class="time-inputs">
-                <p-calendar
-                  formControlName="start_time"
-                  [timeOnly]="true"
-                  [showTime]="true"
-                  hourFormat="24"
-                  placeholder="Start Time"
-                  dir="ltr"
-                  [style]="{'direction': 'ltr'}"
-                  appendTo="body"
-                  [readonlyInput]="true"
-                ></p-calendar>
-                
-                <span class="time-separator">{{ 'CONSULTING_SCHEDULE.TO' | translate }}</span>
-                
-                <p-calendar
-                  formControlName="end_time"
-                  [timeOnly]="true"
-                  [showTime]="true"
-                  [showSeconds]="false"
-                  [stepMinute]="60"
-                  hourFormat="24"
-                  placeholder="End Time"
-                  dir="ltr"
-                  [style]="{'direction': 'ltr'}"  
-                  appendTo="body"
-                  [readonlyInput]="true"
-                  ></p-calendar>
-              </div>
-              
-              <!-- Rate input hidden and defaulted to 0 in component -->
-              
-              <button 
-                type="button" 
-                class="btn-remove"
-                (click)="removeException(exceptionIndex)"
-              >
-                <i class="pi pi-trash"></i>
-              </button>
-            </div>
-            
-            <!-- Validation Error Message for Exception - New Row -->
-            <div *ngIf="exceptionGroup.errors?.['perfectHour']" class="validation-error-row">
-              <div class="validation-error">
-                <small class="error-message">
-                  {{ 'CONSULTING_SCHEDULE.PERFECT_HOUR_ERROR' | translate }}
-                </small>
-              </div>
-            </div>
-            <div *ngIf="exceptionGroup.errors?.['invalidTimeRange']" class="validation-error-row">
-              <div class="validation-error">
-                <small class="error-message">
-                  {{ 'CONSULTING_SCHEDULE.INVALID_RANGE_ERROR' | translate }}
-                </small>
-              </div>
-            </div>
-            <div *ngIf="exceptionGroup.errors?.['duplicateException']" class="validation-error-row">
-              <div class="validation-error">
-                <small class="error-message" style="color: #f44336;">
-                  {{ lang === 'ar' ? 'لا يمكن إضافة يوم استثناء بنفس التاريخ والوقت' : 'Cannot add duplicate exception days at the same time' }}
-                </small>
-              </div>
-            </div>
-            
-            <!-- Rate validation removed as rate is now hidden and defaulted to 0 -->
-          </div>
-        </div>
-        
-        <button 
-          type="button" 
-          class="btn-add-exception"
-          (click)="addException()"
-        >
-          {{ 'CONSULTING_SCHEDULE.ADD_EXCEPTION' | translate }}
+      <div class="form-actions">
+        <button type="submit" class="btn-save" [disabled]="saving()">
+          <span *ngIf="!saving()">{{ 'CONSULTING_SCHEDULE.SAVE' | translate }}</span>
+          <span *ngIf="saving()">{{ 'CONSULTING_SCHEDULE.SAVING' | translate }}</span>
         </button>
-        
-        <div *ngIf="exceptionsFormArray.length === 0" class="no-exceptions">
-          {{ 'CONSULTING_SCHEDULE.NO_EXCEPTIONS_DESC' | translate }}
-        </div>
       </div>
+    </form>
 
-      <!-- Physical Location Section (shown when any slot is On Site) -->
-      <div class="section physical-location-section" *ngIf="hasPhysicalService">
-        <h3>{{ 'CONSULTING_SCHEDULE.PHYSICAL_LOCATION' | translate }}</h3>
-        <input
-          type="text"
-          formControlName="default_physical_location"
-          maxlength="255"
-          class="location-field"
-          [placeholder]="'CONSULTING_SCHEDULE.PHYSICAL_LOCATION_PLACEHOLDER' | translate"
-        />
-        <div
-          *ngIf="scheduleForm.errors?.['physicalLocationRequired'] && (scheduleForm.get('default_physical_location')?.touched || scheduleForm.get('default_physical_location')?.dirty)"
-          class="validation-error-row"
-        >
-          <div class="validation-error">
-            <small class="error-message" style="color: #f44336;">
-              {{ 'CONSULTING_SCHEDULE.PHYSICAL_LOCATION_REQUIRED' | translate }}
-            </small>
-          </div>
-        </div>
-      </div>
-      </div>
-
-     </div>
-    <!-- Save Button -->
-    <button
-      type="submit"
-      class="btn-save"
-      [disabled]="saving()"
-    >
-      <span *ngIf="!saving()">{{ 'CONSULTING_SCHEDULE.SAVE' | translate }}</span>
-      <span *ngIf="saving()">{{ 'CONSULTING_SCHEDULE.SAVING' | translate }}</span>
-    </button>
-  </form>
-
-  <!-- Loading Overlay -->
-  <div *ngIf="loading()" class="loading">
-    <span>{{ 'COMMON.LOADING' | translate }}</span>
-  </div>
+    <div *ngIf="loading()" class="loading">
+      <span class="loading-spinner"></span>
+      <span>{{ 'COMMON.LOADING' | translate }}</span>
+    </div>
   </div>
 </div>
 
-<!-- PrimeNG Confirmation Dialog -->
-<p-confirmDialog 
-  appendTo="body" 
-  [style]="{width: '450px'}" 
-  [baseZIndex]="10000" 
-  acceptButtonStyleClass="btn btn-sm btn-primary rounded mx-2" 
+<p-confirmDialog
+  appendTo="body"
+  [style]="{ width: 'min(450px, calc(100vw - 32px))' }"
+  [baseZIndex]="10000"
+  acceptButtonStyleClass="btn btn-sm btn-primary rounded mx-2"
   rejectButtonStyleClass="btn btn-sm btn-light-danger rounded"
   styleClass="custom-confirm-dialog"
-  (onHide)="onConfirmDialogHide()">
-</p-confirmDialog>
+  (onHide)="onConfirmDialogHide()"
+></p-confirmDialog>
