@@ -446,12 +446,12 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 12px;
+  gap: 9px;
   width: 100%;
-  min-height: 58px;
-  padding: 14px 16px;
-  border: 1px dashed #8bbcff;
-  border-radius: 10px;
+  min-height: 48px;
+  padding: 10px 14px;
+  border: 1px dashed #a9c8fa;
+  border-radius: 8px;
   background: #f6f9ff;
   color: #245fc7;
   text-align: center;
@@ -468,9 +468,9 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 34px;
-    height: 34px;
-    flex: 0 0 34px;
+    width: 28px;
+    height: 28px;
+    flex: 0 0 28px;
     border-radius: 999px;
     background: #dbeafe;
     color: #2563eb;
@@ -762,6 +762,12 @@
     line-height: 1;
     white-space: nowrap;
   }
+
+  &__text {
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1.2;
+  }
 }
 
 .owp-review-history,
@@ -842,8 +848,20 @@
 
 .pd-review-tab {
   display: grid;
-  gap: 22px;
-  padding-top: 10px;
+  gap: 14px;
+  padding-top: 6px;
+}
+
+.po-section--reviews {
+  .po-section__title {
+    font-size: 16px;
+    font-weight: 700;
+  }
+
+  .po-section__eyebrow {
+    font-size: 10px;
+    letter-spacing: 0.06em;
+  }
 }
 
 .po-drawer-tab {
@@ -865,12 +883,12 @@
 
 .pd-review-stack {
   display: grid;
-  gap: 18px;
+  gap: 12px;
 }
 
 .pd-review-card {
   position: relative;
-  padding-top: 46px;
+  padding-top: 34px;
   cursor: default;
 
   &--new {
@@ -884,13 +902,13 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 132px;
-    height: 46px;
-    padding: 0 20px;
-    border-radius: 8px 8px 0 0;
+    min-width: 98px;
+    height: 34px;
+    padding: 0 14px;
+    border-radius: 6px 6px 0 0;
     background: #5aa9e5;
     color: #fff;
-    font-size: 15px;
+    font-size: 12px;
     font-weight: 700;
     line-height: 1;
   }
@@ -898,32 +916,32 @@
   &__priority-ribbon {
     position: absolute;
     inset-inline-end: 0;
-    top: 8px;
+    top: 6px;
     z-index: 1;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 132px;
-    height: 30px;
-    padding: 0 16px;
-    border-radius: 6px 0 0 6px;
+    min-width: 106px;
+    height: 22px;
+    padding: 0 10px;
+    border-radius: 5px 0 0 5px;
     color: #fff;
-    font-size: 11px;
+    font-size: 9px;
     font-weight: 800;
     line-height: 1;
     letter-spacing: 0;
     text-transform: uppercase;
-    box-shadow: 0 10px 18px rgba(15, 23, 42, 0.16);
+    box-shadow: 0 4px 8px rgba(15, 23, 42, 0.12);
 
     &::after {
       content: '';
       position: absolute;
       inset-inline-end: 0;
-      bottom: -7px;
+      bottom: -5px;
       width: 0;
       height: 0;
-      border-top: 7px solid rgba(15, 23, 42, 0.28);
-      border-inline-start: 7px solid transparent;
+      border-top: 5px solid rgba(15, 23, 42, 0.28);
+      border-inline-start: 5px solid transparent;
     }
 
     &--normal {
@@ -946,9 +964,9 @@
   &__panel {
     display: flex;
     flex-direction: column;
-    gap: 18px;
+    gap: 12px;
     min-height: 0;
-    padding: 24px;
+    padding: 16px;
     border: 1px solid #dfe5ee;
     border-radius: 0 8px 8px 8px;
     background: #fff;
@@ -957,26 +975,26 @@
   &__head {
     display: flex;
     align-items: flex-start;
-    gap: 12px;
+    gap: 10px;
   }
 
   &__icon {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 32px;
-    height: 32px;
-    flex: 0 0 32px;
+    width: 26px;
+    height: 26px;
+    flex: 0 0 26px;
 
     svg {
-      width: 32px;
-      height: 32px;
+      width: 26px;
+      height: 26px;
       overflow: visible;
     }
 
     i {
       color: currentColor;
-      font-size: 30px;
+      font-size: 24px;
       line-height: 1;
     }
   }
@@ -1000,27 +1018,27 @@
   &__note {
     margin: 0;
     color: #1f2937;
-    font-size: 16px;
-    font-weight: 700;
-    line-height: 1.35;
+    font-size: 14px;
+    font-weight: 650;
+    line-height: 1.4;
   }
 
   &__meta {
     display: flex;
     align-items: center;
     flex-wrap: wrap;
-    gap: 7px;
-    margin-top: 5px;
+    gap: 5px;
+    margin-top: 3px;
     color: #99a1b7;
-    font-size: 12px;
-    font-weight: 600;
+    font-size: 11px;
+    font-weight: 500;
 
     span + span::before {
       content: '';
       display: inline-block;
-      width: 4px;
-      height: 4px;
-      margin-inline-end: 8px;
+      width: 3px;
+      height: 3px;
+      margin-inline-end: 6px;
       border-radius: 999px;
       background: #cbd5e1;
       vertical-align: middle;
@@ -1054,9 +1072,9 @@
       position: relative;
       margin: 6px 0 0;
       color: #243044;
-      font-size: 14px;
-      font-weight: 700;
-      line-height: 1.55;
+      font-size: 12px;
+      font-weight: 500;
+      line-height: 1.5;
       overflow-wrap: anywhere;
     }
 
@@ -1250,45 +1268,45 @@
 
 @media (max-width: 767px) {
   .pd-review-card {
-    padding-top: 42px;
+    padding-top: 34px;
 
     &__tab {
-      min-width: 118px;
-      height: 42px;
-      padding: 0 16px;
-      font-size: 14px;
+      min-width: 98px;
+      height: 34px;
+      padding: 0 14px;
+      font-size: 12px;
     }
 
     &__priority-ribbon {
-      top: 7px;
-      min-width: 126px;
-      height: 28px;
-      padding: 0 12px;
-      font-size: 10px;
+      top: 6px;
+      min-width: 106px;
+      height: 22px;
+      padding: 0 10px;
+      font-size: 9px;
     }
 
     &__panel {
-      gap: 16px;
-      padding: 20px 16px;
+      gap: 12px;
+      padding: 16px;
     }
 
     &__head {
-      gap: 12px;
+      gap: 10px;
     }
 
     &__icon {
-      width: 32px;
-      height: 32px;
-      flex-basis: 32px;
+      width: 26px;
+      height: 26px;
+      flex-basis: 26px;
 
       svg {
-        width: 32px;
-        height: 32px;
+        width: 26px;
+        height: 26px;
       }
     }
 
     &__note {
-      font-size: 15px;
+      font-size: 14px;
     }
 
     &__response {

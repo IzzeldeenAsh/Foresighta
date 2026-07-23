@@ -43,7 +43,7 @@
                       tooltipPosition="top"
                       [attr.aria-label]="viewOfferLabel()"
                       (click)="onOfferAction(step)">
-                <i class="ki-outline ki-briefcase lh-0 fs-4"></i>
+                <i class="ki-outline ki-eye lh-0 fs-4"></i>
               </button>
 
               <button *ngIf="step.party?.uuid"
@@ -54,7 +54,7 @@
                       [attr.aria-label]="requestServiceLabel()"
                       [disabled]="isRequestServiceLoading(step)"
                       (click)="onRequestAnotherService(step)">
-                <i class="ki-outline ki-add-files lh-0 fs-4" *ngIf="!isRequestServiceLoading(step)"></i>
+                <i class="ki-outline ki-briefcase lh-0 fs-4" *ngIf="!isRequestServiceLoading(step)"></i>
                 <span class="spinner-border spinner-border-sm" *ngIf="isRequestServiceLoading(step)" aria-hidden="true"></span>
               </button>
 

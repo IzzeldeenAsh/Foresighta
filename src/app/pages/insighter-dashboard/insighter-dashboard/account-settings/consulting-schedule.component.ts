@@ -23,6 +23,9 @@ export class ConsultingScheduleComponent extends BaseComponent implements OnInit
   exceptions = signal<AvailabilityException[]>([]);
   formDirty = signal(false);
 
+  // Index of the day currently being edited in the right-hand panel
+  selectedDayIndex = signal(0);
+
   // For cleanup
   private destroy$ = new Subject<void>();
   private formSubscription: Subscription | null = null;
@@ -327,6 +330,53 @@ export class ConsultingScheduleComponent extends BaseComponent implements OnInit
     ).length;
   }
 
+  // The day group currently shown in the editor panel
+  get selectedDayGroup(): FormGroup | null {
+    const arr = this.availabilityFormArray;
+    if (!arr || arr.length === 0) return null;
+    return arr.at(this.selectedDayIndex()) as FormGroup;
+  }
+
+  selectDay(index: number): void {
+    this.selectedDayIndex.set(index);
+  }
+
+  isDayActive(index: number): boolean {
+    return !!(this.availabilityFormArray?.at(index) as FormGroup)?.get('active')?.value;
+  }
+
+  getDaySlotCount(index: number): number {
+    const dayGroup = this.availabilityFormArray?.at(index) as FormGroup;
+    const times = dayGroup?.get('times') as FormArray;
+    return times ? times.length : 0;
+  }
+
+  // Short "$50" / "$50–56" summary of the rates offered on a day (empty when off)
+  getDayRateSummary(index: number): string {
+    const dayGroup = this.availabilityFormArray?.at(index) as FormGroup;
+    if (!dayGroup?.get('active')?.value) return '';
+    const times = dayGroup.get('times') as FormArray;
+    if (!times || times.length === 0) return '';
+
+    const rates: number[] = [];
+    times.controls.forEach(ctrl => {
+      const slot = ctrl as FormGroup;
+      if (slot.get('online')?.value) {
+        const r = Number(slot.get('rate')?.value);
+        if (Number.isFinite(r) && r > 0) rates.push(r);
+      }
+      if (slot.get('on_site')?.value) {
+        const r = Number(slot.get('rate_physical')?.value);
+        if (Number.isFinite(r) && r > 0) rates.push(r);
+      }
+    });
+
+    if (rates.length === 0) return '';
+    const min = Math.min(...rates);
+    const max = Math.max(...rates);
+    return min === max ? `$${min}` : `$${min}–${max}`;
+  }
+
   private computeHasPhysicalService(availability: FormArray | null | undefined): boolean {
     if (!availability) {
       return false;
@@ -574,6 +624,12 @@ export class ConsultingScheduleComponent extends BaseComponent implements OnInit
       this.exceptionsFormArray.push(exceptionGroup);
     });
 
+    // Default the editor to the first active day (or Monday when all are off)
+    const firstActive = this.availabilityFormArray.controls.findIndex(
+      day => day.get('active')?.value
+    );
+    this.selectedDayIndex.set(firstActive >= 0 ? firstActive : 0);
+
     // Setup form change tracking after form is built and populated
     // Reset the formDirty flag first to prevent false positives
     this.formDirty.set(false);
@@ -598,7 +654,7 @@ export class ConsultingScheduleComponent extends BaseComponent implements OnInit
       start_time: [this.parseTimeString(timeSlot.start_time), Validators.required],
       end_time: [this.parseTimeString(timeSlot.end_time), Validators.required],
       rate: [timeSlot.rate ?? 10],
-      rate_physical: [timeSlot.rate_physical ?? timeSlot.rate ?? 10],
+      rate_physical: [timeSlot.rate_physical ?? 50],
       online: [place === 'online' || place === 'both'],
       on_site: [place === 'physically' || place === 'both']
     }, {
@@ -706,6 +762,9 @@ export class ConsultingScheduleComponent extends BaseComponent implements OnInit
 
   // Day availability methods
   onDayToggle(dayIndex: number): void {
+    // Bring the toggled day into the editor
+    this.selectedDayIndex.set(dayIndex);
+
     const dayGroup = this.availabilityFormArray.at(dayIndex) as FormGroup;
     const isActive = dayGroup.get('active')?.value;
     const timesArray = dayGroup.get('times') as FormArray;
@@ -720,35 +779,26 @@ export class ConsultingScheduleComponent extends BaseComponent implements OnInit
           start_time: '09:00',
           end_time: '10:00',
           rate: 10,
-          rate_physical: 10
+          rate_physical: 50
         });
         timesArray.push(newTimeSlot);
       }
     }
   }
 
-  isDayPlaceEnabled(dayIndex: number, controlName: 'online' | 'on_site'): boolean {
-    const timesArray = this.getTimesFormArray(dayIndex);
-
-    return timesArray.length > 0 && timesArray.controls.every(
-      timeSlot => timeSlot.get(controlName)?.value === true
-    );
-  }
-
-  toggleDayPlace(dayIndex: number, controlName: 'online' | 'on_site'): void {
-    const timesArray = this.getTimesFormArray(dayIndex);
-    const enablePlace = !this.isDayPlaceEnabled(dayIndex, controlName);
+  toggleSlotPlace(dayIndex: number, timeIndex: number, controlName: 'online' | 'on_site'): void {
+    const timeSlot = this.getTimesFormArray(dayIndex).at(timeIndex) as FormGroup;
     const otherControlName = controlName === 'online' ? 'on_site' : 'online';
+    const currentValue = timeSlot.get(controlName)?.value;
+    const otherValue = timeSlot.get(otherControlName)?.value;
 
-    if (!enablePlace && !this.isDayPlaceEnabled(dayIndex, otherControlName)) {
+    // Keep at least one place selected per time slot
+    if (currentValue && !otherValue) {
       return;
     }
 
-    timesArray.controls.forEach(timeSlot => {
-      timeSlot.get(controlName)?.setValue(enablePlace);
-      timeSlot.markAsDirty();
-    });
-
+    timeSlot.get(controlName)?.setValue(!currentValue);
+    timeSlot.markAsDirty();
     this.scheduleForm.updateValueAndValidity();
   }
 
@@ -759,7 +809,7 @@ export class ConsultingScheduleComponent extends BaseComponent implements OnInit
     let startTime = '09:00';
     let endTime = '10:00';
     let rate = 10; // Default rate if no previous time slot exists
-    let physicalRate = 10;
+    let physicalRate = 50;
     let place: TimeSlot['place'] = 'online';
     
     // If there are existing time slots, use the end time of the last one as the start time
