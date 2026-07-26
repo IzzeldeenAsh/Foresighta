@@ -641,6 +641,12 @@ export class ConsultingScheduleComponent extends BaseComponent implements OnInit
       day.times.map(time => this.createTimeSlotFormGroup(time))
     );
 
+    // Keep a useful starter slot visible for days that have not been enabled yet.
+    // Inactive days are not sent with time slots, so this remains a UI default until enabled.
+    if (timesArray.length === 0) {
+      timesArray.push(this.createDefaultTimeSlot());
+    }
+
     return this.fb.group({
       day: [day.day],
       active: [day.active],
@@ -672,6 +678,16 @@ export class ConsultingScheduleComponent extends BaseComponent implements OnInit
     });
     
     return group;
+  }
+
+  private createDefaultTimeSlot(): FormGroup {
+    return this.createTimeSlotFormGroup({
+      start_time: '09:00',
+      end_time: '10:00',
+      rate: 10,
+      rate_physical: 50,
+      place: 'online'
+    });
   }
 
   private createExceptionFormGroup(exception: AvailabilityException, isNewException: boolean = false): FormGroup {
@@ -769,21 +785,20 @@ export class ConsultingScheduleComponent extends BaseComponent implements OnInit
     const isActive = dayGroup.get('active')?.value;
     const timesArray = dayGroup.get('times') as FormArray;
     
-    if (!isActive) {
-      // Clear times when day is deactivated
-      timesArray.clear();
-    } else {
-      // Add a default time slot when day is activated
-      if (timesArray.length === 0) {
-        const newTimeSlot = this.createTimeSlotFormGroup({
-          start_time: '09:00',
-          end_time: '10:00',
-          rate: 10,
-          rate_physical: 50
-        });
-        timesArray.push(newTimeSlot);
-      }
+    // Keep a day's values when it is turned off, so enabling it again restores
+    // the schedule the user last configured.
+    if (isActive && timesArray.length === 0) {
+      timesArray.push(this.createDefaultTimeSlot());
     }
+  }
+
+  toggleSelectedDay(): void {
+    const dayIndex = this.selectedDayIndex();
+    const activeControl = this.availabilityFormArray.at(dayIndex).get('active');
+
+    activeControl?.setValue(!activeControl.value);
+    activeControl?.markAsDirty();
+    this.onDayToggle(dayIndex);
   }
 
   toggleSlotPlace(dayIndex: number, timeIndex: number, controlName: 'online' | 'on_site'): void {
@@ -865,7 +880,6 @@ export class ConsultingScheduleComponent extends BaseComponent implements OnInit
 
     if (timesArray.length === 1) {
       dayGroup.get('active')?.setValue(false);
-      timesArray.clear();
       return;
     }
 

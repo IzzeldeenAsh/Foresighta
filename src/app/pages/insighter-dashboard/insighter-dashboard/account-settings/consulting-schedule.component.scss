@@ -208,10 +208,75 @@
   font-weight: 500;
 }
 
+.day-availability-toggle {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 10px;
+  color: var(--sc-muted);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.availability-switch {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  padding: 0;
+  background: #cbd5e1;
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 150ms ease, box-shadow 150ms ease;
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.14);
+  }
+
+  &.is-on {
+    background: var(--sc-info);
+
+    .availability-switch__thumb {
+      transform: translateX(20px);
+    }
+  }
+}
+
+.availability-switch__thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  background: #fff;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(7, 20, 55, 0.25);
+  transition: transform 150ms ease;
+}
+
+:host-context([dir='rtl']) .availability-switch.is-on .availability-switch__thumb {
+  transform: translateX(-20px);
+}
+
+:host-context([dir='rtl']) .availability-switch__thumb {
+  right: 3px;
+  left: auto;
+}
+
 .day-editor__slots {
   display: flex;
   flex-direction: column;
   gap: 14px;
+}
+
+.day-editor__slots.is-inactive {
+  opacity: 0.56;
+
+  .slot-card {
+    background: #fbfcfe;
+  }
 }
 
 .day-editor__off {
@@ -286,6 +351,11 @@
   }
 }
 
+.place-icon {
+  font-size: 15px;
+  font-weight: 400;
+}
+
 .chip-check {
   display: inline-flex;
   flex: 0 0 auto;
@@ -304,17 +374,7 @@
   }
 }
 
-.place-chip--online.is-on {
-  color: var(--sc-info);
-  background: var(--sc-info-soft);
-  border-color: var(--sc-info-border);
-
-  .chip-check {
-    background: var(--sc-info);
-    border-color: var(--sc-info);
-  }
-}
-
+.place-chip--online.is-on,
 .place-chip--onsite.is-on {
   color: var(--sc-success-dark);
   background: var(--sc-success-soft);
