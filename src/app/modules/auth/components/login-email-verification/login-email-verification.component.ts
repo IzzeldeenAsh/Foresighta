@@ -262,58 +262,13 @@ export class LoginEmailVerificationComponent extends BaseComponent implements On
   }
 
   private redirectAfterVerification(): void {
-    // If the returnUrl is a local Angular route, go there (guards will re-evaluate with verified email).
-    if (this.returnUrl && this.returnUrl.startsWith("/")) {
-      this.router.navigateByUrl(this.returnUrl);
-      return;
-    }
-
-    // Mirror ProductionLoginComponent domain validation behavior
-    if (this.returnUrl) {
-      try {
-        const returnUrlObj = new URL(this.returnUrl);
-        const allowedDomains = [
-          "foresighta.co",
-          "www.insightabusiness.com",
-          "app.insightabusiness.com",
-          "insightabusiness.com",
-          "localhost",
-          "127.0.0.1",
-        ];
-
-        const isAllowed = allowedDomains.some((domain) => {
-          return (
-            returnUrlObj.hostname === domain ||
-            returnUrlObj.hostname.endsWith(`.${domain}`) ||
-            returnUrlObj.hostname.startsWith("localhost:") ||
-            returnUrlObj.hostname.startsWith("127.0.0.1:")
-          );
-        });
-
-        if (isAllowed) {
-          window.location.replace(this.returnUrl);
-          return;
-        }
-      } catch {
-        // fall through
-      }
-    }
-
-    this.redirectToDefault();
-  }
-
-  private redirectToDefault(): void {
-    const isLocalhost =
-      window.location.hostname === "localhost" ||
-      window.location.hostname === "127.0.0.1" ||
-      window.location.hostname.startsWith("localhost:") ||
-      window.location.hostname.startsWith("127.0.0.1:");
-
     const lang = this.lang || this.selectedLang || "en";
-    if (isLocalhost) {
-      window.location.replace(`${environment.mainAppUrl}/${lang}/home`);
-    } else {
-      window.location.replace(`${environment.mainAppUrl}/${lang}/home`);
-    }
+    const returnQuery = this.returnUrl
+      ? `?returnUrl=${encodeURIComponent(this.returnUrl)}`
+      : "";
+
+    // Route every verified session through the shared callback so the server's
+    // onboarding prompt state is checked before the user reaches either app.
+    window.location.replace(`${environment.mainAppUrl}/${lang}/callback${returnQuery}`);
   }
 }
