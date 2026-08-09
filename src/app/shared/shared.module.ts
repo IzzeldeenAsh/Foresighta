@@ -9,14 +9,12 @@ import { CheckboxModule } from 'primeng/checkbox';
 import { ButtonModule } from 'primeng/button';
 import { EmptyStateComponent } from './components/empty-state/empty-state.component';
 import { OtpModalComponent } from '../reusable-components/otp-modal/otp-modal.component';
-import { CountryUpdateModalComponent } from '../reusable-components/country-update-modal/country-update-modal.component';
 import { CustomYearPickerComponent } from '../reusable-components/custom-year-picker/custom-year-picker.component';
 
 @NgModule({
   declarations: [
     EmptyStateComponent,
     OtpModalComponent,
-    CountryUpdateModalComponent,
     CustomYearPickerComponent
   ],
   imports: [
@@ -33,7 +31,6 @@ import { CustomYearPickerComponent } from '../reusable-components/custom-year-pi
   exports: [
     EmptyStateComponent,
     OtpModalComponent,
-    CountryUpdateModalComponent,
     CustomYearPickerComponent
   ]
 })
