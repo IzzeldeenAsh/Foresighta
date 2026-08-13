@@ -999,7 +999,7 @@ Your wealth of insight is valued and many are eager to learn from it.
         "OVERVIEW": "Dashboard",
         "READ_MORE": "Read more about this step!",
         "NAV": {
-          "OVERVIEW": "Overview",
+          "OVERVIEW": "Dashboard",
           "MY_REQUESTS": "Requests",
           "MY_KNOWLEDGE": "My library",
           "PAYMENT_SETTINGS": "Payout Settings",

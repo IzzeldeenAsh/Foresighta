@@ -24,15 +24,18 @@ import { environment } from 'src/environments/environment';
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
-        stroke-width="1.9"
+        stroke-width="2.1"
         stroke-linecap="round"
         stroke-linejoin="round"
         aria-hidden="true"
       >
         <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-        <path d="M5 12l-2 0l9 -9l9 9l-2 0" />
-        <path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7" />
-        <path d="M10 12h4v4h-4l0 -4" />
+        <path d="M13 5h8" />
+        <path d="M13 9h5" />
+        <path d="M13 15h8" />
+        <path d="M13 19h5" />
+        <path d="M3 4m0 1a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z" />
+        <path d="M3 14m0 1a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z" />
       </svg>
       <span>{{ label }}</span>
     </a>
@@ -46,17 +49,16 @@ import { environment } from 'src/environments/environment';
       display: inline-flex;
       align-items: center;
       gap: 0.5rem;
-      min-height: 44px;
-      padding: 0 1rem;
+      min-height: 48px;
+      padding: 0 1.25rem;
       border-radius: 999px;
-      border: 1px solid #C8DAF1;
-      background: rgba(255, 255, 255, 0.95);
-      color: #2378E8;
+      border: 1px solid #FFB37A;
+      background: linear-gradient(to right, #FF8A3D, #FF6B35);
+      color: #ffffff;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       font-size: 0.8125rem;
       font-weight: 600;
       text-decoration: none;
-      box-shadow: 0 10px 30px rgba(24, 73, 126, 0.18);
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
       transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
@@ -64,20 +66,17 @@ import { environment } from 'src/environments/environment';
     }
 
     .back-to-feed-btn:hover {
-      transform: translateY(-2px);
-      border-color: #2378E8;
-      background: #F4F8FE;
-      box-shadow: 0 14px 34px rgba(24, 73, 126, 0.24);
-      color: #2378E8;
+      transform: translateY(-2px) scale(1.03);
+      color: #ffffff;
     }
 
     .back-to-feed-btn:active {
-      transform: translateY(0);
+      transform: translateY(0) scale(1);
     }
 
     .back-to-feed-btn:focus-visible {
       outline: none;
-      box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px #2378E8;
+      box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px #FF6B35;
     }
 
     .back-to-feed-btn.is-rtl {

@@ -10,6 +10,7 @@ import { RegionsService } from 'src/app/_fake/services/region/regions.service';
 import * as moment from 'moment';
 import { SubStepDocumentsComponent } from '../steps/step2/sub-step-documents/sub-step-documents.component';
 import { TopicsService } from 'src/app/_fake/services/topic-service/topic.service';
+import { environment } from '../../../../../environments/environment';
 
 @Component({
   selector: 'app-horizontal',
@@ -20,6 +21,11 @@ export class HorizontalComponent extends BaseComponent implements OnInit {
   formsCount = 6;
   isEditMode = false;
   knowledgeId!: number;
+  // When the Next.js feed app sends the user here to publish a knowledge item
+  // (its empty-library "Save and start publish" CTA), it passes ?return_url.
+  // After a successful publish we send the user back there with the new
+  // knowledge id so the feed can auto-attach it to their post.
+  private returnUrl: string | null = null;
   account$: BehaviorSubject<ICreateKnowldege> =
   new BehaviorSubject<ICreateKnowldege>(inits);
   currentStep$: BehaviorSubject<number> = new BehaviorSubject(1);
@@ -91,6 +97,13 @@ export class HorizontalComponent extends BaseComponent implements OnInit {
       const stepParam = queryParams['step'];
       if (stepParam) {
         this.initialStep = +stepParam;
+      }
+
+      // Capture the feed app's return URL, but only if it points back at the
+      // known main app origin — never redirect to an arbitrary external URL.
+      const returnUrlParam = queryParams['return_url'];
+      if (returnUrlParam) {
+        this.returnUrl = this.sanitizeReturnUrl(returnUrlParam);
       }
     });
 
@@ -786,14 +799,23 @@ export class HorizontalComponent extends BaseComponent implements OnInit {
     this.addInsightStepsService.publishKnowledge(this.knowledgeId, publishRequest)
       .subscribe({
         next: (response) => {
-          
+
+          // Came from the feed app to publish an item: send the user straight
+          // back so it can auto-attach the new knowledge to their post. Only for
+          // an actual publish (not draft/scheduled — nothing to attach yet).
+          if (this.returnUrl && publishRequest.status === 'published') {
+            this.isLoading = false;
+            this.redirectToReturnUrl();
+            return;
+          }
+
           // If in edit mode and this is the final step, navigate back to knowledge details
           if (this.isEditMode && nextStep > this.formsCount) {
             this.router.navigate([`/app/my-knowledge-base/view-my-knowledge/${this.knowledgeId}/details`]);
           } else {
             this.currentStep$.next(nextStep);
           }
-          
+
           this.isLoading = false;
         },
         error: (error) => {
@@ -802,6 +824,26 @@ export class HorizontalComponent extends BaseComponent implements OnInit {
           this.isLoading = false;
         }
       });
+  }
+
+  // Only accept a return URL that resolves to the configured main app origin.
+  // Guards against open-redirect abuse via a crafted ?return_url.
+  private sanitizeReturnUrl(rawUrl: string): string | null {
+    try {
+      const target = new URL(rawUrl);
+      const allowed = new URL(environment.mainAppUrl);
+      return target.origin === allowed.origin ? target.href : null;
+    } catch {
+      return null;
+    }
+  }
+
+  // Send the user back to the feed app with the freshly published knowledge id
+  // so it can auto-attach the item to their in-progress post.
+  private redirectToReturnUrl(): void {
+    if (!this.returnUrl || !this.knowledgeId) return;
+    const separator = this.returnUrl.includes('?') ? '&' : '?';
+    window.location.href = `${this.returnUrl}${separator}attach_knowledge=${this.knowledgeId}`;
   }
 
   private getCurrentDateTime(): string {

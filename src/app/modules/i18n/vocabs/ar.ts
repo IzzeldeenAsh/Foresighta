@@ -995,7 +995,7 @@ export const locale = {
         "OVERVIEW": "لوحة المعلومات",
         "READ_MORE": "اقرأ المزيد عن هذه الخطوة!",
         "NAV": {
-          "OVERVIEW": "لوحة المعلومات",
+          "OVERVIEW": "لوحة التحكم",
           "MY_REQUESTS": "الطلبات الواردة",
           "MY_KNOWLEDGE": "مكتبتي ",
           "MENU": "القائمة",
