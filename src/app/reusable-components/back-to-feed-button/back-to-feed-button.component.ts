@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, Injector, OnInit } from '@angular/core';
+import { Component, HostListener, Injector, OnInit } from '@angular/core';
 import { NavigationEnd, Router } from '@angular/router';
 import { BaseComponent } from 'src/app/modules/base.component';
 import { environment } from 'src/environments/environment';
@@ -39,6 +39,30 @@ import { environment } from 'src/environments/environment';
       </svg>
       <span>{{ label }}</span>
     </a>
+    <button
+      *ngIf="visible && showBackToTop"
+      type="button"
+      class="back-to-top-btn"
+      [class.is-rtl]="lang === 'ar'"
+      [attr.aria-label]="backToTopLabel"
+      [attr.title]="backToTopLabel"
+      (click)="scrollToTop()"
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2.25"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M6 15l6 -6l6 6" />
+      </svg>
+    </button>
   `,
   styles: [`
     .back-to-feed-btn {
@@ -90,6 +114,57 @@ import { environment } from 'src/environments/environment';
       height: 18px;
     }
 
+    .back-to-top-btn {
+      position: fixed;
+      bottom: 1.5rem;
+      left: 1.25rem;
+      z-index: 1000;
+      display: inline-flex;
+      width: 48px;
+      height: 48px;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      border: 1px solid #6aa6f5;
+      border-radius: 999px;
+      background: linear-gradient(135deg, #2378e8, #2b9dea);
+      box-shadow: 0 8px 22px rgba(35, 120, 232, 0.28);
+      color: #ffffff;
+      cursor: pointer;
+      animation: back-to-top-enter 180ms ease-out;
+      transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s ease;
+    }
+
+    .back-to-top-btn:hover {
+      transform: translateY(-2px) scale(1.04);
+      box-shadow: 0 11px 26px rgba(35, 120, 232, 0.34);
+    }
+
+    .back-to-top-btn:active {
+      transform: translateY(0) scale(0.98);
+    }
+
+    .back-to-top-btn:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px #2378e8;
+    }
+
+    .back-to-top-btn.is-rtl {
+      right: 1.25rem;
+      left: auto;
+    }
+
+    @keyframes back-to-top-enter {
+      from {
+        opacity: 0;
+        transform: translateY(8px) scale(0.92);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
     @media (min-width: 640px) {
       .back-to-feed-btn {
         bottom: 1.75rem;
@@ -100,11 +175,29 @@ import { environment } from 'src/environments/environment';
         right: auto;
         left: 1.75rem;
       }
+
+      .back-to-top-btn {
+        bottom: 1.75rem;
+        left: 1.75rem;
+      }
+
+      .back-to-top-btn.is-rtl {
+        right: 1.75rem;
+        left: auto;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .back-to-top-btn {
+        animation: none;
+        transition: none;
+      }
     }
   `],
 })
 export class BackToFeedButtonComponent extends BaseComponent implements OnInit {
   visible = false;
+  showBackToTop = false;
 
   constructor(injector: Injector, private readonly router: Router) {
     super(injector);
@@ -112,6 +205,7 @@ export class BackToFeedButtonComponent extends BaseComponent implements OnInit {
 
   ngOnInit(): void {
     this.updateVisibility(this.router.url);
+    this.updateBackToTopVisibility();
 
     const sub = this.router.events.subscribe((event) => {
       if (event instanceof NavigationEnd) {
@@ -132,7 +226,25 @@ export class BackToFeedButtonComponent extends BaseComponent implements OnInit {
     return `${mainAppUrl}/${locale}`;
   }
 
+  get backToTopLabel(): string {
+    return this.lang === 'ar' ? 'العودة إلى أعلى الصفحة' : 'Back to top';
+  }
+
+  @HostListener('window:scroll')
+  onWindowScroll(): void {
+    this.updateBackToTopVisibility();
+  }
+
+  scrollToTop(): void {
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    window.scrollTo({ top: 0, behavior: prefersReducedMotion ? 'auto' : 'smooth' });
+  }
+
   private updateVisibility(url: string): void {
     this.visible = url.startsWith('/app');
+  }
+
+  private updateBackToTopVisibility(): void {
+    this.showBackToTop = typeof window !== 'undefined' && window.scrollY > 320;
   }
 }
