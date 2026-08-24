@@ -21,7 +21,6 @@ import Aura from '@primeng/themes/aura';
 import { CoreModule } from './core/core.module';
 import { SharedModule } from './shared/shared.module';
 import { ProjectProgressCelebrationComponent } from './reusable-components/project-progress-celebration/project-progress-celebration.component';
-import { BackToFeedButtonComponent } from './reusable-components/back-to-feed-button/back-to-feed-button.component';
 
 function appInitializer(authService: AuthService) {
   return () => {
@@ -53,7 +52,6 @@ function appInitializer(authService: AuthService) {
     CoreModule,
     SharedModule,
     ProjectProgressCelebrationComponent,
-    BackToFeedButtonComponent,
     NgbModule,
     InlineSVGModule.forRoot(),
     SweetAlert2Module.forRoot(),

@@ -5,6 +5,7 @@ import { MenuItem } from 'primeng/api';
 import { ProfileService } from 'src/app/_fake/services/get-profile/get-profile.service';
 import { Observable, Subscription } from 'rxjs';
 import { TranslationService } from 'src/app/modules/i18n';
+import { environment } from 'src/environments/environment';
 
 @Component({
   selector: 'app-insighter-dashboard',
@@ -29,6 +30,20 @@ export class InsighterDashboardComponent implements OnInit, OnDestroy {
   isCompany$: Observable<boolean>;
   private subscriptions: Subscription[] = [];
   isCompanyInsighter$: Observable<boolean>;
+
+  get feedUrl(): string {
+    const locale = this.lang === 'ar' ? 'ar' : 'en';
+    return `${environment.mainAppUrl.replace(/\/+$/, '')}/${locale}`;
+  }
+
+  get myPostsUrl(): string {
+    return `${this.feedUrl}?view=my-feeds`;
+  }
+
+  get savedPostsUrl(): string {
+    return `${this.feedUrl}?view=saved-posts`;
+  }
+
   constructor(
     private router: Router,
     private profileService: ProfileService,
