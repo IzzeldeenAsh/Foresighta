@@ -132,3 +132,481 @@
     }
   }
 }
+
+// Post-registration onboarding
+:host {
+  --onboarding-ink: #111827;
+  --onboarding-muted: #667085;
+  --onboarding-border: #e4e7ec;
+  --onboarding-surface: #ffffff;
+  --onboarding-soft: #f8fafc;
+  --onboarding-primary: #0d6efd;
+  --onboarding-primary-soft: #eef6ff;
+  --onboarding-success: #16a34a;
+}
+
+.registration-hero {
+  align-items: center;
+  background-image: url('/assets/media/auth/bg-dark-line-blue.jpg');
+  background-position: center;
+  background-size: cover;
+  border-radius: 8px;
+  display: flex;
+  min-height: 100px;
+  margin-bottom: 10px;
+  padding: 20px clamp(20px, 8vw, 112px);
+  width: 100%;
+}
+
+.registration-hero__content {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+
+  p {
+    text-align: start !important;
+  }
+}
+
+.registration-wizard {
+  align-items: flex-start;
+  width: 100%;
+}
+
+.registration-wizard__aside {
+  flex-shrink: 0;
+}
+
+.registration-wizard__aside-inner {
+  max-width: 360px;
+  width: 100%;
+}
+
+.registration-wizard__content {
+  align-self: stretch;
+  min-width: 0;
+}
+
+.registration-wizard__content--onboarding {
+  align-items: flex-start !important;
+}
+
+.onboarding-content {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  margin: 0 auto;
+  max-width: 1100px;
+  padding: 40px;
+  width: 100%;
+}
+
+.onboarding-eyebrow {
+  color: var(--onboarding-primary);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  line-height: 1.4;
+  margin: 0 0 6px;
+  text-transform: uppercase;
+}
+
+.onboarding-stage-card,
+.onboarding-complete {
+  animation: onboarding-enter 300ms ease-out both;
+  background: var(--onboarding-surface);
+  width: 100%;
+}
+
+.onboarding-stage-card__header {
+  align-items: flex-start;
+  border-bottom: 1px solid var(--onboarding-border);
+  display: flex;
+  gap: 16px;
+  padding: 0 0 26px;
+
+  > div {
+    min-width: 0;
+  }
+
+  h2 {
+    color: var(--onboarding-ink);
+    font-size: clamp(21px, 2vw, 26px);
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    line-height: 1.3;
+    margin: 3px 0 0;
+  }
+
+  p {
+    color: var(--onboarding-muted);
+    font-size: 16px;
+    line-height: 1.65;
+    margin: 7px 0 0;
+    max-width: 80ch;
+  }
+}
+
+.onboarding-stage-card__step {
+  color: var(--onboarding-primary);
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  line-height: 1.4;
+  text-transform: uppercase;
+}
+
+.onboarding-stage-card__icon {
+  align-items: center;
+  background: var(--onboarding-primary-soft);
+  border-radius: 8px;
+  color: var(--onboarding-primary);
+  display: inline-flex;
+  flex: 0 0 48px;
+  height: 48px;
+  justify-content: center;
+
+  i {
+    color: inherit;
+    font-size: 25px;
+  }
+}
+
+.onboarding-stage-card__icon--whatsapp {
+  background: #eefbf2;
+
+  img {
+    display: block;
+    height: 32px;
+    object-fit: contain;
+    width: 32px;
+  }
+}
+
+.onboarding-stage-card__body {
+  padding: 30px 0;
+}
+
+.onboarding-stage-card__embedded {
+  padding: 24px 0;
+}
+
+.onboarding-stage-card__actions {
+  align-items: center;
+  border-top: 1px solid var(--onboarding-border);
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  padding: 20px 0 0;
+
+  .btn {
+    font-size: 14px;
+    font-weight: 600;
+    min-height: 42px;
+    min-width: 126px;
+  }
+}
+
+.onboarding-stage-card__actions-group {
+  display: flex;
+  gap: 12px;
+}
+
+.onboarding-back-button {
+  margin-inline-end: auto;
+}
+
+.whatsapp-layout {
+  align-items: start;
+  display: grid;
+  gap: 36px;
+  grid-template-columns: minmax(0, 0.9fr) minmax(360px, 1.1fr);
+}
+
+.whatsapp-benefits {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 4px 0;
+}
+
+.whatsapp-benefits__title {
+  color: var(--onboarding-ink);
+  font-size: 16px;
+  font-weight: 650;
+  margin: 0 0 2px;
+}
+
+.whatsapp-benefit {
+  align-items: flex-start;
+  display: flex;
+  gap: 11px;
+
+  span {
+    font-size: 15px;
+    line-height: 1.55;
+  }
+}
+
+.whatsapp-form-panel {
+  background: var(--onboarding-soft);
+  border: 1px solid var(--onboarding-border);
+  border-radius: 8px;
+  padding: 22px;
+}
+
+.whatsapp-form-panel__note {
+  align-items: flex-start;
+  color: var(--onboarding-muted);
+  display: flex;
+  font-size: 13px;
+  gap: 8px;
+  line-height: 1.5;
+  margin: 14px 0 0;
+
+  i {
+    color: var(--onboarding-primary);
+    flex: 0 0 auto;
+    font-size: 17px;
+    margin-top: 1px;
+  }
+}
+
+.project-whatsapp-gate {
+  align-items: center;
+  display: grid;
+  gap: 20px;
+  grid-template-columns: auto minmax(0, 1fr);
+  padding: 34px 32px;
+}
+
+.project-whatsapp-gate__copy {
+  h3 {
+    color: var(--onboarding-ink);
+    font-size: 18px;
+    font-weight: 650;
+    line-height: 1.4;
+    margin: 0;
+  }
+
+  p {
+    color: var(--onboarding-muted);
+    font-size: 15px;
+    line-height: 1.6;
+    margin: 5px 0 0;
+  }
+}
+
+.project-whatsapp-gate__actions {
+  display: flex;
+  gap: 10px;
+}
+
+.onboarding-complete {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 560px;
+  padding: 40px 24px;
+  text-align: center;
+}
+
+.onboarding-complete__animation {
+  display: block;
+  height: 190px;
+  margin-bottom: 8px;
+  width: 190px;
+}
+
+.onboarding-complete__copy {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  max-width: 720px;
+
+  h2 {
+    color: var(--onboarding-ink);
+    font-size: clamp(28px, 3vw, 36px);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1.25;
+    margin: 0;
+  }
+
+  > p:last-child {
+    color: var(--onboarding-muted);
+    font-size: 16px;
+    line-height: 1.7;
+    margin: 12px 0 0;
+    max-width: 62ch;
+  }
+}
+
+.onboarding-complete__action {
+  margin-top: 28px;
+
+  .btn {
+    min-height: 48px;
+    min-width: 180px;
+    padding-inline: 28px;
+  }
+}
+
+:host ::ng-deep .onboarding-stage-card__embedded {
+  .schedule-page,
+  .ps-wrap {
+    max-width: none;
+    padding: 0;
+  }
+}
+
+@keyframes onboarding-enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 991.98px) {
+  .onboarding-content {
+    gap: 20px;
+    padding: 32px;
+  }
+
+  .whatsapp-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .project-whatsapp-gate {
+    align-items: flex-start;
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .project-whatsapp-gate__actions {
+    grid-column: 1 / -1;
+    justify-content: flex-end;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .registration-hero {
+    min-height: 112px;
+    padding: 18px 20px;
+  }
+
+  .registration-hero__content h1 {
+    font-size: 24px !important;
+  }
+
+  .onboarding-content {
+    padding: 24px 20px;
+  }
+
+  .onboarding-stage-card__header {
+    padding: 0 0 22px;
+  }
+
+  .onboarding-stage-card__body {
+    padding: 22px 0;
+  }
+
+  .onboarding-stage-card__embedded {
+    padding: 20px 0;
+  }
+
+  .onboarding-stage-card__actions {
+    padding: 16px 0 0;
+  }
+
+  .project-whatsapp-gate {
+    padding: 26px 0;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .onboarding-content {
+    gap: 16px;
+    padding: 20px 16px;
+  }
+
+  .onboarding-stage-card__header p {
+    font-size: 15px;
+  }
+
+  .onboarding-stage-card__header {
+    gap: 12px;
+  }
+
+  .onboarding-stage-card__icon {
+    flex-basis: 42px;
+    height: 42px;
+    width: 42px;
+
+    i {
+      font-size: 22px;
+    }
+  }
+
+  .onboarding-stage-card__icon--whatsapp img {
+    height: 28px;
+    width: 28px;
+  }
+
+  .onboarding-stage-card__actions,
+  .onboarding-stage-card__actions-group {
+    flex-direction: column-reverse;
+    width: 100%;
+
+    .btn {
+      width: 100%;
+    }
+  }
+
+  .onboarding-back-button {
+    margin-inline-end: 0;
+  }
+
+  .project-whatsapp-gate {
+    grid-template-columns: 1fr;
+  }
+
+  .project-whatsapp-gate__actions {
+    grid-column: 1;
+  }
+
+  .whatsapp-form-panel {
+    padding: 18px;
+  }
+
+  .onboarding-complete {
+    min-height: 460px;
+    padding: 28px 12px;
+  }
+
+  .onboarding-complete__animation {
+    height: 150px;
+    width: 150px;
+  }
+
+  .onboarding-complete__action {
+    width: 100%;
+
+    .btn {
+      width: 100%;
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .onboarding-stage-card,
+  .onboarding-complete {
+    animation: none;
+  }
+}

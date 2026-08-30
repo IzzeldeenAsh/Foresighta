@@ -6,7 +6,7 @@
     </div>
 
     <!-- ============ Setup / checklist state ============ -->
-    <div *ngIf="!allChecksPassed" class="ps-setup">
+    <div *ngIf="!allChecksPassed && !embedded" class="ps-setup">
       <div class="ps-setup-main">
         <div class="ps-setup-heading">
           <h2 class="ps-title">
@@ -58,10 +58,10 @@
     </div>
 
     <!-- ============ Preferences state ============ -->
-    <ng-container *ngIf="allChecksPassed">
+    <ng-container *ngIf="allChecksPassed || embedded">
 
       <!-- Availability -->
-      <section class="ps-section">
+      <section class="ps-section" *ngIf="!embedded">
         <div class="ps-setting-row">
           <div class="ps-setting-copy">
             <h3 class="ps-section-title">
@@ -312,7 +312,7 @@
           </div>
         </section>
 
-        <div class="ps-actions">
+        <div class="ps-actions" *ngIf="!embedded">
           <button type="submit" class="btn btn-primary ps-save"
             [disabled]="(isSaving$ | async) || (isServicesLoading$ | async) || !availableServices.length">
             {{

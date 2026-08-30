@@ -28,6 +28,7 @@ import { SharedTreeSelectorComponent } from 'src/app/reusable-components/shared-
 import { TruncateTextPipe } from 'src/app/pipes/truncate-pipe/truncate-text.pipe';
 import { CountryDropdownComponent } from 'src/app/reusable-components/country-dropdown/country-dropdown.component';
 import { PhoneNumberInputModule } from 'src/app/reusable-components/phone-number-input/phone-number-input.module';
+import { AccountSettingsSharedModule } from 'src/app/pages/insighter-dashboard/insighter-dashboard/account-settings/account-settings-shared.module';
 @NgModule({
   declarations: [
     HorizontalComponent,
@@ -60,7 +61,8 @@ import { PhoneNumberInputModule } from 'src/app/reusable-components/phone-number
     MessagesModule,
     NgbTooltipModule,
     PhoneNumberInputModule,
-    SharedModule
+    SharedModule,
+    AccountSettingsSharedModule
   ],
   providers:[NodeService],
   schemas: [CUSTOM_ELEMENTS_SCHEMA]  // Add this line

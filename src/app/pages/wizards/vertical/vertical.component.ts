@@ -1,4 +1,5 @@
 import { Component, Injector, OnInit, ViewChild } from "@angular/core";
+import { FormBuilder, FormGroup, Validators } from "@angular/forms";
 import { BehaviorSubject, Observable, Subscription, first, of } from "rxjs";
 import { ICreateAccount, inits } from "../create-account.helper";
 import Swal from "sweetalert2";
@@ -15,6 +16,10 @@ import { Step1Component } from "../steps/step1/step1.component";
 import { Step2Component } from "../steps/step2/step2.component";
 import { Step3Component } from "../steps/step3/step3.component";
 import { Step5Component } from "../steps/step5/step5.component";
+import { ConsultingScheduleComponent } from "src/app/pages/insighter-dashboard/insighter-dashboard/account-settings/consulting-schedule.component";
+import { ProjectSettingsComponent } from "src/app/pages/insighter-dashboard/insighter-dashboard/account-settings/project-settings/project-settings.component";
+import { CountriesService, Country } from "src/app/_fake/services/countries/countries.service";
+import { UpdateProfileService } from "src/app/_fake/services/profile/profile.service";
 
 @Component({
   selector: "app-vertical",
@@ -22,24 +27,33 @@ import { Step5Component } from "../steps/step5/step5.component";
   styleUrls: ["./vertical.component.scss"],
 })
 export class VerticalComponent extends BaseComponent implements OnInit {
-  private static readonly ADD_CHANNELS_PROMPT_DISMISS_KEY = "postSignupPrompt:addChannels:dismissed";
-  private static readonly PROMPT_IMAGE_URL_EN =
-    "https://res.cloudinary.com/dsiku9ipv/image/upload/v1774703126/418842237_70d13ee0-5e30-4521-8a99-057840ea5113_cmhjeq.webp";
-  private static readonly PROMPT_IMAGE_URL_AR =
-    "https://res.cloudinary.com/dsiku9ipv/image/upload/v1774703126/whatsapp_arabic_bbrfku.webp";
-  private static readonly NOTIFICATION_SETTINGS_URL =
-    "/app/insighter-dashboard/account-settings/notification-settings";
-
   @ViewChild(Step1Component) step1Component: Step1Component;
   @ViewChild(Step2Component) step2Component: Step2Component;
   @ViewChild(Step3Component) step3Component: Step3Component;
   @ViewChild(Step5Component) step5Component: Step5Component;
-  
+  @ViewChild(ConsultingScheduleComponent) consultingScheduleComponent?: ConsultingScheduleComponent;
+  @ViewChild(ProjectSettingsComponent) projectSettingsComponent?: ProjectSettingsComponent;
+
   formsCount$ = new BehaviorSubject<number>(3); // Default to 3 steps (for personal)
   onSuccessMessage: boolean = false;
   onPendingMessage: boolean = false;
-  showAddChannelsPrompt: boolean = false;
-  private addChannelsPromptWasOpened: boolean = false;
+
+  // ===== Post-signup onboarding (shown after becoming an Insighter) =====
+  // Stages: 'whatsapp' -> 'meeting' -> 'project' -> 'done'.
+  // The 'whatsapp' stage is skipped automatically when the profile already has a WhatsApp number.
+  onboardingStage: "whatsapp" | "meeting" | "project" | "done" = "whatsapp";
+  onboardingReady = false;
+  onboardingProfile: any = null;
+  hasWhatsApp = false;
+  includeWhatsAppOnboardingStep = true;
+  savingOnboarding = false;
+  // When the user opens the WhatsApp step from the project stage, return to it afterwards.
+  private returnToProjectAfterWhatsApp = false;
+
+  // WhatsApp step state
+  countries: Country[] = [];
+  whatsappForm: FormGroup;
+
   user: IKnoldgProfile;
   userRoles: string[] = [];
   messages: Message[] = [];
@@ -61,9 +75,16 @@ export class VerticalComponent extends BaseComponent implements OnInit {
     private commonService: CommonService,
     injector: Injector,
     private getProfileService: ProfileService,
+    private fb: FormBuilder,
+    private countriesService: CountriesService,
+    private updateProfileService: UpdateProfileService,
   ) {
     super(injector);
     this.isLoadingSubmit$ = this.insighterRegistraionService.isLoading$;
+    this.whatsappForm = this.fb.group({
+      whatsapp_country_code: ["", [Validators.required]],
+      whatsapp_number: ["", [Validators.required]],
+    });
   }
 
   ngOnInit(): void {
@@ -83,6 +104,8 @@ export class VerticalComponent extends BaseComponent implements OnInit {
     const authSub = this.getProfileService.getProfile().subscribe({
       next: (profile) => {
         this.user = profile;
+        this.hasWhatsApp = this.profileHasWhatsApp(profile);
+        this.includeWhatsAppOnboardingStep = !this.hasWhatsApp;
         // Pre-populate account data from profile
         const currentAccount = this.account$.value;
         const updatedAccount = { ...currentAccount };
@@ -208,6 +231,12 @@ export class VerticalComponent extends BaseComponent implements OnInit {
     );
     const formData = new FormData();
     formData.append("bio", user.bio ? user.bio : "");
+    if (user.profilePhoto) {
+      formData.append("profile_photo", user.profilePhoto);
+    }
+    if (user.experience !== undefined && user.experience !== null && `${user.experience}` !== "") {
+      formData.append("experience", user.experience.toString());
+    }
     if (user.country) {
       formData.append("country_id", user.country.toString());
     }
@@ -277,6 +306,9 @@ export class VerticalComponent extends BaseComponent implements OnInit {
     formData.append("legal_name", user.legalName ? user.legalName : "");
     formData.append("address", user.companyAddress ? user.companyAddress : "");
     formData.append("logo", user.logo!);
+    if (user.experience !== undefined && user.experience !== null && `${user.experience}` !== "") {
+      formData.append("experience", user.experience.toString());
+    }
     if (user.country) {
       formData.append("country_id", user.country.toString());
     }
@@ -402,14 +434,14 @@ export class VerticalComponent extends BaseComponent implements OnInit {
           .subscribe({
             next: (response) => {
               this.onSuccessMessage = true;
-              this.clearAddChannelsPromptDismissed();
               // Refresh profile to get updated roles
               const profileSub = this.getProfileService.refreshProfile().subscribe({
                 next: (profile) => {
-                  // Update userRoles with the new roles 
+                  // Update userRoles with the new roles
                   this.userRoles = profile.roles || [];
-                  this.maybeOpenAddChannelsPrompt(profile);
-                }
+                  this.startOnboarding(profile);
+                },
+                error: () => this.startOnboarding(this.user || {}),
               });
               this.unsubscribe.push(profileSub);
             },
@@ -435,14 +467,14 @@ export class VerticalComponent extends BaseComponent implements OnInit {
                 this.unsubscribe.push(profileSub);
               }else{
                 this.onSuccessMessage=true;
-                this.clearAddChannelsPromptDismissed();
                 // Refresh profile to get updated roles
                 const profileSub = this.getProfileService.refreshProfile().subscribe({
                   next: (profile) => {
-                    // Update userRoles with the new roles 
+                    // Update userRoles with the new roles
                     this.userRoles = profile.roles || [];
-                    this.maybeOpenAddChannelsPrompt(profile);
-                  }
+                    this.startOnboarding(profile);
+                  },
+                  error: () => this.startOnboarding(this.user || {}),
                 });
                 this.unsubscribe.push(profileSub);
               }
@@ -457,92 +489,202 @@ export class VerticalComponent extends BaseComponent implements OnInit {
     });
   }
 
-  get addChannelsPromptImageUrl(): string {
-    return this.lang === "ar" ? VerticalComponent.PROMPT_IMAGE_URL_AR : VerticalComponent.PROMPT_IMAGE_URL_EN;
+  // ===================== Post-signup onboarding =====================
+
+  /** Compute whether a profile has a usable WhatsApp number. */
+  private profileHasWhatsApp(profile: any): boolean {
+    const number = profile?.whatsapp_number;
+    return number !== null && number !== undefined && String(number).trim().length > 0;
   }
 
-  get addChannelsPromptCopy(): { close: string; later: string; add: string } {
-    if (this.lang === "ar") {
-      return { close: "إغلاق", later: "لاحقاً", add: "إضافة الآن" };
+  get registrationWizardStepCount(): number {
+    return this.account$.value.accountType === "corporate" ? 4 : 3;
+  }
+
+  get whatsappWizardStep(): number {
+    return this.registrationWizardStepCount + 1;
+  }
+
+  get meetingWizardStep(): number {
+    return this.registrationWizardStepCount + (this.includeWhatsAppOnboardingStep ? 2 : 1);
+  }
+
+  get projectWizardStep(): number {
+    return this.registrationWizardStepCount + (this.includeWhatsAppOnboardingStep ? 3 : 2);
+  }
+
+  /** Kick off the onboarding flow after the user becomes an Insighter. */
+  private startOnboarding(profile: any): void {
+    this.onboardingProfile = profile;
+    this.hasWhatsApp = this.profileHasWhatsApp(profile);
+    this.includeWhatsAppOnboardingStep = !this.hasWhatsApp;
+    // Load countries for the WhatsApp phone input (used by the WhatsApp step).
+    const countriesSub = this.countriesService.getCountries().subscribe({
+      next: (countries) => {
+        this.countries = (countries || []).map((country: any) => ({ ...country, showFlag: true }));
+      },
+      error: () => {
+        this.countries = [];
+      },
+    });
+    this.unsubscribe.push(countriesSub);
+
+    // Start at WhatsApp when missing, otherwise jump straight to meeting settings.
+    this.onboardingStage = this.hasWhatsApp ? "meeting" : "whatsapp";
+    this.onboardingReady = true;
+  }
+
+  // ---- WhatsApp step ----
+
+  onWhatsAppCountryCodeChange(code: string): void {
+    this.whatsappForm.get("whatsapp_country_code")?.setValue(code);
+  }
+
+  onWhatsAppNumberChange(number: string): void {
+    this.whatsappForm.get("whatsapp_number")?.setValue(number);
+  }
+
+  saveWhatsApp(): void {
+    if (this.savingOnboarding) return;
+    this.whatsappForm.markAllAsTouched();
+    if (this.whatsappForm.invalid) {
+      return;
     }
-    return { close: "Close", later: "Maybe later", add: "Add" };
+
+    this.savingOnboarding = true;
+    const profile = this.onboardingProfile || {};
+    // Preserve any existing SMS configuration; only (re)activate WhatsApp here.
+    const smsActive = String(profile?.sms_status ?? "inactive") === "active";
+    const payload: any = {
+      whatsapp_status: "active",
+      whatsapp_country_code: this.whatsappForm.get("whatsapp_country_code")?.value || "",
+      whatsapp_number: this.whatsappForm.get("whatsapp_number")?.value || "",
+      sms_status: smsActive ? "active" : "inactive",
+      sms_whatsapp: smsActive ? "active" : "inactive",
+      sms_country_code: profile?.sms_country_code || "",
+      sms_number: profile?.sms_number || "",
+    };
+
+    const sub = this.updateProfileService.updateNotificationChannel(payload).subscribe({
+      next: () => {
+        this.showSuccess(
+          "",
+          this.lang === "ar" ? "تمت إضافة رقم الواتساب" : "WhatsApp number added"
+        );
+        const refreshSub = this.getProfileService.refreshProfile().subscribe({
+          next: (profile) => {
+            this.onboardingProfile = profile;
+            this.hasWhatsApp = this.profileHasWhatsApp(profile);
+            this.savingOnboarding = false;
+            this.afterWhatsAppResolved();
+          },
+          error: () => {
+            // Save succeeded even if refresh failed.
+            this.hasWhatsApp = true;
+            this.savingOnboarding = false;
+            this.afterWhatsAppResolved();
+          },
+        });
+        this.unsubscribe.push(refreshSub);
+      },
+      error: (error) => {
+        this.savingOnboarding = false;
+        this.handleServerErrors(error);
+      },
+    });
+    this.unsubscribe.push(sub);
   }
 
-  onAddChannelsPromptShow(): void {
-    this.addChannelsPromptWasOpened = true;
+  skipWhatsApp(): void {
+    this.afterWhatsAppResolved();
   }
 
-  onAddChannelsPromptHide(): void {
-    // Guard against any odd initialization/hide behavior: only treat as dismissed if we actually saw it open.
-    if (this.addChannelsPromptWasOpened) {
-      this.setAddChannelsPromptDismissed();
-    }
-    this.showAddChannelsPrompt = false;
-    this.addChannelsPromptWasOpened = false;
-  }
-
-  dismissAddChannelsPrompt(): void {
-    this.setAddChannelsPromptDismissed();
-    this.showAddChannelsPrompt = false;
-  }
-
-  onAddChannelsNow(): void {
-    this.setAddChannelsPromptDismissed();
-    this.showAddChannelsPrompt = false;
-    this.router.navigate([VerticalComponent.NOTIFICATION_SETTINGS_URL]);
-  }
-
-  private maybeOpenAddChannelsPrompt(profile: any): void {
-    if (!this.onSuccessMessage) return;
-    if (this.isAddChannelsPromptDismissed()) return;
-
-    const whatsappNumber = profile?.whatsapp_number;
-    const smsNumber = profile?.sms_number;
-
-    const hasWhatsApp =
-      whatsappNumber !== null &&
-      whatsappNumber !== undefined &&
-      String(whatsappNumber).trim().length > 0;
-
-    const hasSms =
-      smsNumber !== null &&
-      smsNumber !== undefined &&
-      String(smsNumber).trim().length > 0;
-
-    // Prompt if the user is missing either WhatsApp or SMS.
-    if (!hasWhatsApp || !hasSms) {
-      this.addChannelsPromptWasOpened = false;
-      setTimeout(() => {
-        // Only open if still on the success screen and not dismissed in the meantime.
-        if (!this.onSuccessMessage) return;
-        if (this.isAddChannelsPromptDismissed()) return;
-        this.showAddChannelsPrompt = true;
-      }, 0);
-    }
-  }
-
-  private isAddChannelsPromptDismissed(): boolean {
-    try {
-      return sessionStorage.getItem(VerticalComponent.ADD_CHANNELS_PROMPT_DISMISS_KEY) === "1";
-    } catch {
-      return false;
+  private afterWhatsAppResolved(): void {
+    if (this.returnToProjectAfterWhatsApp) {
+      this.returnToProjectAfterWhatsApp = false;
+      this.onboardingStage = "project";
+    } else {
+      this.onboardingStage = "meeting";
     }
   }
 
-  private setAddChannelsPromptDismissed(): void {
-    try {
-      sessionStorage.setItem(VerticalComponent.ADD_CHANNELS_PROMPT_DISMISS_KEY, "1");
-    } catch {
-      // ignore
+  /** Move to the previous onboarding stage without reopening submitted registration forms. */
+  backOnboarding(): void {
+    if (this.savingOnboarding) return;
+
+    if (this.onboardingStage === "project") {
+      this.onboardingStage = "meeting";
+      return;
     }
+
+    if (this.onboardingStage === "meeting") {
+      if (this.includeWhatsAppOnboardingStep) {
+        this.onboardingStage = "whatsapp";
+      } else {
+        this.router.navigate(["/app"]);
+      }
+      return;
+    }
+
+    if (this.onboardingStage === "whatsapp" && this.returnToProjectAfterWhatsApp) {
+      this.returnToProjectAfterWhatsApp = false;
+      this.onboardingStage = "project";
+      return;
+    }
+
+    // Registration has already been submitted, so the first onboarding Back
+    // action safely returns to the app instead of exposing a duplicate submit.
+    this.router.navigate(["/app"]);
   }
 
-  private clearAddChannelsPromptDismissed(): void {
-    try {
-      sessionStorage.removeItem(VerticalComponent.ADD_CHANNELS_PROMPT_DISMISS_KEY);
-    } catch {
-      // ignore
+  // ---- Meeting settings step ----
+
+  saveMeetingSettings(): void {
+    if (this.savingOnboarding) return;
+    if (!this.consultingScheduleComponent) {
+      this.onboardingStage = "project";
+      return;
     }
+    this.savingOnboarding = true;
+    const sub = this.consultingScheduleComponent.saveForOnboarding().subscribe((ok) => {
+      this.savingOnboarding = false;
+      if (ok) {
+        this.onboardingStage = "project";
+      }
+    });
+    this.unsubscribe.push(sub);
+  }
+
+  skipMeetingSettings(): void {
+    this.onboardingStage = "project";
+  }
+
+  // ---- Project settings step ----
+
+  /** From the project stage, jump to the WhatsApp step and come back afterwards. */
+  goAddWhatsAppFromProject(): void {
+    this.returnToProjectAfterWhatsApp = true;
+    this.onboardingStage = "whatsapp";
+  }
+
+  saveProjectSettings(): void {
+    if (this.savingOnboarding) return;
+    if (!this.projectSettingsComponent) {
+      this.onboardingStage = "done";
+      return;
+    }
+    this.savingOnboarding = true;
+    const sub = this.projectSettingsComponent.saveForOnboarding().subscribe((ok) => {
+      this.savingOnboarding = false;
+      if (ok) {
+        this.onboardingStage = "done";
+      }
+    });
+    this.unsubscribe.push(sub);
+  }
+
+  skipProjectSettings(): void {
+    this.onboardingStage = "done";
   }
 
   private handleServerErrors(error: any) {

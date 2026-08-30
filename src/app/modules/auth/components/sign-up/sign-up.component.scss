@@ -155,6 +155,32 @@
     }
   }
 
+  /* Country dropdown: match the border of the text inputs on this page
+     (inputs use #cbd5e1; the PrimeNG default was the lighter #dbdfe9, which
+     made the dropdown read as borderless next to them). */
+  ::ng-deep .form-p-control .p-dropdown {
+    border-color: #cbd5e1 !important;
+    transition: border-color 0.15s ease-in-out !important;
+
+    &:hover {
+      border-color: #94a3b8 !important;
+    }
+
+    &.p-focus {
+      border-color: #94a3b8 !important;
+      box-shadow: none !important;
+    }
+  }
+
+  /* Country dropdown open panel: give it a defined border + light shadow so it
+     doesn't merge into the white card behind it. */
+  ::ng-deep .form-p-control .p-dropdown-panel,
+  ::ng-deep .rtl-dropdown .p-dropdown-panel {
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 0.475rem !important;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12) !important;
+  }
+
   /* RTL Support for Country Dropdown */
   .rtl-dropdown {
     direction: rtl;

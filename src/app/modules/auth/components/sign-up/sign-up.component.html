@@ -514,6 +514,7 @@
   [blockScroll]="true"
   appendTo="body"
   styleClass="terms-dialog"
+  (onShow)="onAgreementDialogShow()"
 >
   <ng-template pTemplate="header">
     <div class="d-flex justify-content-between align-items-center w-100">
@@ -536,10 +537,12 @@
   <div class="terms-content-wrapper">
 
     
-    <div *ngIf="!isLoadingAgreement && clientAgreementContent" 
-         class="agreement-content custom-scrollbar" 
-         [style.max-height]="'400px'" 
-         [style.overflow-y]="'auto'">
+    <div *ngIf="!isLoadingAgreement && clientAgreementContent"
+         #agreementContent
+         class="agreement-content custom-scrollbar"
+         [style.max-height]="'400px'"
+         [style.overflow-y]="'auto'"
+         (scroll)="onAgreementScroll($event)">
       <div [innerHTML]="clientAgreementContent.guideline"></div>
     </div>
     
@@ -550,15 +553,19 @@
   
   <ng-template pTemplate="footer">
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-center gap-3 ">
-      <div class="text-muted fs-7">Please read the terms carefully before proceeding</div>
+      <div class="text-muted fs-7">
+        <span *ngIf="userScrolledToBottom">Please read the terms carefully before proceeding</span>
+        <span *ngIf="!userScrolledToBottom">Please scroll down to read the full terms before approving</span>
+      </div>
       <div class="d-flex gap-2 pt-3">
-        <button 
-          class="btn btn-light" 
+        <button
+          class="btn btn-light"
           (click)="closeAgreementDialog(false)">
           {{ 'AUTH.REGISTRATION.DECLINE' | translate }}
         </button>
-        <button 
-          class="btn btn-primary" 
+        <button
+          class="btn btn-primary"
+          [disabled]="!userScrolledToBottom"
           (click)="closeAgreementDialog(true)">
           {{ 'AUTH.REGISTRATION.APPROVE' | translate }}
         </button>

@@ -1,6 +1,6 @@
-import { Component, Injector, OnInit } from '@angular/core';
+import { Component, Injector, Input, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
-import { BehaviorSubject, catchError, concatMap, finalize, forkJoin, of } from 'rxjs';
+import { BehaviorSubject, Observable, catchError, concatMap, finalize, forkJoin, map, of } from 'rxjs';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { ProfileService } from 'src/app/_fake/services/get-profile/get-profile.service';
@@ -81,6 +81,14 @@ export class ProjectSettingsComponent extends BaseComponent implements OnInit {
     },
   ];
 
+  /**
+   * When true the component is rendered inside the become-Insighter onboarding
+   * wizard: the setup checklist and the receive-offers activation toggle are
+   * hidden, the preferences form is shown directly, and the wizard drives save
+   * via saveForOnboarding().
+   */
+  @Input() embedded = false;
+
   checklist: ProjectChecklistItem[] = [];
   availableServices: ProjectServiceOption[] = [];
   errorMessage = '';
@@ -137,14 +145,65 @@ export class ProjectSettingsComponent extends BaseComponent implements OnInit {
             : 'Unable to load the project settings checklist right now.';
       }
 
-      if (this.allChecksPassed) {
+      if (this.allChecksPassed || this.embedded) {
         this.loadServices();
         this.loadProjectServiceAgreement();
       }
     });
     this.unsubscribe.push(langSub);
 
-    this.loadChecklist();
+    if (this.embedded) {
+      // Onboarding: skip the checklist gate and load the preferences form directly.
+      this.loadProjectSettingsData();
+    } else {
+      this.loadChecklist();
+    }
+  }
+
+  /**
+   * Save used by the onboarding wizard. Reuses the same validation and payload
+   * as submitProjectSettings() but returns whether the save succeeded so the
+   * wizard can advance to the next step.
+   */
+  saveForOnboarding(): Observable<boolean> {
+    if (this.settingsForm.invalid) {
+      this.settingsForm.markAllAsTouched();
+      this.showError(
+        '',
+        this.lang === 'ar'
+          ? 'يرجى تعبئة جميع الحقول المطلوبة.'
+          : 'Please complete all required fields.'
+      );
+      return of(false);
+    }
+
+    const payload: SyncProjectAccountPropertiesPayload = {
+      languages: this.mapProjectLanguagesForPayload(),
+      hourly_rate: String(this.settingsForm.get('hourly_rate')?.value ?? '').trim(),
+      services: this.getSelectedServices(),
+      service_match_ai: !!this.settingsForm.get('service_match_ai')?.value,
+      types: this.getSelectedProjectTypes(),
+    };
+
+    this.savingSubject.next(true);
+
+    return this.projectSettingsService.syncProjectAccountProperties(payload).pipe(
+      map(() => {
+        this.settingsForm.markAsPristine();
+        this.showSuccess(
+          '',
+          this.lang === 'ar'
+            ? 'تم تحديث إعدادات المشروع بنجاح.'
+            : 'Project settings updated successfully.'
+        );
+        return true;
+      }),
+      catchError((error) => {
+        this.showError('', this.extractErrorMessage(error));
+        return of(false);
+      }),
+      finalize(() => this.savingSubject.next(false))
+    );
   }
 
   get completedCount(): number {

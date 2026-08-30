@@ -28,6 +28,7 @@ export class Step2Component implements OnInit, OnChanges, OnDestroy {
   nodes: TreeNode[] = [];
   selectedNodes: any;
   logoPreview: string | ArrayBuffer | null = null;
+  profilePhotoPreview: string | ArrayBuffer | null = null;
   @Input('updateParentModel') updateParentModel: (
     part: Partial<ICreateAccount>,
     isFormValid: boolean
@@ -142,6 +143,20 @@ export class Step2Component implements OnInit, OnChanges, OnDestroy {
         this.logoPreview = this.defaultValues.logo;
         this.cdr.detectChanges();
         this.updateBackgroundImage();
+      }
+    }
+
+    if (this.defaultValues?.profilePhoto) {
+      if (this.defaultValues.profilePhoto instanceof File) {
+        const reader = new FileReader();
+        reader.onload = () => {
+          this.profilePhotoPreview = reader.result;
+          this.cdr.detectChanges();
+        };
+        reader.readAsDataURL(this.defaultValues.profilePhoto);
+      } else if (typeof this.defaultValues.profilePhoto === 'string') {
+        this.profilePhotoPreview = this.defaultValues.profilePhoto;
+        this.cdr.detectChanges();
       }
     }
 
@@ -274,6 +289,67 @@ export class Step2Component implements OnInit, OnChanges, OnDestroy {
     this.updateBackgroundImage();
   }
 
+  getProfilePhotoBackgroundImage() {
+    if (this.profilePhotoPreview) {
+      return `url(${this.profilePhotoPreview})`;
+    }
+    return `url(${this.defaultImage})`;
+  }
+
+  onProfilePhotoSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files[0]) {
+      const file = input.files[0];
+      const validTypes = ['image/png', 'image/jpeg', 'image/jpg'];
+      if (!validTypes.includes(file.type)) {
+        this.messages = [{
+          severity: 'error',
+          summary: 'Invalid File Type',
+          detail: 'Please select a PNG or JPEG image.',
+          id: 'fileType'
+        }];
+        setTimeout(() => {
+          this.messages = [];
+        }, 4000);
+        return;
+      }
+      const maxSize = 2 * 1024 * 1024; // 2MB
+      if (file.size > maxSize) {
+        this.messages = [{
+          icon: '',
+          severity: 'error',
+          summary: this.lang === 'en' ? 'Photo must be smaller than 2MB.' : 'يجب أن يكون الحجم أقل من ٢ ميجا',
+          detail: '',
+          id: 'fizeSize'
+        }];
+        setTimeout(() => {
+          this.messages = [];
+        }, 4000);
+        return;
+      }
+      this.form.patchValue({ profilePhoto: file });
+      this.form.get('profilePhoto')?.markAsTouched();
+      this.form.get('profilePhoto')?.markAsDirty();
+      this.updateParentModel({ profilePhoto: file }, this.checkForm());
+      const reader = new FileReader();
+      reader.onload = () => {
+        this.profilePhotoPreview = reader.result;
+        this.cdr.detectChanges();
+      };
+      reader.onerror = (error) => {
+        console.error('Error reading file:', error);
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
+  removeProfilePhoto() {
+    this.form.patchValue({ profilePhoto: null });
+    this.profilePhotoPreview = null;
+    this.updateParentModel({ profilePhoto: null }, this.checkForm());
+    this.cdr.detectChanges();
+  }
+
   onDropzoneClick() {
     this.fileInput.nativeElement.click();
   }
@@ -351,7 +427,12 @@ export class Step2Component implements OnInit, OnChanges, OnDestroy {
     const accountType = this.defaultValues.accountType;
     if (accountType === 'personal') {
       this.form = this.fb.group({
+        profilePhoto: [this.defaultValues.profilePhoto || null, [Validators.required]],
         bio: [this.defaultValues.bio || '', [Validators.required]],
+        experience: [
+          this.defaultValues.experience ?? '',
+          [Validators.required, Validators.min(0), Validators.max(80)],
+        ],
         country: [this.defaultValues.country || '', [Validators.required]],
         phoneCountryCode: [this.defaultValues.phoneCountryCode || ''],
         phoneNumber: [
@@ -372,6 +453,10 @@ export class Step2Component implements OnInit, OnChanges, OnDestroy {
           }),
           companyAddress: [this.defaultValues.companyAddress || '', [Validators.required]],
           aboutCompany: [this.defaultValues.aboutCompany || '', [Validators.required]],
+          experience: [
+            this.defaultValues.experience ?? '',
+            [Validators.required, Validators.min(0), Validators.max(80)],
+          ],
           country: [this.defaultValues.country || '', [Validators.required]],
           phoneCountryCode: [this.defaultValues.phoneCountryCode || '', [Validators.required]],
           phoneCompanyNumber: [
@@ -482,11 +567,14 @@ export class Step2Component implements OnInit, OnChanges, OnDestroy {
           { control: 'consultingFields', selector: '[data-control="consultingFields"]' },
           { control: 'isicCodes', selector: '[data-control="isicCodes"]' },
           { control: 'aboutCompany', selector: '[formcontrolname="aboutCompany"]' },
+          { control: 'experience', selector: '[formcontrolname="experience"]' },
         ]
         : [
+          { control: 'profilePhoto', selector: '[data-control="profilePhoto"]' },
           { control: 'isicCodes', selector: '[data-control="isicCodes"]' },
           { control: 'consultingFields', selector: '[data-control="consultingFields"]' },
           { control: 'bio', selector: '[formcontrolname="bio"]' },
+          { control: 'experience', selector: '[formcontrolname="experience"]' },
           { control: 'country', selector: 'app-country-dropdown[formcontrolname="country"]' },
         ];
 

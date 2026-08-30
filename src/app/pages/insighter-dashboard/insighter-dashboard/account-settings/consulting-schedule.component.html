@@ -2,7 +2,7 @@
   <div class="schedule-container">
     <form [formGroup]="scheduleForm" (ngSubmit)="onSave()">
       <!-- Toolbar: Save action anchored to the top-end corner -->
-      <div class="schedule-toolbar">
+      <div class="schedule-toolbar" *ngIf="!embedded">
         <button type="submit" class="btn-save" [disabled]="saving()">
           <span *ngIf="!saving()">{{ 'CONSULTING_SCHEDULE.SAVE' | translate }}</span>
           <span *ngIf="saving()">{{ 'CONSULTING_SCHEDULE.SAVING' | translate }}</span>

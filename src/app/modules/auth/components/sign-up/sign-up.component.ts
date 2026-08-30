@@ -1,4 +1,4 @@
-import { Component, Injector, OnInit } from "@angular/core";
+import { Component, ElementRef, Injector, OnInit, ViewChild } from "@angular/core";
 import { FormBuilder, FormGroup, Validators } from "@angular/forms";
 import { BehaviorSubject, Observable, Subscription, of, take, timer } from "rxjs";
 import { CountriesService, Country } from "src/app/_fake/services/countries/countries.service";
@@ -53,6 +53,8 @@ export class SignUpComponent extends BaseComponent implements OnInit {
   isLoadingAgreement: boolean = false;
   userScrolledToBottom: boolean = false;
   agreementDialogScrollable: boolean = true;
+
+  @ViewChild('agreementContent') agreementContentRef?: ElementRef<HTMLDivElement>;
 
   private socialAuthPending: 'google' | 'linkedin' | null = null;
   returnUrl: string = "";
@@ -162,6 +164,11 @@ export class SignUpComponent extends BaseComponent implements OnInit {
       next: (response) => {
         this.clientAgreementContent = response.data;
         this.isLoadingAgreement = false;
+        // If the dialog is already open, re-evaluate scrollability now that the
+        // content has rendered.
+        if (this.showAgreementDialog) {
+          this.checkAgreementScrollable();
+        }
       },
       error: (error) => {
         console.error('Error loading client agreement:', error);
@@ -182,6 +189,38 @@ export class SignUpComponent extends BaseComponent implements OnInit {
   // Client agreement dialog methods
   openAgreementDialog(): void {
     this.showAgreementDialog = true;
+  }
+
+  // Called by p-dialog (onShow). Reset the scroll gate every time the dialog
+  // is opened so the user must read the terms again.
+  onAgreementDialogShow(): void {
+    this.userScrolledToBottom = false;
+    this.checkAgreementScrollable();
+  }
+
+  // Track scrolling inside the agreement content. Once the user reaches the
+  // bottom, the Approve button is unlocked.
+  onAgreementScroll(event: Event): void {
+    const el = event.target as HTMLElement;
+    const threshold = 24; // px tolerance so we don't require pixel-perfect scrolling
+    if (el.scrollTop + el.clientHeight >= el.scrollHeight - threshold) {
+      this.userScrolledToBottom = true;
+    }
+  }
+
+  // Detect whether the agreement content actually overflows. If it fits without
+  // scrolling there is nothing to scroll, so allow approval immediately.
+  private checkAgreementScrollable(): void {
+    setTimeout(() => {
+      const el = this.agreementContentRef?.nativeElement;
+      if (!el) {
+        return;
+      }
+      this.agreementDialogScrollable = el.scrollHeight > el.clientHeight + 5;
+      if (!this.agreementDialogScrollable) {
+        this.userScrolledToBottom = true;
+      }
+    }, 300);
   }
 
   closeAgreementDialog(approved: boolean): void {
@@ -732,8 +771,9 @@ export class SignUpComponent extends BaseComponent implements OnInit {
 
     // Fallback: redirect to Next.js callback URL with token from cookies
     if (token) {
-      // Normal signup (no redirect link): show "Add WhatsApp & SMS" encouragement modal on Next.js landing page
-      window.location.href = `${nextBase}/${lang}/callback/${encodeURIComponent(token)}?promptAddChannels=1`;
+      // Normal signup: finish authentication on the client app without interrupting
+      // the first visit with a notification-channel prompt.
+      window.location.href = `${nextBase}/${lang}/callback/${encodeURIComponent(token)}`;
       return;
     }
 

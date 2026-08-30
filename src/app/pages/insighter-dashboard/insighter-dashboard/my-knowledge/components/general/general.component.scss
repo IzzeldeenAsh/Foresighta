@@ -118,7 +118,9 @@
 .knowledge-table-shell {
   border: 1px solid rgba(17, 24, 39, 0.08);
   border-radius: 10px;
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
   background: #ffffff;
 }
 
@@ -348,5 +350,9 @@
 
   .knowledge-toolbar__add-btn {
     justify-content: center;
+  }
+
+  .knowledge-table {
+    min-width: 760px;
   }
 }

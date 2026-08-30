@@ -1,14 +1,6 @@
 <p-toast></p-toast>
-<div class="h-100px w-100 d-flex flex-column  justify-content-center w-100"
-style="
-background-image: url('./assets/media/auth/bg-dark-line-blue.jpg');
-background-size: cover;
-background-position: center;
-border-radius: 10px;
-margin-bottom: 10px;
-"
->
-<div class="m-auto  d-flex flex-column " style="padding-inline-start:7rem;">
+<div class="registration-hero" *ngIf="!onSuccessMessage">
+<div class="registration-hero__content">
   <h1 class="fs-2x fw-bolder text-white m-0 p-0">{{ (companySelected ? 'BECOME_COMPANY_HEADER' : 'BECOME_INSIHGER_HEADER') | translate }}</h1>
 <p class="text-center text-gray-300 fw-semibold m-0 p-0">
   {{ 'BECOME_INSIGHTER_DESCRIPTION' | translate }}
@@ -16,23 +8,24 @@ margin-bottom: 10px;
 </div>
 </div>
 <div
-*ngIf="!onPendingMessage && !onSuccessMessage"
+*ngIf="!onPendingMessage"
   class="
+    registration-wizard
     stepper stepper-pills stepper-column
     d-flex
     flex-column flex-xl-row flex-row-fluid
   " id="kt_create_account_stepper">
-  
+
   <!--begin::Aside-->
   <div
-    class="d-flex justify-content-center justify-content-xl-start flex-row-auto w-100 w-xl-300px w-xxl-350px me-9">
-    <div class="px-6 px-lg-10 px-xxl-15 py-20">
+    class="registration-wizard__aside d-flex justify-content-center justify-content-xl-start flex-row-auto w-100 w-xl-300px w-xxl-350px me-xl-9">
+    <div class="registration-wizard__aside-inner px-6 px-lg-10 px-xxl-15 py-10 py-xl-20">
       <div class="stepper-nav">
-        
+
         <!-- Step 1 -->
         <div class="stepper-item" [ngClass]="{
-            current: currentStep$.value === 1,
-            completed: currentStep$.value > 1
+            current: !onSuccessMessage && currentStep$.value === 1,
+            completed: onSuccessMessage || currentStep$.value > 1
           }">
           <div class="stepper-wrapper">
             <div class="stepper-icon w-40px h-40px">
@@ -50,11 +43,11 @@ margin-bottom: 10px;
           </div>
           <div class="stepper-line h-40px"></div>
         </div>
-        
+
         <!-- Step 2 -->
         <div class="stepper-item" [ngClass]="{
-            current: currentStep$.value === 2,
-            completed: currentStep$.value > 2
+            current: !onSuccessMessage && currentStep$.value === 2,
+            completed: onSuccessMessage || currentStep$.value > 2
           }">
           <div class="stepper-wrapper">
             <div class="stepper-icon w-40px h-40px">
@@ -72,11 +65,11 @@ margin-bottom: 10px;
           </div>
           <div class="stepper-line h-40px"></div>
         </div>
-        
+
         <!-- Step 3 -->
         <div class="stepper-item" [ngClass]="{
-            current: currentStep$.value === 3,
-            completed: currentStep$.value > 3
+            current: !onSuccessMessage && currentStep$.value === 3,
+            completed: onSuccessMessage || currentStep$.value > 3
           }">
           <div class="stepper-wrapper">
             <div class="stepper-icon w-40px h-40px">
@@ -92,11 +85,14 @@ margin-bottom: 10px;
               </div>
             </div>
           </div>
-          <div class="stepper-line h-40px" *ngIf="account$.value.accountType === 'corporate'"></div>
+          <div
+            *ngIf="account$.value.accountType === 'corporate' || onSuccessMessage"
+            class="stepper-line h-40px"
+          ></div>
         </div>
-        
+
         <!-- Step 4 (Conditional) -->
-        <div class="stepper-item" *ngIf="account$.value.accountType === 'corporate'" [ngClass]="{ current: currentStep$.value === 5, completed: currentStep$.value > 5 }">
+        <div class="stepper-item" *ngIf="account$.value.accountType === 'corporate'" [ngClass]="{ current: !onSuccessMessage && currentStep$.value === 4, completed: onSuccessMessage }">
           <div class="stepper-wrapper">
             <div class="stepper-icon w-40px h-40px">
               <i class="stepper-check fas fa-check"></i>
@@ -107,60 +103,124 @@ margin-bottom: 10px;
               <div class="stepper-desc fw-semibold">{{ 'INSIGHTER_WIZARD.VERIFY_ACCOUNT_DESC' | translate }}</div>
             </div>
           </div>
+          <div *ngIf="onSuccessMessage" class="stepper-line h-40px"></div>
         </div>
-        
+
+        <!-- Post-registration setup is revealed only after registration succeeds. -->
+        <ng-container *ngIf="onSuccessMessage">
+          <!-- WhatsApp setup -->
+          <div class="stepper-item" *ngIf="includeWhatsAppOnboardingStep" [ngClass]="{
+            current: onboardingStage === 'whatsapp',
+            completed: onboardingStage !== 'whatsapp'
+          }">
+            <div class="stepper-wrapper">
+              <div class="stepper-icon w-40px h-40px">
+                <i class="stepper-check fas fa-check"></i>
+                <span class="stepper-number">{{ whatsappWizardStep }}</span>
+              </div>
+              <div class="stepper-label">
+                <h3 class="stepper-title">{{ lang === 'ar' ? 'واتساب' : 'WhatsApp' }}</h3>
+                <div class="stepper-desc fw-semibold">
+                  {{ hasWhatsApp
+                    ? (lang === 'ar' ? 'تمت إضافة الرقم' : 'Number connected')
+                    : (lang === 'ar' ? 'أضف رقم التواصل' : 'Add your contact number') }}
+                </div>
+              </div>
+            </div>
+            <div class="stepper-line h-40px"></div>
+          </div>
+
+          <!-- Meeting settings -->
+          <div class="stepper-item" [ngClass]="{
+            current: onboardingStage === 'meeting',
+            completed: onboardingStage === 'project' || onboardingStage === 'done'
+          }">
+            <div class="stepper-wrapper">
+              <div class="stepper-icon w-40px h-40px">
+                <i class="stepper-check fas fa-check"></i>
+                <span class="stepper-number">{{ meetingWizardStep }}</span>
+              </div>
+              <div class="stepper-label">
+                <h3 class="stepper-title">{{ lang === 'ar' ? 'إعدادات الاجتماعات' : 'Meeting settings' }}</h3>
+                <div class="stepper-desc fw-semibold">{{ lang === 'ar' ? 'حدّد أوقات توفرك' : 'Set your availability' }}</div>
+              </div>
+            </div>
+            <div class="stepper-line h-40px"></div>
+          </div>
+
+          <!-- Project settings -->
+          <div class="stepper-item" [ngClass]="{
+            current: onboardingStage === 'project',
+            completed: onboardingStage === 'done'
+          }">
+            <div class="stepper-wrapper">
+              <div class="stepper-icon w-40px h-40px">
+                <i class="stepper-check fas fa-check"></i>
+                <span class="stepper-number">{{ projectWizardStep }}</span>
+              </div>
+              <div class="stepper-label">
+                <h3 class="stepper-title">{{ lang === 'ar' ? 'إعدادات المشاريع' : 'Project settings' }}</h3>
+                <div class="stepper-desc fw-semibold">{{ lang === 'ar' ? 'اختر تفضيلات المشاريع' : 'Choose project preferences' }}</div>
+              </div>
+            </div>
+          </div>
+        </ng-container>
+
       </div>
     </div>
   </div>
   <!--end::Aside-->
-  
+
   <!--begin::Content-->
-  <div class="d-flex flex-row-fluid flex-center bg-body rounded border border-gray-200 border-1">
-    <form class="py-20 w-100 w-xl-700px px-9" noValidate id="kt_create_account_form">
+  <div
+    class="registration-wizard__content d-flex flex-row-fluid flex-center bg-body rounded border border-gray-200 border-1"
+    [class.registration-wizard__content--onboarding]="onSuccessMessage"
+  >
+    <form *ngIf="!onSuccessMessage" class="py-20 w-100 w-xl-900px px-9" noValidate id="kt_create_account_form">
       <p-messages [(value)]="messages" [enableService]="false"></p-messages>
       <div class="current">
-        
+
         <!-- Step 1 Content -->
         <ng-container *ngIf="currentStep$.value === 1">
           <app-step1 class="w-100" [updateParentModel]="updateAccount" [defaultValues]="account$.value"></app-step1>
         </ng-container>
-        
+
         <!-- Step 2 Content -->
         <ng-container *ngIf="currentStep$.value === 2">
           <app-step2 class="w-100" [updateParentModel]="updateAccount" [defaultValues]="account$.value"></app-step2>
         </ng-container>
-        
+
         <!-- Step 3 Content -->
         <ng-container *ngIf="currentStep$.value === 3">
           <app-step3 class="w-100" [updateParentModel]="updateAccount" [defaultValues]="account$.value"></app-step3>
         </ng-container>
-        
+
         <!-- Step 4 Content (Conditional) -->
         <ng-container *ngIf="currentStep$.value === 4">
           <app-step5 class="w-100" [updateParentModel]="updateAccount" [defaultValues]="account$.value"></app-step5>
         </ng-container>
-        
+
       </div>
-      
+
       <div class="d-flex flex-stack pt-10">
-        
+
         <!-- Back Button Section -->
         <div class="mr-2">
           <ng-container *ngIf="currentStep$.value !== 1">
-            <button 
-              type="button" 
-              class="btn btn-lg btn-light-primary me-3" 
+            <button
+              type="button"
+              class="btn btn-lg btn-light-primary me-3"
               (click)="prevStep()"
             >
               {{ 'INSIGHTER_WIZARD.BACK' | translate }}
             </button>
           </ng-container>
         </div>
-        
+
         <!-- Continue/Submit Button Section -->
         <ng-container *ngIf="
-          ((currentStep$ | async) !== (formsCount$ | async)) && 
-          !(currentStep$.value === 3 && account$.value.accountType === 'personal') && 
+          ((currentStep$ | async) !== (formsCount$ | async)) &&
+          !(currentStep$.value === 3 && account$.value.accountType === 'personal') &&
           !(currentStep$.value === 4 && account$.value.accountType === 'corporate')
         ">
           <div>
@@ -177,8 +237,8 @@ margin-bottom: 10px;
           </div>
         </ng-container>
         <ng-container *ngIf="
-          (currentStep$| async) === (formsCount$ | async) || 
-          (currentStep$.value === 3 && account$.value.accountType === 'personal') || 
+          (currentStep$| async) === (formsCount$ | async) ||
+          (currentStep$.value === 3 && account$.value.accountType === 'personal') ||
           (currentStep$.value === 4 && account$.value.accountType === 'corporate')
         ">
           <div>
@@ -194,161 +254,251 @@ margin-bottom: 10px;
             </button>
           </div>
         </ng-container>
-        
+
       </div>
     </form>
+
+<!-- ===================== Post-signup onboarding ===================== -->
+<div class="d-flex justify-content-center align-items-center min-h-300px w-100" *ngIf="onSuccessMessage && !onboardingReady">
+  <span class="spinner-border spinner-border-lg align-middle text-info"></span>
+</div>
+
+<section
+  class="onboarding-content"
+  *ngIf="onSuccessMessage && onboardingReady"
+  [attr.dir]="lang === 'ar' ? 'rtl' : 'ltr'"
+>
+  <!-- ===================== WhatsApp step ===================== -->
+  <section *ngIf="onboardingStage === 'whatsapp'" class="onboarding-stage-card">
+    <header class="onboarding-stage-card__header">
+      <span class="onboarding-stage-card__icon onboarding-stage-card__icon--whatsapp" aria-hidden="true">
+        <img src="assets/media/whatsapp_220236.png" alt="" />
+      </span>
+      <div>
+        <span class="onboarding-stage-card__step">
+          {{ lang === 'ar' ? 'الخطوة' : 'Step' }} {{ whatsappWizardStep }}
+          {{ lang === 'ar' ? 'من' : 'of' }} {{ projectWizardStep }}
+        </span>
+        <h2>{{ lang === 'ar' ? 'أضف رقم الواتساب الخاص بك' : 'Add your WhatsApp number' }}</h2>
+        <p>
+          {{ lang === 'ar'
+            ? 'يساعدك ربط الواتساب على استقبال طلبات العملاء والمشاريع والتواصل بشكل أسرع.'
+            : 'Connecting WhatsApp helps you receive client requests and project offers and respond faster.' }}
+        </p>
+      </div>
+    </header>
+
+    <div class="onboarding-stage-card__body whatsapp-layout">
+      <div class="whatsapp-benefits">
+        <p class="whatsapp-benefits__title">{{ lang === 'ar' ? 'لماذا تضيف واتساب؟' : 'Why connect WhatsApp?' }}</p>
+
+        <div class="whatsapp-benefit">
+          <i class="ki-duotone ki-check-circle text-success fs-2 mt-1"><span class="path1"></span><span class="path2"></span></i>
+          <span class="text-gray-700">{{ lang === 'ar' ? 'تنبيهات فورية عند وصول طلب أو مشروع جديد.' : 'Instant alerts when a new request or project arrives.' }}</span>
+        </div>
+        <div class="whatsapp-benefit">
+          <i class="ki-duotone ki-check-circle text-success fs-2 mt-1"><span class="path1"></span><span class="path2"></span></i>
+          <span class="text-gray-700">{{ lang === 'ar' ? 'تواصل مباشر وأسرع مع العملاء.' : 'Direct, faster communication with clients.' }}</span>
+        </div>
+        <div class="whatsapp-benefit">
+          <i class="ki-duotone ki-check-circle text-success fs-2 mt-1"><span class="path1"></span><span class="path2"></span></i>
+          <span class="text-gray-700">{{ lang === 'ar' ? 'مطلوب لتفعيل إعدادات المشاريع.' : 'Required to enable project settings.' }}</span>
+        </div>
+      </div>
+
+      <div class="whatsapp-form-panel">
+        <form [formGroup]="whatsappForm">
+          <label class="form-label mb-3 required">
+            {{ lang === 'ar' ? 'رقم الواتساب' : 'WhatsApp number' }}
+          </label>
+          <app-phone-number-input
+            [countries]="countries"
+            [placeholder]="lang === 'ar' ? 'رقم الواتساب' : 'Your WhatsApp number'"
+            [searchPlaceholder]="lang === 'ar' ? 'ابحث عن دولة...' : 'Search countries...'"
+            [lang]="lang"
+            [isRequired]="true"
+            [initialCountryCode]="whatsappForm.value.whatsapp_country_code"
+            [initialPhoneNumber]="whatsappForm.value.whatsapp_number"
+            [showValidationErrors]="true"
+            [countryCodeError]="(whatsappForm.get('whatsapp_country_code')?.hasError('required') && whatsappForm.get('whatsapp_country_code')?.touched) ? (lang === 'ar' ? 'رمز الدولة مطلوب' : 'Country code required') : ''"
+            [phoneNumberError]="(whatsappForm.get('whatsapp_number')?.hasError('required') && whatsappForm.get('whatsapp_number')?.touched) ? (lang === 'ar' ? 'رقم الواتساب مطلوب' : 'WhatsApp number is required') : ''"
+            (countryCodeChange)="onWhatsAppCountryCodeChange($event)"
+            (phoneNumberChange)="onWhatsAppNumberChange($event)"
+          ></app-phone-number-input>
+        </form>
+
+        <p class="whatsapp-form-panel__note">
+          <i class="ki-duotone ki-shield-tick" aria-hidden="true"><span class="path1"></span><span class="path2"></span></i>
+          {{ lang === 'ar' ? 'لن نشارك رقمك مع أي جهة خارج إنسايتا.' : 'Your number stays private and is only used for account notifications.' }}
+        </p>
+      </div>
+    </div>
+
+    <footer class="onboarding-stage-card__actions">
+      <button type="button" class="btn btn-light-primary onboarding-back-button" [disabled]="savingOnboarding" (click)="backOnboarding()">
+        {{ 'INSIGHTER_WIZARD.BACK' | translate }}
+      </button>
+      <div class="onboarding-stage-card__actions-group">
+        <button type="button" class="btn btn-light-primary" (click)="skipWhatsApp()">
+          {{ lang === 'ar' ? 'تخطي الآن' : 'Skip for now' }}
+        </button>
+        <button type="button" class="btn btn-primary" [disabled]="savingOnboarding" (click)="saveWhatsApp()">
+          <span *ngIf="!savingOnboarding">{{ lang === 'ar' ? 'حفظ ومتابعة' : 'Save & continue' }}</span>
+          <span *ngIf="savingOnboarding">{{ lang === 'ar' ? 'جاري الحفظ...' : 'Saving...' }}
+            <span class="spinner-border spinner-border-sm align-middle ms-2"></span>
+          </span>
+        </button>
+      </div>
+    </footer>
+  </section>
+
+  <!-- ===================== Meeting settings step ===================== -->
+  <section *ngIf="onboardingStage === 'meeting'" class="onboarding-stage-card onboarding-stage-card--wide">
+    <header class="onboarding-stage-card__header">
+      <span class="onboarding-stage-card__icon" aria-hidden="true">
+        <i class="ki-duotone ki-calendar-tick"><span class="path1"></span><span class="path2"></span><span class="path3"></span><span class="path4"></span><span class="path5"></span><span class="path6"></span></i>
+      </span>
+      <div>
+        <span class="onboarding-stage-card__step">
+          {{ lang === 'ar' ? 'الخطوة' : 'Step' }} {{ meetingWizardStep }}
+          {{ lang === 'ar' ? 'من' : 'of' }} {{ projectWizardStep }}
+        </span>
+        <h2>{{ lang === 'ar' ? 'إعدادات الاجتماعات' : 'Meeting settings' }}</h2>
+        <p>
+          {{ lang === 'ar'
+            ? 'حدّد أيام وأوقات توفرك لعقد الاجتماعات مع العملاء. يمكنك تخطي هذه الخطوة وتعديلها لاحقاً.'
+            : 'Set the days and times you are available to meet clients. You can skip this and change it later.' }}
+        </p>
+      </div>
+    </header>
+
+    <div class="onboarding-stage-card__embedded">
+      <app-consulting-schedule [embedded]="true"></app-consulting-schedule>
+    </div>
+
+    <footer class="onboarding-stage-card__actions">
+      <button type="button" class="btn btn-light-primary onboarding-back-button" [disabled]="savingOnboarding" (click)="backOnboarding()">
+        {{ 'INSIGHTER_WIZARD.BACK' | translate }}
+      </button>
+      <div class="onboarding-stage-card__actions-group">
+        <button type="button" class="btn btn-light-primary" (click)="skipMeetingSettings()">
+          {{ lang === 'ar' ? 'تخطي الآن' : 'Skip for now' }}
+        </button>
+        <button type="button" class="btn btn-primary" [disabled]="savingOnboarding" (click)="saveMeetingSettings()">
+          <span *ngIf="!savingOnboarding">{{ lang === 'ar' ? 'حفظ ومتابعة' : 'Save & continue' }}</span>
+          <span *ngIf="savingOnboarding">{{ lang === 'ar' ? 'جاري الحفظ...' : 'Saving...' }}
+            <span class="spinner-border spinner-border-sm align-middle ms-2"></span>
+          </span>
+        </button>
+      </div>
+    </footer>
+  </section>
+
+  <!-- ===================== Project settings step ===================== -->
+  <section *ngIf="onboardingStage === 'project'" class="onboarding-stage-card onboarding-stage-card--wide">
+    <header class="onboarding-stage-card__header">
+      <span class="onboarding-stage-card__icon" aria-hidden="true">
+        <i class="ki-duotone ki-briefcase"><span class="path1"></span><span class="path2"></span></i>
+      </span>
+      <div>
+        <span class="onboarding-stage-card__step">
+          {{ lang === 'ar' ? 'الخطوة' : 'Step' }} {{ projectWizardStep }}
+          {{ lang === 'ar' ? 'من' : 'of' }} {{ projectWizardStep }}
+        </span>
+        <h2>{{ lang === 'ar' ? 'إعدادات المشاريع' : 'Project settings' }}</h2>
+        <p>
+          {{ lang === 'ar'
+            ? 'حدّد نوع المشاريع والخدمات التي ترغب بتقديمها. يمكنك تخطي هذه الخطوة وتعديلها لاحقاً.'
+            : 'Choose the project types and services you want to offer. You can skip this and change it later.' }}
+        </p>
+      </div>
+    </header>
+
+      <!-- WhatsApp is required before project settings -->
+      <div *ngIf="!hasWhatsApp" class="project-whatsapp-gate">
+        <span class="onboarding-stage-card__icon onboarding-stage-card__icon--whatsapp" aria-hidden="true">
+          <img src="assets/media/whatsapp_220236.png" alt="" />
+        </span>
+        <div class="project-whatsapp-gate__copy">
+          <h3>{{ lang === 'ar' ? 'أضف واتساب لتفعيل عروض المشاريع' : 'Connect WhatsApp to enable project offers' }}</h3>
+          <p>
+            {{ lang === 'ar'
+              ? 'يجب إضافة رقم واتساب لتتمكن من إعداد المشاريع واستقبال عروضها.'
+              : 'You must add a WhatsApp number to configure project settings and receive project offers.' }}
+          </p>
+        </div>
+      </div>
+
+      <footer *ngIf="!hasWhatsApp" class="onboarding-stage-card__actions">
+        <button type="button" class="btn btn-light-primary onboarding-back-button" (click)="backOnboarding()">
+          {{ 'INSIGHTER_WIZARD.BACK' | translate }}
+        </button>
+        <div class="onboarding-stage-card__actions-group">
+          <button type="button" class="btn btn-light-primary" (click)="skipProjectSettings()">
+            {{ lang === 'ar' ? 'تخطي الآن' : 'Skip for now' }}
+          </button>
+          <button type="button" class="btn btn-primary" (click)="goAddWhatsAppFromProject()">
+            {{ lang === 'ar' ? 'إضافة واتساب' : 'Add WhatsApp' }}
+          </button>
+        </div>
+      </footer>
+
+      <!-- Project settings form -->
+      <ng-container *ngIf="hasWhatsApp">
+        <div class="onboarding-stage-card__embedded">
+          <app-project-settings [embedded]="true"></app-project-settings>
+        </div>
+
+        <footer class="onboarding-stage-card__actions">
+          <button type="button" class="btn btn-light-primary onboarding-back-button" [disabled]="savingOnboarding" (click)="backOnboarding()">
+            {{ 'INSIGHTER_WIZARD.BACK' | translate }}
+          </button>
+          <div class="onboarding-stage-card__actions-group">
+            <button type="button" class="btn btn-light-primary" (click)="skipProjectSettings()">
+              {{ lang === 'ar' ? 'تخطي الآن' : 'Skip for now' }}
+            </button>
+            <button type="button" class="btn btn-primary" [disabled]="savingOnboarding" (click)="saveProjectSettings()">
+              <span *ngIf="!savingOnboarding">{{ lang === 'ar' ? 'حفظ وإنهاء' : 'Save & finish' }}</span>
+              <span *ngIf="savingOnboarding">{{ lang === 'ar' ? 'جاري الحفظ...' : 'Saving...' }}
+                <span class="spinner-border spinner-border-sm align-middle ms-2"></span>
+              </span>
+            </button>
+          </div>
+        </footer>
+      </ng-container>
+  </section>
+
+  <!-- ===================== Done step ===================== -->
+  <section *ngIf="onboardingStage === 'done'" class="onboarding-complete">
+    <lottie-player
+      class="onboarding-complete__animation"
+      src="https://lottie.host/31b881d5-a1dc-4fa4-a360-61ddfc81f77d/6tberhm4xq.json"
+      background="transparent"
+      speed="1"
+      loop
+      autoplay
+      direction="1"
+      mode="normal"
+    ></lottie-player>
+    <div class="onboarding-complete__copy">
+      <p class="onboarding-eyebrow">{{ lang === 'ar' ? 'اكتمل الإعداد' : 'Setup complete' }}</p>
+      <h2>{{ lang === 'ar' ? 'أصبح حسابك جاهزاً' : 'Your account is ready' }}</h2>
+      <p>
+        {{ lang === 'ar'
+          ? 'يمكنك الآن مشاركة معرفتك والتواصل مع العملاء. ستجد هذه الإعدادات دائماً في صفحة إعدادات الحساب.'
+          : 'You can now share your knowledge and connect with clients. These preferences remain available in account settings.' }}
+      </p>
+    </div>
+    <div class="onboarding-complete__action">
+      <button class="btn btn-lg btn-primary" routerLink="/app/add-knowledge/stepper">
+        <span class="indicator-label">{{ 'CONGRATS_CARD.BUTTON' | translate }}</span>
+      </button>
+    </div>
+  </section>
+</section>
   </div>
   <!--end::Content-->
 </div>
-
-<div class="w-400px w-xl-800px m-auto" *ngIf="onSuccessMessage">
-  <div class="card border-1 border-muted">
-    <div class="card-body p-9">
-      <div class="d-flex flex-column align-items-center">
-        <lottie-player src="https://lottie.host/31b881d5-a1dc-4fa4-a360-61ddfc81f77d/6tberhm4xq.json" background="##fff" speed="1" style="width: 180px; height: 180px" loop autoplay direction="1" mode="normal"></lottie-player>
-        <div class="w-100 p-4">
-          <div class="text-primary text-center fs-1 my-5 fw-bold">
-            {{ 'CONGRATS_CARD.TITLE' | translate }}
-          </div>
-          <div class="fs-5">
-            <p class="text-center mb-8">
-              {{ 'CONGRATS_CARD.DESCRIPTION' | translate }}
-            </p>
-            
-            <div class="row g-5 mb-8">
-              <!-- Upload Insights Feature -->
-              <div class="col-md-6" [ngClass]="userRoles.includes('company') ? 'col-md-6' : 'col-md-12'">
-                <div class="card card-bordered  h-100  overflow-hidden">
-                  <div class="card-body p-5">
-                    <div class="d-flex flex-column h-100">
-                      <!-- Upload Icon -->
-                      <div class="mb-7 text-center">
-                        <div class="symbol symbol-60px symbol-circle mb-2">
-                          <span class="symbol-label">
-                            <img src="https://cdn-icons-png.freepik.com/512/6303/6303009.png" alt="icon" class="w-100">
-                          </span>
-                        </div>
-                      </div>
-                      
-                      <!-- Title and Description -->
-                      <div class="text-center mb-5">
-                        <h3 class="text-info fw-bold fs-4 mb-3">
-                          {{ 'CONGRATS_CARD.FEATURES.UPLOAD_INSIGHTS' | translate }}
-                        </h3>
-                        <p class="text-muted mb-0">
-                          {{ 'CONGRATS_CARD.FEATURES.UPLOAD_INSIGHTS_DESC' | translate }}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              
-              <!-- Manage Insighters Feature -->
-              <div class="col-md-6" *ngIf="userRoles.includes('company')">
-                <div class="card card-bordered  h-100  overflow-hidden">
-                  <div class="card-body p-5">
-                    <div class="d-flex flex-column h-100">
-                      <!-- Manage Icon -->
-                      <div class="mb-7 text-center">
-                        <div class="symbol symbol-60px symbol-circle mb-2">
-                          <span class="symbol-label bg-light-info">
-                            <!-- SVG for Manage -->
-                            <svg  viewBox="0 0 480 480.00115" width="480pt" xmlns="http://www.w3.org/2000/svg"><path d="m280 232c0 22.089844-17.90625 40-40 40-22.089844 0-40-17.910156-40-40s17.910156-40 40-40c22.09375 0 40 17.910156 40 40zm0 0" fill="#9bc9ff"/><path d="m416 264c0 22.089844-17.90625 40-40 40-22.089844 0-40-17.910156-40-40s17.910156-40 40-40c22.09375 0 40 17.910156 40 40zm0 0" fill="#9bc9ff"/><path d="m144 264c0 22.089844-17.90625 40-40 40-22.089844 0-40-17.910156-40-40s17.910156-40 40-40c22.09375 0 40 17.910156 40 40zm0 0" fill="#9bc9ff"/><path d="m208 296h64c35.347656 0 64 28.652344 64 64v80c0 17.671875-14.328125 32-32 32h-128c-17.671875 0-32-14.328125-32-32v-80c0-35.347656 28.65625-64 64-64zm0 0" fill="#9bc9ff"/><path d="m344 328h64c35.347656 0 64 28.652344 64 64v32c0 26.507812-21.488281 48-48 48h-144v-80c0-35.347656 28.65625-64 64-64zm0 0" fill="#9bc9ff"/><path d="m200 472h-144c-26.507812 0-48-21.492188-48-48v-32c0-35.347656 28.65625-64 64-64h64c35.347656 0 64 28.652344 64 64zm0 0" fill="#9bc9ff"/><g fill="#1e81ce"><path d="m432 264v-16c4.417969 0 8-3.582031 8-8v-48c0-4.417969-3.582031-8-8-8h-43.199219l-1.550781-6.007812c-3.535156-13.746094-9.03125-26.910157-16.320312-39.089844l-3.199219-5.351563 30.671875-30.726562c3.085937-3.09375 3.085937-8.105469 0-11.199219l-33.976563-34.023438c-3.136719-2.992187-8.066406-2.992187-11.203125 0l-30.726562 30.726563-5.351563-3.199219c-12.195312-7.292968-25.375-12.789062-39.136719-16.328125l-6.007812-1.5625v-43.238281c0-4.417969-3.582031-8-8-8h-48c-4.417969 0-8 3.582031-8 8v43.199219l-6.007812 1.554687c-13.746094 3.535156-26.910157 9.027344-39.09375 16.308594l-5.355469 3.203125-30.71875-30.664063c-3.140625-3.015624-8.097657-3.015624-11.238281 0l-33.984376 33.972657c-1.496093 1.492187-2.335937 3.515625-2.335937 5.625 0 2.113281.839844 4.136719 2.335937 5.625l30.726563 30.726562-3.199219 5.351563c-7.289062 12.179687-12.785156 25.34375-16.320312 39.089844l-1.566406 6.007812h-43.242188c-4.417969 0-8 3.582031-8 8v48c0 4.417969 3.582031 8 8 8v16c-13.253906 0-24-10.746094-24-24v-48c0-13.253906 10.746094-24 24-24h30.953125c3.300781-11.0625 7.761719-21.742188 13.3125-31.863281l-22-22c-4.5-4.488281-7.027344-10.582031-7.027344-16.9375 0-6.351563 2.527344-12.445313 7.027344-16.933594l34-34c9.472656-9.066406 24.40625-9.066406 33.878906 0l21.992188 21.992187c10.121093-5.546874 20.804687-10 31.863281-13.296874v-30.960938c0-13.253906 10.746094-24 24-24h48c13.253906 0 24 10.746094 24 24v30.960938c11.0625 3.296874 21.742188 7.757812 31.863281 13.304687l22-22c9.476563-9.066406 24.40625-9.066406 33.882813 0l33.992187 33.992187c4.496094 4.488282 7.023438 10.578126 7.023438 16.933594 0 6.355469-2.527344 12.449219-7.023438 16.9375l-22 22c5.546875 10.125 10.007813 20.808594 13.308594 31.871094h30.953125c13.253906 0 24 10.746094 24 24v48c0 13.253906-10.746094 24-24 24zm0 0"/><path d="m352 216h-16c0-53.019531-42.980469-96-96-96s-96 42.980469-96 96h-16c0-61.855469 50.144531-112 112-112s112 50.144531 112 112zm0 0"/><path d="m240 280c-26.507812 0-48-21.492188-48-48s21.492188-48 48-48c26.511719 0 48 21.492188 48 48-.027344 26.5-21.5 47.972656-48 48zm0-80c-17.671875 0-32 14.328125-32 32s14.328125 32 32 32 32-14.328125 32-32-14.328125-32-32-32zm0 0"/><path d="m376 312c-26.507812 0-48-21.492188-48-48s21.492188-48 48-48c26.511719 0 48 21.492188 48 48-.027344 26.5-21.5 47.972656-48 48zm0-80c-17.671875 0-32 14.328125-32 32s14.328125 32 32 32 32-14.328125 32-32-14.328125-32-32-32zm0 0"/><path d="m104 312c-26.507812 0-48-21.492188-48-48s21.492188-48 48-48c26.511719 0 48 21.492188 48 48-.027344 26.5-21.5 47.972656-48 48zm0-80c-17.671875 0-32 14.328125-32 32s14.328125 32 32 32 32-14.328125 32-32-14.328125-32-32-32zm0 0"/><path d="m448.527344 332.527344c-11.921875-8.195313-26.058594-12.566406-40.527344-12.527344h-64c-3.890625.035156-7.773438.386719-11.609375 1.054688-5.117187-8.007813-11.777344-14.914063-19.589844-20.328126-1.171875-.886718-2.402343-1.6875-3.6875-2.398437-11.191406-6.777344-24.03125-10.347656-37.113281-10.328125h-64c-24.464844-.085938-47.261719 12.398438-60.367188 33.054688-3.84375-.667969-7.734374-1.019532-11.632812-1.054688h-64c-14.457031-.039062-28.585938 4.324219-40.503906 12.511719-19.691406 13.398437-31.4843752 35.671875-31.496094 59.488281v32c.0273438 21.84375 12.738281 41.683594 32.578125 50.832031 7.324219 3.449219 15.328125 5.214844 23.421875 5.167969h80v-16h-72v-88h-16v87.199219c-3.011719-.605469-5.9375-1.578125-8.710938-2.894531-14.171874-6.535157-23.257812-20.699219-23.289062-36.304688v-32c.019531-18.535156 9.203125-35.863281 24.527344-46.289062 9.261718-6.355469 20.238281-9.742188 31.472656-9.710938h64c1.410156 0 2.769531.152344 4.144531.246094-2.707031 7.628906-4.109375 15.660156-4.144531 23.753906v80c.027344 22.082031 17.921875 39.972656 40 40h24v-128h-16v112h-8c-13.253906 0-24-10.746094-24-24v-80c0-30.929688 25.074219-56 56-56h64c10.292969.007812 20.382812 2.855469 29.160156 8.230469.8125.445312 1.59375.945312 2.335938 1.496093 7.496094 5.132813 13.648437 11.992188 17.9375 20 4.308594 8.085938 6.566406 17.109376 6.566406 26.273438v80c0 13.253906-10.746094 24-24 24h-8v-112h-16v128h24c22.082031-.027344 39.972656-17.917969 40-40v-80c-.035156-8.09375-1.433594-16.121094-4.136719-23.753906 1.378907-.09375 2.738281-.246094 4.136719-.246094h64c11.242188-.03125 22.230469 3.363281 31.496094 9.726562 15.3125 10.429688 24.484375 27.746094 24.503906 46.273438v32c-.027344 15.660156-9.179688 29.867188-23.421875 36.367188-2.734375 1.292968-5.613281 2.242187-8.578125 2.832031v-87.199219h-16v88h-72v16h80c8.046875.050781 16.003906-1.691406 23.289062-5.105469 19.90625-9.121093 32.679688-28.996093 32.710938-50.894531v-32c-.011719-23.808594-11.792969-46.070312-31.472656-59.472656zm0 0"/><path d="m208 464h64v16h-64zm0 0"/></g></svg>
-                          </span>
-                        </div>
-                      </div>
-                      
-                      <!-- Title and Description -->
-                      <div class="text-center mb-5">
-                        <h3 class="text-info fw-bold fs-4 mb-3">
-                          {{ 'CONGRATS_CARD.FEATURES.MANAGE_INSIGHTERS' | translate }}
-                        </h3>
-                        <p class="text-muted mb-0">
-                          {{ 'CONGRATS_CARD.FEATURES.MANAGE_INSIGHTERS_DESC' | translate }}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            <div class="d-flex justify-content-center">
-              <button class="btn btn-lg btn-primary px-6 py-3" routerLink="/app/add-knowledge/stepper">
-                <span class="indicator-label">{{ 'CONGRATS_CARD.BUTTON' | translate }}</span>
-                <span class="indicator-progress">Please wait... 
-                  <span class="spinner-border spinner-border-sm align-middle ms-2"></span>
-                </span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<p-dialog
-  *ngIf="onSuccessMessage"
-  [(visible)]="showAddChannelsPrompt"
-  appendTo="body"
-  [modal]="true"
-  [dismissableMask]="true"
-  [draggable]="false"
-  [resizable]="false"
-  [closable]="false"
-  [showHeader]="false"
-  [style]="{ width: '520px', maxWidth: 'calc(100vw - 24px)' }"
-  [breakpoints]="{ '768px': 'calc(100vw - 24px)' }"
-  styleClass="knoldg-add-channels-dialog"
-  maskStyleClass="knoldg-add-channels-mask"
-  (onShow)="onAddChannelsPromptShow()"
-  (onHide)="onAddChannelsPromptHide()"
->
-  <div
-    class="knoldg-add-channels"
-    [class.is-rtl]="lang === 'ar'"
-    [attr.dir]="lang === 'ar' ? 'rtl' : 'ltr'"
-  >
-    <img
-      class="knoldg-add-channels__img"
-      [src]="addChannelsPromptImageUrl"
-      alt="Join our WhatsApp & SMS services"
-      loading="eager"
-    />
-
-    <button
-      type="button"
-      class="knoldg-add-channels__close"
-      (click)="dismissAddChannelsPrompt()"
-      [attr.aria-label]="addChannelsPromptCopy.close"
-    >
-      <i class="ki-duotone ki-cross fs-2" aria-hidden="true">
-        <span class="path1"></span><span class="path2"></span>
-      </i>
-    </button>
-
-    <div class="knoldg-add-channels__actions">
-      <div class="d-flex gap-3">
-        <button
-          type="button"
-          class="btn knoldg-add-channels__btn knoldg-add-channels__btn-later"
-          (click)="dismissAddChannelsPrompt()"
-        >
-          {{ addChannelsPromptCopy.later }}
-        </button>
-        <button
-          type="button"
-          class="btn knoldg-add-channels__btn knoldg-add-channels__btn-add"
-          (click)="onAddChannelsNow()"
-        >
-          {{ addChannelsPromptCopy.add }}
-        </button>
-      </div>
-    </div>
-  </div>
-</p-dialog>
 
 <div class="w-400px w-xl-800px m-auto" *ngIf="onPendingMessage">
   <div class="card">
@@ -368,7 +518,7 @@ margin-bottom: 10px;
             <p class="text-inline-start">
               {{ 'ACCOUNT_PENDING.MESSAGE2' | translate }}
             </p>
-            
+
             <div class="d-flex justify-content-center mt-4">
               <a href="/support" class="btn btn-secondary">
                 {{ 'ACCOUNT_PENDING.BUTTON' | translate }}

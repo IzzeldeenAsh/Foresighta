@@ -25,8 +25,32 @@ background-size: cover;
 .auth-back-btn{
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  border-radius: 10px;
+  gap: 6px;
+  min-height: 36px;
+  padding: 0 4px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #d9e5ff;
+  font: inherit;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  transition: color 160ms ease, transform 160ms ease;
+
+  i {
+    font-size: 1.1rem;
+  }
+
+  &:hover {
+    color: #ffffff;
+    transform: translateX(-2px);
+  }
+
+  &:focus-visible {
+    outline: 2px solid #8fb3ff;
+    outline-offset: 3px;
+  }
 }
 
 .back-rtl{
@@ -49,6 +73,11 @@ background-size: cover;
 :host-context(body[dir='rtl']) .back-rtl{
   display: inline;
   height: 20px !important;
+}
+
+:host-context(html[dir='rtl']) .auth-back-btn:hover,
+:host-context(body[dir='rtl']) .auth-back-btn:hover{
+  transform: translateX(2px);
 }
 .back-rtl,
 .back-ltr{

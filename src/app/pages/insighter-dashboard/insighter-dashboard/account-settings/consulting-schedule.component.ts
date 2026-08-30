@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, computed, inject, Injector, HostListener, OnDestroy } from '@angular/core';
+import { Component, OnInit, signal, computed, inject, Injector, HostListener, OnDestroy, Input } from '@angular/core';
 import { FormBuilder, FormGroup, FormArray, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { BaseComponent } from 'src/app/modules/base.component';
@@ -14,6 +14,13 @@ import { ConsultingScheduleService, DayAvailability, AvailabilityException, Time
   providers: [ConfirmationService]
 })
 export class ConsultingScheduleComponent extends BaseComponent implements OnInit, OnDestroy {
+
+  /**
+   * When true the component is rendered inside the become-Insighter onboarding
+   * wizard: the top save toolbar is hidden and the wizard drives save via
+   * saveForOnboarding().
+   */
+  @Input() embedded = false;
 
   // Signals
   loading = signal(false);
@@ -1172,6 +1179,13 @@ export class ConsultingScheduleComponent extends BaseComponent implements OnInit
         Object.keys(children).forEach(key => this.markAllAsDirty(children[key]));
       }
     }
+  }
+
+  // Save used by the onboarding wizard; returns whether the save succeeded so
+  // the wizard can advance to the next step. Reuses the navigation-save logic.
+  saveForOnboarding(): Observable<boolean> {
+    this.removeDuplicateExceptions();
+    return this.saveChangesForNavigation();
   }
 
   // Save used by navigation guard; returns whether navigation should proceed

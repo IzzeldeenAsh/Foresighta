@@ -70,7 +70,35 @@
               {{ 'INSIGHTER_WIZARD.ABOUT_COMPANY_REQUIRED' | translate }}
             </div>
           </div>
-    
+
+          <!-- Years of Experience -->
+          <div class="mb-8">
+            <label class="form-label required fw-bold">
+              {{ 'INSIGHTER_WIZARD.EXPERIENCE' | translate }}
+            </label>
+            <input
+              formControlName="experience"
+              type="number"
+              min="0"
+              max="80"
+              step="1"
+              class="form-control"
+              placeholder="{{ 'INSIGHTER_WIZARD.EXPERIENCE_PLACEHOLDER' | translate }}"
+            />
+            <div
+              *ngIf="form.get('experience')?.hasError('required') && form.get('experience')?.touched"
+              class="fv-plugins-message-container invalid-feedback"
+            >
+              {{ 'INSIGHTER_WIZARD.EXPERIENCE_REQUIRED' | translate }}
+            </div>
+            <div
+              *ngIf="(form.get('experience')?.hasError('min') || form.get('experience')?.hasError('max')) && form.get('experience')?.touched"
+              class="fv-plugins-message-container invalid-feedback"
+            >
+              {{ 'INSIGHTER_WIZARD.EXPERIENCE_INVALID' | translate }}
+            </div>
+          </div>
+
           <!-- Company Address -->
           <div class="mb-8">
             <label class="form-label required fw-bold">

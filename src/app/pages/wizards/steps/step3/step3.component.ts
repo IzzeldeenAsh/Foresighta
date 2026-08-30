@@ -47,6 +47,9 @@ export class Step3Component extends BaseComponent implements OnInit, OnDestroy {
   isLoadingAgreement: boolean = false;
   showAgreementDialog: boolean = false;
   attemptedSubmit: boolean = false; // Track if user has attempted to submit
+  userScrolledToBottom: boolean = false; // Gate the Submit button until the terms are read
+
+  @ViewChild("agreementContentEl") agreementContentRef?: ElementRef<HTMLDivElement>;
   
   constructor(
     private fb: FormBuilder,
@@ -194,11 +197,15 @@ export class Step3Component extends BaseComponent implements OnInit, OnDestroy {
     
     this.isLoadingAgreement = true;
     this.showAgreementDialog = true;
-    
+    this.userScrolledToBottom = false; // Require reading each time the dialog opens
+
     this.commonService.getGuidelineByTypeCurrent('insighter_agreement').subscribe({
       next: (response) => {
         this.agreementContent = response.data;
         this.isLoadingAgreement = false;
+        // Once the content has rendered, allow submission immediately if it's
+        // short enough that there's nothing to scroll.
+        this.checkAgreementScrollable();
       },
       error: (error) => {
         console.error('Error loading agreement:', error);
@@ -212,6 +219,30 @@ export class Step3Component extends BaseComponent implements OnInit, OnDestroy {
     });
   }
   
+  // Track scrolling inside the agreement content. Once the user reaches the
+  // bottom, the Submit button is unlocked.
+  onAgreementScroll(event: Event): void {
+    const el = event.target as HTMLElement;
+    const threshold = 24; // px tolerance so we don't require pixel-perfect scrolling
+    if (el.scrollTop + el.clientHeight >= el.scrollHeight - threshold) {
+      this.userScrolledToBottom = true;
+    }
+  }
+
+  // If the agreement content fits without scrolling there is nothing to read
+  // through, so unlock the Submit button immediately.
+  private checkAgreementScrollable(): void {
+    setTimeout(() => {
+      const el = this.agreementContentRef?.nativeElement;
+      if (!el) {
+        return;
+      }
+      if (el.scrollHeight <= el.clientHeight + 5) {
+        this.userScrolledToBottom = true;
+      }
+    }, 300);
+  }
+
   // Accept the agreement terms
   acceptAgreement() {
     this.agreementChecked = true;

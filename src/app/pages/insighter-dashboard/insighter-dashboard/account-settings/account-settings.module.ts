@@ -29,16 +29,15 @@ import { DropdownModule } from 'primeng/dropdown';
 import { CountryDropdownComponent } from 'src/app/reusable-components/country-dropdown/country-dropdown.component';
 import { PaymentSettingsComponent } from './payment-settings/payment-settings.component';
 import { SettingsTabsComponent } from './settings-tabs/settings-tabs.component';
-import { ConsultingScheduleComponent } from './consulting-schedule.component';
 import { InsighterDashboardSharedModule } from '../shared/shared.module';
 import { PendingChangesGuard } from 'src/app/guards/pending-changes.guard';
 import { AgreementModalComponent } from 'src/app/reusable-components/agreement-modal/agreement-modal.component';
 import { NotificationSettingsComponent } from './notification-settings/notification-settings.component';
 import { PhoneNumberInputModule } from 'src/app/reusable-components/phone-number-input/phone-number-input.module';
-import { ProjectSettingsComponent } from './project-settings/project-settings.component';
 import { SkeletonModule } from 'primeng/skeleton';
 import { ProjectSettingsPageComponent } from './project-settings-page/project-settings-page.component';
 import { ConsultingSchedulePageComponent } from './consulting-schedule-page/consulting-schedule-page.component';
+import { AccountSettingsSharedModule } from './account-settings-shared.module';
 
 const routes: Routes = [
   {
@@ -94,10 +93,8 @@ const routes: Routes = [
     GeneralSettingsComponent,
     ReactivateDialogComponent,
     PaymentSettingsComponent,
-    ConsultingScheduleComponent,
     ConsultingSchedulePageComponent,
     NotificationSettingsComponent,
-    ProjectSettingsComponent,
     ProjectSettingsPageComponent,
     TransferDialogComponent,
     DeactivateDialogComponent,
@@ -128,7 +125,8 @@ const routes: Routes = [
     InsighterDashboardSharedModule,
     AgreementModalComponent,
     PhoneNumberInputModule,
-    SkeletonModule
+    SkeletonModule,
+    AccountSettingsSharedModule
   ],
   schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })

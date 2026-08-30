@@ -398,6 +398,7 @@ export class UpgradeToCompanyComponent
     this.form = this.fb.group({
       legalName: ["", Validators.required],
       aboutCompany: ["", Validators.required],
+      experience: ["", [Validators.required, Validators.min(0), Validators.max(80)]],
       logo: [null, Validators.required],
       address: ["", Validators.required],
       company_phone: ["", Validators.required],
@@ -723,9 +724,11 @@ export class UpgradeToCompanyComponent
     const formData = new FormData();
     formData.append("legal_name", this.form.get("legalName")?.value);
     formData.append("about_us", this.form.get("aboutCompany")?.value);
+    formData.append("experience", this.form.get("experience")?.value);
     formData.append("logo", this.form.get("logo")?.value);
     formData.append("address", this.form.get("address")?.value);
     formData.append("country", this.form.get("country")?.value);
+    formData.append("country_id", this.form.get("country")?.value);
 
     // Add phone and phone code separately
     if (this.form.get("company_phone")?.value) {

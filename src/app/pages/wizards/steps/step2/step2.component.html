@@ -17,6 +17,68 @@
   <div [formGroup]="form">
     <!-- Personal Account Section -->
     <ng-container *ngIf="defaultValues.accountType === 'personal'">
+      <!-- Profile Photo -->
+      <div class="mb-10 row">
+        <div class="col-12" data-control="profilePhoto">
+          <label class="form-label mb-3 required">
+            {{ "INSIGHTER_WIZARD.PROFILE_PHOTO" | translate }}
+          </label>
+          <div class="d-flex flex-column">
+            <div
+              class="image-input image-input-outline fit-content"
+              [ngClass]="{ 'is-invalid': isControlInvalid('profilePhoto') }"
+              data-kt-image-input="true"
+            >
+              <div
+                class="image-input-wrapper shadow-sm w-125px h-125px rounded-circle"
+                [style.backgroundImage]="getProfilePhotoBackgroundImage()"
+              ></div>
+
+              <label
+                class="btn btn-icon btn-circle btn-color-muted btn-active-color-primary w-25px h-25px bg-body shadow"
+                data-kt-image-input-action="change"
+                data-bs-toggle="tooltip"
+                title="{{ 'INSIGHTER_WIZARD.CHANGE_PHOTO' | translate }}"
+              >
+                <i class="ki-duotone ki-pencil fs-6"
+                  ><span class="path1"></span><span class="path2"></span
+                ></i>
+                <input
+                  type="file"
+                  name="profile_photo"
+                  accept=".png, .jpg, .jpeg"
+                  (change)="onProfilePhotoSelected($event)"
+                />
+                <input type="hidden" name="profile_photo_remove" />
+              </label>
+
+              <span
+                class="btn btn-icon btn-circle btn-color-muted btn-active-color-primary w-25px h-25px bg-body shadow"
+                data-kt-image-input-action="remove"
+                data-bs-toggle="tooltip"
+                (click)="removeProfilePhoto()"
+                title="{{ 'INSIGHTER_WIZARD.REMOVE_PHOTO' | translate }}"
+              >
+                <i class="ki-outline ki-cross fs-3"></i>
+              </span>
+            </div>
+            <div
+              *ngIf="
+                form.get('profilePhoto')?.hasError('required') &&
+                form.get('profilePhoto')?.touched
+              "
+              class="fv-plugins-message-container invalid-feedback"
+            >
+              {{ "INSIGHTER_WIZARD.PROFILE_PHOTO_REQUIRED" | translate }}
+            </div>
+            <p-messages
+              [value]="fizeSizeMessages"
+              [enableService]="false"
+            ></p-messages>
+          </div>
+        </div>
+      </div>
+
       <div class="mb-10 row gap-4">
           <!-- Industry -->
           <div class=" col-12" data-control="isicCodes">
@@ -109,6 +171,41 @@
           class="fv-plugins-message-container invalid-feedback"
         >
           {{ "INSIGHTER_WIZARD.BIO_REQUIRED" | translate }}
+        </div>
+      </div>
+
+      <!-- Years of Experience -->
+      <div class="mb-10 fv-row">
+        <label class="form-label mb-3 required">
+          {{ "INSIGHTER_WIZARD.EXPERIENCE" | translate }}
+        </label>
+        <input
+          formControlName="experience"
+          type="number"
+          min="0"
+          max="80"
+          step="1"
+          class="form-control"
+          [class.is-invalid]="isControlInvalid('experience')"
+          placeholder="{{ 'INSIGHTER_WIZARD.EXPERIENCE_PLACEHOLDER' | translate }}"
+        />
+        <div
+          *ngIf="
+            (form.get('experience')?.hasError('required')) &&
+            form.get('experience')?.touched
+          "
+          class="fv-plugins-message-container invalid-feedback"
+        >
+          {{ "INSIGHTER_WIZARD.EXPERIENCE_REQUIRED" | translate }}
+        </div>
+        <div
+          *ngIf="
+            (form.get('experience')?.hasError('min') || form.get('experience')?.hasError('max')) &&
+            form.get('experience')?.touched
+          "
+          class="fv-plugins-message-container invalid-feedback"
+        >
+          {{ "INSIGHTER_WIZARD.EXPERIENCE_INVALID" | translate }}
         </div>
       </div>
 
@@ -451,6 +548,40 @@
           class="fv-plugins-message-container invalid-feedback"
         >
           {{ "INSIGHTER_WIZARD.ABOUT_COMPANY_REQUIRED" | translate }}
+        </div>
+      </div>
+      <!-- Years of Experience -->
+      <div class="mb-10 fv-row">
+        <label class="form-label mb-3 required">
+          {{ "INSIGHTER_WIZARD.EXPERIENCE" | translate }}
+        </label>
+        <input
+          formControlName="experience"
+          type="number"
+          min="0"
+          max="80"
+          step="1"
+          class="form-control"
+          [class.is-invalid]="isControlInvalid('experience')"
+          placeholder="{{ 'INSIGHTER_WIZARD.EXPERIENCE_PLACEHOLDER' | translate }}"
+        />
+        <div
+          *ngIf="
+            (form.get('experience')?.hasError('required')) &&
+            form.get('experience')?.touched
+          "
+          class="fv-plugins-message-container invalid-feedback"
+        >
+          {{ "INSIGHTER_WIZARD.EXPERIENCE_REQUIRED" | translate }}
+        </div>
+        <div
+          *ngIf="
+            (form.get('experience')?.hasError('min') || form.get('experience')?.hasError('max')) &&
+            form.get('experience')?.touched
+          "
+          class="fv-plugins-message-container invalid-feedback"
+        >
+          {{ "INSIGHTER_WIZARD.EXPERIENCE_INVALID" | translate }}
         </div>
       </div>
     </ng-container>

@@ -82,6 +82,7 @@ export class GeneralComponent extends BaseComponent implements OnInit, OnDestroy
   searchTerm: string = '';
   searchTimeout: any;
   selectedType: 'grid' | 'list' = 'list';
+  private hasInitializedViewType = false;
   selectedKnowledgeType: string = ''; // Add this property for type filter
 
   // Update filter state to use the interface
@@ -132,6 +133,8 @@ export class GeneralComponent extends BaseComponent implements OnInit, OnDestroy
   }
 
   ngOnInit() {
+    this.checkScreenSize();
+
     // Clean up any existing subscription
     if (this.filterSubscription) {
       this.filterSubscription.unsubscribe();
@@ -148,7 +151,6 @@ export class GeneralComponent extends BaseComponent implements OnInit, OnDestroy
     // Initial data load
     this.loadFilteredKnowledges();
     // this.loadAllKnowledges();
-    this.checkScreenSize();
   }
 
   ngOnDestroy() {
@@ -164,6 +166,15 @@ export class GeneralComponent extends BaseComponent implements OnInit, OnDestroy
 
   private checkScreenSize() {
     this.isSmallScreen = window.innerWidth < 1040;
+
+    // Keep the desktop table as the default, while starting mobile users in
+    // the more compact grid view. Do this only once so a user's selection is
+    // not changed when they resize their browser.
+    if (!this.hasInitializedViewType) {
+      this.selectedType = this.isSmallScreen ? 'grid' : 'list';
+      this.hasInitializedViewType = true;
+    }
+
     if (this.isSmallScreen && this.showPackageBuilder) {
       this.showDialog = true;
       this.showPackageBuilder = false;

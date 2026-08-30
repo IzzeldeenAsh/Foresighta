@@ -10,6 +10,10 @@ export interface ICreateAccount {
   country?: number | null; // Country ID
   // Personal account fields
   bio?: string;
+  profilePhoto?: File | null;
+
+  // Shared: years of experience (personal + corporate)
+  experience?: number | null;
 
   phoneCompanyNumber?:string;
 
@@ -37,6 +41,8 @@ export const inits: ICreateAccount = {
   isicCodes: [],
   country: null,
   bio: '',
+  profilePhoto: null,
+  experience: null,
   phoneCompanyNumber:'',
   legalName: '',
   companyAddress:'',
