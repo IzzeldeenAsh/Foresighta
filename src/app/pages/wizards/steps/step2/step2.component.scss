@@ -35,3 +35,24 @@
     border-radius: 0.475rem;
     padding: 0.25rem;
   }
+
+  .profile-photo-wrapper {
+    cursor: pointer;
+    transition: border-color 0.15s ease, background-color 0.15s ease;
+
+    &--empty {
+      background-color: var(--bs-gray-100);
+      border: 1px dashed var(--bs-gray-400) !important;
+    }
+
+    &--empty:hover {
+      border-color: var(--bs-primary) !important;
+      background-color: var(--bs-gray-200);
+    }
+  }
+
+  .profile-photo-placeholder-icon {
+    font-size: 2rem;
+    color: var(--bs-gray-500);
+    pointer-events: none;
+  }

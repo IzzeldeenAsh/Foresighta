@@ -293,7 +293,7 @@ export class Step2Component implements OnInit, OnChanges, OnDestroy {
     if (this.profilePhotoPreview) {
       return `url(${this.profilePhotoPreview})`;
     }
-    return `url(${this.defaultImage})`;
+    return 'none';
   }
 
   onProfilePhotoSelected(event: Event) {

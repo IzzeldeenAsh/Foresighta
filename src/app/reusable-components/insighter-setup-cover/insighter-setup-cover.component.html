@@ -1,0 +1,69 @@
+<!-- Meeting cover — same design as the become-Insighter wizard, but the CTA
+     routes to /account-settings/consulting-schedule instead of an embedded form. -->
+  <!-- Meeting cover -->
+  <div *ngIf="stage === 'meeting'" class="welcome-modal__backdrop">
+    <div class="step-cover" role="dialog" aria-modal="true" [attr.dir]="lang === 'ar' ? 'rtl' : 'ltr'">
+      <button type="button" class="welcome-modal__close" [disabled]="skipping" (click)="skip()" [attr.aria-label]="lang === 'ar' ? 'إغلاق' : 'Close'">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
+      </button>
+      <div class="step-cover__panel step-cover__panel--wash">
+        <span class="step-cover__blob step-cover__blob--1" aria-hidden="true"></span>
+        <span class="step-cover__blob step-cover__blob--2" aria-hidden="true"></span>
+        <img class="step-cover__art" src="https://res.cloudinary.com/dsiku9ipv/image/upload/v1788187470/Meeting_qfjlo4.png" [alt]="lang === 'ar' ? 'اختيار التاريخ والوقت لحجز جلسة' : 'Choosing a date and time slot to book a session'" />
+      </div>
+      <h2 class="step-cover__title">{{ lang === 'ar' ? 'قابل عملاءك' : 'Meet With Clients' }}</h2>
+      <p class="step-cover__lede">{{ lang === 'ar' ? 'حدّد ساعات الاستشارة. يحجز العملاء تلك الأوقات فقط ويدفعون سعرك مقدماً.' : 'Set the hours you consult in. Clients book only those slots, and pay your rate up front.' }}</p>
+      <ul class="step-cover__list">
+        <li><span class="step-cover__tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 7" /></svg></span><span>{{ lang === 'ar' ? 'اختر أيام عملك وأضِف الفترات الزمنية لكل يوم.' : 'Pick the days you work and add time slots to each one.' }}</span></li>
+        <li><span class="step-cover__tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 7" /></svg></span><span>{{ lang === 'ar' ? 'سعّر كل فترة، مع سعر منفصل للجلسات الحضورية.' : 'Price every slot, with a separate rate for in-person sessions.' }}</span></li>
+        <li><span class="step-cover__tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 7" /></svg></span><span>{{ lang === 'ar' ? 'قابل أونلاين أو حضورياً أو كليهما — واحفظ عنوانك مرة واحدة.' : 'Meet online, on site, or both — and save your address once.' }}</span></li>
+      </ul>
+      <button type="button" class="step-cover__cta" (click)="goToSettings()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3v3m8-3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z" /></svg>
+        {{ lang === 'ar' ? 'حدّد أوقات توفري' : 'Set My Availability' }}
+      </button>
+      <button type="button" class="step-cover__skip" [disabled]="skipping" (click)="skip()">{{ lang === 'ar' ? 'تخطي الآن' : 'Skip for now' }}</button>
+    </div>
+  </div>
+
+
+<!-- Service cover — CTA routes to /account-settings/project-settings. -->
+  <div *ngIf="stage === 'project'" class="welcome-modal__backdrop">
+    <div class="step-cover" role="dialog" aria-modal="true" [attr.dir]="lang === 'ar' ? 'rtl' : 'ltr'">
+      <button type="button" class="welcome-modal__close" [disabled]="skipping" (click)="skip()" [attr.aria-label]="lang === 'ar' ? 'إغلاق' : 'Close'">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
+      </button>
+      <div class="step-cover__panel step-cover__panel--wash">
+        <div class="step-cover__profile">
+          <span class="step-cover__avatar">
+            <img *ngIf="profile?.profile_photo_url; else svInitials" [src]="profile.profile_photo_url" alt="" />
+            <ng-template #svInitials>{{ initials }}</ng-template>
+          </span>
+          <span class="step-cover__name">
+            <span class="step-cover__nm">{{ displayName }}</span>
+            <svg class="step-cover__verified" viewBox="0 0 24 24" fill="#2378E8" aria-hidden="true"><path d="M12 1.6l2.6 2 3.2-.3 1 3.1 2.7 1.8-1.2 3 1.2 3-2.7 1.8-1 3.1-3.2-.3-2.6 2-2.6-2-3.2.3-1-3.1L3.5 15l1.2-3-1.2-3 2.7-1.8 1-3.1 3.2.3z" /><path d="M8.4 12.2l2.4 2.4 4.5-4.9" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" /></svg>
+          </span>
+          <span class="step-cover__geo" *ngIf="countryName">{{ countryName }}</span>
+          <span class="step-cover__reqwrap">
+            <span class="step-cover__req">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7m-10 0h14a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1Zm0 4h14" /></svg>
+              {{ lang === 'ar' ? 'اطلب خدمة' : 'Request Service' }}
+            </span>
+          </span>
+        </div>
+      </div>
+      <h2 class="step-cover__title">{{ lang === 'ar' ? 'استقبل طلبات العملاء' : "Recieve Client's Requests" }}</h2>
+      <p class="step-cover__lede">{{ lang === 'ar' ? 'فعّل طلبات الخدمة ليظهر زر «اطلب خدمة» في ملفك العام.' : 'Switch on service requests and a Request Service button appears on your public profile.' }}</p>
+      <ul class="step-cover__list">
+        <li><span class="step-cover__tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 7" /></svg></span><span>{{ lang === 'ar' ? 'حدّد الخدمات التي تقدّمها.' : 'Define the services you provide.' }}</span></li>
+        <li><span class="step-cover__tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 7" /></svg></span><span>{{ lang === 'ar' ? 'إعدادات تتعلق بطبيعة الخدمات التي تقدّمها.' : 'Settings related to the nature of the services you provide.' }}</span></li>
+        <li><span class="step-cover__tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 7" /></svg></span><span>{{ lang === 'ar' ? 'سيتم ترشيحك كمرشّح لطلبات خدمات العملاء.' : "You'll be suggested as a candidate for clients' service requests." }}</span></li>
+      </ul>
+      <button type="button" class="step-cover__cta" (click)="goToSettings()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7m-10 0h14a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1Zm0 4h14" /></svg>
+        {{ lang === 'ar' ? 'إعداد خدماتي' : 'Set Up My Services' }}
+      </button>
+      <button type="button" class="step-cover__skip" [disabled]="skipping" (click)="skip()">{{ lang === 'ar' ? 'تخطي الآن' : 'Skip for now' }}</button>
+    </div>
+  </div>
+

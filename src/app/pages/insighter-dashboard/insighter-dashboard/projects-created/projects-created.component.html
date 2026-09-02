@@ -4,9 +4,7 @@
     [titleAr]="'المشاريع المُنشأة'"
     [subtitle]="lang === 'ar' ? 'تصفح وإدارة المشاريع التي أنشأتها.' : 'Browse and manage the projects you have created.'"
     [lang]="lang">
-    <div slot="icon">
-      <img src="assets/media/icons/projects/my-projects.svg" width="32" height="32" alt="" aria-hidden="true">
-    </div>
+    <app-dashboard-nav-icon slot="icon" name="folders"></app-dashboard-nav-icon>
   </app-page-header>
 
   <div class="pc-status-filter">

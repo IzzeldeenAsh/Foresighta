@@ -21,6 +21,8 @@ export interface IKnoldgProfile {
     consulting_field?:any;
     company?:Company;
     insighter_status?:string;
+    has_meet_service?: boolean;
+    receive_project_services_active?: boolean;
     client_status?:string;
     phone?:string;
     phone_code?:string;

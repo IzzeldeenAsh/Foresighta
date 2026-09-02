@@ -6,6 +6,7 @@ import { Observable, Subject, Subscription, of } from 'rxjs';
 import { takeUntil, map, catchError, finalize } from 'rxjs/operators';
 import { Router, NavigationEnd } from '@angular/router';
 import { ConsultingScheduleService, DayAvailability, AvailabilityException, TimeSlot } from 'src/app/services/consulting-schedule.service';
+import { ProfileService } from 'src/app/_fake/services/get-profile/get-profile.service';
 
 @Component({
   selector: 'app-consulting-schedule',
@@ -56,6 +57,7 @@ export class ConsultingScheduleComponent extends BaseComponent implements OnInit
   constructor(
     private fb: FormBuilder,
     private consultingScheduleService: ConsultingScheduleService,
+    private profileService: ProfileService,
     private router: Router,
     private confirmationService: ConfirmationService,
     injector: Injector,
@@ -1147,6 +1149,7 @@ export class ConsultingScheduleComponent extends BaseComponent implements OnInit
           }
           
           this.formDirty.set(false); // Reset dirty flag after successful save
+          this.refreshProfile();
           this.saving.set(false);
         },
         error: (error) => {
@@ -1213,6 +1216,7 @@ export class ConsultingScheduleComponent extends BaseComponent implements OnInit
           this.showSuccess('Success','تم تحديث الجدول بنجاح');
         }
         this.formDirty.set(false);
+        this.refreshProfile();
         return true;
       }),
       catchError((error) => {
@@ -1224,6 +1228,14 @@ export class ConsultingScheduleComponent extends BaseComponent implements OnInit
         this.saving.set(false);
       })
     );
+  }
+
+  private refreshProfile(): void {
+    const subscription = this.profileService.refreshProfile().subscribe({
+      error: () => undefined,
+    });
+
+    this.unsubscribe.push(subscription);
   }
 
   // Handle server errors

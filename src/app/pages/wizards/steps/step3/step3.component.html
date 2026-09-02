@@ -136,7 +136,7 @@
 <p-dialog 
   [(visible)]="showAgreementDialog" 
   [modal]="true" 
-  [style]="{width: '550px'}" 
+  [style]="{width: '850px', maxWidth: '95vw'}"
   [closable]="true"
   [closeOnEscape]="false"
   [dismissableMask]="false"
@@ -197,7 +197,7 @@
           class="btn btn-primary"
           [disabled]="!userScrolledToBottom"
           (click)="acceptAgreement()">
-          {{ 'SUBMIT' | translate }}
+          {{ 'INSIGHTER_WIZARD.AGREEMENT_AGREE' | translate }}
         </button>
       </div>
     </div>

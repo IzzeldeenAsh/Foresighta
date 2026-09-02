@@ -88,7 +88,18 @@
    
       <div class="header-actions">
         <!-- Language Switch Button -->
-    
+
+        <!-- Feed button for desktop -->
+        <div class="app-navbar-item me-3">
+          <a [href]="getFeedUrl()" class="btn btn-sm btn-feed fw-bold">
+            <i class="ki-duotone ki-row-horizontal fs-5">
+              <span class="path1"></span>
+              <span class="path2"></span>
+            </i>
+            {{ 'MENU.FEED' | translate }}
+          </a>
+        </div>
+
         <!-- Add Knowledge button for desktop -->
           <div class="app-navbar-item me-3" *ngIf="shouldShowAddKnowledgeButton()">
             <a [routerLink]="getAddKnowledgeRoute()" class="btn btn-sm btn-primary fw-bold">
@@ -240,6 +251,16 @@
       </div>
       
       <div class="mobile-header-right d-flex align-items-center">
+        <!-- Mobile Feed button -->
+        <div class="me-3">
+          <a [href]="getFeedUrl()" class="btn btn-icon btn-sm btn-feed" style="width: 32px; height: 32px;">
+            <i class="ki-duotone ki-row-horizontal fs-4">
+              <span class="path1"></span>
+              <span class="path2"></span>
+            </i>
+          </a>
+        </div>
+
         <!-- Mobile Language Switch -->
         <div class="me-3">
           <app-lang-switch-button [isInsighterDashboard]="isDashboardRoute"></app-lang-switch-button>

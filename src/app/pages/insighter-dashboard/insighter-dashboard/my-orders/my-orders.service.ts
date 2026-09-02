@@ -327,6 +327,22 @@ export class MyOrdersService {
     );
   }
 
+  /**
+   * Loads a single project sale by order reference (UUID or numeric id — the
+   * backend route binding accepts either). Used to deep-link a project-sale
+   * notification straight to that order's details, without depending on the
+   * order being on the first page of the list.
+   */
+  getSalesProjectOrder(orderRef: string, role: 'company' | 'insighter'): Observable<Order> {
+    const baseUrl = role === 'company' ? this.COMPANY_PROJECT_API_URL : this.INSIGHTER_PROJECT_API_URL;
+    const headers = this.getHeaders();
+
+    return this.http.get<{ data: Order } | Order>(`${baseUrl}/${orderRef}`, { headers }).pipe(
+      map((response: any) => (response?.data ?? response) as Order),
+      catchError(error => this.handleError(error))
+    );
+  }
+
   getInsighterStatistics(): Observable<InsighterStatisticsResponse> {
     const headers = this.getHeaders();
 

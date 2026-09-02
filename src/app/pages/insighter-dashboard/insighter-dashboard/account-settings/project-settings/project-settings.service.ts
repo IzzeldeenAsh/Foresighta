@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable, map } from 'rxjs';
+import { Observable, Subject, map, tap } from 'rxjs';
 import { environment } from 'src/environments/environment';
 import { TranslationService } from 'src/app/modules/i18n';
 
@@ -106,6 +106,11 @@ export class ProjectSettingsService {
   private readonly acceptAgreementApiUrl = `${environment.apiBaseUrl}/insighter/project/account/agreement/accept`;
   private readonly servicesApiUrl = `${environment.apiBaseUrl}/common/setting/service`;
 
+  /** Emits whenever the receive-project-services state may have changed, so
+   *  listeners (e.g. the dashboard "Setup Now!" badge) can re-read it. */
+  private readonly projectAccountChangedSubject = new Subject<void>();
+  readonly projectAccountChanged$ = this.projectAccountChangedSubject.asObservable();
+
   constructor(
     private readonly http: HttpClient,
     private readonly translationService: TranslationService
@@ -153,26 +158,32 @@ export class ProjectSettingsService {
   syncProjectAccountProperties(
     payload: SyncProjectAccountPropertiesPayload
   ): Observable<unknown> {
-    return this.http.post(this.syncApiUrl, payload, {
-      headers: this.getHeaders(),
-      responseType: 'text',
-    });
+    return this.http
+      .post(this.syncApiUrl, payload, {
+        headers: this.getHeaders(),
+        responseType: 'text',
+      })
+      .pipe(tap(() => this.projectAccountChangedSubject.next()));
   }
 
   activateReceivingProjectService(): Observable<unknown> {
-    return this.http.post(
-      this.activateApiUrl,
-      { agreement: true },
-      { headers: this.getHeaders(), responseType: 'text' }
-    );
+    return this.http
+      .post(
+        this.activateApiUrl,
+        { agreement: true },
+        { headers: this.getHeaders(), responseType: 'text' }
+      )
+      .pipe(tap(() => this.projectAccountChangedSubject.next()));
   }
 
   deactivateReceivingProjectService(): Observable<unknown> {
-    return this.http.post(
-      this.deactivateApiUrl,
-      { agreement: true },
-      { headers: this.getHeaders(), responseType: 'text' }
-    );
+    return this.http
+      .post(
+        this.deactivateApiUrl,
+        { agreement: true },
+        { headers: this.getHeaders(), responseType: 'text' }
+      )
+      .pipe(tap(() => this.projectAccountChangedSubject.next()));
   }
 
   acceptProjectServiceAgreement(): Observable<unknown> {

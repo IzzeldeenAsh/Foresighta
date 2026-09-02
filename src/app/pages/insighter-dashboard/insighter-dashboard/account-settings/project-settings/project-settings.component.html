@@ -27,7 +27,7 @@
               [style.width.%]="checklist.length ? (completedCount / checklist.length) * 100 : 0"></div>
           </div>
           <span class="ps-progress-label">
-            {{ completedCount }}/{{ checklist.length || 3 }}
+            {{ completedCount }}/{{ checklist.length || 1 }}
             {{ lang === 'ar' ? 'مكتمل' : 'completed' }}
           </span>
         </div>
@@ -253,12 +253,12 @@
         <section class="ps-section">
           <div class="ps-setting-row">
             <div class="ps-setting-copy">
-              <h3 class="ps-section-title">{{ lang === 'ar' ? 'سعر ساعتك' : 'Hourly rate' }}</h3>
+              <h3 class="ps-section-title">{{ lang === 'ar' ? 'سعر الساعة الافتراضي' : 'Default Hourly Rate' }}</h3>
               <p class="ps-section-desc">
                 {{
                 lang === 'ar'
-                ? 'أدخل السعر المناسب لكل ساعة عمل.'
-                : 'Enter the rate you charge per working hour.'
+                ? 'أدخل السعر المناسب لكل ساعة عمل. يمكنك تغيير هذا السعر لاحقًا لكل مشروع أو خدمة على حدة.'
+                : 'Enter the rate you charge per working hour. This can be changed later on a per-project or per-service basis.'
                 }}
               </p>
             </div>
@@ -283,10 +283,10 @@
           </div>
         </section>
 
-        <!-- Language -->
+        <!-- Deliverable Language -->
         <section class="ps-section">
           <header class="ps-section-head">
-            <h3 class="ps-section-title">{{ lang === 'ar' ? 'اللغة' : 'Language' }}</h3>
+            <h3 class="ps-section-title">{{ lang === 'ar' ? 'لغة التسليم' : 'Deliverable Language' }}</h3>
             <p class="ps-section-desc">
               {{
               lang === 'ar'

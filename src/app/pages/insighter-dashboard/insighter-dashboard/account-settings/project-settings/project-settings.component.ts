@@ -3,10 +3,9 @@ import { Router } from '@angular/router';
 import { BehaviorSubject, Observable, catchError, concatMap, finalize, forkJoin, map, of } from 'rxjs';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
-import { ProfileService } from 'src/app/_fake/services/get-profile/get-profile.service';
 import { GuidelineDetail, GuidelinesService } from 'src/app/_fake/services/guidelines/guidelines.service';
+import { ProfileService } from 'src/app/_fake/services/get-profile/get-profile.service';
 import { BaseComponent } from 'src/app/modules/base.component';
-import { environment } from 'src/environments/environment';
 import {
   ProjectAccountCheckResults,
   ProjectAccountProperties,
@@ -18,15 +17,11 @@ import {
 } from './project-settings.service';
 
 interface ProjectChecklistItem {
-  key: 'publish_insights' | 'whatsapp' | 'profile';
+  key: 'whatsapp';
   title: string;
   details: string[];
   route: string;
   passed: boolean;
-  insightRequirements?: {
-    paid: number;
-    free: number;
-  };
 }
 
 interface ProjectTypeOption {
@@ -100,7 +95,6 @@ export class ProjectSettingsComponent extends BaseComponent implements OnInit {
   isAgreementDialogVisible = false;
   isProjectStatusUpdating = false;
   settingsForm: FormGroup;
-  private roles: string[] = [];
   private lastResults: ProjectAccountCheckResults = {};
   private readonly hiddenServiceSlugs = new Set(['other']);
   private projectServiceAgreementAccepted = false;
@@ -134,8 +128,6 @@ export class ProjectSettingsComponent extends BaseComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.initializeRoles();
-
     const langSub = this.translate.onLanguageChange().subscribe(() => {
       this.checklist = this.buildChecklist(this.lastResults);
       if (this.errorMessage) {
@@ -289,6 +281,8 @@ export class ProjectSettingsComponent extends BaseComponent implements OnInit {
             this.isAgreementDialogVisible = false;
           }
 
+          this.refreshProfile();
+
           this.showSuccess(
             '',
             nextValue
@@ -304,6 +298,14 @@ export class ProjectSettingsComponent extends BaseComponent implements OnInit {
           this.showError('', this.extractErrorMessage(error));
         },
       });
+
+    this.unsubscribe.push(sub);
+  }
+
+  private refreshProfile(): void {
+    const sub = this.profileService.refreshProfile().subscribe({
+      error: () => undefined,
+    });
 
     this.unsubscribe.push(sub);
   }
@@ -536,40 +538,9 @@ export class ProjectSettingsComponent extends BaseComponent implements OnInit {
     this.unsubscribe.push(sub);
   }
 
-  private initializeRoles(): void {
-    this.roles = this.profileService.getCurrentUser()?.roles || [];
-
-    const sub = this.profileService.getProfile().subscribe({
-      next: (profile) => {
-        this.roles = profile?.roles || [];
-        this.checklist = this.buildChecklist(this.lastResults);
-      },
-    });
-
-    this.unsubscribe.push(sub);
-  }
-
+  /** WhatsApp is the only requirement gating project offers. */
   private buildChecklist(results: ProjectAccountCheckResults): ProjectChecklistItem[] {
     return [
-      {
-        key: 'publish_insights',
-        title: this.lang === 'ar' ? 'نشر الرؤى' : 'Publish Insight',
-        details: [this.getPublishInsightDetails(results)],
-        route: '/app/add-knowledge/stepper',
-        passed: !!results.publish_insights?.pass,
-        insightRequirements: {
-          paid: results.publish_insights?.required?.paid ?? 0,
-          free: results.publish_insights?.required?.free ?? 0,
-        },
-      },
-
-      {
-        key: 'profile',
-        title: this.lang === 'ar' ? 'إكمال الملف الشخصي' : 'Complete Profile',
-        details: this.getProfileDetails(results),
-        route: this.getLocalizedMainAppUrl('/profile/settings'),
-        passed: this.isProfileComplete(results),
-      },
       {
         key: 'whatsapp',
         title: this.lang === 'ar' ? 'تفعيل واتساب' : 'Enable WhatsApp',
@@ -582,110 +553,6 @@ export class ProjectSettingsComponent extends BaseComponent implements OnInit {
         passed: !!results.whatsapp?.pass,
       },
     ];
-  }
-
-  private getPublishInsightDetails(results: ProjectAccountCheckResults): string {
-    const freeRequired = results.publish_insights?.required?.free ?? 0;
-    const paidRequired = results.publish_insights?.required?.paid ?? 0;
-
-    if (this.lang === 'ar') {
-      return `المطلوب: ${freeRequired} مجاني، ${paidRequired} مدفوع`;
-    }
-
-    return `Required insights: ${freeRequired} Free, ${paidRequired} Paid`;
-  }
-
-  private isProfileComplete(results: ProjectAccountCheckResults): boolean {
-    const required = results.profile?.required;
-
-    if (required) {
-      return (
-        this.isRequiredFieldComplete(required, 'profile_photo') &&
-        this.isRequiredFieldComplete(required, 'country') &&
-        (this.isCompanyAccount()
-          ? this.isRequiredFieldComplete(required, 'about_us')
-          : this.isRequiredFieldComplete(required, 'bio')) &&
-        this.isExperienceComplete(results)
-      );
-    }
-
-    return !!results.profile?.pass && this.isExperienceComplete(results);
-  }
-
-  private isExperienceComplete(results: ProjectAccountCheckResults): boolean {
-    const experiencePass = results.experience?.pass;
-    return experiencePass !== false &&
-      experiencePass !== null &&
-      experiencePass !== undefined &&
-      experiencePass !== '';
-  }
-
-  private isRequiredFieldComplete(
-    required: NonNullable<ProjectAccountCheckResults['profile']>['required'],
-    fieldName: 'profile_photo' | 'bio' | 'about_us' | 'country'
-  ): boolean {
-    if (!required || !Object.prototype.hasOwnProperty.call(required, fieldName)) {
-      return true;
-    }
-
-    return required[fieldName] === true;
-  }
-
-  private getProfileDetails(results: ProjectAccountCheckResults): string[] {
-    const required = results.profile?.required;
-    const missingFieldsEn: string[] = [];
-    const missingFieldsAr: string[] = [];
-    const isCompanyAccount = this.isCompanyAccount();
-
-    if (required) {
-      if (!this.isRequiredFieldComplete(required, 'profile_photo')) {
-        missingFieldsEn.push('Add profile picture');
-        missingFieldsAr.push('أضف صورة شخصية');
-      }
-
-      if (isCompanyAccount) {
-        if (!this.isRequiredFieldComplete(required, 'about_us')) {
-          missingFieldsEn.push('Add company about us');
-          missingFieldsAr.push('أضف نبذة عن الشركة');
-        }
-      } else if (!this.isRequiredFieldComplete(required, 'bio')) {
-        missingFieldsEn.push('Add bio');
-        missingFieldsAr.push('أضف النبذة الشخصية');
-      }
-
-      if (!this.isRequiredFieldComplete(required, 'country')) {
-        missingFieldsEn.push(isCompanyAccount ? 'Add company country' : 'Add country');
-        missingFieldsAr.push(isCompanyAccount ? 'أضف دولة الشركة' : 'أضف البلد');
-      }
-
-      if (!this.isExperienceComplete(results)) {
-        missingFieldsEn.push(isCompanyAccount ? 'Add company years of experience' : 'Add years of experience');
-        missingFieldsAr.push(isCompanyAccount ? 'أضف سنوات خبرة الشركة' : 'أضف سنوات الخبرة');
-      }
-    } else if (!this.isExperienceComplete(results)) {
-      missingFieldsEn.push(isCompanyAccount ? 'Add company years of experience' : 'Add years of experience');
-      missingFieldsAr.push(isCompanyAccount ? 'أضف سنوات خبرة الشركة' : 'أضف سنوات الخبرة');
-    }
-
-    if (missingFieldsAr.length || missingFieldsEn.length) {
-      return this.lang === 'ar' ? missingFieldsAr : missingFieldsEn;
-    }
-
-    return [
-      this.lang === 'ar'
-        ? 'تم استيفاء متطلبات الملف الشخصي.'
-        : 'Profile requirement completed.',
-    ];
-  }
-
-  private isCompanyAccount(): boolean {
-    return this.roles.includes('company') || this.roles.includes('company-insighter');
-  }
-
-  private getLocalizedMainAppUrl(path: string): string {
-    const locale = this.lang === 'ar' ? 'ar' : 'en';
-    const normalizedPath = path.startsWith('/') ? path : `/${path}`;
-    return `${environment.mainAppUrl}/${locale}${normalizedPath}`;
   }
 
   openChecklistRoute(event: Event, route: string): void {

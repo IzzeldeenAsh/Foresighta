@@ -4,11 +4,7 @@
   [titleAr]="'قائمة المعاينات'"
   [subtitle]="getReadLaterSubtitle()"
   [lang]="lang">
-  <div slot="icon">
-<svg width="16" height="22" viewBox="0 0 16 22" fill="none" xmlns="http://www.w3.org/2000/svg">
-<path d="M13.3609 21.7607L7.61149 17.3303L1.86209 21.7607C1.08224 22.3623 0 21.7607 0 20.725V1.83058C0 0.820751 0.759955 0 1.69498 0H13.528C14.463 0 15.223 0.820751 15.223 1.83058V20.725C15.223 21.7607 14.1407 22.3623 13.3609 21.7607Z" fill="#3b82f6"/>
-</svg>
-  </div>
+  <app-dashboard-nav-icon slot="icon" name="bookmark"></app-dashboard-nav-icon>
 </app-page-header>
 
 @if (isLoading()) {

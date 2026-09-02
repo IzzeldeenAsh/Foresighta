@@ -16,6 +16,15 @@ const Routing: Routes = [
     loadChildren: () => import('./wizards/wizards.module').then((m) => m.WizardsModule),
     canActivate: [NonInsightersAuthGuard],
   },
+  {
+    // Design/QA preview of the post-signup onboarding (welcome modal + setup steps),
+    // reachable by an already-registered insighter (no NonInsightersAuthGuard).
+    // /app/onboarding-preview?stage=intro|whatsapp|meeting|project&whatsapp=1
+    path: 'onboarding-preview',
+    loadChildren: () => import('./wizards/wizards.module').then((m) => m.WizardsModule),
+    canActivate: [authGuard],
+    data: { onboardingPreview: true },
+  },
 
   {
     path: 'add-knowledge',

@@ -111,7 +111,7 @@
           <!-- WhatsApp setup -->
           <div class="stepper-item" *ngIf="includeWhatsAppOnboardingStep" [ngClass]="{
             current: onboardingStage === 'whatsapp',
-            completed: onboardingStage !== 'whatsapp'
+            completed: onboardingStage !== 'whatsapp' && onboardingStage !== 'intro'
           }">
             <div class="stepper-wrapper">
               <div class="stepper-icon w-40px h-40px">
@@ -119,11 +119,11 @@
                 <span class="stepper-number">{{ whatsappWizardStep }}</span>
               </div>
               <div class="stepper-label">
-                <h3 class="stepper-title">{{ lang === 'ar' ? 'واتساب' : 'WhatsApp' }}</h3>
+                <h3 class="stepper-title">{{ lang === 'ar' ? 'الإشعارات عبر واتساب' : 'Notifications via WhatsApp' }}</h3>
                 <div class="stepper-desc fw-semibold">
                   {{ hasWhatsApp
                     ? (lang === 'ar' ? 'تمت إضافة الرقم' : 'Number connected')
-                    : (lang === 'ar' ? 'أضف رقم التواصل' : 'Add your contact number') }}
+                    : (lang === 'ar' ? 'طبقة إشعارات إضافية عبر واتساب تفيدك بالتحديثات المهمة' : 'Additional notification layer via WhatsApp that can benefit you with important updates') }}
                 </div>
               </div>
             </div>
@@ -141,7 +141,7 @@
                 <span class="stepper-number">{{ meetingWizardStep }}</span>
               </div>
               <div class="stepper-label">
-                <h3 class="stepper-title">{{ lang === 'ar' ? 'إعدادات الاجتماعات' : 'Meeting settings' }}</h3>
+                <h3 class="stepper-title">{{ lang === 'ar' ? 'إعدادات الجلسات' : 'Session settings' }}</h3>
                 <div class="stepper-desc fw-semibold">{{ lang === 'ar' ? 'حدّد أوقات توفرك' : 'Set your availability' }}</div>
               </div>
             </div>
@@ -268,8 +268,169 @@
   *ngIf="onSuccessMessage && onboardingReady"
   [attr.dir]="lang === 'ar' ? 'rtl' : 'ltr'"
 >
+  <!-- ===================== Welcome modal ===================== -->
+  <div *ngIf="onboardingStage === 'intro'" class="welcome-modal__backdrop">
+    <div class="welcome-modal" role="dialog" aria-modal="true" aria-labelledby="welcome-modal-title">
+      <button
+        type="button"
+        class="welcome-modal__close"
+        (click)="startOnboardingSteps()"
+        [attr.aria-label]="lang === 'ar' ? 'إغلاق' : 'Close'"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+          <path d="M6 6l12 12M18 6L6 18" />
+        </svg>
+      </button>
+
+      <div class="welcome-modal__head">
+        <span class="welcome-modal__seal" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 12.5 9.5 18 20 7" />
+          </svg>
+        </span>
+        <h2 id="welcome-modal-title">
+          {{ lang === 'ar'
+            ? 'تهانينا — أصبحت الآن إنسايتر'
+            : "Congratulations — you're now an Insighter" }}
+        </h2>
+        <p>
+          {{ lang === 'ar'
+            ? 'يمكنك الآن نشر الرؤى والتقارير، وتقديم جلسات استشارية مدفوعة، واستقبال طلبات الخدمة من العملاء. جهّز هذه الخطوات لتبدأ في استقبال الأعمال.'
+            : 'You can publish insights and reports, take paid consulting sessions, and receive service requests from clients. Set these up to start receiving work.' }}
+        </p>
+      </div>
+
+      <h3 class="welcome-modal__cards-title">
+        {{ lang === 'ar' ? 'أكمل إعداداتك' : 'Complete your settings' }}
+      </h3>
+
+      <div class="welcome-modal__cards">
+        <!-- 1 · WhatsApp notifications (marked as done when the profile already has a number) -->
+        <article class="welcome-card" [class.welcome-card--done]="hasWhatsApp">
+          <div class="welcome-card__thumb">
+            <img
+              src="https://res.cloudinary.com/dsiku9ipv/image/upload/v1788187465/InsightaWhatsapp_o9wjre.png"
+              [alt]="lang === 'ar' ? 'إشعارات إنسايتا عبر واتساب' : 'Insighta notifications in a WhatsApp chat'"
+            />
+          </div>
+          <div class="welcome-card__copy">
+            <h3>{{ lang === 'ar' ? 'الإشعارات عبر واتساب' : 'Notifications via WhatsApp' }}</h3>
+            <p *ngIf="!hasWhatsApp">
+              {{ lang === 'ar'
+                ? 'كل ما يحدث في حسابك يصلك في المكان الذي تتحدث فيه بالفعل.'
+                : 'Everything that happens on your account reaches you where you already chat.' }}
+            </p>
+            <span class="welcome-card__added" *ngIf="hasWhatsApp">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M5 12.5 10 17.5 19 7" />
+              </svg>
+              {{ lang === 'ar' ? 'تمت الإضافة' : 'Added' }}
+            </span>
+          </div>
+        </article>
+
+        <!-- 2 · Meeting settings -->
+        <article class="welcome-card">
+          <div class="welcome-card__thumb welcome-card__thumb--meet">
+            <span class="welcome-card__wash" aria-hidden="true"></span>
+            <span class="welcome-card__blob welcome-card__blob--1" aria-hidden="true"></span>
+            <span class="welcome-card__blob welcome-card__blob--2" aria-hidden="true"></span>
+            <img
+              src="https://res.cloudinary.com/dsiku9ipv/image/upload/v1788187470/Meeting_qfjlo4.png"
+              [alt]="lang === 'ar' ? 'اختيار التاريخ والوقت لحجز جلسة' : 'Choosing a date and time slot to book a session'"
+            />
+          </div>
+          <div class="welcome-card__copy">
+            <h3>{{ lang === 'ar' ? 'إعداد الجلسات الاستشارية' : 'Session settings setup' }}</h3>
+            <p>
+              {{ lang === 'ar'
+                ? 'حدّد أوقات توفرك وسعرها وما إذا كانت الجلسات عبر الإنترنت أو حضورياً ليتمكن العملاء من حجز وقت معك.'
+                : 'Set your availability, rate and whether you meet online or on-site so clients can book time with you.' }}
+            </p>
+          </div>
+        </article>
+
+        <!-- 3 · Service settings -->
+        <article class="welcome-card">
+          <div class="welcome-card__thumb welcome-card__thumb--service">
+            <span class="welcome-card__wash welcome-card__wash--service" aria-hidden="true"></span>
+            <div class="welcome-mini">
+              <span class="welcome-mini__avatar">
+                <img
+                  *ngIf="onboardingProfile?.profile_photo_url; else welcomeInitialsTpl"
+                  [src]="onboardingProfile.profile_photo_url"
+                  alt=""
+                />
+                <ng-template #welcomeInitialsTpl>{{ welcomeInitials }}</ng-template>
+              </span>
+              <span class="welcome-mini__name">
+                <span class="welcome-mini__nm">{{ welcomeDisplayName }}</span>
+                <svg class="welcome-mini__tick" viewBox="0 0 24 24" fill="#2378E8" aria-hidden="true">
+                  <path d="M12 1.6l2.6 2 3.2-.3 1 3.1 2.7 1.8-1.2 3 1.2 3-2.7 1.8-1 3.1-3.2-.3-2.6 2-2.6-2-3.2.3-1-3.1L3.5 15l1.2-3-1.2-3 2.7-1.8 1-3.1 3.2.3z" />
+                  <path d="M8.4 12.2l2.4 2.4 4.5-4.9" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </span>
+              <span class="welcome-mini__geo" *ngIf="welcomeCountryName">{{ welcomeCountryName }}</span>
+              <span class="welcome-mini__cta-wrap">
+                <span class="welcome-mini__cta">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7m-10 0h14a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1Zm0 4h14" />
+                  </svg>
+                  {{ lang === 'ar' ? 'اطلب خدمة' : 'Request Service' }}
+                </span>
+            
+              </span>
+            </div>
+          </div>
+          <div class="welcome-card__copy">
+            <h3>{{ lang === 'ar' ? 'إعداد الخدمات' : 'Service settings setup' }}</h3>
+            <p>
+              {{ lang === 'ar'
+                ? 'جهّز الخدمات التي تقدّمها ليتمكن العملاء من إرسال طلبات الخدمة إليك.'
+                : 'Set up the services you offer so clients can send you service requests.' }}
+            </p>
+          </div>
+        </article>
+      </div>
+
+      <div class="welcome-modal__foot">
+        <button type="button" class="welcome-modal__skip" (click)="skipOnboardingIntro()">
+          {{ lang === 'ar' ? 'تخطي الآن' : 'Skip for now' }}
+        </button>
+        <button type="button" class="welcome-modal__start" (click)="startOnboardingSteps()">
+          {{ lang === 'ar' ? 'لنبدأ الإعداد' : "Let's set up" }}
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- ===================== WhatsApp step ===================== -->
-  <section *ngIf="onboardingStage === 'whatsapp'" class="onboarding-stage-card">
+  <!-- ===================== Step covers (intro → form) ===================== -->
+  <!-- WhatsApp cover -->
+  <div *ngIf="onboardingStage === 'whatsapp' && stepPhase === 'cover'" class="welcome-modal__backdrop">
+    <div class="step-cover" role="dialog" aria-modal="true" [attr.dir]="lang === 'ar' ? 'rtl' : 'ltr'">
+      <button type="button" class="welcome-modal__close" (click)="skipWhatsApp()" [attr.aria-label]="lang === 'ar' ? 'إغلاق' : 'Close'">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
+      </button>
+      <div class="step-cover__panel">
+        <img class="step-cover__photo" src="https://res.cloudinary.com/dsiku9ipv/image/upload/v1788187465/InsightaWhatsapp_o9wjre.png" [alt]="lang === 'ar' ? 'إشعارات إنسايتا عبر واتساب' : 'Insighta notifications in a WhatsApp chat'" />
+      </div>
+      <h2 class="step-cover__title">{{ lang === 'ar' ? 'ابقَ على تواصل' : 'Stay Connected' }}</h2>
+      <p class="step-cover__lede">{{ lang === 'ar' ? 'أضِف رقمك مرة واحدة ليصلك كل جديد في المكان الذي تتحدث فيه بالفعل.' : 'Add your number once and Insighta reaches you where you already chat.' }}</p>
+      <ul class="step-cover__list">
+        <li><span class="step-cover__tick step-cover__tick--green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 7" /></svg></span><span>{{ lang === 'ar' ? 'استقبل رؤى ذات صلة مصممة حسب اهتماماتك.' : 'Receive related insights tailored to your interests.' }}</span></li>
+        <li><span class="step-cover__tick step-cover__tick--green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 7" /></svg></span><span>{{ lang === 'ar' ? 'تأكيدات فورية لحجوزات الجلسات وتفاصيلها.' : 'Instant session booking confirmations and details.' }}</span></li>
+        <li><span class="step-cover__tick step-cover__tick--green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 7" /></svg></span><span>{{ lang === 'ar' ? 'تحديثات طلبات الخدمة مع تتبع واضح للحالة.' : 'Service request updates with clear status tracking.' }}</span></li>
+      </ul>
+      <button type="button" class="step-cover__cta step-cover__cta--whatsapp" (click)="openStepForm()">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm5.5 14.2c-.2.6-1.2 1.2-1.7 1.2-.5.1-1 .1-1.6-.1-.4-.1-.9-.3-1.5-.6-2.7-1.2-4.4-3.9-4.5-4.1-.1-.2-1.1-1.4-1.1-2.7 0-1.3.7-1.9 1-2.2.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.8 1.9c.1.2.1.3 0 .5l-.3.5-.3.3c-.1.1-.2.3 0 .5.2.3.7 1.2 1.5 1.9 1 .9 1.9 1.2 2.1 1.3.2.1.4.1.5-.1l.7-.9c.2-.2.3-.2.5-.1l1.8.9c.2.1.4.2.5.3 0 .1 0 .7-.2 1.3Z" /></svg>
+        {{ lang === 'ar' ? 'أضف رقم واتساب' : 'Add WhatsApp Number' }}
+      </button>
+      <button type="button" class="step-cover__skip" (click)="skipWhatsApp()">{{ lang === 'ar' ? 'تخطي الآن' : 'Skip for now' }}</button>
+    </div>
+  </div>
+
+  <section *ngIf="onboardingStage === 'whatsapp' && stepPhase === 'form'" class="onboarding-stage-card">
     <header class="onboarding-stage-card__header">
       <span class="onboarding-stage-card__icon onboarding-stage-card__icon--whatsapp" aria-hidden="true">
         <img src="assets/media/whatsapp_220236.png" alt="" />
@@ -353,7 +514,33 @@
   </section>
 
   <!-- ===================== Meeting settings step ===================== -->
-  <section *ngIf="onboardingStage === 'meeting'" class="onboarding-stage-card onboarding-stage-card--wide">
+  <!-- Meeting cover -->
+  <div *ngIf="onboardingStage === 'meeting' && stepPhase === 'cover'" class="welcome-modal__backdrop">
+    <div class="step-cover" role="dialog" aria-modal="true" [attr.dir]="lang === 'ar' ? 'rtl' : 'ltr'">
+      <button type="button" class="welcome-modal__close" (click)="skipMeetingSettings()" [attr.aria-label]="lang === 'ar' ? 'إغلاق' : 'Close'">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
+      </button>
+      <div class="step-cover__panel step-cover__panel--wash">
+        <span class="step-cover__blob step-cover__blob--1" aria-hidden="true"></span>
+        <span class="step-cover__blob step-cover__blob--2" aria-hidden="true"></span>
+        <img class="step-cover__art" src="https://res.cloudinary.com/dsiku9ipv/image/upload/v1788187470/Meeting_qfjlo4.png" [alt]="lang === 'ar' ? 'اختيار التاريخ والوقت لحجز جلسة' : 'Choosing a date and time slot to book a session'" />
+      </div>
+      <h2 class="step-cover__title">{{ lang === 'ar' ? 'قابل عملاءك' : 'Meet With Clients' }}</h2>
+      <p class="step-cover__lede">{{ lang === 'ar' ? 'حدّد ساعات الاستشارة. يحجز العملاء تلك الأوقات فقط ويدفعون سعرك مقدماً.' : 'Set the hours you consult in. Clients book only those slots, and pay your rate up front.' }}</p>
+      <ul class="step-cover__list">
+        <li><span class="step-cover__tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 7" /></svg></span><span>{{ lang === 'ar' ? 'اختر أيام عملك وأضِف الفترات الزمنية لكل يوم.' : 'Pick the days you work and add time slots to each one.' }}</span></li>
+        <li><span class="step-cover__tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 7" /></svg></span><span>{{ lang === 'ar' ? 'سعّر كل فترة، مع سعر منفصل للجلسات الحضورية.' : 'Price every slot, with a separate rate for in-person sessions.' }}</span></li>
+        <li><span class="step-cover__tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 7" /></svg></span><span>{{ lang === 'ar' ? 'قابل أونلاين أو حضورياً أو كليهما — واحفظ عنوانك مرة واحدة.' : 'Meet online, on site, or both — and save your address once.' }}</span></li>
+      </ul>
+      <button type="button" class="step-cover__cta" (click)="openStepForm()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3v3m8-3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z" /></svg>
+        {{ lang === 'ar' ? 'حدّد أوقات توفري' : 'Set My Availability' }}
+      </button>
+      <button type="button" class="step-cover__skip" (click)="skipMeetingSettings()">{{ lang === 'ar' ? 'تخطي الآن' : 'Skip for now' }}</button>
+    </div>
+  </div>
+
+  <section *ngIf="onboardingStage === 'meeting' && stepPhase === 'form'" class="onboarding-stage-card onboarding-stage-card--wide">
     <header class="onboarding-stage-card__header">
       <span class="onboarding-stage-card__icon" aria-hidden="true">
         <i class="ki-duotone ki-calendar-tick"><span class="path1"></span><span class="path2"></span><span class="path3"></span><span class="path4"></span><span class="path5"></span><span class="path6"></span></i>
@@ -363,7 +550,7 @@
           {{ lang === 'ar' ? 'الخطوة' : 'Step' }} {{ meetingWizardStep }}
           {{ lang === 'ar' ? 'من' : 'of' }} {{ projectWizardStep }}
         </span>
-        <h2>{{ lang === 'ar' ? 'إعدادات الاجتماعات' : 'Meeting settings' }}</h2>
+        <h2>{{ lang === 'ar' ? 'إعدادات الجلسات' : 'Session settings' }}</h2>
         <p>
           {{ lang === 'ar'
             ? 'حدّد أيام وأوقات توفرك لعقد الاجتماعات مع العملاء. يمكنك تخطي هذه الخطوة وتعديلها لاحقاً.'
@@ -395,7 +582,47 @@
   </section>
 
   <!-- ===================== Project settings step ===================== -->
-  <section *ngIf="onboardingStage === 'project'" class="onboarding-stage-card onboarding-stage-card--wide">
+  <!-- Service cover -->
+  <div *ngIf="onboardingStage === 'project' && stepPhase === 'cover'" class="welcome-modal__backdrop">
+    <div class="step-cover" role="dialog" aria-modal="true" [attr.dir]="lang === 'ar' ? 'rtl' : 'ltr'">
+      <button type="button" class="welcome-modal__close" (click)="skipProjectSettings()" [attr.aria-label]="lang === 'ar' ? 'إغلاق' : 'Close'">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
+      </button>
+      <div class="step-cover__panel step-cover__panel--wash">
+        <div class="step-cover__profile">
+          <span class="step-cover__avatar">
+            <img *ngIf="onboardingProfile?.profile_photo_url; else svInitials" [src]="onboardingProfile.profile_photo_url" alt="" />
+            <ng-template #svInitials>{{ welcomeInitials }}</ng-template>
+          </span>
+          <span class="step-cover__name">
+            <span class="step-cover__nm">{{ welcomeDisplayName }}</span>
+            <svg class="step-cover__verified" viewBox="0 0 24 24" fill="#2378E8" aria-hidden="true"><path d="M12 1.6l2.6 2 3.2-.3 1 3.1 2.7 1.8-1.2 3 1.2 3-2.7 1.8-1 3.1-3.2-.3-2.6 2-2.6-2-3.2.3-1-3.1L3.5 15l1.2-3-1.2-3 2.7-1.8 1-3.1 3.2.3z" /><path d="M8.4 12.2l2.4 2.4 4.5-4.9" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" /></svg>
+          </span>
+          <span class="step-cover__geo" *ngIf="welcomeCountryName">{{ welcomeCountryName }}</span>
+          <span class="step-cover__reqwrap">
+            <span class="step-cover__req">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7m-10 0h14a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1Zm0 4h14" /></svg>
+              {{ lang === 'ar' ? 'اطلب خدمة' : 'Request Service' }}
+            </span>
+          </span>
+        </div>
+      </div>
+      <h2 class="step-cover__title">{{ lang === 'ar' ? 'استقبل طلبات العملاء' : "Recieve Client's Requests" }}</h2>
+      <p class="step-cover__lede">{{ lang === 'ar' ? 'فعّل طلبات الخدمة ليظهر زر «اطلب خدمة» في ملفك العام.' : 'Switch on service requests and a Request Service button appears on your public profile.' }}</p>
+      <ul class="step-cover__list">
+        <li><span class="step-cover__tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 7" /></svg></span><span>{{ lang === 'ar' ? 'حدّد الخدمات التي تقدّمها.' : 'Define the services you provide.' }}</span></li>
+        <li><span class="step-cover__tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 7" /></svg></span><span>{{ lang === 'ar' ? 'إعدادات تتعلق بطبيعة الخدمات التي تقدّمها.' : 'Settings related to the nature of the services you provide.' }}</span></li>
+        <li><span class="step-cover__tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 7" /></svg></span><span>{{ lang === 'ar' ? 'سيتم ترشيحك كمرشّح لطلبات خدمات العملاء.' : "You'll be suggested as a candidate for clients' service requests." }}</span></li>
+      </ul>
+      <button type="button" class="step-cover__cta" (click)="openStepForm()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7m-10 0h14a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1Zm0 4h14" /></svg>
+        {{ lang === 'ar' ? 'إعداد خدماتي' : 'Set Up My Services' }}
+      </button>
+      <button type="button" class="step-cover__skip" (click)="skipProjectSettings()">{{ lang === 'ar' ? 'تخطي الآن' : 'Skip for now' }}</button>
+    </div>
+  </div>
+
+  <section *ngIf="onboardingStage === 'project' && stepPhase === 'form'" class="onboarding-stage-card onboarding-stage-card--wide">
     <header class="onboarding-stage-card__header">
       <span class="onboarding-stage-card__icon" aria-hidden="true">
         <i class="ki-duotone ki-briefcase"><span class="path1"></span><span class="path2"></span></i>
@@ -490,7 +717,7 @@
       </p>
     </div>
     <div class="onboarding-complete__action">
-      <button class="btn btn-lg btn-primary" routerLink="/app/add-knowledge/stepper">
+      <button class="btn btn-lg btn-primary" (click)="skipOnboardingIntro()">
         <span class="indicator-label">{{ 'CONGRATS_CARD.BUTTON' | translate }}</span>
       </button>
     </div>

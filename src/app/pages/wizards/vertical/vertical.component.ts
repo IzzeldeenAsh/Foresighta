@@ -5,7 +5,7 @@ import { ICreateAccount, inits } from "../create-account.helper";
 import Swal from "sweetalert2";
 import { InsighterRegistraionService } from "src/app/_fake/services/insighter-registraion/insighter-registraion.service";
 import { Message } from "primeng/api";
-import { Router } from "@angular/router";
+import { ActivatedRoute, Router } from "@angular/router";
 import { BaseComponent } from "src/app/modules/base.component";
 import { TranslationService } from "src/app/modules/i18n";
 import { AuthService } from "src/app/modules/auth";
@@ -18,8 +18,10 @@ import { Step3Component } from "../steps/step3/step3.component";
 import { Step5Component } from "../steps/step5/step5.component";
 import { ConsultingScheduleComponent } from "src/app/pages/insighter-dashboard/insighter-dashboard/account-settings/consulting-schedule.component";
 import { ProjectSettingsComponent } from "src/app/pages/insighter-dashboard/insighter-dashboard/account-settings/project-settings/project-settings.component";
+import { InsighterOnboardingPromptsService } from "src/app/_fake/services/insighter-onboarding/insighter-onboarding-prompts.service";
 import { CountriesService, Country } from "src/app/_fake/services/countries/countries.service";
 import { UpdateProfileService } from "src/app/_fake/services/profile/profile.service";
+import { environment } from "src/environments/environment";
 
 @Component({
   selector: "app-vertical",
@@ -39,9 +41,19 @@ export class VerticalComponent extends BaseComponent implements OnInit {
   onPendingMessage: boolean = false;
 
   // ===== Post-signup onboarding (shown after becoming an Insighter) =====
-  // Stages: 'whatsapp' -> 'meeting' -> 'project' -> 'done'.
+  // Stages: 'intro' -> 'whatsapp' -> 'meeting' -> 'project' -> 'done'.
+  // 'intro' is the welcome modal introducing the setup steps that follow.
   // The 'whatsapp' stage is skipped automatically when the profile already has a WhatsApp number.
-  onboardingStage: "whatsapp" | "meeting" | "project" | "done" = "whatsapp";
+  private _onboardingStage: "intro" | "whatsapp" | "meeting" | "project" | "done" = "intro";
+  /** Each step opens on its cover modal; its CTA reveals the embedded form. */
+  stepPhase: "cover" | "form" = "cover";
+  get onboardingStage(): "intro" | "whatsapp" | "meeting" | "project" | "done" {
+    return this._onboardingStage;
+  }
+  set onboardingStage(value: "intro" | "whatsapp" | "meeting" | "project" | "done") {
+    if (value !== this._onboardingStage) this.stepPhase = "cover";
+    this._onboardingStage = value;
+  }
   onboardingReady = false;
   onboardingProfile: any = null;
   hasWhatsApp = false;
@@ -78,6 +90,8 @@ export class VerticalComponent extends BaseComponent implements OnInit {
     private fb: FormBuilder,
     private countriesService: CountriesService,
     private updateProfileService: UpdateProfileService,
+    private activatedRoute: ActivatedRoute,
+    private insighterOnboardingPromptsService: InsighterOnboardingPromptsService,
   ) {
     super(injector);
     this.isLoadingSubmit$ = this.insighterRegistraionService.isLoading$;
@@ -94,10 +108,47 @@ export class VerticalComponent extends BaseComponent implements OnInit {
     this.translateService.onLanguageChange().subscribe((lang) => {
       this.lang = lang;
     });
+    // On the preview route, hide the registration wizard right away so only the
+    // onboarding UI renders (the spinner shows until the profile resolves).
+    if (this.previewStage) {
+      this.onSuccessMessage = true;
+    }
     this.checkUserRoleAndVerificaiton();
     this.commonService.companySectionSelected$.subscribe(selected => {
       this.companySelected = selected;
     });
+  }
+
+  /**
+   * Design/QA preview of the post-signup onboarding (welcome modal + setup steps)
+   * without going through the registration wizard.
+   * Route: /app/onboarding-preview (see pages/routing.ts)
+   * Query params: stage (default 'intro'), whatsapp=1 to force the "already has WhatsApp" variant.
+   */
+  private get previewStage(): VerticalComponent["onboardingStage"] | null {
+    // The flag lives on the parent (lazy) route, so walk up the chain for it.
+    let route: ActivatedRoute | null = this.activatedRoute;
+    let isPreview = false;
+    while (route && !isPreview) {
+      isPreview = !!route.snapshot.data?.["onboardingPreview"];
+      route = route.parent;
+    }
+    if (!isPreview) return null;
+    const stage = this.activatedRoute.snapshot.queryParamMap.get("stage");
+    const allowed = ["intro", "whatsapp", "meeting", "project"];
+    return (allowed.includes(stage || "") ? stage : "intro") as VerticalComponent["onboardingStage"];
+  }
+
+  private startOnboardingPreview(profile: any): void {
+    const stage = this.previewStage;
+    if (!stage) return;
+    this.onSuccessMessage = true;
+    this.startOnboarding(profile);
+    if (this.activatedRoute.snapshot.queryParamMap.get("whatsapp") === "1") {
+      this.hasWhatsApp = true;
+      this.includeWhatsAppOnboardingStep = false;
+    }
+    this.onboardingStage = stage;
   }
 
   checkUserRoleAndVerificaiton() {
@@ -124,6 +175,7 @@ export class VerticalComponent extends BaseComponent implements OnInit {
           updatedAccount.phoneCompanyNumber = profile.phone;
         }
         this.account$.next(updatedAccount);
+        this.startOnboardingPreview(profile);
       },
       error: (error) => {
         this.messages.push({
@@ -131,6 +183,8 @@ export class VerticalComponent extends BaseComponent implements OnInit {
           summary: "",
           detail: "Error fetchingUsers",
         });
+        // Preview route should still render even if the profile call fails.
+        this.startOnboardingPreview(null);
       },
     });
     this.unsubscribe.push(authSub);
@@ -529,9 +583,47 @@ export class VerticalComponent extends BaseComponent implements OnInit {
     });
     this.unsubscribe.push(countriesSub);
 
-    // Start at WhatsApp when missing, otherwise jump straight to meeting settings.
-    this.onboardingStage = this.hasWhatsApp ? "meeting" : "whatsapp";
+    // Open on the welcome modal; it hands over to the first setup step.
+    this.onboardingStage = "intro";
     this.onboardingReady = true;
+  }
+
+  /** Leave the welcome modal and enter the first setup step. */
+  startOnboardingSteps(): void {
+    this.onboardingStage = this.hasWhatsApp ? "meeting" : "whatsapp";
+  }
+
+  /** Skip the whole post-signup setup and go straight to the feed. */
+  skipOnboardingIntro(): void {
+    window.location.href = `${environment.mainAppUrl}/${this.lang}`;
+  }
+
+  /** From a step's cover modal, reveal that step's embedded form. */
+  openStepForm(): void {
+    this.stepPhase = "form";
+  }
+
+  // ---- Welcome modal profile preview (mirrors the public profile card) ----
+
+  get welcomeDisplayName(): string {
+    const profile = this.onboardingProfile || this.user;
+    if (!profile) return "";
+    const full = `${profile.first_name || ""} ${profile.last_name || ""}`.trim();
+    return full || profile.name || "";
+  }
+
+  get welcomeInitials(): string {
+    const profile = this.onboardingProfile || this.user;
+    if (!profile) return "";
+    const initials = `${profile.first_name?.[0] ?? ""}${profile.last_name?.[0] ?? ""}`.trim();
+    return (initials || profile.name?.[0] || "I").toUpperCase();
+  }
+
+  get welcomeCountryName(): string {
+    const country = (this.onboardingProfile || this.user)?.country;
+    if (!country) return "";
+    if (typeof country === "string") return country;
+    return country.names?.[this.lang] || country.name || "";
   }
 
   // ---- WhatsApp step ----
@@ -656,6 +748,8 @@ export class VerticalComponent extends BaseComponent implements OnInit {
   }
 
   skipMeetingSettings(): void {
+    // Record the skip so the dashboard's onboarding cover doesn't re-ask straight away.
+    this.recordOnboardingSkip("session_availability");
     this.onboardingStage = "project";
   }
 
@@ -684,7 +778,17 @@ export class VerticalComponent extends BaseComponent implements OnInit {
   }
 
   skipProjectSettings(): void {
+    this.recordOnboardingSkip("project_settings");
     this.onboardingStage = "done";
+  }
+
+  /** Fire-and-forget: the wizard must not stall on the prompts endpoint. */
+  private recordOnboardingSkip(
+    promptKey: "session_availability" | "project_settings"
+  ): void {
+    this.unsubscribe.push(
+      this.insighterOnboardingPromptsService.skip(promptKey).subscribe()
+    );
   }
 
   private handleServerErrors(error: any) {

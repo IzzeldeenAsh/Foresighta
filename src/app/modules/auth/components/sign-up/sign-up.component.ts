@@ -187,7 +187,15 @@ export class SignUpComponent extends BaseComponent implements OnInit {
   }
 
   // Client agreement dialog methods
-  openAgreementDialog(): void {
+  // `event` is the p-checkbox onChange payload when triggered by clicking the
+  // checkbox itself. Only open the dialog when the user is checking it (it was
+  // unchecked); unchecking should not re-open the terms.
+  openAgreementDialog(event?: any): void {
+    if (event && event.originalEvent && !event.checked) {
+      this.registrationForm.get('client_agreement')?.setValue(false);
+      return;
+    }
+
     this.showAgreementDialog = true;
   }
 

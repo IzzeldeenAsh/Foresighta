@@ -1,0 +1,7 @@
+<svg aria-hidden="true" class="dashboard-nav-icon-sprite">
+  <defs>
+    <symbol *ngFor="let icon of icons" [attr.id]="'feed-icon-' + icon.name" viewBox="0 0 24 24">
+      <path *ngFor="let d of icon.paths" [attr.d]="d"></path>
+    </symbol>
+  </defs>
+</svg>

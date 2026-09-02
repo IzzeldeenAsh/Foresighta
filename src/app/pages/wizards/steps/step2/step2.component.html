@@ -29,30 +29,40 @@
               [ngClass]="{ 'is-invalid': isControlInvalid('profilePhoto') }"
               data-kt-image-input="true"
             >
+              <!--begin::Image preview / camera placeholder (click anywhere to upload)-->
               <div
-                class="image-input-wrapper shadow-sm w-125px h-125px rounded-circle"
+                class="image-input-wrapper profile-photo-wrapper shadow-sm w-125px h-125px rounded-circle d-flex align-items-center justify-content-center"
+                [class.profile-photo-wrapper--empty]="!profilePhotoPreview"
                 [style.backgroundImage]="getProfilePhotoBackgroundImage()"
-              ></div>
+                (click)="profilePhotoFileInput.click()"
+                role="button"
+                tabindex="0"
+                (keyup.enter)="profilePhotoFileInput.click()"
+                data-bs-toggle="tooltip"
+                title="{{ 'INSIGHTER_WIZARD.CHANGE_PHOTO' | translate }}"
+              >
+                <i *ngIf="!profilePhotoPreview" class="fas fa-camera profile-photo-placeholder-icon"></i>
+              </div>
+              <!--end::Image preview / camera placeholder-->
 
+              <!--begin::Edit button (shown once a photo is set, re-opens the picker)-->
               <label
+                *ngIf="profilePhotoPreview"
                 class="btn btn-icon btn-circle btn-color-muted btn-active-color-primary w-25px h-25px bg-body shadow"
                 data-kt-image-input-action="change"
                 data-bs-toggle="tooltip"
+                (click)="profilePhotoFileInput.click()"
                 title="{{ 'INSIGHTER_WIZARD.CHANGE_PHOTO' | translate }}"
               >
                 <i class="ki-duotone ki-pencil fs-6"
                   ><span class="path1"></span><span class="path2"></span
                 ></i>
-                <input
-                  type="file"
-                  name="profile_photo"
-                  accept=".png, .jpg, .jpeg"
-                  (change)="onProfilePhotoSelected($event)"
-                />
-                <input type="hidden" name="profile_photo_remove" />
               </label>
+              <!--end::Edit button-->
 
+              <!--begin::Remove button-->
               <span
+                *ngIf="profilePhotoPreview"
                 class="btn btn-icon btn-circle btn-color-muted btn-active-color-primary w-25px h-25px bg-body shadow"
                 data-kt-image-input-action="remove"
                 data-bs-toggle="tooltip"
@@ -61,6 +71,19 @@
               >
                 <i class="ki-outline ki-cross fs-3"></i>
               </span>
+              <!--end::Remove button-->
+
+              <!--begin::Hidden file input, shared by the placeholder and the edit button-->
+              <input
+                #profilePhotoFileInput
+                type="file"
+                name="profile_photo"
+                accept=".png, .jpg, .jpeg"
+                class="d-none"
+                (change)="onProfilePhotoSelected($event)"
+              />
+              <input type="hidden" name="profile_photo_remove" />
+              <!--end::Hidden file input-->
             </div>
             <div
               *ngIf="

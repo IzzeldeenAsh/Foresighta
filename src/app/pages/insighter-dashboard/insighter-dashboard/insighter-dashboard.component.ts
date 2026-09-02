@@ -5,6 +5,7 @@ import { MenuItem } from 'primeng/api';
 import { ProfileService } from 'src/app/_fake/services/get-profile/get-profile.service';
 import { Observable, Subscription } from 'rxjs';
 import { TranslationService } from 'src/app/modules/i18n';
+import { ProjectSettingsService } from './account-settings/project-settings/project-settings.service';
 import { environment } from 'src/environments/environment';
 
 @Component({
@@ -28,7 +29,11 @@ export class InsighterDashboardComponent implements OnInit, OnDestroy {
   isMobileView: boolean = false;
   isInsighter$: Observable<boolean>;
   isCompany$: Observable<boolean>;
+  needsMeetingSetup = false;
+  needsProjectSetup = false;
   private subscriptions: Subscription[] = [];
+  private projectSetupChecked = false;
+  private lastProfile: any = null;
   isCompanyInsighter$: Observable<boolean>;
 
   get feedUrl(): string {
@@ -47,7 +52,8 @@ export class InsighterDashboardComponent implements OnInit, OnDestroy {
   constructor(
     private router: Router,
     private profileService: ProfileService,
-    private translationService: TranslationService
+    private translationService: TranslationService,
+    private projectSettingsService: ProjectSettingsService
   ) {
     this.hasCompanyRole$ = this.profileService.hasRole(['company']);
     // Auto-collapse on smaller screens initially
@@ -76,6 +82,25 @@ export class InsighterDashboardComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.handleLanguage();
+    const profileSub = this.profileService.profile$.subscribe((profile) => {
+      if (!profile) {
+        return;
+      }
+
+      this.needsMeetingSetup = profile.has_meet_service !== true;
+      this.lastProfile = profile;
+      this.refreshProjectSetupBadge(profile);
+    });
+    this.subscriptions.push(profileSub);
+
+    // Re-read the badge state after the user activates/deactivates or syncs
+    // their project account, so it clears without a full reload.
+    const projectAccountSub = this.projectSettingsService.projectAccountChanged$.subscribe(() => {
+      this.projectSetupChecked = false;
+      this.refreshProjectSetupBadge(this.lastProfile);
+    });
+    this.subscriptions.push(projectAccountSub);
+
     // Initialize menu items after checking roles
     const hasCompanyRoleSub = this.hasCompanyRole$.pipe(take(1)).subscribe(hasCompanyRole => {
       this.initializeMenuItems(hasCompanyRole);
@@ -314,5 +339,39 @@ export class InsighterDashboardComponent implements OnInit, OnDestroy {
   navigateToSettings(): void {
     this.router.navigate(['/app/insighter-dashboard/account-settings/general-settings']);
     this.closeMobileSidebar();
+  }
+
+  /**
+   * `/account/profile` does not return `receive_project_services_active`, so the
+   * badge has to read the real state from the project account settings endpoint.
+   * Only providers can call it (role:insighter|company|company-insighter).
+   */
+  private refreshProjectSetupBadge(profile: any) {
+    const roles: string[] = profile?.roles ?? [];
+    const isProvider = ['insighter', 'company', 'company-insighter'].some((role) =>
+      roles.includes(role)
+    );
+
+    if (!isProvider) {
+      this.needsProjectSetup = false;
+      return;
+    }
+
+    if (this.projectSetupChecked) {
+      return;
+    }
+    this.projectSetupChecked = true;
+
+    const sub = this.projectSettingsService.getProjectAccountProperties().subscribe({
+      next: (properties: any) => {
+        const status = properties?.receive_project_services ?? properties?.status;
+        this.needsProjectSetup = status !== 'active';
+      },
+      error: () => {
+        // Don't nag the user because a request failed.
+        this.needsProjectSetup = false;
+      },
+    });
+    this.subscriptions.push(sub);
   }
 }

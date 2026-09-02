@@ -343,10 +343,11 @@
               <!-- Client Agreement Checkbox -->
               <div class="fv-row mb-8">
                 <div class="d-flex align-items-center">
-                  <p-checkbox 
-                    [binary]="true" 
-                    inputId="client_agreement" 
+                  <p-checkbox
+                    [binary]="true"
+                    inputId="client_agreement"
                     formControlName="client_agreement"
+                    (onChange)="openAgreementDialog($event)"
                   ></p-checkbox>
                   <label for="client_agreement" class="ms-2 fs-6 text-gray-800 cursor-pointer" (click)="openAgreementDialog()">
                     {{ 'AUTH.REGISTRATION.TERMS_AGREEMENT' | translate }}
@@ -504,7 +505,7 @@
 <p-dialog 
   [(visible)]="showAgreementDialog" 
   [modal]="true" 
-  [style]="{width: '550px'}" 
+  [style]="{width: '850px', maxWidth: '95vw'}"
   [closable]="true"
   [closeOnEscape]="true"
   [dismissableMask]="true"

@@ -1,15 +1,6 @@
 <!-- Page Header -->
 <app-page-header [titleEn]="'My Downloads'" [titleAr]="'تحميلاتي'" [subtitle]="getDownloadsSubtitle()" [lang]="lang">
-  <div slot="icon">
-    <svg class="fs-2x text-info" width="1em" height="1em" viewBox="0 0 16 16" fill="none"
-      xmlns="http://www.w3.org/2000/svg">
-      <path
-        d="M4.25984 12C3.39528 12 2.56612 11.673 1.95479 11.091C1.34345 10.509 1 9.71964 1 8.89655C1 8.07347 1.34345 7.28409 1.95479 6.70208C2.56612 6.12007 3.39528 5.7931 4.25984 5.7931C4.46403 4.88771 5.06138 4.09206 5.92047 3.58118C6.34585 3.32822 6.82268 3.15279 7.32375 3.06491C7.82481 2.97702 8.3403 2.9784 8.84077 3.06897C9.34124 3.15953 9.8169 3.33751 10.2406 3.59274C10.6643 3.84798 11.0277 4.17546 11.3101 4.5565C11.5925 4.93754 11.7883 5.36468 11.8864 5.81351C11.9845 6.26235 11.983 6.72411 11.8819 7.17241H12.5748C13.218 7.17241 13.8349 7.42672 14.2897 7.8794C14.7445 8.33207 15 8.94603 15 9.58621C15 10.2264 14.7445 10.8403 14.2897 11.293C13.8349 11.7457 13.218 12 12.5748 12H11.8819"
-        fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" />
-      <path d="M10 13L8 15L6 13" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" />
-      <path d="M8 15L8 9" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" />
-    </svg>
-  </div>
+  <app-dashboard-nav-icon slot="icon" name="download"></app-dashboard-nav-icon>
 </app-page-header>
 
 @if (loading()) {

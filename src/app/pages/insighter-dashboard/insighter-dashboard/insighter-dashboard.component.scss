@@ -84,6 +84,20 @@
     }
 }
 
+.setup-now-badge {
+  display: inline-flex;
+  align-items: center;
+  margin-inline-start: 0.5rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  background: #fff0d5;
+  color: #a85a00;
+  font-size: 0.625rem;
+  font-weight: 700;
+  line-height: 1.35;
+  white-space: nowrap;
+}
+
 // Side Navigation Styles
 .side-nav-container {
     width: 280px;

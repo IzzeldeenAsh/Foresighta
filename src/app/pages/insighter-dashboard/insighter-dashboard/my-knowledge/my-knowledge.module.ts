@@ -4,6 +4,7 @@ import { RouterModule, Routes } from '@angular/router';
 import { MyKnowledgeComponent } from './my-knowledge.component';
 import { TranslationModule } from 'src/app/modules/i18n';
 import { KnowledgeHeaderComponent } from './components/knowledge-header/knowledge-header.component';
+import { DashboardNavIconComponent } from 'src/app/reusable-components/dashboard-nav-icon/dashboard-nav-icon.component';
 import { GeneralComponent } from './components/general/general.component';
 import { ScheduledComponent } from './components/scheduled/scheduled.component';
 import { PostedComponent } from './components/posted/posted.component';
@@ -81,6 +82,7 @@ const routes: Routes = [
     TooltipModule,
     TranslationModule,
     KnowledgeFilterChipsComponent,
+    DashboardNavIconComponent,
     DropdownModule,
     DialogModule,
     InlineSVGModule,

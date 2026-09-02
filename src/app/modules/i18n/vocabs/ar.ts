@@ -324,7 +324,8 @@ export const locale = {
       ADD_KNOWLEDGE: 'إضافة معرفة',
       DATA: 'البيانات',
       MANUAL: 'الدليل',
-      COURSES: 'الدورات'
+      COURSES: 'الدورات',
+      FEED: 'الموجز'
     },
     HOME: {
       INSIGHTER_DASHBOARD: 'لوحة المعلومات',
@@ -701,14 +702,15 @@ export const locale = {
       BILLING_TOOLTIP: "يتم إصدار الفواتير بناءً على نوع الحساب الذي اخترته",
       MORE_INFO: "إذا كنت بحاجة إلى مزيد من المعلومات، يرجى زيارة",
       HELP_PAGE: "صفحة المساعدة",
-      PERSONAL_ACCOUNT: "حساب شخصي",
+      PERSONAL_ACCOUNT: "حساب فردي",
       PERSONAL_ACCOUNT_DESC: "سجل كـ إنسايتر (Insighter) وابدأ بنشر معارفك.",
       MORE: 'المزيد...',
       REPORTS_CHAPTERS_DETAILS: "حمل المستند كملف واحد، أو قم بتقسيمه إلى عدة ملفات منفصلة",
-      CORPORATE_ACCOUNT: "حساب شركة",
+      CORPORATE_ACCOUNT: "حساب مؤسسة",
       I_ACCEPT_THE: "أوافق على",
       COMPANY_TERMS: "شروط الشركة",
       TERMS_AGREEMENT: "أوافق على كل تتضمنه الشروط والأحكام وسياسة الخصوصية واتفاقية ترخيص البيانات و سياسة ملفات تعريف الارتباط",
+      AGREEMENT_AGREE: "موافق",
       CORPORATE_ACCOUNT_DESC: "ابدأ بإدارة فريقك من مزودي المعرفة (Insighters).",
       INSIGHTER_INFO: "معلومات الحساب",
       CONSULTING_FIELDS: 'الخبرات و التخصصات',

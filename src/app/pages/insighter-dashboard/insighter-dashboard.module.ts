@@ -27,6 +27,7 @@ import { SidebarModule } from 'primeng/sidebar';
 import { ButtonModule } from 'primeng/button';
 import { TooltipModule } from 'primeng/tooltip';
 import { DashboardStatisticsComponent } from 'src/app/reusable-components/dashboard-statistics/dashboard-statistics.component';
+import { DashboardNavIconSpriteComponent } from 'src/app/reusable-components/dashboard-nav-icon/dashboard-nav-icon-sprite.component';
 
 @NgModule({
   declarations: [
@@ -54,6 +55,7 @@ import { DashboardStatisticsComponent } from 'src/app/reusable-components/dashbo
     AppFooterComponent,
     CountUpDirective,
     DashboardStatisticsComponent,
+    DashboardNavIconSpriteComponent,
     InsighterDashboardRoutingModule,
     SidebarModule,
     ButtonModule,

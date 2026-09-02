@@ -5,6 +5,7 @@ import { TooltipModule } from 'primeng/tooltip';
 import { PageHeaderComponent } from './page-header/page-header.component';
 import { ProjectDiscussionComponent } from './project-discussion/project-discussion.component';
 import { ProjectTimelineComponent } from './project-timeline/project-timeline.component';
+import { DashboardNavIconComponent } from 'src/app/reusable-components/dashboard-nav-icon/dashboard-nav-icon.component';
 
 @NgModule({
   declarations: [
@@ -15,12 +16,14 @@ import { ProjectTimelineComponent } from './project-timeline/project-timeline.co
   imports: [
     CommonModule,
     FormsModule,
-    TooltipModule
+    TooltipModule,
+    DashboardNavIconComponent
   ],
   exports: [
     PageHeaderComponent,
     ProjectDiscussionComponent,
-    ProjectTimelineComponent
+    ProjectTimelineComponent,
+    DashboardNavIconComponent
   ]
 })
 export class InsighterDashboardSharedModule { }

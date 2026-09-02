@@ -90,6 +90,11 @@ export class SalesComponent extends BaseComponent implements OnInit, OnDestroy, 
   showOrderDetailsDialog = false;
   showMeetingOrderDetailsDialog = false;
   selectedOrderForDialog: Order | null = null;
+  /**
+   * Order UUID from `?order=` — a project-sale notification deep-links here.
+   * Held until the sold-projects page has loaded, then the details dialog opens.
+   */
+  private pendingOrderUuid: string | null = null;
   selectedMeetingOrderForDialog: Order | null = null;
 
 
@@ -388,7 +393,51 @@ export class SalesComponent extends BaseComponent implements OnInit, OnDestroy, 
     this.showOrderDetailsDialog = visible;
     if (!visible) {
       this.selectedOrderForDialog = null;
+      this.clearOrderQueryParam();
     }
+  }
+
+  /**
+   * Opens the details dialog for the order named by `?order=`. The order is
+   * fetched on its own rather than looked up in the loaded page, so the link
+   * works for orders sitting on any page of the list. On failure the user just
+   * stays on the sold-projects tab.
+   */
+  private openPendingOrderDialog(): void {
+    const orderRef = this.pendingOrderUuid;
+    this.pendingOrderUuid = null;
+
+    if (!orderRef) {
+      return;
+    }
+
+    const role = this.isCompany ? 'company' : 'insighter';
+    this.myOrdersService.getSalesProjectOrder(orderRef, role)
+      .pipe(takeUntil(this.unsubscribe$))
+      .subscribe({
+        next: (order) => {
+          if (!order) return;
+          this.selectedOrderForDialog = order;
+          this.showOrderDetailsDialog = true;
+        },
+        error: () => {
+          // Deep link to an order this user can no longer see — the tab itself
+          // is still a useful landing place, so stay quiet.
+        },
+      });
+  }
+
+  private clearOrderQueryParam(): void {
+    if (!this.route.snapshot.queryParamMap.get('order')) {
+      return;
+    }
+
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { order: null },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
   }
 
   onMeetingOrderDetailsDialogVisibleChange(visible: boolean): void {
@@ -1177,6 +1226,12 @@ export class SalesComponent extends BaseComponent implements OnInit, OnDestroy, 
 
   private handleTabFromUrl(): void {
     this.route.queryParams.subscribe(params => {
+      const orderParam = params['order'];
+      if (orderParam) {
+        this.pendingOrderUuid = String(orderParam);
+        this.openPendingOrderDialog();
+      }
+
       const tabParam = params['tab'];
       if (tabParam) {
         const tabMap: { [key: string]: 'analytics' | 'sold-details' | 'sold-meetings' | 'sold-projects' } = {
