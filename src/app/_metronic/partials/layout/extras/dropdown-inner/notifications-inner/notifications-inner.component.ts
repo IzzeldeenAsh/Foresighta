@@ -33,6 +33,10 @@ import { ProfileService } from 'src/app/_fake/services/get-profile/get-profile.s
   `]
 })
 export class NotificationsInnerComponent extends BaseComponent implements OnInit {
+  /** A trailing URL segment that is an id (uuid or numeric), not a page name. */
+  private static readonly ID_PATTERN =
+    /^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|\d+)$/i;
+
   @Input() notifications: Notification[] = [];
   @Input() parent: string = '';
   @Output() notificationClicked = new EventEmitter<string>();
@@ -465,16 +469,14 @@ export class NotificationsInnerComponent extends BaseComponent implements OnInit
 
     // 1) Precise routing by Pusher event name (realtime).
     switch (n.event_name) {
-      // Insighter receives, param = proposal-match uuid. The unified details
-      // route now needs the project uuid, which the payload doesn't carry,
-      // so land on the unified projects list.
+      // Insighter receives, param = project uuid.
       case 'project.match.invited':
-        this.navigateTo(offersBase);
+        this.navigateTo(param ? `${offersBase}/details/${param}` : offersBase);
         return true;
 
-      // Client receives, param = proposal.uuid (no client proposal-detail route -> list)
+      // Client receives, param = project uuid.
       case 'project.proposal.offer':
-        this.navigateTo(clientBase);
+        this.navigateTo(param ? `${clientBase}/${param}` : clientBase);
         return true;
 
       // Insighter receives, param = project.uuid
@@ -492,14 +494,16 @@ export class NotificationsInnerComponent extends BaseComponent implements OnInit
         this.navigateTo(param ? `${clientBase}/${param}` : clientBase);
         return true;
 
-      // Insighter receives, param = orderable id (int) -> list page
+      // Insighter receives, param = project id/uuid (the API route binding takes either).
       case 'project.service.started':
-        this.navigateTo(insighterBase);
+        this.navigateTo(param ? `${insighterBase}/details/${param}` : insighterBase);
         return true;
 
-      // param = order id (int) -> handled by the generic `type === 'order'` branch
+      // Project sale: sold-projects tab (tab=4), deep-linked to the order dialog.
+      // param is an *order* reference, not a project one.
       case 'order.project':
-        return false;
+        this.navigateTo(this.projectSaleUrl(param));
+        return true;
 
       // Sent to whoever did NOT upload the file -> decide by role
       case 'project.file.uploaded':
@@ -512,27 +516,30 @@ export class NotificationsInnerComponent extends BaseComponent implements OnInit
         this.navigateToDiscussion(n);
         return true;
 
-      // The backend sends an offer UUID, while the detail route requires the
-      // proposal-match UUID. Use the offers list until the payload exposes it.
+      // Insighter receives, param = project uuid.
       case 'project.insighter.offer.technical-decision':
       case 'project.insighter.offer.not-selected':
-        this.navigateTo(offersBase);
+        this.navigateTo(param ? `${offersBase}/details/${param}` : offersBase);
         return true;
 
       // Cancellation can target either an invited proposal or an active project.
-      // The backend-provided URL is the authoritative destination.
+      // The backend URL names the right page; its trailing id may still be a
+      // proposal-match uuid, so `param` supplies the id.
       case 'project.insighter.cancelled':
-        if (this.navigateToBackendUrl(n.url)) {
+        if (this.navigateToBackendUrl(n.url, param)) {
           return true;
         }
-        this.navigateTo(insighterBase);
+        this.navigateTo(param ? `${insighterBase}/details/${param}` : insighterBase);
         return true;
     }
 
     // 2) REST fallback (no event_name): distinguish by sub_type; use role where ambiguous.
     switch (n.sub_type) {
-      case 'project_proposal':                    // match.invited (insighter), match uuid -> list
-        this.navigateTo(offersBase);
+      case 'project_proposal':                    // insighter, project uuid
+        this.navigateTo(param ? `${offersBase}/details/${param}` : offersBase);
+        return true;
+      case 'project_proposal_offer':              // client, project uuid
+        this.navigateTo(param ? `${clientBase}/${param}` : clientBase);
         return true;
       case 'project_review_submission':           // client, project.uuid
         this.navigateTo(param ? `${clientBase}/${param}` : clientBase);
@@ -542,16 +549,16 @@ export class NotificationsInnerComponent extends BaseComponent implements OnInit
         return true;
       case 'project_offer_technical_decision':
       case 'project_offer_not_selected':
-        this.navigateTo(offersBase);
+        this.navigateTo(param ? `${offersBase}/details/${param}` : offersBase);
         return true;
       case 'project_cancelled':
-        if (this.navigateToBackendUrl(n.url)) {
+        if (this.navigateToBackendUrl(n.url, param)) {
           return true;
         }
-        this.navigateTo(insighterBase);
+        this.navigateTo(param ? `${insighterBase}/details/${param}` : insighterBase);
         return true;
-      case 'project_service':                     // service.started (insighter), orderable id
-        this.navigateTo(insighterBase);
+      case 'project_service':                     // insighter, project id/uuid
+        this.navigateTo(param ? `${insighterBase}/details/${param}` : insighterBase);
         return true;
       case 'project_closed':                      // client OR insighter, project.uuid -> role
       case 'project':                             // contract: client OR insighter, project.uuid -> role
@@ -566,7 +573,40 @@ export class NotificationsInnerComponent extends BaseComponent implements OnInit
     return false;
   }
 
-  private navigateToBackendUrl(rawUrl?: string): boolean {
+  // Project sale -> sold-projects tab (tab=4; tab=2 is knowledge sales),
+  // deep-linked to that order's details dialog.
+  private projectSaleUrl(param: any): string {
+    const base = '/app/insighter-dashboard/sales?tab=4';
+    return this.hasParam(param) ? `${base}&order=${encodeURIComponent(String(param))}` : base;
+  }
+
+  private hasParam(param: any): boolean {
+    return param !== undefined && param !== null && param !== '';
+  }
+
+  /**
+   * The backend's `url` names the right *page* (proposal vs project stage,
+   * client vs insighter side) but its trailing id can be a proposal-match uuid,
+   * while these pages resolve their id against Project. `param` carries the
+   * project uuid, so keep the path and swap the trailing id.
+   */
+  private pathWithParamId(path: string, param: any): string {
+    if (!this.hasParam(param)) {
+      return path;
+    }
+
+    const segments = path.split('/').filter(Boolean);
+    const last = segments[segments.length - 1];
+    // Only drop a trailing *id*; a path ending on the page itself keeps it all.
+    if (last && (NotificationsInnerComponent.ID_PATTERN.test(last))) {
+      segments.pop();
+    }
+    segments.push(String(param));
+
+    return `/${segments.join('/')}`;
+  }
+
+  private navigateToBackendUrl(rawUrl?: string, param?: any): boolean {
     const raw = (rawUrl ?? '').trim();
     if (!raw) {
       return false;
@@ -574,9 +614,10 @@ export class NotificationsInnerComponent extends BaseComponent implements OnInit
 
     try {
       const parsed = new URL(raw);
-      this.navigateTo(`${parsed.pathname}${parsed.search}`);
+      this.navigateTo(`${this.pathWithParamId(parsed.pathname, param)}${parsed.search}`);
     } catch {
-      this.navigateTo(raw.startsWith('/') ? raw : `/${raw}`);
+      const path = raw.startsWith('/') ? raw : `/${raw}`;
+      this.navigateTo(this.pathWithParamId(path.split(/[?#]/)[0], param));
     }
 
     return true;
@@ -588,7 +629,7 @@ export class NotificationsInnerComponent extends BaseComponent implements OnInit
   // We don't re-derive the route — we navigate to its path inside the dashboard
   // and always force the discussion tab.
   private navigateToDiscussion(n: Notification): void {
-    const raw = ((n.url ?? n.param) ?? '').toString().trim();
+    const raw = (n.url ?? '').toString().trim();
     if (!raw) { return; }
 
     let path = raw;
@@ -601,9 +642,10 @@ export class NotificationsInnerComponent extends BaseComponent implements OnInit
     }
     if (path && !path.startsWith('/')) { path = `/${path}`; }
 
-    // This is a discussion notification: always land on the discussion tab,
-    // ignoring whatever tab the backend may have baked into the URL.
-    this.navigateTo(`${path}?tab=discussion`);
+    // The URL's trailing id may be a proposal-match uuid; `param` has the
+    // project uuid. Always land on the discussion tab, ignoring whatever tab
+    // the backend may have baked in.
+    this.navigateTo(`${this.pathWithParamId(path, n.param)}?tab=discussion`);
   }
 
   // Resolve client vs insighter destination by the user's role.

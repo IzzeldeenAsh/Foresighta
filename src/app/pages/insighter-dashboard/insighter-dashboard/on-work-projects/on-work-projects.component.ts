@@ -1471,6 +1471,10 @@ export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
       .pipe(takeUntil(this.unsubscribe$))
       .subscribe({
         next: project => {
+          if (this.redirectIfNotOnWorkInsighter(project, projectUuid)) {
+            return;
+          }
+
           this.selectedProject = project;
           this.replaceProjectInList(project);
           this.setEmbeddedContractDetails(project);
@@ -1486,6 +1490,34 @@ export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
         next: reviews => this.reviewSubmissionsSubject.next(reviews),
         error: () => this.reviewSubmissionsSubject.next([]),
       });
+  }
+
+  /**
+   * This page is for projects awarded to the signed-in insighter. The API only
+   * returns `stage` when the project was awarded to the caller, so its absence
+   * means the caller is on the wrong page — a client who owns the project, or
+   * an insighter still at the proposal stage. Landing here anyway leaves the
+   * page half-empty ("Contract unavailable") and 403s on the review-submission
+   * call, so send them to the page that is actually theirs.
+   *
+   * Only guards the standalone details route; the drawer inside the list is
+   * always opened from the insighter's own projects.
+   */
+  private redirectIfNotOnWorkInsighter(project: ProjectOffer, projectUuid: string): boolean {
+    if (!this.isDetailsPage || project?.stage === 'project') {
+      return false;
+    }
+
+    // A non-empty `proposals` array means the caller has an invited proposal on
+    // this project, so the offers page is theirs; otherwise treat them as the
+    // client who created it.
+    const hasInvitedProposal = (project?.proposals?.length ?? 0) > 0;
+    const target = hasInvitedProposal
+      ? ['/app/insighter-dashboard/project-offers/details', projectUuid]
+      : ['/app/insighter-dashboard/projects-created', projectUuid];
+
+    this.router.navigate(target, { replaceUrl: true });
+    return true;
   }
 
   private getProjectDetailsRequest(projectUuid: string): Observable<ProjectOffer> {
