@@ -6,6 +6,7 @@ import { ProfileService } from 'src/app/_fake/services/get-profile/get-profile.s
 import { Observable, Subscription } from 'rxjs';
 import { TranslationService } from 'src/app/modules/i18n';
 import { ProjectSettingsService } from './account-settings/project-settings/project-settings.service';
+import { KnowledgeService } from 'src/app/_fake/services/knowledge/knowledge.service';
 import { environment } from 'src/environments/environment';
 
 @Component({
@@ -31,8 +32,10 @@ export class InsighterDashboardComponent implements OnInit, OnDestroy {
   isCompany$: Observable<boolean>;
   needsMeetingSetup = false;
   needsProjectSetup = false;
+  needsInsightSetup = false;
   private subscriptions: Subscription[] = [];
   private projectSetupChecked = false;
+  private insightSetupChecked = false;
   private lastProfile: any = null;
   isCompanyInsighter$: Observable<boolean>;
 
@@ -53,7 +56,8 @@ export class InsighterDashboardComponent implements OnInit, OnDestroy {
     private router: Router,
     private profileService: ProfileService,
     private translationService: TranslationService,
-    private projectSettingsService: ProjectSettingsService
+    private projectSettingsService: ProjectSettingsService,
+    private knowledgeService: KnowledgeService
   ) {
     this.hasCompanyRole$ = this.profileService.hasRole(['company']);
     // Auto-collapse on smaller screens initially
@@ -90,6 +94,7 @@ export class InsighterDashboardComponent implements OnInit, OnDestroy {
       this.needsMeetingSetup = profile.has_meet_service !== true;
       this.lastProfile = profile;
       this.refreshProjectSetupBadge(profile);
+      this.refreshInsightSetupBadge(profile);
     });
     this.subscriptions.push(profileSub);
 
@@ -100,6 +105,14 @@ export class InsighterDashboardComponent implements OnInit, OnDestroy {
       this.refreshProjectSetupBadge(this.lastProfile);
     });
     this.subscriptions.push(projectAccountSub);
+
+    // Same for the "Add Now" nudge: publishing (or deleting) knowledge should
+    // clear or restore it without a full reload.
+    const knowledgeStatusSub = this.knowledgeService.knowledgeStatusStatisticsChanged$.subscribe(() => {
+      this.insightSetupChecked = false;
+      this.refreshInsightSetupBadge(this.lastProfile);
+    });
+    this.subscriptions.push(knowledgeStatusSub);
 
     // Initialize menu items after checking roles
     const hasCompanyRoleSub = this.hasCompanyRole$.pipe(take(1)).subscribe(hasCompanyRole => {
@@ -370,6 +383,41 @@ export class InsighterDashboardComponent implements OnInit, OnDestroy {
       error: () => {
         // Don't nag the user because a request failed.
         this.needsProjectSetup = false;
+      },
+    });
+    this.subscriptions.push(sub);
+  }
+
+  /**
+   * Nudge providers who have never published an insight. The profile carries no
+   * knowledge counters, so read them from the knowledge status statistics
+   * endpoint - providers only, same role gate as the project badge.
+   */
+  private refreshInsightSetupBadge(profile: any) {
+    const roles: string[] = profile?.roles ?? [];
+    const isProvider = ['insighter', 'company', 'company-insighter'].some((role) =>
+      roles.includes(role)
+    );
+
+    if (!isProvider) {
+      this.needsInsightSetup = false;
+      return;
+    }
+
+    if (this.insightSetupChecked) {
+      return;
+    }
+    this.insightSetupChecked = true;
+
+    const sub = this.knowledgeService.getKnowledgeStatusStatistics().subscribe({
+      next: (response) => {
+        this.needsInsightSetup = !(response?.data ?? []).some(
+          (statistic) => statistic.status === 'published' && Number(statistic.count) > 0
+        );
+      },
+      error: () => {
+        // Don't nag the user because a request failed.
+        this.needsInsightSetup = false;
       },
     });
     this.subscriptions.push(sub);

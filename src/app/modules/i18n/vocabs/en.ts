@@ -279,7 +279,8 @@ export const locale = {
       DATA: 'Data',
       MANUAL: 'Manual',
       COURSES: 'Courses',
-      FEED: 'Feed'
+      FEED: 'Feed',
+      HOME: 'Home'
     },
     HOME: {
       COMPANY_INSIGHTER: 'Company Insighter',

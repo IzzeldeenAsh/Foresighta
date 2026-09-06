@@ -94,6 +94,10 @@ export class UpgradeToCompanyComponent
   showApiErrors: boolean = false;
 
   currentUser: any;
+
+  /** Intro cover explaining company features; opens with the page. */
+  showIntroCover = true;
+
   constructor(
     private fb: FormBuilder,
     private http: HttpClient,

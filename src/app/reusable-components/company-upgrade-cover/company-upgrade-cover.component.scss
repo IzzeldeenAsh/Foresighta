@@ -1,5 +1,6 @@
-/* Cover-modal styles shared with pages/wizards/vertical/vertical.component.scss.
-   Keep the two in sync — they are the same design at the same scale. */
+/* Cover-modal styles shared with reusable-components/insighter-setup-cover and
+   pages/wizards/vertical/vertical.component.scss. Keep them in sync — they are
+   the same design at the same scale. */
 
 @keyframes onboarding-enter {
   from {
@@ -30,10 +31,11 @@
   /* .step-cover__panel below is positioned too, so without this the artwork
      paints over the close button and swallows its clicks. */
   z-index: 2;
-  background: #f1f5f9;
+  background: #ffffffd9;
   border: 0;
   border-radius: 50%;
   color: #6b7885;
+  cursor: pointer;
   display: flex;
   height: 34px;
   inset-inline-end: 18px;
@@ -45,6 +47,13 @@
   &:hover {
     background: #e6ecf3;
     color: #101724;
+  }
+
+  /* No focus ring on the close button — the hover/active fill is the affordance. */
+  &:focus,
+  &:focus-visible {
+    box-shadow: none;
+    outline: none;
   }
 
   svg {
@@ -68,11 +77,11 @@
 
 .step-cover__panel {
   align-items: center;
+  aspect-ratio: 3 / 2;
   background: #f7f9fc;
   border-radius: 19px 19px 0 0;
   display: flex;
   height: auto;
-  aspect-ratio: 4 / 3;
   justify-content: center;
   margin: -24px -28px 0;
   overflow: hidden;
@@ -87,35 +96,15 @@
     linear-gradient(150deg, #f3f8ff 0%, #eefafa 100%);
 }
 
-.step-cover__blob {
-  border-radius: 50%;
-  filter: blur(34px);
-  opacity: 0.5;
-  position: absolute;
-}
-
-.step-cover__blob--1 {
-  background: #9cc6ff;
-  height: 170px;
-  inset-inline-start: -36px;
-  top: -32px;
-  width: 170px;
-}
-
-.step-cover__blob--2 {
-  background: #8fe4dd;
-  bottom: -36px;
-  height: 155px;
-  inset-inline-end: -32px;
-  width: 155px;
-}
-
+/* The artwork carries its own transparent margin (87px top, 62px bottom of the
+   1080 square), so a plain `contain` fit looks smaller than the surrounding
+   copy; scale it up slightly past that margin. */
 .step-cover__art {
   display: block;
   height: 100%;
-  object-fit: cover;
-  object-position: center;
+  object-fit: contain;
   position: relative;
+  transform: scale(1.05);
   width: 100%;
 }
 
@@ -217,85 +206,20 @@
   }
 }
 
-.step-cover__profile {
-  position: relative;
-  text-align: center;
-  width: 204px;
-}
-
-.step-cover__avatar {
-  align-items: center;
-  background: #e7f0fe;
-  border-radius: 50%;
-  color: #2378e8;
-  display: flex;
-  font-size: 20px;
-  font-weight: 800;
-  height: 64px;
-  justify-content: center;
-  margin: 0 auto;
-  overflow: hidden;
-  width: 64px;
-
-  img {
-    height: 100%;
-    object-fit: cover;
-    width: 100%;
+/* Arabic runs longer than the English copy — give it room to breathe. */
+[dir='rtl'] {
+  .step-cover__title {
+    font-size: 24px;
+    letter-spacing: 0;
+    line-height: 1.5;
   }
-}
 
-.step-cover__name {
-  align-items: center;
-  display: flex;
-  gap: 6px;
-  justify-content: center;
-  margin: 13px 0 0;
-}
+  .step-cover__lede {
+    line-height: 1.9;
+  }
 
-.step-cover__nm {
-  color: #101724;
-  font-size: 14px;
-  font-weight: 800;
-  letter-spacing: -0.01em;
-  white-space: nowrap;
-}
-
-.step-cover__verified {
-  flex-shrink: 0;
-  height: 16px;
-  width: 16px;
-}
-
-.step-cover__geo {
-  color: #6b7885;
-  display: block;
-  font-size: 13px;
-  margin: 6px 0 0;
-}
-
-.step-cover__reqwrap {
-  display: flex;
-  justify-content: center;
-  margin: 18px 0 0;
-  position: relative;
-}
-
-.step-cover__req {
-  align-items: center;
-  background: linear-gradient(90deg, #3b82f6 0%, #2dd4bf 100%);
-  border-radius: 10px;
-  box-shadow: 0 10px 24px -7px rgba(45, 150, 220, 0.6);
-  color: #fff;
-  display: inline-flex;
-  font-size: 12px;
-  font-weight: 700;
-  gap: 8px;
-  height: 35px;
-  padding: 0 15px;
-
-  svg {
-    height: 15px;
-    width: 15px;
+  .step-cover__list li > span:last-child {
+    line-height: 1.8;
   }
 }
 
@@ -308,10 +232,12 @@
     margin: -22px -17px 0;
     width: calc(100% + 34px);
   }
-}
 
-.welcome-modal__close:disabled,
-.step-cover__skip:disabled {
-  cursor: default;
-  opacity: 0.55;
+  .step-cover__title {
+    font-size: 23px;
+  }
+
+  .step-cover__lede {
+    font-size: 13px;
+  }
 }

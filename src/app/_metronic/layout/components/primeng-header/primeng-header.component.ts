@@ -302,6 +302,10 @@ export class PrimengHeaderComponent implements OnInit, OnDestroy {
     return `${environment.mainAppUrl}/${this.lang}`;
   }
 
+  getLandingUrl(): string {
+    return `${environment.mainAppUrl}/${this.lang}/landing`;
+  }
+
   getProfileSettingsUrl(): string {
     const locale = this.lang === 'ar' ? 'ar' : 'en';
     return `${environment.mainAppUrl}/${locale}/profile/settings`;

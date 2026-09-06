@@ -1,18 +1,30 @@
 <!-- Main Header -->
-<div class="primeng-header" [class.is-sticky]="isSticky">
+<header class="primeng-header" [class.is-sticky]="isSticky">
   <!-- Desktop Header -->
   <div class="desktop-header" *ngIf="!isSmallScreen">
+    <div class="header-atmosphere" aria-hidden="true"></div>
     <div class="header-container d-flex justify-content-between align-items-center w-100">
       <div class="header-logo">
         <a [href]="getHomeUrlForLogo()" (click)="onLogoClick($event)">
-          <ng-container *ngIf="!isDashboardRoute">
-            <img *ngIf="lang === 'en'" src="./assets/media/LOGO-KNOLD/KNOLDG-01.png" alt="Logo" />
-          <img *ngIf="lang === 'ar'" src="./assets/media/LOGO-KNOLD/ANSIGHTAAr-05.png" alt="Logo"  />
-          </ng-container>
-          <ng-container *ngIf="isDashboardRoute">
-            <img *ngIf="lang === 'en'" src="./assets/media/LOGO-KNOLD/knoldg-03.png" alt="Logo" class="h-45px"  />
-          <img *ngIf="lang === 'ar'" src="./assets/media/LOGO-KNOLD/ANSIGHTAAr-03.png" alt="Logo" class="h-45px"   />
-          </ng-container>
+          <img *ngIf="lang === 'en'" src="./assets/media/LOGO-KNOLD/Business-white.png" alt="Insighta" />
+          <img *ngIf="lang === 'ar'" src="./assets/media/LOGO-KNOLD/ANSIGHTAAr-.png" alt="إنسايتا" />
+        </a>
+      </div>
+
+      <div class="header-start-actions">
+        <a [href]="getFeedUrl()" class="header-action header-feed fw-bold">
+          <svg class="feed-header-icon" aria-hidden="true" width="16" height="16" viewBox="0 0 24 24">
+            <rect x="3" y="4" width="6" height="6" rx="1"></rect>
+            <rect x="3" y="14" width="6" height="6" rx="1"></rect>
+            <rect x="13" y="4" width="8" height="2" rx="1"></rect>
+            <rect x="13" y="8" width="5" height="2" rx="1"></rect>
+            <rect x="13" y="14" width="8" height="2" rx="1"></rect>
+            <rect x="13" y="18" width="5" height="2" rx="1"></rect>
+          </svg>
+          {{ 'MENU.FEED' | translate }}
+        </a>
+        <a [href]="getLandingUrl()" class="header-nav-link">
+          {{ 'MENU.HOME' | translate }}
         </a>
       </div>
       
@@ -89,62 +101,24 @@
       <div class="header-actions">
         <!-- Language Switch Button -->
 
-        <!-- Feed button for desktop -->
-        <div class="app-navbar-item me-3">
-          <a [href]="getFeedUrl()" class="btn btn-sm btn-feed fw-bold">
-            <i class="ki-duotone ki-row-horizontal fs-5">
-              <span class="path1"></span>
-              <span class="path2"></span>
-            </i>
-            {{ 'MENU.FEED' | translate }}
-          </a>
-        </div>
-
         <!-- Add Knowledge button for desktop -->
           <div class="app-navbar-item me-3" *ngIf="shouldShowAddKnowledgeButton()">
-            <a [routerLink]="getAddKnowledgeRoute()" class="btn btn-sm btn-primary fw-bold">
+            <a [routerLink]="getAddKnowledgeRoute()" class="header-action header-primary-action fw-bold">
               <i *ngIf="!isClientOnly()" class="ki-duotone ki-plus fs-5 me-1"></i>
               {{ (isClientOnly() ? 'HOME.BECOME_INSIGHTER' : 'KNOWLEDGE.ADD_INSIGHT') | translate }}
             </a>
           </div>
-             <!-- Header Search Bar -->
-      <div class="header-search d-none d-lg-flex align-items-center mx-4">
-        <form (ngSubmit)="onSearchSubmit($event)" class="d-flex align-items-center">
-          <div class="position-relative">
-            <input 
-              type="text" 
-              class="form-control search-input"
-              [placeholder]="lang === 'ar' ? 'البحث...' : 'Search...'"
-              [value]="searchQuery"
-              (input)="onSearchInput($event)"
-              (click)="onSearchInputClick()"
-              (keydown.enter)="onSearchSubmit($event)"
-              [style.direction]="lang === 'ar' ? 'rtl' : 'ltr'"
-              [style.padding-left]="lang === 'ar' ? '40px' : '12px'"
-              [style.padding-right]="lang === 'ar' ? '12px' : '40px'"
-            />
-            <button 
-              *ngIf="hasSearchQuery()"
-              type="button" 
-              class="btn btn-link search-icon-btn"
-              [class.search-icon-right]="lang !== 'ar'"
-              [class.search-icon-left]="lang === 'ar'"
-              (click)="handleSearch()"
-            >
-              <i class="ki-outline ki-magnifier fs-3"></i>
-            </button>
-          </div>
-        </form>
-      </div>
-
           <div class="app-navbar-item me-3">
             <app-lang-switch-button [isInsighterDashboard]="isDashboardRoute"></app-lang-switch-button>
           </div>
         <!-- Notification bell -->
         <div class="app-navbar-item position-relative notification-item">
           <div
-            class="btn btn-icon btn-custom btn-icon-muted btn-active-light btn-active-color-primary w-35px h-35px w-md-40px h-md-40px cursor-pointer notification-toggle"
+            class="header-icon-button cursor-pointer notification-toggle"
             (click)="toggleNotifications($event)"
+            role="button"
+            tabindex="0"
+            [attr.aria-label]="lang === 'ar' ? 'الإشعارات' : 'Notifications'"
           >
             <i class="ki-outline ki-notification-on fs-1"></i>
             <div
@@ -191,7 +165,7 @@
       
         <!-- User dropdown toggle -->
         <div class="user-dropdown-container">
-          <a  class="user-dropdown-toggle" (click)="toggleUserDropdown($event)" #userDropdownToggle>
+          <a class="user-dropdown-toggle" (click)="toggleUserDropdown($event)" #userDropdownToggle role="button" tabindex="0" [attr.aria-label]="lang === 'ar' ? 'قائمة المستخدم' : 'User menu'">
             <div class="user-avatar" *ngIf="userProfileImage">
               <img  [src]="userProfileImage" alt="User Avatar" style="object-position: top;" />
             </div>
@@ -238,6 +212,7 @@
 
   <!-- Mobile Header -->
   <div class="mobile-header" *ngIf="isSmallScreen">
+    <div class="header-atmosphere" aria-hidden="true"></div>
     <div class="mobile-header-container d-flex justify-content-between align-items-center w-100">
       <div class="mobile-header-left d-flex align-items-center">
         <!-- <button class="menu-toggle btn btn-icon btn-sm me-2" (click)="sidebarVisible = true">
@@ -245,33 +220,43 @@
         </button> -->
         <div class="mobile-logo">
           <a [href]="getHomeUrlForLogo()" (click)="onLogoClick($event)">
-            <img src="./assets/media/logos/custom-2.svg" alt="Logo" class="h-30px" />
+            <img src="./assets/media/LOGO-KNOLD/smallLogo.png" alt="Insighta" />
           </a>
         </div>
       </div>
       
       <div class="mobile-header-right d-flex align-items-center">
         <!-- Mobile Feed button -->
-        <div class="me-3">
-          <a [href]="getFeedUrl()" class="btn btn-icon btn-sm btn-feed" style="width: 32px; height: 32px;">
-            <i class="ki-duotone ki-row-horizontal fs-4">
-              <span class="path1"></span>
-              <span class="path2"></span>
-            </i>
+        <div class="mobile-action">
+          <a [href]="getFeedUrl()" class="header-icon-button header-feed" [attr.aria-label]="'MENU.FEED' | translate">
+            <svg class="feed-header-icon" aria-hidden="true" width="18" height="18" viewBox="0 0 24 24">
+              <rect x="3" y="4" width="6" height="6" rx="1"></rect>
+              <rect x="3" y="14" width="6" height="6" rx="1"></rect>
+              <rect x="13" y="4" width="8" height="2" rx="1"></rect>
+              <rect x="13" y="8" width="5" height="2" rx="1"></rect>
+              <rect x="13" y="14" width="8" height="2" rx="1"></rect>
+              <rect x="13" y="18" width="5" height="2" rx="1"></rect>
+            </svg>
+          </a>
+        </div>
+
+        <div class="mobile-action">
+          <a [href]="getLandingUrl()" class="header-icon-button" [attr.aria-label]="'MENU.HOME' | translate">
+            <i class="ki-outline ki-home-2 fs-3" aria-hidden="true"></i>
           </a>
         </div>
 
         <!-- Mobile Language Switch -->
-        <div class="me-3">
+        <div class="mobile-action mobile-language-action">
           <app-lang-switch-button [isInsighterDashboard]="isDashboardRoute"></app-lang-switch-button>
         </div>
         
         <!-- Mobile Notification bell -->
-        <div class="position-relative me-3">
+        <div class="mobile-action position-relative">
           <button
-            class="btn btn-icon btn-sm btn-light d-flex align-items-center justify-content-center position-relative"
+            class="header-icon-button d-flex align-items-center justify-content-center position-relative"
             (click)="toggleNotifications($event)"
-            style="width: 32px; height: 32px;">
+            [attr.aria-label]="lang === 'ar' ? 'الإشعارات' : 'Notifications'">
             <i class="ki-outline ki-notification-on fs-3"></i>
             <span
               *ngIf="notificationCount > 0"
@@ -301,7 +286,7 @@
       </div>
     </div>
   </div>
-</div>
+</header>
 
 <!-- Global Notifications Drawer for small screens -->
 <div

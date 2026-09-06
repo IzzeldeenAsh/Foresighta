@@ -325,7 +325,8 @@ export const locale = {
       DATA: 'البيانات',
       MANUAL: 'الدليل',
       COURSES: 'الدورات',
-      FEED: 'الموجز'
+      FEED: 'الموجز',
+      HOME: 'الرئيسية'
     },
     HOME: {
       INSIGHTER_DASHBOARD: 'لوحة المعلومات',

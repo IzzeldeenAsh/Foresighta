@@ -32,6 +32,7 @@ import { SettingsTabsComponent } from './settings-tabs/settings-tabs.component';
 import { InsighterDashboardSharedModule } from '../shared/shared.module';
 import { PendingChangesGuard } from 'src/app/guards/pending-changes.guard';
 import { AgreementModalComponent } from 'src/app/reusable-components/agreement-modal/agreement-modal.component';
+import { CompanyUpgradeCoverComponent } from 'src/app/reusable-components/company-upgrade-cover/company-upgrade-cover.component';
 import { NotificationSettingsComponent } from './notification-settings/notification-settings.component';
 import { PhoneNumberInputModule } from 'src/app/reusable-components/phone-number-input/phone-number-input.module';
 import { SkeletonModule } from 'primeng/skeleton';
@@ -124,6 +125,7 @@ const routes: Routes = [
     CountryDropdownComponent,
     InsighterDashboardSharedModule,
     AgreementModalComponent,
+    CompanyUpgradeCoverComponent,
     PhoneNumberInputModule,
     SkeletonModule,
     AccountSettingsSharedModule

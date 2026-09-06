@@ -1,0 +1,267 @@
+<meta charset="utf-8"><style>*{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,sans-serif}
+@charset "UTF-8";
+/* Cover-modal styles shared with reusable-components/insighter-setup-cover and
+   pages/wizards/vertical/vertical.component.scss. Keep them in sync — they are
+   the same design at the same scale. */
+@keyframes onboarding-enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.welcome-modal__backdrop {
+  align-items: center;
+  background: rgba(16, 23, 36, 0.55);
+  display: flex;
+  inset: 0;
+  justify-content: center;
+  overflow-y: auto;
+  padding: 40px 20px;
+  position: fixed;
+  z-index: 1055;
+}
+
+.welcome-modal__close {
+  align-items: center;
+  /* .step-cover__panel below is positioned too, so without this the artwork
+     paints over the close button and swallows its clicks. */
+  z-index: 2;
+  background: rgba(255, 255, 255, 0.8509803922);
+  border: 0;
+  border-radius: 50%;
+  color: #6b7885;
+  cursor: pointer;
+  display: flex;
+  height: 34px;
+  inset-inline-end: 18px;
+  justify-content: center;
+  position: absolute;
+  top: 18px;
+  width: 34px;
+  /* No focus ring on the close button — the hover/active fill is the affordance. */
+}
+.welcome-modal__close:hover {
+  background: #e6ecf3;
+  color: #101724;
+}
+.welcome-modal__close:focus, .welcome-modal__close:focus-visible {
+  box-shadow: none;
+  outline: none;
+}
+.welcome-modal__close svg {
+  height: 16px;
+  width: 16px;
+}
+
+.step-cover {
+  animation: onboarding-enter 300ms ease-out both;
+  background: #ffffff;
+  border: 1px solid #eceff3;
+  border-radius: 20px;
+  margin: auto;
+  max-width: 100%;
+  padding: 24px 28px 24px;
+  position: relative;
+  text-align: center;
+  width: 476px;
+}
+
+.step-cover__panel {
+  align-items: center;
+  aspect-ratio: 3/2;
+  background: #f7f9fc;
+  border-radius: 19px 19px 0 0;
+  display: flex;
+  height: auto;
+  justify-content: center;
+  margin: -24px -28px 0;
+  overflow: hidden;
+  position: relative;
+  width: calc(100% + 56px);
+}
+
+.step-cover__panel--wash {
+  background: radial-gradient(120% 90% at 18% 12%, #dcebff 0%, rgba(220, 235, 255, 0) 62%), radial-gradient(115% 95% at 88% 84%, #d3f4f1 0%, rgba(211, 244, 241, 0) 60%), linear-gradient(150deg, #f3f8ff 0%, #eefafa 100%);
+}
+
+/* The artwork carries its own transparent margin (87px top, 62px bottom of the
+   1080 square), so a plain `contain` fit looks smaller than the surrounding
+   copy; scale it up slightly past that margin. */
+.step-cover__art {
+  display: block;
+  height: 100%;
+  object-fit: contain;
+  position: relative;
+  transform: scale(1.05);
+  width: 100%;
+}
+
+.step-cover__title {
+  color: #101724;
+  font-size: 25px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.12;
+  margin: 21px 0 0;
+}
+
+.step-cover__lede {
+  color: #6b7885;
+  font-size: 13.5px;
+  line-height: 1.6;
+  margin: 10px auto 0;
+  max-width: 348px;
+}
+
+.step-cover__list {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  list-style: none;
+  margin: 20px auto 0;
+  max-width: 350px;
+  padding: 0;
+  text-align: start;
+}
+.step-cover__list li {
+  align-items: flex-start;
+  display: flex;
+  gap: 11px;
+}
+.step-cover__list li > span:last-child {
+  color: #33414f;
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.step-cover__tick {
+  align-items: center;
+  background: #e6f0fe;
+  border-radius: 50%;
+  color: #2378e8;
+  display: flex;
+  flex-shrink: 0;
+  height: 18px;
+  justify-content: center;
+  margin-top: 1px;
+  width: 18px;
+}
+.step-cover__tick svg {
+  height: 10px;
+  width: 10px;
+}
+
+.step-cover__cta {
+  align-items: center;
+  background: linear-gradient(90deg, #2475e8 0%, #2bc0d5 100%);
+  border: 0;
+  border-radius: 12px;
+  color: #fff;
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 13.5px;
+  font-weight: 700;
+  gap: 8px;
+  height: 45px;
+  justify-content: center;
+  margin: 25px auto 0;
+  padding: 0 27px;
+}
+.step-cover__cta:hover {
+  filter: brightness(1.05);
+}
+.step-cover__cta svg {
+  height: 16px;
+  width: 16px;
+}
+
+.step-cover__skip {
+  background: transparent;
+  border: 0;
+  color: #8ca0b8;
+  cursor: pointer;
+  display: block;
+  font-size: 12.5px;
+  margin: 12px auto 0;
+}
+.step-cover__skip:hover {
+  color: #5e6c7d;
+}
+
+/* Arabic runs longer than the English copy — give it room to breathe. */
+[dir=rtl] .step-cover__title {
+  font-size: 24px;
+  letter-spacing: 0;
+  line-height: 1.5;
+}
+[dir=rtl] .step-cover__lede {
+  line-height: 1.9;
+}
+[dir=rtl] .step-cover__list li > span:last-child {
+  line-height: 1.8;
+}
+
+@media (max-width: 40rem) {
+  .step-cover {
+    padding: 22px 17px 22px;
+  }
+  .step-cover__panel {
+    margin: -22px -17px 0;
+    width: calc(100% + 34px);
+  }
+  .step-cover__title {
+    font-size: 23px;
+  }
+  .step-cover__lede {
+    font-size: 13px;
+  }
+}
+</style>
+<!-- Company-account cover — same design as the onboarding covers, but the CTA
+     dismisses the modal instead of routing: the upgrade form is already behind it. -->
+<div  class="welcome-modal__backdrop" >
+  <div
+    class="step-cover"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="company-cover-title"
+    dir="ltr"
+    
+  >
+    <button
+      type="button"
+      class="welcome-modal__close"
+      
+      [attr.aria-label]="lang === 'ar' ? 'إغلاق' : 'Close'"
+    >
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
+    </button>
+
+    <div
+      class="step-cover__panel step-cover__panel--wash"
+      role="img"
+      [attr.aria-label]="lang === 'ar' ? 'أدوات الشركة: دعوة أعضاء الفريق وإدارة حالتهم ومتابعة المنشورات والجلسات' : 'Company tools: invite members, manage their status, and track published insights and sessions'"
+    >
+      <img class="step-cover__art" src="https://res.cloudinary.com/dsiku9ipv/image/upload/v1788610808/TeamManage2_a8olgv.png" alt="" />
+    </div>
+
+    <h2 id="company-cover-title" class="step-cover__title">Grow With Your Team</h2>
+    <p class="step-cover__lede">Bring your experts together. Manage your team and track their contributions in one company account.</p>
+
+    <ul class="step-cover__list">
+      <li><span class="step-cover__tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 7" /></svg></span><span>Invite team members by email, or create a new employee account.</span></li>
+      <li><span class="step-cover__tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 7" /></svg></span><span>Activate, deactivate, or remove members as your team changes.</span></li>
+      <li><span class="step-cover__tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 7" /></svg></span><span>Track published insights and sessions for each team member.</span></li>
+    </ul>
+
+    <button type="button" class="step-cover__cta" >
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 19v-1.5a3.5 3.5 0 0 0-3.5-3.5h-5A3.5 3.5 0 0 0 4 17.5V19m6-9a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Zm7 1h4m-2-2v4" /></svg>
+      Set Up My Company
+    </button>
+    <button type="button" class="step-cover__skip" >Maybe later</button>
+  </div>
+</div>

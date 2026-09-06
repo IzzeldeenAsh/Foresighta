@@ -1,0 +1,44 @@
+<!-- Company-account cover — same design as the onboarding covers, but the CTA
+     dismisses the modal instead of routing: the upgrade form is already behind it. -->
+<div *ngIf="open" class="welcome-modal__backdrop" (click)="close()">
+  <div
+    class="step-cover"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="company-cover-title"
+    [attr.dir]="lang === 'ar' ? 'rtl' : 'ltr'"
+    (click)="$event.stopPropagation()"
+  >
+    <button
+      type="button"
+      class="welcome-modal__close"
+      (click)="close()"
+      [attr.aria-label]="lang === 'ar' ? 'إغلاق' : 'Close'"
+    >
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
+    </button>
+
+    <div
+      class="step-cover__panel step-cover__panel--wash"
+      role="img"
+      [attr.aria-label]="lang === 'ar' ? 'أدوات الشركة: دعوة أعضاء الفريق وإدارة حالتهم ومتابعة المنشورات والجلسات' : 'Company tools: invite members, manage their status, and track published insights and sessions'"
+    >
+      <img class="step-cover__art" src="https://res.cloudinary.com/dsiku9ipv/image/upload/v1788610808/TeamManage2_a8olgv.png" alt="" />
+    </div>
+
+    <h2 id="company-cover-title" class="step-cover__title">{{ lang === 'ar' ? 'وسّع أعمالك مع فريقك' : 'Grow With Your Team' }}</h2>
+    <p class="step-cover__lede">{{ lang === 'ar' ? 'اجمع خبراءك تحت حساب شركة واحد، وأدِر فريقك وتابع مساهماتهم من مكان واحد.' : 'Bring your experts together. Manage your team and track their contributions in one company account.' }}</p>
+
+    <ul class="step-cover__list">
+      <li><span class="step-cover__tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 7" /></svg></span><span>{{ lang === 'ar' ? 'ادعُ أعضاء فريقك بالبريد الإلكتروني، أو أنشئ حساب موظف جديد.' : 'Invite team members by email, or create a new employee account.' }}</span></li>
+      <li><span class="step-cover__tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 7" /></svg></span><span>{{ lang === 'ar' ? 'فعّل حسابات الأعضاء أو عطّلها أو أزلها حسب احتياجات فريقك.' : 'Activate, deactivate, or remove members as your team changes.' }}</span></li>
+      <li><span class="step-cover__tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 7" /></svg></span><span>{{ lang === 'ar' ? 'تابع الرؤى المنشورة والجلسات لكل عضو في الفريق.' : 'Track published insights and sessions for each team member.' }}</span></li>
+    </ul>
+
+    <button type="button" class="step-cover__cta" (click)="close()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 19v-1.5a3.5 3.5 0 0 0-3.5-3.5h-5A3.5 3.5 0 0 0 4 17.5V19m6-9a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Zm7 1h4m-2-2v4" /></svg>
+      {{ lang === 'ar' ? 'إعداد حساب شركتي' : 'Set Up My Company' }}
+    </button>
+    <button type="button" class="step-cover__skip" (click)="close()">{{ lang === 'ar' ? 'لاحقاً' : 'Maybe later' }}</button>
+  </div>
+</div>

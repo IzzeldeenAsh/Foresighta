@@ -2,12 +2,22 @@
 <app-dashboard-nav-icon-sprite></app-dashboard-nav-icon-sprite>
 <!-- Mobile Menu Toggle Button (visible only on mobile) -->
 <div class="mobile-menu-toggle" *ngIf="isMobileView">
-  <button type="button" class="btn btn-icon btn-active-color-primary" (click)="toggleNavCollapse()">
-    <i class="pi pi-bars h-30px fs-2 text-info"></i>
+  <button
+    type="button"
+    class="mobile-menu-toggle__button"
+    (click)="toggleNavCollapse()"
+    [attr.aria-expanded]="isMobileSidebarVisible"
+    [attr.aria-label]="lang === 'ar' ? 'فتح الشريط الجانبي' : 'Open sidebar'">
+    <svg *ngIf="!isMobileSidebarVisible" aria-hidden="true" viewBox="0 0 24 24">
+      <path d="M4 6h16M4 12h16M4 18h16"></path>
+    </svg>
+    <svg *ngIf="isMobileSidebarVisible" aria-hidden="true" viewBox="0 0 24 24">
+      <path d="M6 6l12 12M18 6L6 18"></path>
+    </svg>
   </button>
 </div>
 <!-- Mobile Sidebar -->
-<p-sidebar [(visible)]="isMobileSidebarVisible" position="left" [modal]="true" [showCloseIcon]="true"
+<p-sidebar [(visible)]="isMobileSidebarVisible" [position]="lang === 'ar' ? 'right' : 'left'" [modal]="true" [showCloseIcon]="true"
   [style]="{width: '300px'}" (onHide)="closeMobileSidebar()" [class]="'mobile-sidebar'">
   <div class="mobile-nav-content p-4">
     <div class="mobile-section">
@@ -57,7 +67,14 @@
     </div>
 
     <div class="mobile-section">
-      <div class="mobile-section-title">{{ lang === 'ar' ? 'الرؤى' : 'Insights' }}</div>
+      <div class="mobile-section-title">{{ lang === 'ar' ? 'الرؤى' : 'Insights' }}<span *ngIf="needsInsightSetup" class="setup-now-badge"><svg class="setup-now-badge__icon" aria-hidden="true"><use href="#feed-icon-plus"></use></svg>{{ lang === 'ar' ? 'أضف الآن!' : 'Add Now!' }}</span></div>
+      <div class="nav-item" [routerLink]="['/app/add-knowledge/stepper']" *ngIf="needsInsightSetup"
+        (click)="closeMobileSidebar()">
+        <div class="item-icon feed-sidebar-item-icon">
+          <svg class="feed-sidebar-icon" aria-hidden="true"><use href="#feed-icon-plus"></use></svg>
+        </div>
+        <span>{{ lang === 'ar' ? 'أضف الآن' : 'Add Now' }}</span>
+      </div>
       <div class="nav-item" [routerLink]="['my-knowledge']" routerLinkActive="active" *ngIf="!(isClient$ | async)"
         (click)="closeMobileSidebar()">
         <div class="item-icon feed-sidebar-item-icon">
@@ -80,15 +97,16 @@
     </div>
 
     <div class="mobile-section">
-      <div class="mobile-section-title">{{ 'INSIGHTER.DASHBOARD.NAV.MEETINGS' | translate }}</div>
+      <div class="mobile-section-title">{{ 'INSIGHTER.DASHBOARD.NAV.MEETINGS' | translate }}<span *ngIf="needsMeetingSetup" class="setup-now-badge">{{ lang === 'ar' ? 'الإعداد الآن!' : 'Setup Now!' }}</span></div>
       <div class="nav-item" [routerLink]="['my-meetings']" routerLinkActive="active" (click)="closeMobileSidebar()">
         <div class="item-icon feed-sidebar-item-icon">
           <svg class="feed-sidebar-icon" aria-hidden="true"><use href="#feed-icon-calendar"></use></svg>
         </div>
         <span>{{ 'INSIGHTER.DASHBOARD.NAV.MEETINGS' | translate }}</span>
       </div>
+      <!-- Only a nudge: once availability exists the item drops out of the menu. -->
       <div class="nav-item" [routerLink]="['account-settings/consulting-schedule']" routerLinkActive="active"
-        *ngIf="!(isClient$ | async)" (click)="closeMobileSidebar()">
+        *ngIf="needsMeetingSetup && !(isClient$ | async)" (click)="closeMobileSidebar()">
         <div class="item-icon feed-sidebar-item-icon">
           <svg class="feed-sidebar-icon" aria-hidden="true"><use href="#feed-icon-calendar-cog"></use></svg>
         </div>
@@ -99,7 +117,7 @@
 
     <div class="mobile-section"
       *ngIf="(isInsighter$ | async) || (isCompany$ | async) || (isCompanyInsighter$ | async) || (isClient$ | async)">
-      <div class="mobile-section-title">{{ lang === 'ar' ? 'المشاريع' : 'Projects' }}</div>
+      <div class="mobile-section-title">{{ lang === 'ar' ? 'المشاريع' : 'Projects' }}<span *ngIf="needsProjectSetup" class="setup-now-badge">{{ lang === 'ar' ? 'الإعداد الآن!' : 'Setup Now!' }}</span></div>
       <!-- Client Projects - mobile -->
       <div class="nav-item" [routerLink]="['project-offers']" routerLinkActive="active"
         *ngIf="!(isClient$ | async)" (click)="closeMobileSidebar()">
@@ -181,36 +199,11 @@
 </p-sidebar>
 
 <div class="flex-column flex-row-fluid pt-sm-160px" id="kt_app_wrapper">
-  <div id="kt_app_toolbar" class="app-toolbar d-none d-lg-block" style="padding-top: 40px;">
-    <div id="kt_app_toolbar_container" class="app-container d-flex align-items-start">
-      <div class=" flex-column flex-row-fluid d-flex">
-
-        <!-- here header or statistics -->
-        <app-overview-statistics *ngIf="isRouteActive('my-dashboard')"></app-overview-statistics>
-        <app-requests-statistics *ngIf="isRouteActive('my-requests')"></app-requests-statistics>
-        <app-knowledge-statistics *ngIf="isRouteActive('my-knowledge')"></app-knowledge-statistics>
-        <app-downloads-statistics *ngIf="isRouteActive('my-downloads')"></app-downloads-statistics>
-        <app-read-later-statistics *ngIf="isRouteActive('read-later')"></app-read-later-statistics>
-        <app-my-orders-statistics *ngIf="isRouteActive('my-orders')"></app-my-orders-statistics>
-        <app-meetings-statistics *ngIf="isRouteActive('my-meetings')"></app-meetings-statistics>
-        <app-consulting-schedule-header
-          *ngIf="isRouteActive('my-consulting-schedule')"></app-consulting-schedule-header>
-        <app-account-settings-header *ngIf="isRouteActive('general-settings')"></app-account-settings-header>
-        <app-project-settings-header *ngIf="isRouteActive('project-settings')"></app-project-settings-header>
-        <app-payment-settings-header *ngIf="isRouteActive('payment-settings')"></app-payment-settings-header>
-        <app-consulting-schedule-header *ngIf="isRouteActive('consulting-schedule')"></app-consulting-schedule-header>
-        <app-wallet-statistics
-          *ngIf="isRouteActive('wallet') && !((isCompanyInsighter$ | async))"></app-wallet-statistics>
-        <app-sales-statistics *ngIf="isRouteActive('sales')"></app-sales-statistics>
-        <app-project-offers-statistics
-          *ngIf="isRouteActive('project-offers') || isRouteActive('on-work-projects')"></app-project-offers-statistics>
-        <app-projects-created-statistics *ngIf="isRouteActive('projects-created')"></app-projects-created-statistics>
-        <app-company-statistics
-          *ngIf="isRouteActive('my-company-settings') && (hasCompanyRole$ | async)"></app-company-statistics>
-        <app-read-later-statistics *ngIf="isRouteActive('notification-settings')"></app-read-later-statistics>
-      </div>
+  <section class="dashboard-page-header d-none d-lg-block" *ngIf="isRouteActive('my-orders')" aria-label="Order summary">
+    <div class="dashboard-page-header__container">
+      <app-my-orders-statistics></app-my-orders-statistics>
     </div>
-  </div>
+  </section>
 
   <div class="app-container w-100 pt-sm-30px responsive-cont ">
     <div class="app-main flex-column flex-row-fluid">
@@ -312,9 +305,21 @@
 
               <div class="p-card navigation-card">
                 <div class="p-card-header" *ngIf="!isNavCollapsed">
-                  <h3>{{ lang === 'ar' ? 'الرؤى' : 'Insights' }}</h3>
+                  <h3>{{ lang === 'ar' ? 'الرؤى' : 'Insights' }}<span *ngIf="needsInsightSetup" class="setup-now-badge"><svg class="setup-now-badge__icon" aria-hidden="true"><use href="#feed-icon-plus"></use></svg>{{ lang === 'ar' ? 'أضف الآن!' : 'Add Now!' }}</span></h3>
                 </div>
                 <div class="p-card-body">
+                  <div class="nav-item" [routerLink]="['/app/add-knowledge/stepper']" *ngIf="needsInsightSetup"
+                    [class.has-nudge]="needsInsightSetup"
+                    [attr.title]="isNavCollapsed ? (lang === 'ar' ? 'أضف الآن' : 'Add Now') : null"
+                    pTooltip="{{ isNavCollapsed ? (lang === 'ar' ? 'أضف الآن' : 'Add Now') : '' }}"
+                    tooltipPosition="right" appendTo="body">
+                    <div class="item-icon feed-sidebar-item-icon">
+                      <svg class="feed-sidebar-icon" aria-hidden="true"><use href="#feed-icon-plus"></use></svg>
+                    </div>
+                    <div class="item-label" *ngIf="!isNavCollapsed">
+                      {{ lang === 'ar' ? 'أضف الآن' : 'Add Now' }}
+                    </div>
+                  </div>
                   <div class="nav-item" [routerLink]="['my-knowledge']" routerLinkActive="active"
                     *ngIf="!(isClient$ | async)"
                     [attr.title]="isNavCollapsed ? ('INSIGHTER.DASHBOARD.NAV.MY_KNOWLEDGE' | translate) : null"
@@ -354,7 +359,7 @@
 
               <div class="p-card navigation-card">
                 <div class="p-card-header" *ngIf="!isNavCollapsed">
-                  <h3>{{ 'INSIGHTER.DASHBOARD.NAV.MEETINGS' | translate }}</h3>
+                  <h3>{{ 'INSIGHTER.DASHBOARD.NAV.MEETINGS' | translate }}<span *ngIf="needsMeetingSetup" class="setup-now-badge">{{ lang === 'ar' ? 'الإعداد الآن!' : 'Setup Now!' }}</span></h3>
                 </div>
                 <div class="p-card-body">
                   <div class="nav-item" [routerLink]="['my-meetings']" routerLinkActive="active"
@@ -369,8 +374,10 @@
                     </div>
                   </div>
 
+                  <!-- Only a nudge: once availability exists the item drops out of the menu. -->
                   <div class="nav-item" [routerLink]="['account-settings/consulting-schedule']"
-                    routerLinkActive="active" *ngIf="!(isClient$ | async)"
+                    routerLinkActive="active" *ngIf="needsMeetingSetup && !(isClient$ | async)"
+                    [class.has-nudge]="needsMeetingSetup"
                     [attr.title]="isNavCollapsed ? ('INSIGHTER.DASHBOARD.NAV.MY_CONSULTING_SCHEDULE' | translate) : null"
                     pTooltip="{{ isNavCollapsed ? ('INSIGHTER.DASHBOARD.NAV.MY_CONSULTING_SCHEDULE' | translate) : '' }}"
                     tooltipPosition="right" appendTo="body">
@@ -388,7 +395,7 @@
               <div class="p-card navigation-card"
                 *ngIf="(isInsighter$ | async) || (isCompany$ | async) || (isCompanyInsighter$ | async) || (isClient$ | async)">
                 <div class="p-card-header" *ngIf="!isNavCollapsed">
-                  <h3>{{ lang === 'ar' ? 'المشاريع' : 'Projects' }}</h3>
+                  <h3>{{ lang === 'ar' ? 'المشاريع' : 'Projects' }}<span *ngIf="needsProjectSetup" class="setup-now-badge">{{ lang === 'ar' ? 'الإعداد الآن!' : 'Setup Now!' }}</span></h3>
                 </div>
                 <div class="p-card-body">
                   <!-- Client Projects -->
@@ -420,7 +427,7 @@
 
                   <!-- Project Settings -->
                   <div class="nav-item" [routerLink]="['account-settings/project-settings']" routerLinkActive="active"
-                    *ngIf="!(isClient$ | async)"
+                    *ngIf="!(isClient$ | async)" [class.has-nudge]="needsProjectSetup"
                     [attr.title]="isNavCollapsed ? (lang === 'ar' ? 'إعدادات المشروع' : 'Project Settings') : null"
                     pTooltip="{{ isNavCollapsed ? (lang === 'ar' ? 'إعدادات المشروع' : 'Project Settings') : '' }}"
                     tooltipPosition="right" appendTo="body">

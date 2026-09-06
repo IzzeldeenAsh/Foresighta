@@ -1,17 +1,15 @@
-.app-toolbar{
-    background-image: url('../../../../assets/media/misc/eurebag.png');
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
+.dashboard-page-header {
+    background: transparent;
+    padding-top: 0;
 }
 .app-container{
-    transform: translate(10px, -50px);
+    transform: none;
     border-radius: 10px;
     @media screen and (max-width: 992px) {
         transform: translate(0px, 0px);
     }
 }
-#kt_app_toolbar_container {
+.dashboard-page-header__container {
     padding-inline: 1rem;
 
     @media screen and (min-width: 576px) {
@@ -27,7 +25,7 @@
     }
 }
 
-#kt_app_toolbar_container,
+.dashboard-page-header__container,
 .main-content-area {
     max-width: 1440px;
     margin-inline: auto;
@@ -35,8 +33,8 @@
 }
 
 @media screen and (min-width: 1440px) {
-    #kt_app_toolbar_container {
-        transform: translate(0, -50px);
+    .dashboard-page-header__container {
+        transform: none;
     }
 
     .main-content-area {
@@ -46,8 +44,12 @@
     .responsive-cont {
         max-width: none;
         margin-inline: 0;
-        transform: translate(0, -50px);
+        transform: none;
     }
+}
+
+#kt_app_wrapper {
+  padding-top: 80px;
 }
 .btn-custom {
     background-color: #0182d51a !important;
@@ -87,15 +89,45 @@
 .setup-now-badge {
   display: inline-flex;
   align-items: center;
+  gap: 0.2rem;
   margin-inline-start: 0.5rem;
-  padding: 0.15rem 0.5rem;
-  border-radius: 999px;
-  background: #fff0d5;
+  padding: 0.15rem 0.4rem;
+  border-radius: 5px;
+  background: linear-gradient(135deg, #fff6e4 0%, #ffebc9 55%, #ffdcae 100%);
   color: #a85a00;
   font-size: 0.625rem;
   font-weight: 700;
+  letter-spacing: 0.01em;
   line-height: 1.35;
   white-space: nowrap;
+  vertical-align: middle;
+}
+
+.setup-now-badge__icon {
+  display: block;
+  width: 11px;
+  height: 11px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+// Collapsed rail hides every label, so the nudge falls back to a dot on the icon.
+.side-nav-container.collapsed .nav-item.has-nudge .item-icon {
+  position: relative;
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: -2px;
+    inset-inline-end: 4px;
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+    background: linear-gradient(135deg, #ffd489 0%, #f9a03c 100%);
+  }
 }
 
 // Side Navigation Styles
@@ -663,32 +695,7 @@
 }
 // Mobile Menu Toggle Button
 .mobile-menu-toggle {
-  position: fixed;
-  top: -100px;
-  left: 1rem;
-  z-index: 1140;
-  
-  .btn {
-    border: 1px solid #e9ecef;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    width: 48px;
-    height: 48px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    
-    &:hover {
-      background: #f8f9fa;
-      border-color: #d0d3d6;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    }
-    
-    &:focus {
-      outline: none;
-      box-shadow: 0 0 0 2px rgba(64, 150, 255, 0.25);
-    }
-  }
+  display: none;
 }
 
 // Responsive adjustments for mobile
@@ -717,19 +724,52 @@
     }
   }
   
-  // Adjust toolbar for mobile
-  .app-toolbar {
-    padding-top: 70px;
-    
-    .app-container {
-      transform: translate(0, -30px);
-    }
-  }
-  
   // Mobile menu toggle positioning
   .mobile-menu-toggle {
-    top: 1rem;
-    left: 0.5rem;
+    position: fixed;
+    inset-inline-end: 1rem;
+    bottom: calc(max(1rem, env(safe-area-inset-bottom)));
+    z-index: 1200;
+    display: flex;
+  }
+
+  .mobile-menu-toggle__button {
+    display: inline-flex;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(130, 185, 255, 0.55);
+    border-radius: 50%;
+    color: #2378e8;
+    background: rgba(191, 229, 255, 0.25);
+    box-shadow: 0 10px 24px rgba(23, 51, 91, 0.15);
+    backdrop-filter: blur(1px);
+    -webkit-backdrop-filter: blur(1px);
+    transition: transform 180ms ease, color 180ms ease, background-color 180ms ease, border-color 180ms ease;
+
+    svg {
+      width: 22px;
+      height: 22px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2.2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    &:hover {
+      color: #1d4ed8;
+      background: rgba(191, 229, 255, 0.35);
+      border-color: rgba(130, 185, 255, 0.75);
+      transform: translateY(-2px);
+    }
+
+    &:focus-visible {
+      outline: 2px solid #67b5f6;
+      outline-offset: 2px;
+    }
   }
 }
 
@@ -756,7 +796,7 @@
 
 @media screen and (max-width: 576px) {
  .pt-sm-160px{
-  padding-top: 40px;
+  padding-top: 64px;
  }
 }
   
@@ -768,7 +808,7 @@
 @media screen and (max-width: 992px)  {
   .responsive-cont {
     overflow-x: hidden;
-    padding-top: 80px;
+    padding-top: 32px;
   }
 
   .app-main {
@@ -784,7 +824,7 @@
 
 @media screen and (max-width: 574px)  {
   .responsive-cont {
-    padding-top: 50px;
+    padding-top: 24px;
   }
 
   .main-content-area.pe-5,

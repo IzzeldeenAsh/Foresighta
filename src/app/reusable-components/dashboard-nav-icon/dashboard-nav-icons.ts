@@ -23,7 +23,8 @@ export type DashboardNavIconName =
   | 'wallet'
   | 'user-edit'
   | 'bell'
-  | 'credit-card';
+  | 'credit-card'
+  | 'plus';
 
 export const DASHBOARD_NAV_ICON_PATHS: Record<DashboardNavIconName, string[]> = {
   file: [
@@ -84,6 +85,7 @@ export const DASHBOARD_NAV_ICON_PATHS: Record<DashboardNavIconName, string[]> = 
   'credit-card': [
     'M3 8a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v8a3 3 0 0 1 -3 3h-12a3 3 0 0 1 -3 -3v-8M3 10h18M7 15h.01M11 15h2',
   ],
+  plus: ['M12 5v14M5 12h14'],
 };
 
 export const DASHBOARD_NAV_ICONS = (

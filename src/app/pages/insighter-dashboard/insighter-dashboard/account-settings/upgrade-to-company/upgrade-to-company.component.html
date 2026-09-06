@@ -1,3 +1,6 @@
+<!-- Intro cover: what a company account unlocks, shown over the upgrade form. -->
+<app-company-upgrade-cover *ngIf="showIntroCover" (closed)="showIntroCover = false"></app-company-upgrade-cover>
+
 <div class="card">
   <div class="card-body">
     <form [formGroup]="form" (ngSubmit)="onSubmit()" class="mil-up">
