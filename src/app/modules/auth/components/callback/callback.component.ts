@@ -97,13 +97,9 @@ export class CallbackComponent extends BaseComponent implements OnInit {
 
   private redirectBasedOnRole(roles: string[], returnUrl: string | null, isSocialSignup: boolean = false): void {
     const currentLang = this.translationService.getSelectedLanguage() || 'en';
-    const isLocalhost = window.location.hostname === 'localhost' || 
-                       window.location.hostname === '127.0.0.1' ||
-                       window.location.hostname.startsWith('localhost:') ||
-                       window.location.hostname.startsWith('127.0.0.1:');
-    
+
     console.log('[callback] Redirecting based on roles:', roles, 'returnUrl:', returnUrl, 'isSocialSignup:', isSocialSignup);
-    
+
     // Check if user is admin/staff - redirect to Next.js admin dashboard
     if (roles.includes('admin') || roles.includes('staff')) {
       const adminUrl = `${environment.mainAppUrl}/${currentLang}/dashboard`;
@@ -111,97 +107,80 @@ export class CallbackComponent extends BaseComponent implements OnInit {
       window.location.href = adminUrl;
       return;
     }
-    
-    // For social signups, prefer redirecting to returnUrl (if provided)
-    if (isSocialSignup && returnUrl) {
-      console.log('[callback] Redirecting social signup to returnUrl:', returnUrl);
-      // On localhost, cookies won't be shared across ports (4200 -> 3000),
-      // so always go through Next.js callback to set token on :3000 domain.
-      if (isLocalhost) {
-        const nextCallbackUrl = `${environment.mainAppUrl}/${currentLang}/callback?token=${encodeURIComponent(this.getTokenFromCookie() || '')}&returnUrl=${encodeURIComponent(returnUrl)}`;
-        window.location.replace(nextCallbackUrl);
-      } else {
-        window.location.replace(returnUrl);
-      }
-      setTimeout(() => {
-        if (window.location.href.includes('/auth/callback')) {
-          window.location.href = isLocalhost
-            ? `${environment.mainAppUrl}/${currentLang}/callback?token=${encodeURIComponent(this.getTokenFromCookie() || '')}&returnUrl=${encodeURIComponent(returnUrl)}`
-            : returnUrl;
-        }
-      }, 200);
-      return;
-    } else if (isSocialSignup) {
-      const signupUrl = `${environment.mainAppUrl}/${currentLang}`;
-      console.log('[callback] Redirecting social signup to:', signupUrl);
-      window.location.replace(signupUrl);
-      setTimeout(() => {
-        if (window.location.href.includes('/auth/callback')) {
-          window.location.href = signupUrl;
-        }
-      }, 200);
-      return;
-    }
-    
-    // Regular users (including 'client') redirect to Next.js app
-    // If returnUrl exists and is valid, redirect there
-    if (returnUrl) {
-      try {
-        const returnUrlObj = new URL(returnUrl);
-        const allowedDomains = ['foresighta.co', 'www.insightabusiness.com', 'app.insightabusiness.com', 'localhost', 'insightabusiness.com', 'www.insightabusiness.com'];
-        const isAllowed = allowedDomains.some(domain => 
-          returnUrlObj.hostname === domain || 
-          returnUrlObj.hostname.endsWith(`.${domain}`) ||
-          returnUrlObj.hostname.startsWith('localhost:') ||
-          returnUrlObj.hostname.startsWith('127.0.0.1:')
-        );
-        
-        if (isAllowed) {
-          console.log('[callback] Redirecting to returnUrl:', returnUrl);
-          // Force redirect - try both methods
-          if (isLocalhost) {
-            const nextCallbackUrl = `${environment.mainAppUrl}/${currentLang}/callback?token=${encodeURIComponent(this.getTokenFromCookie() || '')}&returnUrl=${encodeURIComponent(returnUrl)}`;
-            window.location.replace(nextCallbackUrl);
-          } else {
-            window.location.replace(returnUrl);
-          }
-          // Fallback if replace doesn't work immediately
-          setTimeout(() => {
-            if (window.location.href.includes('/auth/callback')) {
-              window.location.href = isLocalhost
-                ? `${environment.mainAppUrl}/${currentLang}/callback?token=${encodeURIComponent(this.getTokenFromCookie() || '')}&returnUrl=${encodeURIComponent(returnUrl)}`
-                : returnUrl;
-            }
-          }, 200);
-          return;
-        } else {
-          console.warn('[callback] ReturnUrl domain not allowed:', returnUrlObj.hostname);
-        }
-      } catch (e) {
-        console.error('[callback] Invalid returnUrl:', e, returnUrl);
-      }
-    }
-    
-    // Default redirect to Next.js app home
-    // Determine the correct base URL
-    let baseUrl: string;
-    if (isLocalhost) {
-      baseUrl = `${environment.mainAppUrl}/${currentLang}/home`;
-    } else {
-      // For production, use www.insightabusiness.com (not foresighta.co:3000)
-      baseUrl = `${environment.mainAppUrl}/${currentLang}/home`;
-    }
-    
-    console.log('[callback] Redirecting to default URL:', baseUrl);
-    // Force redirect - try both methods
-    window.location.replace(baseUrl);
+
+    // Everyone else goes through the Next.js /callback page, which is the single
+    // place that checks the server-owned onboarding prompts before landing the
+    // user on their destination. Jumping straight to the destination here used to
+    // skip onboarding entirely for social (Google / LinkedIn) sign-ins, while the
+    // email/password flow — which already redirects to the Next.js callback — showed it.
+    const destination = this.resolveDestination(returnUrl);
+    const nextCallbackUrl = this.buildNextCallbackUrl(currentLang, destination);
+
+    console.log('[callback] Redirecting through Next.js callback:', nextCallbackUrl, 'destination:', destination);
+    window.location.replace(nextCallbackUrl);
+
     // Fallback if replace doesn't work immediately
     setTimeout(() => {
       if (window.location.href.includes('/auth/callback')) {
-        console.log('[callback] Fallback redirect to:', baseUrl);
-        window.location.href = baseUrl;
+        window.location.href = nextCallbackUrl;
       }
     }, 200);
+  }
+
+  /**
+   * Resolves where the user should end up once the Next.js callback has finished
+   * its onboarding checks. Returning null lets the Next.js callback pick the
+   * role-based default (feed for clients, dashboard for insighters/companies),
+   * exactly like the email/password login flow does.
+   */
+  private resolveDestination(returnUrl: string | null): string | null {
+    if (!returnUrl || returnUrl === '/') {
+      return null;
+    }
+
+    if (!this.isAllowedReturnUrl(returnUrl)) {
+      console.warn('[callback] ReturnUrl not usable, falling back to role default:', returnUrl);
+      return null;
+    }
+
+    return returnUrl;
+  }
+
+  private isAllowedReturnUrl(returnUrl: string): boolean {
+    try {
+      const returnUrlObj = new URL(returnUrl, window.location.origin);
+      const allowedDomains = ['foresighta.co', 'insightabusiness.com', 'localhost', '127.0.0.1'];
+      return allowedDomains.some(domain =>
+        returnUrlObj.hostname === domain ||
+        returnUrlObj.hostname.endsWith(`.${domain}`)
+      );
+    } catch (e) {
+      console.error('[callback] Invalid returnUrl:', e, returnUrl);
+      return false;
+    }
+  }
+
+  /**
+   * Builds the Next.js callback URL. On localhost the token has to travel in the
+   * query string because cookies are not shared across ports (4200 -> 3000); in
+   * production the token cookie is already set on the shared parent domain.
+   */
+  private buildNextCallbackUrl(currentLang: string, destination: string | null): string {
+    const isLocalhost = window.location.hostname === 'localhost' ||
+                       window.location.hostname === '127.0.0.1' ||
+                       window.location.hostname.startsWith('localhost:') ||
+                       window.location.hostname.startsWith('127.0.0.1:');
+
+    const params: string[] = [];
+    if (isLocalhost) {
+      params.push(`token=${encodeURIComponent(this.getTokenFromCookie() || '')}`);
+    }
+    if (destination) {
+      params.push(`returnUrl=${encodeURIComponent(destination)}`);
+    }
+
+    const query = params.length ? `?${params.join('&')}` : '';
+    return `${environment.mainAppUrl}/${currentLang}/callback${query}`;
   }
 
   private getReturnUrlFromCookie(): string | null {

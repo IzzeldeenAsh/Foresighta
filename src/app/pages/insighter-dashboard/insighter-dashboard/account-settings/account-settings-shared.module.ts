@@ -7,6 +7,7 @@ import { CheckboxModule } from 'primeng/checkbox';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { DialogModule } from 'primeng/dialog';
 import { SkeletonModule } from 'primeng/skeleton';
+import { PhoneNumberInputModule } from 'src/app/reusable-components/phone-number-input/phone-number-input.module';
 import { ConsultingScheduleComponent } from './consulting-schedule.component';
 import { ProjectSettingsComponent } from './project-settings/project-settings.component';
 
@@ -31,6 +32,7 @@ import { ProjectSettingsComponent } from './project-settings/project-settings.co
     ConfirmDialogModule,
     DialogModule,
     SkeletonModule,
+    PhoneNumberInputModule,
   ],
   exports: [ConsultingScheduleComponent, ProjectSettingsComponent],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],

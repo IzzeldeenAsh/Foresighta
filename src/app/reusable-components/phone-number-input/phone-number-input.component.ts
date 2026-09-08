@@ -31,6 +31,12 @@ export class PhoneNumberInputComponent implements ControlValueAccessor, OnInit, 
   @Input() initialCountryCode: string = '';
   @Input() initialPhoneNumber: string = '';
   @Input() maxWidth: string = '100%';
+  /**
+   * Where the country dropdown panel is attached. Leave null for the default
+   * inline panel; pass 'body' when the input lives inside a scrolling/clipping
+   * container such as a p-dialog, so the panel is not cut off.
+   */
+  @Input() appendPanelTo: any = null;
   @Output() countryCodeChange = new EventEmitter<string>();
   @Output() phoneNumberChange = new EventEmitter<string>();
   @Output() formattedPhoneNumberChange = new EventEmitter<string>();
@@ -38,6 +44,12 @@ export class PhoneNumberInputComponent implements ControlValueAccessor, OnInit, 
 
   value: string = '';
   countryCode: string = '';
+
+  /** Panel styles live in styles.scss so they also apply when appended to body. */
+  get panelStyleClass(): string {
+    return this.lang === 'ar' ? 'phone-input-panel phone-input-panel--rtl' : 'phone-input-panel';
+  }
+
   currentMask: string = '000-000-0000';
   currentPlaceholder: string = '123-456-7890';
   

@@ -104,9 +104,9 @@
         </div>
         <span>{{ 'INSIGHTER.DASHBOARD.NAV.MEETINGS' | translate }}</span>
       </div>
-      <!-- Only a nudge: once availability exists the item drops out of the menu. -->
+      <!-- Providers keep a permanent way back to their schedule; the badge only nudges until availability exists. -->
       <div class="nav-item" [routerLink]="['account-settings/consulting-schedule']" routerLinkActive="active"
-        *ngIf="needsMeetingSetup && !(isClient$ | async)" (click)="closeMobileSidebar()">
+        *ngIf="!(isClient$ | async)" (click)="closeMobileSidebar()">
         <div class="item-icon feed-sidebar-item-icon">
           <svg class="feed-sidebar-icon" aria-hidden="true"><use href="#feed-icon-calendar-cog"></use></svg>
         </div>
@@ -374,9 +374,9 @@
                     </div>
                   </div>
 
-                  <!-- Only a nudge: once availability exists the item drops out of the menu. -->
+                  <!-- Providers keep a permanent way back to their schedule; the badge only nudges until availability exists. -->
                   <div class="nav-item" [routerLink]="['account-settings/consulting-schedule']"
-                    routerLinkActive="active" *ngIf="needsMeetingSetup && !(isClient$ | async)"
+                    routerLinkActive="active" *ngIf="!(isClient$ | async)"
                     [class.has-nudge]="needsMeetingSetup"
                     [attr.title]="isNavCollapsed ? ('INSIGHTER.DASHBOARD.NAV.MY_CONSULTING_SCHEDULE' | translate) : null"
                     pTooltip="{{ isNavCollapsed ? ('INSIGHTER.DASHBOARD.NAV.MY_CONSULTING_SCHEDULE' | translate) : '' }}"

@@ -138,50 +138,8 @@
 
 }
 
-:host ::ng-deep .p-dropdown-panel .p-dropdown-filter {
-  direction: ltr;
-  text-align: left;
-}
-
-[dir="rtl"] :host ::ng-deep .p-dropdown-panel .p-dropdown-filter {
-  direction: rtl;
-  text-align: right;
-}
-
-/* Harmonize search input sizing/padding with country dropdown */
-:host ::ng-deep .p-dropdown-panel .p-dropdown-header {
-  padding: 0.5rem;
-}
-
-:host ::ng-deep .p-dropdown-panel .p-dropdown-filter {
-  height: 42px;
-  padding: 0.5rem 0.75rem;
-  font-size: 0.925rem;
-  border-radius: 0.475rem;
-  box-shadow: none;
-}
-
-:host ::ng-deep .p-dropdown-panel .p-dropdown-filter:focus {
-  box-shadow: none;
-}
-
-:host ::ng-deep .p-dropdown-panel .p-dropdown-filter-container .p-dropdown-filter {
-  padding-right: 2.25rem; /* space for search icon (LTR) */
-}
-
-[dir="rtl"] :host ::ng-deep .p-dropdown-panel .p-dropdown-filter-container .p-dropdown-filter {
-  padding-right: 0.75rem;
-  padding-left: 2.25rem; /* space for search icon (RTL) */
-}
-
-:host ::ng-deep .p-dropdown-panel .p-dropdown-filter-container .p-dropdown-filter-icon {
-  right: 0.75rem;
-}
-
-[dir="rtl"] :host ::ng-deep .p-dropdown-panel .p-dropdown-filter-container .p-dropdown-filter-icon {
-  right: auto;
-  left: 0.75rem;
-}
+/* Panel styles: see `.phone-input-panel` in src/styles.scss (shared with
+   panels appended to body via [appendPanelTo]). */
 
 :host ::ng-deep .p-dropdown {
   width: 100%;

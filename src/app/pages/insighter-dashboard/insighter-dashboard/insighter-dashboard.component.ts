@@ -5,7 +5,6 @@ import { MenuItem } from 'primeng/api';
 import { ProfileService } from 'src/app/_fake/services/get-profile/get-profile.service';
 import { Observable, Subscription } from 'rxjs';
 import { TranslationService } from 'src/app/modules/i18n';
-import { ProjectSettingsService } from './account-settings/project-settings/project-settings.service';
 import { KnowledgeService } from 'src/app/_fake/services/knowledge/knowledge.service';
 import { environment } from 'src/environments/environment';
 
@@ -34,7 +33,6 @@ export class InsighterDashboardComponent implements OnInit, OnDestroy {
   needsProjectSetup = false;
   needsInsightSetup = false;
   private subscriptions: Subscription[] = [];
-  private projectSetupChecked = false;
   private insightSetupChecked = false;
   private lastProfile: any = null;
   isCompanyInsighter$: Observable<boolean>;
@@ -56,7 +54,6 @@ export class InsighterDashboardComponent implements OnInit, OnDestroy {
     private router: Router,
     private profileService: ProfileService,
     private translationService: TranslationService,
-    private projectSettingsService: ProjectSettingsService,
     private knowledgeService: KnowledgeService
   ) {
     this.hasCompanyRole$ = this.profileService.hasRole(['company']);
@@ -91,20 +88,18 @@ export class InsighterDashboardComponent implements OnInit, OnDestroy {
         return;
       }
 
-      this.needsMeetingSetup = profile.has_meet_service !== true;
+      // Only providers set up consulting availability, meeting slots or project
+      // services; a pure client never has any of them, so the "Setup Now!" nudges
+      // must stay hidden for them (same role gate as the insight badge below).
+      // `has_meet_service` (>=1 availability slot) and `has_request_service`
+      // (project services active) both come straight from the profile payload.
+      const isProvider = this.isProvider(profile);
+      this.needsMeetingSetup = isProvider && profile.has_meet_service !== true;
+      this.needsProjectSetup = isProvider && profile.has_request_service !== true;
       this.lastProfile = profile;
-      this.refreshProjectSetupBadge(profile);
       this.refreshInsightSetupBadge(profile);
     });
     this.subscriptions.push(profileSub);
-
-    // Re-read the badge state after the user activates/deactivates or syncs
-    // their project account, so it clears without a full reload.
-    const projectAccountSub = this.projectSettingsService.projectAccountChanged$.subscribe(() => {
-      this.projectSetupChecked = false;
-      this.refreshProjectSetupBadge(this.lastProfile);
-    });
-    this.subscriptions.push(projectAccountSub);
 
     // Same for the "Add Now" nudge: publishing (or deleting) knowledge should
     // clear or restore it without a full reload.
@@ -354,38 +349,14 @@ export class InsighterDashboardComponent implements OnInit, OnDestroy {
     this.closeMobileSidebar();
   }
 
-  /**
-   * `/account/profile` does not return `receive_project_services_active`, so the
-   * badge has to read the real state from the project account settings endpoint.
-   * Only providers can call it (role:insighter|company|company-insighter).
-   */
-  private refreshProjectSetupBadge(profile: any) {
+  /** A provider is the only account type with insights, projects and meeting
+   * availability, so every setup nudge is gated on this. Pure clients never
+   * see them. */
+  private isProvider(profile: any): boolean {
     const roles: string[] = profile?.roles ?? [];
-    const isProvider = ['insighter', 'company', 'company-insighter'].some((role) =>
+    return ['insighter', 'company', 'company-insighter'].some((role) =>
       roles.includes(role)
     );
-
-    if (!isProvider) {
-      this.needsProjectSetup = false;
-      return;
-    }
-
-    if (this.projectSetupChecked) {
-      return;
-    }
-    this.projectSetupChecked = true;
-
-    const sub = this.projectSettingsService.getProjectAccountProperties().subscribe({
-      next: (properties: any) => {
-        const status = properties?.receive_project_services ?? properties?.status;
-        this.needsProjectSetup = status !== 'active';
-      },
-      error: () => {
-        // Don't nag the user because a request failed.
-        this.needsProjectSetup = false;
-      },
-    });
-    this.subscriptions.push(sub);
   }
 
   /**
@@ -394,12 +365,7 @@ export class InsighterDashboardComponent implements OnInit, OnDestroy {
    * endpoint - providers only, same role gate as the project badge.
    */
   private refreshInsightSetupBadge(profile: any) {
-    const roles: string[] = profile?.roles ?? [];
-    const isProvider = ['insighter', 'company', 'company-insighter'].some((role) =>
-      roles.includes(role)
-    );
-
-    if (!isProvider) {
+    if (!this.isProvider(profile)) {
       this.needsInsightSetup = false;
       return;
     }

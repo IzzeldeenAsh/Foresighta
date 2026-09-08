@@ -14,6 +14,8 @@
       [disabled]="disabled"
       [filterFields]="['names.en', 'names.ar', 'international_code']"
       [filterPlaceholder]="searchPlaceholder"
+      [appendTo]="appendPanelTo"
+      [panelStyleClass]="panelStyleClass"
     >
       <!-- Country Option Template -->
       <ng-template pTemplate="item" let-country>

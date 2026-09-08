@@ -4,7 +4,9 @@ import { BehaviorSubject, Observable, catchError, concatMap, finalize, forkJoin,
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { GuidelineDetail, GuidelinesService } from 'src/app/_fake/services/guidelines/guidelines.service';
+import { CountriesService } from 'src/app/_fake/services/countries/countries.service';
 import { ProfileService } from 'src/app/_fake/services/get-profile/get-profile.service';
+import { UpdateProfileService } from 'src/app/_fake/services/profile/profile.service';
 import { BaseComponent } from 'src/app/modules/base.component';
 import {
   ProjectAccountCheckResults,
@@ -20,6 +22,7 @@ interface ProjectChecklistItem {
   key: 'whatsapp';
   title: string;
   details: string[];
+  /** Empty when the item is handled in-page by a dialog instead of a route. */
   route: string;
   passed: boolean;
 }
@@ -95,6 +98,15 @@ export class ProjectSettingsComponent extends BaseComponent implements OnInit {
   isAgreementDialogVisible = false;
   isProjectStatusUpdating = false;
   settingsForm: FormGroup;
+
+  /** WhatsApp dialog: lets the user add the missing number without leaving the page. */
+  isWhatsappDialogVisible = false;
+  isWhatsappSaving = false;
+  isCountriesLoading = false;
+  whatsappErrorMessage = '';
+  countries: any[] = [];
+  whatsappForm: FormGroup;
+  private profileAny: any = null;
   private lastResults: ProjectAccountCheckResults = {};
   private readonly hiddenServiceSlugs = new Set(['other']);
   private projectServiceAgreementAccepted = false;
@@ -113,9 +125,16 @@ export class ProjectSettingsComponent extends BaseComponent implements OnInit {
     private readonly profileService: ProfileService,
     private readonly router: Router,
     private readonly guidelinesService: GuidelinesService,
+    private readonly countriesService: CountriesService,
+    private readonly updateProfileService: UpdateProfileService,
     private readonly sanitizer: DomSanitizer
   ) {
     super(injector);
+
+    this.whatsappForm = this.fb.group({
+      whatsapp_country_code: ['', Validators.required],
+      whatsapp_number: ['', Validators.required],
+    });
 
     this.settingsForm = this.fb.group({
       project_status: [true],
@@ -549,14 +568,34 @@ export class ProjectSettingsComponent extends BaseComponent implements OnInit {
             ? 'أضف رقم واتساب لتصلك الإشعارات بسرعة.'
             : 'Add your WhatsApp number for faster notifications.',
         ],
-        route: '/app/insighter-dashboard/account-settings/notification-settings',
+        // Handled in-page by the WhatsApp dialog instead of routing away.
+        route: '',
         passed: !!results.whatsapp?.pass,
       },
     ];
   }
 
+  openChecklistItem(event: Event, item: ProjectChecklistItem): void {
+    event.preventDefault();
+
+    if (item.passed) {
+      return;
+    }
+
+    if (item.key === 'whatsapp') {
+      this.openWhatsappDialog();
+      return;
+    }
+
+    this.openChecklistRoute(event, item.route);
+  }
+
   openChecklistRoute(event: Event, route: string): void {
     event.preventDefault();
+
+    if (!route) {
+      return;
+    }
 
     if (/^https?:\/\//.test(route)) {
       window.location.href = route;
@@ -564,6 +603,151 @@ export class ProjectSettingsComponent extends BaseComponent implements OnInit {
     }
 
     void this.router.navigateByUrl(route);
+  }
+
+  openWhatsappDialog(): void {
+    this.whatsappErrorMessage = '';
+    this.whatsappForm.reset({ whatsapp_country_code: '', whatsapp_number: '' });
+    this.whatsappForm.markAsUntouched();
+    this.isWhatsappDialogVisible = true;
+
+    this.loadCountries();
+    this.loadProfileForWhatsapp();
+  }
+
+  closeWhatsappDialog(): void {
+    if (this.isWhatsappSaving) {
+      return;
+    }
+
+    this.isWhatsappDialogVisible = false;
+  }
+
+  onWhatsappCountryCodeChange(countryCode: string): void {
+    this.whatsappForm.get('whatsapp_country_code')?.setValue(countryCode);
+    this.whatsappForm.get('whatsapp_country_code')?.markAsTouched();
+  }
+
+  onWhatsappNumberChange(phoneNumber: string): void {
+    this.whatsappForm.get('whatsapp_number')?.setValue(phoneNumber);
+    this.whatsappForm.get('whatsapp_number')?.markAsTouched();
+  }
+
+  onFlagError(country: any): void {
+    country.showFlag = false;
+  }
+
+  get isWhatsappFormInvalid(): boolean {
+    return this.whatsappForm.invalid;
+  }
+
+  submitWhatsappNumber(): void {
+    if (this.isWhatsappSaving) {
+      return;
+    }
+
+    this.whatsappForm.markAllAsTouched();
+
+    if (this.whatsappForm.invalid) {
+      this.whatsappErrorMessage =
+        this.lang === 'ar'
+          ? 'الرجاء إدخال رقم واتساب صحيح.'
+          : 'Please enter a valid WhatsApp number.';
+      return;
+    }
+
+    this.isWhatsappSaving = true;
+    this.whatsappErrorMessage = '';
+
+    const countryCode = String(this.whatsappForm.get('whatsapp_country_code')?.value || '').trim();
+    const number = String(this.whatsappForm.get('whatsapp_number')?.value || '').trim();
+
+    // Keep the SMS channel untouched: the endpoint replaces the whole payload.
+    const smsStatus = String(this.profileAny?.sms_status ?? this.profileAny?.sms_whatsapp ?? 'inactive');
+    const smsEnabled = smsStatus === 'active';
+
+    const payload = {
+      whatsapp_status: 'active',
+      whatsapp_country_code: countryCode,
+      whatsapp_number: number,
+      sms_status: smsStatus,
+      sms_whatsapp: smsStatus,
+      sms_country_code: smsEnabled ? this.profileAny?.sms_country_code || '' : '',
+      sms_number: smsEnabled ? this.profileAny?.sms_number || '' : '',
+    };
+
+    const sub = this.updateProfileService
+      .updateNotificationChannel(payload)
+      .pipe(finalize(() => (this.isWhatsappSaving = false)))
+      .subscribe({
+        next: () => {
+          this.isWhatsappDialogVisible = false;
+          this.showSuccess(
+            '',
+            this.lang === 'ar' ? 'تم حفظ رقم واتساب.' : 'WhatsApp number saved.'
+          );
+          this.refreshProfile();
+          this.loadChecklist();
+        },
+        error: (error) => {
+          this.whatsappErrorMessage = this.extractErrorMessage(
+            error,
+            this.lang === 'ar' ? 'تعذر حفظ رقم واتساب.' : 'Unable to save the WhatsApp number.'
+          );
+        },
+      });
+
+    this.unsubscribe.push(sub);
+  }
+
+  private loadCountries(): void {
+    if (this.countries.length || this.isCountriesLoading) {
+      return;
+    }
+
+    this.isCountriesLoading = true;
+
+    const sub = this.countriesService
+      .getCountries()
+      .pipe(finalize(() => (this.isCountriesLoading = false)))
+      .subscribe({
+        next: (countries: any[]) => {
+          this.countries = (countries || []).map((country: any) => ({
+            ...country,
+            flagPath: `assets/media/flags/${country.flag}.svg`,
+            showFlag: true,
+          }));
+        },
+        error: () => {
+          this.countries = [];
+        },
+      });
+
+    this.unsubscribe.push(sub);
+  }
+
+  /** Loads the profile so an existing number can be prefilled and SMS preserved. */
+  private loadProfileForWhatsapp(): void {
+    const sub = this.profileService.getProfile().subscribe({
+      next: (profile: any) => {
+        this.profileAny = profile;
+
+        if (this.whatsappForm.get('whatsapp_number')?.value) {
+          return;
+        }
+
+        this.whatsappForm.patchValue(
+          {
+            whatsapp_country_code: profile?.whatsapp_country_code || '',
+            whatsapp_number: profile?.whatsapp_number || '',
+          },
+          { emitEvent: false }
+        );
+      },
+      error: () => undefined,
+    });
+
+    this.unsubscribe.push(sub);
   }
 
   openProjectServiceAgreementDialog(): void {

@@ -33,8 +33,8 @@
         </div>
 
         <div class="ps-checklist">
-          <a class="ps-checklist-item" *ngFor="let item of checklist" [attr.href]="item.route"
-            (click)="openChecklistRoute($event, item.route)" [class.is-complete]="item.passed">
+          <a class="ps-checklist-item" *ngFor="let item of checklist" [attr.href]="item.route || null"
+            (click)="openChecklistItem($event, item)" [class.is-complete]="item.passed">
             <span class="ps-checklist-icon" [class.is-complete]="item.passed">
               <i [class]="item.passed ? 'pi pi-check' : 'pi pi-circle'"></i>
             </span>
@@ -415,5 +415,80 @@
       : (lang === 'ar' ? 'أوافق وأفعّل استقبال العروض' : 'Agree and activate')
       }}
     </button>
+  </ng-template>
+</p-dialog>
+
+
+<p-dialog
+  [(visible)]="isWhatsappDialogVisible"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [closable]="!isWhatsappSaving"
+  [closeOnEscape]="!isWhatsappSaving"
+  appendTo="body"
+  [style]="{ width: '90vw', maxWidth: '480px' }"
+  [contentStyle]="{ overflow: 'visible' }"
+  [breakpoints]="{ '576px': '96vw' }"
+>
+  <ng-template pTemplate="header">
+    <div class="ps-whatsapp-header">
+      <span class="ps-whatsapp-badge">
+        <img src="assets/media/whatsapp_220236.png" alt="WhatsApp" />
+      </span>
+      <h5 class="m-0">
+        {{ lang === 'ar' ? 'أضف رقم واتساب' : 'Add your WhatsApp number' }}
+      </h5>
+    </div>
+  </ng-template>
+
+  <div class="ps-whatsapp-dialog" [dir]="isRtl ? 'rtl' : 'ltr'">
+    <p class="ps-muted mb-4">
+      {{
+      lang === 'ar'
+      ? 'أضف رقم واتساب لتصلك إشعارات فرص المشاريع بسرعة.'
+      : 'Add your WhatsApp number so project opportunity notifications reach you quickly.'
+      }}
+    </p>
+
+    <div *ngIf="whatsappErrorMessage" class="alert alert-warning ps-alert">
+      {{ whatsappErrorMessage }}
+    </div>
+
+    <label class="form-label fw-semibold">
+      {{ lang === 'ar' ? 'رقم واتساب' : 'WhatsApp number' }}
+    </label>
+    <app-phone-number-input
+      [countries]="countries"
+      [placeholder]="lang === 'ar' ? 'رقم واتساب' : 'WhatsApp number'"
+      [searchPlaceholder]="lang === 'ar' ? 'رمز البلد' : 'Country code'"
+      [lang]="lang"
+      [disabled]="isWhatsappSaving"
+      [isRequired]="true"
+      [showValidationErrors]="false"
+      [initialCountryCode]="whatsappForm.get('whatsapp_country_code')?.value"
+      [initialPhoneNumber]="whatsappForm.get('whatsapp_number')?.value"
+      appendPanelTo="body"
+      (countryCodeChange)="onWhatsappCountryCodeChange($event)"
+      (phoneNumberChange)="onWhatsappNumberChange($event)"
+      (flagError)="onFlagError($event)"
+    ></app-phone-number-input>
+  </div>
+
+  <ng-template pTemplate="footer">
+    <div class="ps-whatsapp-actions" [dir]="isRtl ? 'rtl' : 'ltr'">
+      <button type="button" class="btn btn-light ps-whatsapp-action" [disabled]="isWhatsappSaving"
+        (click)="closeWhatsappDialog()">
+        {{ lang === 'ar' ? 'إلغاء' : 'Cancel' }}
+      </button>
+      <button type="button" class="btn btn-primary ps-whatsapp-action" [disabled]="isWhatsappSaving"
+        (click)="submitWhatsappNumber()">
+        {{
+        isWhatsappSaving
+        ? (lang === 'ar' ? 'جاري الحفظ...' : 'Saving...')
+        : (lang === 'ar' ? 'حفظ' : 'Save')
+        }}
+      </button>
+    </div>
   </ng-template>
 </p-dialog>
