@@ -12,17 +12,19 @@
       </div>
 
       <div class="header-start-actions">
-        <a [href]="getFeedUrl()" class="header-action header-feed fw-bold">
-          <svg class="feed-header-icon" aria-hidden="true" width="16" height="16" viewBox="0 0 24 24">
-            <rect x="3" y="4" width="6" height="6" rx="1"></rect>
-            <rect x="3" y="14" width="6" height="6" rx="1"></rect>
-            <rect x="13" y="4" width="8" height="2" rx="1"></rect>
-            <rect x="13" y="8" width="5" height="2" rx="1"></rect>
-            <rect x="13" y="14" width="8" height="2" rx="1"></rect>
-            <rect x="13" y="18" width="5" height="2" rx="1"></rect>
-          </svg>
-          {{ 'MENU.FEED' | translate }}
-        </a>
+        <div class="header-feed-group">
+          <a [href]="getFeedUrl()" class="header-action header-feed fw-bold">
+            <svg class="feed-header-icon" aria-hidden="true" width="16" height="16" viewBox="0 0 24 24">
+              <rect x="3" y="4" width="6" height="6" rx="1"></rect>
+              <rect x="3" y="14" width="6" height="6" rx="1"></rect>
+              <rect x="13" y="4" width="8" height="2" rx="1"></rect>
+              <rect x="13" y="8" width="5" height="2" rx="1"></rect>
+              <rect x="13" y="14" width="8" height="2" rx="1"></rect>
+              <rect x="13" y="18" width="5" height="2" rx="1"></rect>
+            </svg>
+            {{ 'MENU.FEED' | translate }}
+          </a>
+        </div>
         <a [href]="getLandingUrl()" class="header-nav-link">
           {{ 'MENU.HOME' | translate }}
         </a>
