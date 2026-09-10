@@ -17,58 +17,65 @@
   </button>
 </div>
 <!-- Mobile Sidebar -->
-<p-sidebar [(visible)]="isMobileSidebarVisible" [position]="lang === 'ar' ? 'right' : 'left'" [modal]="true" [showCloseIcon]="true"
-  [style]="{width: '300px'}" (onHide)="closeMobileSidebar()" [class]="'mobile-sidebar'">
-  <div class="mobile-nav-content p-4">
-    <div class="mobile-section">
-      <div class="mobile-section-title">{{ 'INSIGHTER.DASHBOARD.NAV.MENU' | translate }}</div>
-      <div class="nav-item" [routerLink]="['my-dashboard']" routerLinkActive="active" (click)="closeMobileSidebar()">
-        <div class="item-icon dashboard-item-icon">
-          <img src="assets/media/icons/dashboard-feed.svg" alt="" aria-hidden="true">
+<p-sidebar [(visible)]="isMobileSidebarVisible" [position]="lang === 'ar' ? 'right' : 'left'" [modal]="true" [showCloseIcon]="false"
+  [style]="{width: '352px'}" (onHide)="closeMobileSidebar()" [class]="'mobile-sidebar feed-sidebar-drawer'">
+  <div class="mobile-nav-content">
+    <div class="mobile-accordion">
+      <section class="mobile-section">
+        <button type="button" class="mobile-section-toggle" [class.is-expanded]="isMenuExpanded" (click)="toggleMenu()" [attr.aria-expanded]="isMenuExpanded">
+          <span class="feed-sidebar-item-icon"><svg class="feed-sidebar-icon" aria-hidden="true"><use href="#feed-icon-list-details"></use></svg></span>
+          <span>{{ 'INSIGHTER.DASHBOARD.NAV.MENU' | translate }}</span>
+          <svg class="mobile-section-chevron" aria-hidden="true" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"></path></svg>
+        </button>
+        <div class="mobile-section-content" *ngIf="isMenuExpanded">
+          <a class="nav-item" [routerLink]="['my-dashboard']" routerLinkActive="active" (click)="closeMobileSidebar()">
+            <span class="item-icon dashboard-item-icon"><img src="assets/media/icons/dashboard-feed.svg" alt="" aria-hidden="true"></span>
+            <span>{{ 'INSIGHTER.DASHBOARD.NAV.OVERVIEW' | translate }}</span>
+          </a>
+          <a class="nav-item" [routerLink]="['my-requests']" routerLinkActive="active" *ngIf="!(isClient$ | async)" (click)="closeMobileSidebar()">
+            <span class="item-icon feed-sidebar-item-icon"><svg class="feed-sidebar-icon" aria-hidden="true"><use href="#feed-icon-file"></use></svg></span>
+            <span>{{ 'INSIGHTER.DASHBOARD.NAV.MY_REQUESTS' | translate }}</span>
+          </a>
         </div>
-        <span>{{ 'INSIGHTER.DASHBOARD.NAV.OVERVIEW' | translate }}</span>
-      </div>
-      <div class="nav-item" [routerLink]="['my-requests']" routerLinkActive="active" *ngIf="!(isClient$ | async)"
-        (click)="closeMobileSidebar()">
-        <div class="item-icon feed-sidebar-item-icon">
-          <svg class="feed-sidebar-icon" aria-hidden="true"><use href="#feed-icon-file"></use></svg>
-        </div>
-        <span>{{ 'INSIGHTER.DASHBOARD.NAV.MY_REQUESTS' | translate }}</span>
-      </div>
-      <div class="nav-item" [routerLink]="['my-company-settings']" routerLinkActive="active"
-        *ngIf="(isCompany$ | async)" (click)="closeMobileSidebar()">
-        <div class="item-icon feed-sidebar-item-icon">
-          <svg class="feed-sidebar-icon" aria-hidden="true"><use href="#feed-icon-users"></use></svg>
-        </div>
-        <span>{{ 'INSIGHTER.DASHBOARD.NAV.MY_COMPANY' | translate }}</span>
-      </div>
-    </div>
+      </section>
 
-    <div class="mobile-section">
-      <div class="mobile-section-title">{{ lang === 'ar' ? 'المنشورات' : 'Posts' }}</div>
-      <a class="nav-item" [href]="feedUrl" (click)="closeMobileSidebar()">
+      <section class="mobile-section">
+        <button type="button" class="mobile-section-toggle" [class.is-expanded]="isPostsExpanded" (click)="togglePosts()" [attr.aria-expanded]="isPostsExpanded">
+          <span class="feed-sidebar-item-icon"><svg class="feed-sidebar-icon" aria-hidden="true"><use href="#feed-icon-message-2"></use></svg></span>
+          <span>{{ lang === 'ar' ? 'المنشورات' : 'Posts' }}</span>
+          <svg class="mobile-section-chevron" aria-hidden="true" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"></path></svg>
+        </button>
+        <div class="mobile-section-content" *ngIf="isPostsExpanded">
+          <a class="nav-item" [href]="feedUrl" (click)="closeMobileSidebar()">
         <div class="item-icon feed-sidebar-item-icon">
           <svg class="feed-sidebar-icon" aria-hidden="true"><use href="#feed-icon-list-details"></use></svg>
         </div>
         <span>{{ lang === 'ar' ? 'الموجز' : 'Feed' }}</span>
-      </a>
-      <a class="nav-item" [href]="myPostsUrl" (click)="closeMobileSidebar()">
+          </a>
+          <a class="nav-item" [href]="myPostsUrl" (click)="closeMobileSidebar()">
         <div class="item-icon feed-sidebar-item-icon">
           <svg class="feed-sidebar-icon" aria-hidden="true"><use href="#feed-icon-message-2"></use></svg>
         </div>
         <span>{{ lang === 'ar' ? 'منشوراتي' : 'My Posts' }}</span>
-      </a>
-      <a class="nav-item" [href]="savedPostsUrl" (click)="closeMobileSidebar()">
+          </a>
+          <a class="nav-item" [href]="savedPostsUrl" (click)="closeMobileSidebar()">
         <div class="item-icon feed-sidebar-item-icon">
           <svg class="feed-sidebar-icon" aria-hidden="true"><use href="#feed-icon-bookmark"></use></svg>
         </div>
         <span>{{ lang === 'ar' ? 'المنشورات المحفوظة' : 'Saved Posts' }}</span>
-      </a>
-    </div>
+          </a>
+        </div>
+      </section>
 
-    <div class="mobile-section">
-      <div class="mobile-section-title">{{ lang === 'ar' ? 'الرؤى' : 'Insights' }}<span *ngIf="needsInsightSetup" class="setup-now-badge"><svg class="setup-now-badge__icon" aria-hidden="true"><use href="#feed-icon-plus"></use></svg>{{ lang === 'ar' ? 'أضف الآن!' : 'Add Now!' }}</span></div>
-      <div class="nav-item" [routerLink]="['/app/add-knowledge/stepper']" *ngIf="needsInsightSetup"
+      <section class="mobile-section">
+        <button type="button" class="mobile-section-toggle" [class.is-expanded]="isInsightsExpanded" (click)="toggleInsights()" [attr.aria-expanded]="isInsightsExpanded">
+          <span class="feed-sidebar-item-icon"><svg class="feed-sidebar-icon" aria-hidden="true"><use href="#feed-icon-book"></use></svg></span>
+          <span>{{ lang === 'ar' ? 'الرؤى' : 'Insights' }}</span>
+          <span *ngIf="needsInsightSetup" class="setup-now-badge"><svg class="setup-now-badge__icon" aria-hidden="true"><use href="#feed-icon-plus"></use></svg>{{ lang === 'ar' ? 'أضف الآن!' : 'Add Now!' }}</span>
+          <svg class="mobile-section-chevron" aria-hidden="true" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"></path></svg>
+        </button>
+        <div class="mobile-section-content" *ngIf="isInsightsExpanded">
+          <div class="nav-item" [routerLink]="['/app/add-knowledge/stepper']" *ngIf="needsInsightSetup"
         (click)="closeMobileSidebar()">
         <div class="item-icon feed-sidebar-item-icon">
           <svg class="feed-sidebar-icon" aria-hidden="true"><use href="#feed-icon-plus"></use></svg>
@@ -94,11 +101,18 @@
         </div>
         <span>{{ 'INSIGHTER.DASHBOARD.NAV.READ_LATER' | translate }}</span>
       </div>
-    </div>
+        </div>
+      </section>
 
-    <div class="mobile-section">
-      <div class="mobile-section-title">{{ 'INSIGHTER.DASHBOARD.NAV.MEETINGS' | translate }}<span *ngIf="needsMeetingSetup" class="setup-now-badge">{{ lang === 'ar' ? 'الإعداد الآن!' : 'Setup Now!' }}</span></div>
-      <div class="nav-item" [routerLink]="['my-meetings']" routerLinkActive="active" (click)="closeMobileSidebar()">
+      <section class="mobile-section">
+        <button type="button" class="mobile-section-toggle" [class.is-expanded]="isMeetingsExpanded" (click)="toggleMeetings()" [attr.aria-expanded]="isMeetingsExpanded">
+          <span class="feed-sidebar-item-icon"><svg class="feed-sidebar-icon" aria-hidden="true"><use href="#feed-icon-calendar"></use></svg></span>
+          <span>{{ 'INSIGHTER.DASHBOARD.NAV.MEETINGS' | translate }}</span>
+          <span *ngIf="needsMeetingSetup" class="setup-now-badge">{{ lang === 'ar' ? 'الإعداد الآن!' : 'Setup Now!' }}</span>
+          <svg class="mobile-section-chevron" aria-hidden="true" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"></path></svg>
+        </button>
+        <div class="mobile-section-content" *ngIf="isMeetingsExpanded">
+          <div class="nav-item" [routerLink]="['my-meetings']" routerLinkActive="active" (click)="closeMobileSidebar()">
         <div class="item-icon feed-sidebar-item-icon">
           <svg class="feed-sidebar-icon" aria-hidden="true"><use href="#feed-icon-calendar"></use></svg>
         </div>
@@ -113,11 +127,18 @@
         <span>{{ 'INSIGHTER.DASHBOARD.NAV.MY_CONSULTING_SCHEDULE' | translate }}</span>
         <span *ngIf="needsMeetingSetup" class="setup-now-badge">{{ lang === 'ar' ? 'الإعداد الآن!' : 'Setup Now!' }}</span>
       </div>
-    </div>
+        </div>
+      </section>
 
-    <div class="mobile-section"
+      <section class="mobile-section"
       *ngIf="(isInsighter$ | async) || (isCompany$ | async) || (isCompanyInsighter$ | async) || (isClient$ | async)">
-      <div class="mobile-section-title">{{ lang === 'ar' ? 'المشاريع' : 'Projects' }}<span *ngIf="needsProjectSetup" class="setup-now-badge">{{ lang === 'ar' ? 'الإعداد الآن!' : 'Setup Now!' }}</span></div>
+        <button type="button" class="mobile-section-toggle" [class.is-expanded]="isProjectsExpanded" (click)="toggleProjects()" [attr.aria-expanded]="isProjectsExpanded">
+          <span class="feed-sidebar-item-icon"><svg class="feed-sidebar-icon" aria-hidden="true"><use href="#feed-icon-briefcase"></use></svg></span>
+          <span>{{ lang === 'ar' ? 'المشاريع' : 'Projects' }}</span>
+          <span *ngIf="needsProjectSetup" class="setup-now-badge">{{ lang === 'ar' ? 'الإعداد الآن!' : 'Setup Now!' }}</span>
+          <svg class="mobile-section-chevron" aria-hidden="true" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"></path></svg>
+        </button>
+        <div class="mobile-section-content" *ngIf="isProjectsExpanded">
       <!-- Client Projects - mobile -->
       <div class="nav-item" [routerLink]="['project-offers']" routerLinkActive="active"
         *ngIf="!(isClient$ | async)" (click)="closeMobileSidebar()">
@@ -145,10 +166,17 @@
         <span>{{ lang === 'ar' ? 'إعدادات المشروع' : 'Project Settings' }}</span>
         <span *ngIf="needsProjectSetup" class="setup-now-badge">{{ lang === 'ar' ? 'الإعداد الآن!' : 'Setup Now!' }}</span>
       </div>
-    </div>
-    <div class="mobile-section">
-      <div class="mobile-section-title">{{ lang === 'ar' ? 'السوق' : 'Marketplace' }}</div>
-      <div class="nav-item" [routerLink]="['my-orders']" routerLinkActive="active" (click)="closeMobileSidebar()">
+        </div>
+      </section>
+
+      <section class="mobile-section">
+        <button type="button" class="mobile-section-toggle" [class.is-expanded]="isMarketplaceExpanded" (click)="toggleMarketplace()" [attr.aria-expanded]="isMarketplaceExpanded">
+          <span class="feed-sidebar-item-icon"><svg class="feed-sidebar-icon" aria-hidden="true"><use href="#feed-icon-shopping-bag"></use></svg></span>
+          <span>{{ lang === 'ar' ? 'السوق' : 'Marketplace' }}</span>
+          <svg class="mobile-section-chevron" aria-hidden="true" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"></path></svg>
+        </button>
+        <div class="mobile-section-content" *ngIf="isMarketplaceExpanded">
+          <div class="nav-item" [routerLink]="['my-orders']" routerLinkActive="active" (click)="closeMobileSidebar()">
         <div class="item-icon feed-sidebar-item-icon">
           <svg class="feed-sidebar-icon" aria-hidden="true"><use href="#feed-icon-shopping-bag"></use></svg>
         </div>
@@ -169,11 +197,17 @@
         </div>
         <span>{{ 'INSIGHTER.DASHBOARD.NAV.WALLET' | translate }}</span>
       </div>
-    </div>
+        </div>
+      </section>
 
-    <div class="mobile-section">
-      <div class="mobile-section-title">{{ 'INSIGHTER.DASHBOARD.NAV.SETTINGS' | translate }}</div>
-      <div class="nav-item" [routerLink]="['account-settings/general-settings']" routerLinkActive="active"
+      <section class="mobile-section">
+        <button type="button" class="mobile-section-toggle" [class.is-expanded]="isSettingsExpanded" (click)="toggleSettings()" [attr.aria-expanded]="isSettingsExpanded">
+          <span class="feed-sidebar-item-icon"><svg class="feed-sidebar-icon" aria-hidden="true"><use href="#feed-icon-settings"></use></svg></span>
+          <span>{{ 'INSIGHTER.DASHBOARD.NAV.SETTINGS' | translate }}</span>
+          <svg class="mobile-section-chevron" aria-hidden="true" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"></path></svg>
+        </button>
+        <div class="mobile-section-content" *ngIf="isSettingsExpanded">
+          <div class="nav-item" [routerLink]="['account-settings/general-settings']" routerLinkActive="active"
         (click)="closeMobileSidebar()">
         <div class="item-icon feed-sidebar-item-icon">
           <svg class="feed-sidebar-icon" aria-hidden="true"><use href="#feed-icon-user-edit"></use></svg>
@@ -194,6 +228,12 @@
         </div>
         <span>{{ 'INSIGHTER.DASHBOARD.NAV.PAYMENT_SETTINGS' | translate }}</span>
       </div>
+          <div class="nav-item" [routerLink]="['my-company-settings']" routerLinkActive="active" *ngIf="(isCompany$ | async)" (click)="closeMobileSidebar()">
+            <div class="item-icon feed-sidebar-item-icon"><svg class="feed-sidebar-icon" aria-hidden="true"><use href="#feed-icon-users"></use></svg></div>
+            <span>{{ 'INSIGHTER.DASHBOARD.NAV.MY_COMPANY' | translate }}</span>
+          </div>
+        </div>
+      </section>
     </div>
   </div>
 </p-sidebar>

@@ -24,6 +24,11 @@ export class InsighterDashboardComponent implements OnInit, OnDestroy {
   isMeetingsExpanded: boolean = false;
   isSettingsExpanded: boolean = false;
   isClientProjectsExpanded: boolean = false;
+  isMenuExpanded: boolean = false;
+  isPostsExpanded: boolean = false;
+  isInsightsExpanded: boolean = false;
+  isProjectsExpanded: boolean = false;
+  isMarketplaceExpanded: boolean = false;
   isNavCollapsed: boolean = false;
   isMobileSidebarVisible: boolean = false;
   isMobileView: boolean = false;
@@ -68,8 +73,15 @@ export class InsighterDashboardComponent implements OnInit, OnDestroy {
 
   private checkScreenSize() {
     if (typeof window !== 'undefined') {
-      const isMobile = window.innerWidth <= 575;
+      // The dashboard rail is not useful once the content is in the compact
+      // layout. Treat tablets as mobile too, so it is removed rather than
+      // leaving a partially collapsed strip beside the page.
+      const isMobile = window.innerWidth <= 991;
       this.isMobileView = isMobile;
+
+      if (!isMobile) {
+        this.isMobileSidebarVisible = false;
+      }
       
       if (isMobile) {
         // On mobile, always show sidebar when opened
@@ -316,6 +328,26 @@ export class InsighterDashboardComponent implements OnInit, OnDestroy {
 
   toggleClientProjects(): void {
     this.isClientProjectsExpanded = !this.isClientProjectsExpanded;
+  }
+
+  toggleMenu(): void {
+    this.isMenuExpanded = !this.isMenuExpanded;
+  }
+
+  togglePosts(): void {
+    this.isPostsExpanded = !this.isPostsExpanded;
+  }
+
+  toggleInsights(): void {
+    this.isInsightsExpanded = !this.isInsightsExpanded;
+  }
+
+  toggleProjects(): void {
+    this.isProjectsExpanded = !this.isProjectsExpanded;
+  }
+
+  toggleMarketplace(): void {
+    this.isMarketplaceExpanded = !this.isMarketplaceExpanded;
   }
 
   checkClientProjectsRoute(url: string): void {

@@ -520,130 +520,142 @@
   }
 }
 
-// Mobile Sidebar Styles
-.mobile-sidebar {
+// Mobile drawer mirrors the Next.js feed sidebar: one dashboard link followed
+// by a single, continuous accordion card with no gaps between sections.
+.feed-sidebar-drawer {
+  width: min(22rem, calc(100vw - 2.5rem)) !important;
+  background: #eef2fa !important;
+
+  .p-sidebar-header {
+    display: none;
+  }
+
   .p-sidebar-content {
-    padding: 0;
     height: 100%;
+    padding: 0;
     overflow-y: auto;
   }
-  
+
   .mobile-nav-content {
-    height: 100%;
+    min-height: 100%;
     padding: 1rem;
 
+    .mobile-accordion {
+      overflow: hidden;
+      border: 1px solid #d7e1ec;
+      border-radius: 0.5rem;
+      background: #fff;
+      box-shadow: 0 2px 8px rgba(27, 56, 93, 0.04);
+    }
+
     .mobile-section {
-      margin-bottom: 1rem;
-    }
+      border-bottom: 1px solid #e2e8f0;
 
-    .mobile-section-title {
-      font-size: 0.8rem;
-      font-weight: 700;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-      color: #6d757d;
-      margin: 0 0 0.5rem;
-      padding: 0 0.25rem;
-    }
-
-    .mobile-group-title {
-      font-size: 0.8rem;
-      font-weight: 600;
-      color: #6d757d;
-      margin: 0.75rem 0 0.35rem;
-      padding: 0 0.25rem;
-    }
-    
-    // Flat mobile menu items
-    .nav-item {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 0.75rem 1rem;
-      border-bottom: 1px solid #f1f1f1;
-      cursor: pointer;
-      color: #495057;
-      text-decoration: none;
-      transition: background-color 0.2s ease, color 0.2s ease;
-      
       &:last-child {
-        border-bottom: none;
+        border-bottom: 0;
       }
-      
-      &:hover {
-        background-color: #f8f9fa;
-        text-decoration: none;
-      }
-      
-      &.active {
-        background-color: #eef5ff;
-        color: #4096ff;
-        border-left: 3px solid #4096ff;
-        
-        [dir="rtl"] & {
-          border-left: none;
-          border-right: 3px solid #4096ff;
-        }
-      }
-      
-      i {
-        font-size: 1rem;
-        color: #4096ff;
+    }
+
+    .mobile-section-toggle {
+      display: flex;
+      width: 100%;
+      min-height: 3.375rem;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.5rem 1rem;
+      border: 0;
+      background: #fff;
+      color: #364152;
+      cursor: pointer;
+      font-size: 1rem;
+      font-weight: 600;
+      text-align: start;
+      transition: background-color 150ms ease, color 150ms ease;
+
+      &:hover,
+      &.is-expanded {
+        background: #f8f9fa;
       }
 
-      svg {
-        display: block;
+      > span:not(.feed-sidebar-item-icon):not(.setup-now-badge) {
+        min-width: 0;
+        flex: 1;
       }
-      
-      .item-icon, .sub-item-icon {
+
+      .feed-sidebar-item-icon {
         display: flex;
+        flex: 0 0 auto;
         align-items: center;
         justify-content: center;
-        width: 32px;
-        height: 32px;
-        border-radius: 50%;
-        background-color: #f0f2f5;
+        margin: 0 !important;
       }
-      
-      span, .item-label, .sub-item-label {
-        font-size: 0.95rem;
-        font-weight: 500;
-        color: inherit;
-        white-space: nowrap;
-        overflow: hidden;
+
+      .mobile-section-chevron {
+        width: 1.25rem;
+        height: 1.25rem;
+        flex: 0 0 auto;
+        fill: none;
+        stroke: #718096;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        stroke-width: 2;
+        transition: transform 200ms ease;
+      }
+
+      &.is-expanded .mobile-section-chevron {
+        transform: rotate(180deg);
       }
     }
-    
-    .nav-separator {
-      height: 1px;
-      background-color: #e9ecef;
-      margin: 0.5rem 0;
-    }
-    
-    .navigation-cards {
-      height: 100%;
-      
-      .navigation-card {
-        height: 100%;
-        margin-bottom: 0;
-        
-        .p-card-header {
-          background-color: #f8f9fa;
-          border-bottom: 1px solid #e9ecef;
-          padding: 1rem;
-          
-          h3 {
-            margin: 0;
-            font-size: 1.25rem;
-            font-weight: 600;
-            color: #495057;
-          }
+
+    .mobile-section-content {
+      .nav-item {
+        display: flex;
+        min-height: 2.75rem;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.5rem 1rem;
+        border-inline-start: 2px solid transparent;
+        border-top: 1px solid #f1f1f1;
+        color: #495057;
+        cursor: pointer;
+        font-size: 0.875rem;
+        font-weight: 400;
+        text-decoration: none;
+        transition: background-color 150ms ease, color 150ms ease;
+
+        &:hover {
+          background: #f8f9fa;
+          color: #2378e8;
+          text-decoration: none;
         }
-        
-        .p-card-body {
-          padding: 0;
-          height: calc(100% - 60px);
-          overflow-y: auto;
+
+        &.active {
+          border-inline-start-color: #2378e8;
+          background: #edf4fd;
+          color: #2378e8;
+          font-weight: 600;
+        }
+
+        .item-icon,
+        .sub-item-icon {
+          display: flex;
+          width: 2rem;
+          height: 1.5rem;
+          flex: 0 0 auto;
+          align-items: center;
+          justify-content: center;
+          margin: 0 !important;
+          border-radius: 0;
+          background: transparent;
+        }
+
+        > span:not(.setup-now-badge) {
+          min-width: 0;
+          overflow: hidden;
+          color: inherit;
+          font-size: inherit;
+          font-weight: inherit;
+          white-space: nowrap;
         }
       }
     }
@@ -699,7 +711,7 @@
 }
 
 // Responsive adjustments for mobile
-@media screen and (max-width: 575px) {
+@media screen and (max-width: 991px) {
   .side-nav-container {
     display: none;
   }
@@ -787,8 +799,8 @@
   }
 }
 
-// Desktop styles (screens > 575px)
-@media screen and (min-width: 576px) {
+// Desktop styles (screens >= 992px)
+@media screen and (min-width: 992px) {
   .mobile-menu-toggle {
     display: none;
   }

@@ -232,6 +232,13 @@
         <div class="mobile-action">
           <a [href]="getFeedUrl()" class="header-icon-button header-feed" [attr.aria-label]="'MENU.FEED' | translate">
             <svg class="feed-header-icon" aria-hidden="true" width="18" height="18" viewBox="0 0 24 24">
+              <defs>
+                <linearGradient id="mobile-feed-icon-gradient" x1="3" y1="4" x2="21" y2="20" gradientUnits="userSpaceOnUse">
+                  <stop stop-color="#fb923c"></stop>
+                  <stop offset="0.55" stop-color="#f97316"></stop>
+                  <stop offset="1" stop-color="#ea580c"></stop>
+                </linearGradient>
+              </defs>
               <rect x="3" y="4" width="6" height="6" rx="1"></rect>
               <rect x="3" y="14" width="6" height="6" rx="1"></rect>
               <rect x="13" y="4" width="8" height="2" rx="1"></rect>

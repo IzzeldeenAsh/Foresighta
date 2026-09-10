@@ -1509,9 +1509,13 @@ app-user-inner {
 
   .mobile-header .header-feed i,
   .mobile-header .header-feed i::before,
-  .mobile-header .header-feed i span::before,
-  .mobile-header .header-feed .feed-header-icon {
+  .mobile-header .header-feed i span::before {
     color: #cbd5e1 !important;
+  }
+
+  .mobile-header .header-feed .feed-header-icon {
+    color: #f97316 !important;
+    fill: url('#mobile-feed-icon-gradient') !important;
   }
 
   :host ::ng-deep .mobile-language-action {
