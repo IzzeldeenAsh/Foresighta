@@ -39,7 +39,7 @@ export class InsighterDashboardComponent implements OnInit, OnDestroy {
   needsInsightSetup = false;
   private subscriptions: Subscription[] = [];
   private insightSetupChecked = false;
-  private lastProfile: any = null;
+  lastProfile: any = null;
   isCompanyInsighter$: Observable<boolean>;
 
   get feedUrl(): string {
@@ -53,6 +53,57 @@ export class InsighterDashboardComponent implements OnInit, OnDestroy {
 
   get savedPostsUrl(): string {
     return `${this.feedUrl}?view=saved-posts`;
+  }
+
+  get mobileSidebarUserName(): string {
+    const firstName = this.lastProfile?.first_name || '';
+    const lastName = this.lastProfile?.last_name || '';
+    return `${firstName} ${lastName}`.trim() || this.lastProfile?.name || '';
+  }
+
+  get mobileSidebarUserInitials(): string {
+    const firstName = this.lastProfile?.first_name || '';
+    const lastName = this.lastProfile?.last_name || '';
+    const initials = `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
+
+    if (initials) {
+      return initials;
+    }
+
+    return this.mobileSidebarUserName
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part: string) => part.charAt(0))
+      .join('')
+      .toUpperCase() || 'I';
+  }
+
+  get mobileSidebarProfileImage(): string | null {
+    return this.lastProfile?.profile_photo_url || null;
+  }
+
+  get mobileSidebarRoleLabel(): string {
+    const roles: string[] = this.lastProfile?.roles || [];
+    const companyName = this.lastProfile?.company?.legal_name || this.lastProfile?.company?.name || '';
+    const insighter = this.lang === 'ar' ? 'إنسايتر' : 'Insighter';
+    const manager = this.lang === 'ar' ? 'مدير' : 'Manager';
+    const client = this.lang === 'ar' ? 'عميل' : 'Client';
+    const at = this.lang === 'ar' ? 'في' : 'at';
+
+    if (roles.includes('company-insighter')) {
+      return companyName ? `${insighter} ${at} ${companyName}` : insighter;
+    }
+
+    if (roles.includes('insighter')) {
+      return insighter;
+    }
+
+    if (roles.includes('company')) {
+      return companyName ? `${companyName} · ${manager}` : manager;
+    }
+
+    return client;
   }
 
   constructor(

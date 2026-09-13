@@ -18,8 +18,38 @@
 </div>
 <!-- Mobile Sidebar -->
 <p-sidebar [(visible)]="isMobileSidebarVisible" [position]="lang === 'ar' ? 'right' : 'left'" [modal]="true" [showCloseIcon]="false"
-  [style]="{width: '352px'}" (onHide)="closeMobileSidebar()" [class]="'mobile-sidebar feed-sidebar-drawer'">
+  [style]="{width: '352px'}" (onHide)="closeMobileSidebar()" styleClass="mobile-sidebar feed-sidebar-drawer">
   <div class="mobile-nav-content">
+    <section *ngIf="lastProfile" class="mobile-sidebar-profile-card">
+      <svg
+        aria-hidden="true"
+        class="mobile-sidebar-profile-waves"
+        viewBox="0 0 420 120"
+        fill="none"
+        preserveAspectRatio="none">
+        <path d="M-15 89C46 25 107 30 170 65" stroke="currentColor" stroke-width="1.35"></path>
+        <path d="M-13 99C49 35 110 39 171 73" stroke="currentColor" stroke-width="1.35"></path>
+        <path d="M-10 109C51 46 111 48 172 81" stroke="currentColor" stroke-width="1.35"></path>
+        <path d="M-5 118C54 57 113 57 174 89" stroke="currentColor" stroke-width="1.35"></path>
+        <path d="M248 76C308 27 371 25 435 54" stroke="currentColor" stroke-width="1.35"></path>
+        <path d="M254 84C313 37 375 35 438 63" stroke="currentColor" stroke-width="1.35"></path>
+        <path d="M261 92C319 47 380 45 441 72" stroke="currentColor" stroke-width="1.35"></path>
+        <path d="M268 100C325 57 384 55 444 81" stroke="currentColor" stroke-width="1.35"></path>
+      </svg>
+
+      <div class="mobile-sidebar-profile-avatar">
+        <img *ngIf="mobileSidebarProfileImage; else mobileSidebarInitials"
+          [src]="mobileSidebarProfileImage"
+          [alt]="mobileSidebarUserName" />
+        <ng-template #mobileSidebarInitials>
+          <span class="mobile-sidebar-profile-initials">{{ mobileSidebarUserInitials }}</span>
+        </ng-template>
+      </div>
+
+      <h2 class="mobile-sidebar-profile-name">{{ mobileSidebarUserName }}</h2>
+      <span class="mobile-sidebar-role-badge">{{ mobileSidebarRoleLabel }}</span>
+    </section>
+
     <div class="mobile-accordion">
       <section class="mobile-section">
         <button type="button" class="mobile-section-toggle" [class.is-expanded]="isMenuExpanded" (click)="toggleMenu()" [attr.aria-expanded]="isMenuExpanded">

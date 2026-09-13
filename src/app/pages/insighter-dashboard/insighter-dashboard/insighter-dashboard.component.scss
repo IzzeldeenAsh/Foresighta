@@ -520,9 +520,8 @@
   }
 }
 
-// Mobile drawer mirrors the Next.js feed sidebar: one dashboard link followed
-// by a single, continuous accordion card with no gaps between sections.
-.feed-sidebar-drawer {
+// Mobile drawer mirrors the Next.js feed sidebar account card and navigation.
+:host ::ng-deep .p-sidebar.mobile-sidebar.feed-sidebar-drawer {
   width: min(22rem, calc(100vw - 2.5rem)) !important;
   background: #eef2fa !important;
 
@@ -534,19 +533,111 @@
     height: 100%;
     padding: 0;
     overflow-y: auto;
+    background: #eef2fa;
+  }
+}
+
+.mobile-nav-content {
+  min-height: 100%;
+  padding: 1rem;
+
+  .mobile-sidebar-profile-card {
+    position: relative;
+    display: flex;
+    height: auto;
+    min-height: 212px;
+    flex-direction: column;
+    align-items: center;
+    overflow: hidden;
+    border: 1px solid #d9e3ef;
+    border-radius: 0.5rem;
+    background: #f8fafd;
+    padding: 1.5rem 1.25rem 1rem;
+    text-align: center;
   }
 
-  .mobile-nav-content {
-    min-height: 100%;
-    padding: 1rem;
+  .mobile-sidebar-profile-waves {
+    position: absolute;
+    top: 1.75rem;
+    right: 0;
+    left: 0;
+    width: 100%;
+    height: 5rem;
+    color: #bfd7ff;
+    pointer-events: none;
+  }
 
-    .mobile-accordion {
-      overflow: hidden;
-      border: 1px solid #d7e1ec;
-      border-radius: 0.5rem;
-      background: #fff;
-      box-shadow: 0 2px 8px rgba(27, 56, 93, 0.04);
+  .mobile-sidebar-profile-avatar {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    width: 6rem;
+    height: 6rem;
+    flex: 0 0 6rem;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    border: 4px solid #fff;
+    border-radius: 9999px;
+    background: #e7f0fe;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
     }
+  }
+
+  .mobile-sidebar-profile-initials {
+    color: #2378e8;
+    font-size: 24px;
+    font-weight: 800;
+    line-height: 1;
+  }
+
+  .mobile-sidebar-profile-name {
+    position: relative;
+    z-index: 1;
+    max-width: 100%;
+    margin: 1rem 0 0;
+    overflow: hidden;
+    color: #101724;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: normal;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mobile-sidebar-role-badge {
+    position: relative;
+    z-index: 1;
+    display: block;
+    max-width: 100%;
+    margin-top: 0.75rem;
+    overflow: hidden;
+    border-radius: 0.25rem;
+    background: #dff7f6;
+    padding: 3px 0.75rem;
+    color: #139a91;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 17px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mobile-sidebar-profile-card + .mobile-accordion {
+    margin-top: 1rem;
+  }
+
+  .mobile-accordion {
+    overflow: hidden;
+    border: 1px solid #d7e1ec;
+    border-radius: 0.5rem;
+    background: #fff;
+    box-shadow: 0 2px 8px rgba(27, 56, 93, 0.04);
+  }
 
     .mobile-section {
       border-bottom: 1px solid #e2e8f0;
@@ -659,7 +750,6 @@
         }
       }
     }
-  }
 }
 .item-icon{
   margin-inline-end: 10px !important;
