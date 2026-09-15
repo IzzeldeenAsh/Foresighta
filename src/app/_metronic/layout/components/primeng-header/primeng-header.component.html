@@ -175,7 +175,10 @@
               {{ userInitials }}
             </div>
             
-            <!-- User status indicators for desktop -->            
+            <!-- User status indicators for desktop -->
+            @if ((hasRole(['insighter']) && !hasRole(['company']) && profile.insighter_status !== 'active')
+              || (hasRole(['company']) && profile.company?.status !== 'active')
+              || (hasRole(['company-insighter']) && profile.insighter_status !== 'active')) {
             <div class="d-flex flex-column align-items-end me-2">
               <!-- Status indicator for insighter (not company) -->
               @if (hasRole(['insighter']) && !hasRole(['company']) && profile.insighter_status !== 'active') {
@@ -198,8 +201,7 @@
                 </div>
               }
             </div>
-            
-            <i class="ki-duotone ki-arrow-down fs-4 rotate-180" ></i>
+            }
           </a>
           
           <!-- User dropdown menu -->
