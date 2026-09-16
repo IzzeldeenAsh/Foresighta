@@ -934,3 +934,9 @@
     padding-inline: 0.75rem !important;
   }
 }
+
+@media (max-width: 991.98px) {
+  #kt_app_wrapper { padding-top: var(--app-header-height, 64px); }
+  .main-content-area { padding-bottom: calc(64px + env(safe-area-inset-bottom)); }
+  .mobile-menu-toggle__button { width: 44px; height: 44px; }
+}

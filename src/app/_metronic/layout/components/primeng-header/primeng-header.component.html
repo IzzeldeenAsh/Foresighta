@@ -303,13 +303,13 @@
 <div
   *ngIf="isNotificationsOpen && isSmallScreen"
   class="fixed-top-0 fixed-bottom-0 start-0 end-0"
-  style="position: fixed; inset: 0; z-index: 1000;"
+  style="position: fixed; inset: 0; z-index: 1300;"
   aria-hidden="false"
 >
   <!-- Backdrop -->
   <div
     class="position-absolute start-0 top-0 w-100"
-    style="background-color: rgba(0,0,0,0.3); transition: opacity 300ms;height: 100vh;"
+    style="background-color: rgba(0,0,0,0.3); transition: opacity 300ms; height: 100%;"
     (click)="closeNotifications()"
     [@backdropFade]
   ></div>
@@ -319,7 +319,7 @@
     aria-modal="true"
     class="position-absolute top-0 bottom-0 bg-white shadow"
     [ngClass]="isRtl ? 'start-0' : 'end-0'"
-    style="width: 100%; max-width: 32rem; height: 100vh;"
+    style="width: 100%; max-width: 32rem; height: 100%;"
     (click)="$event.stopPropagation()"
     [@drawerSlide]="{ value: 'in', params: { fromX: isRtl ? '-100%' : '100%' } }"
   >

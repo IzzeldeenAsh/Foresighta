@@ -129,7 +129,11 @@ export class HorizontalComponent extends BaseComponent implements OnInit {
     });
 
     // Keep external redirect draft flag in sync while user is in the wizard
-    const stepSub = this.currentStep$.subscribe(() => this.syncDraftFlagForExternalRedirect());
+    const stepSub = this.currentStep$.subscribe(() => {
+      this.syncDraftFlagForExternalRedirect();
+      // A shorter next step must not open below the fold on a phone.
+      window.scrollTo({ top: 0, behavior: 'auto' });
+    });
     this.unsubscribe.push(stepSub);
     const accountSub = this.account$.subscribe(() => this.syncDraftFlagForExternalRedirect());
     this.unsubscribe.push(accountSub);

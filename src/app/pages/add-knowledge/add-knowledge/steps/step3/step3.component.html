@@ -230,6 +230,7 @@
                   <td>
                     <input type="text"
                            class="form-control form-control-sm"
+                           [attr.aria-label]="('CHAPTER_NAME' | translate) + ' ' + (rowIndex + 1)"
                            [(ngModel)]="chapter.title"
                            [ngModelOptions]="{standalone: true}"
                            (ngModelChange)="onChapterTitleChange(doc.id, rowIndex)"

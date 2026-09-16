@@ -15,7 +15,7 @@
 .custom-tooltip-wrapper {
   position: relative;
   display: inline-flex;
-  align-items: start;
+  align-items: flex-start;
 }
 
 // Custom tooltip styles
@@ -33,7 +33,7 @@
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
   animation: tooltipFadeIn 0.2s ease-out;
   text-align: start;
- 
+
   // Position for header tooltip (below the icon)
   top: calc(100% + 8px);
   left: 50%;
@@ -49,15 +49,15 @@
     border-width: 0 6px 6px 6px;
     border-style: solid;
     border-color: transparent transparent #ffffff transparent;
-    
+
   }
-  
+
   // RTL support
   &.rtl {
     direction: rtl;
     text-align: start;
   }
-  
+
   // Card tooltip position (above the card)
   &.card-tooltip {
     bottom: 140px;
@@ -80,7 +80,7 @@
   ul {
     margin: 8px 0 0 0;
     padding-left: 20px;
-    
+
     li {
       margin-bottom: 4px;
       text-align: start !important;
@@ -101,4 +101,31 @@
 
 .cursor-pointer {
   cursor: pointer;
-} 
+}
+:host { display: block; min-width: 0; }
+.knowledge-type-heading { padding-bottom: 32px; }
+.knowledge-type-card {
+  min-height: 160px;
+  width: 100%;
+  text-align: start;
+  > svg { flex-shrink: 0; }
+  > span { min-width: 0; overflow-wrap: anywhere; }
+}
+@media (max-width: 767.98px) {
+  .knowledge-type-heading { padding-bottom: 16px; position: relative; }
+  .knowledge-type-card {
+    min-height: 104px;
+    padding: 16px !important;
+    gap: 16px;
+    > svg { width: 32px; height: 36px; margin: 0 !important; }
+    .fs-6 { font-size: 13px !important; line-height: 1.5; }
+  }
+  .custom-tooltip-wrapper { position: static; }
+  .custom-tooltip.header-tooltip {
+    width: 100%; max-width: 100%; left: 0; top: 100%;
+    transform: none; animation: none;
+    &::before { display: none; }
+  }
+  .custom-tooltip.card-tooltip { max-width: calc(100% - 16px); }
+  .hover-elevate-up:hover:not(.disabled) { transform: none; }
+}

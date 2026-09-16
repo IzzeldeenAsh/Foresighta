@@ -1,7 +1,13 @@
-@media screen and (max-width: 768px) {
-  .padding-responsive {
-      padding: 2rem;
-  }
+// Match the fixed application header offset.
+:host { display: block; min-width: 0; }
+.knowledge-wizard {
+  padding-top: calc(var(--app-header-height, 80px) + 24px);
+  padding-bottom: max(32px, env(safe-area-inset-bottom));
+}
+.wizard-actions { gap: 12px; padding-top: 24px; flex-wrap: wrap; }
+@media (max-width: 767.98px) {
+  .wizard-actions .btn { min-height: 44px; margin-inline-end: 0 !important; }
+  .wizard-actions > div { min-width: 0; }
 }
 .white{
   color: #ffffff !important;
@@ -190,7 +196,7 @@
 
       // Fluid size so labels stay readable at 320px and never overflow.
       .stepper-title {
-        font-size: clamp(0.58rem, 2.6vw, 0.78rem) !important;
+        font-size: clamp(10px, 2.6vw, 12px) !important;
       }
     }
   }

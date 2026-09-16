@@ -1576,3 +1576,14 @@ app-user-inner {
   .primeng-header *::before,
   .primeng-header *::after { transition-duration: 0.01ms !important; }
 }
+
+// Keep the actual header box equal to the offset used by application pages.
+@media (max-width: 991.98px) {
+  .mobile-header { padding: 0; min-height: var(--app-header-height, 64px); }
+  .mobile-header-container { min-height: var(--app-header-height, 64px); }
+  .mobile-user-dropdown-menu {
+    max-width: calc(100vw - 24px);
+    max-height: calc(100dvh - var(--app-header-height, 64px) - 24px);
+    overflow-y: auto;
+  }
+}

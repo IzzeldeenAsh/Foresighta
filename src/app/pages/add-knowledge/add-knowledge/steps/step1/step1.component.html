@@ -3,7 +3,7 @@
   <!-- Content will be added later -->
 </div>
 
-<div class="pb-10 pb-lg-15">
+<div class="knowledge-type-heading">
   <h2 class="fw-bolder d-flex align-items-center text-gray-900">
     {{ 'CHOOSE_KNOWLEDGE_TYPE' | translate }}
     <span class="custom-tooltip-wrapper">
@@ -25,7 +25,7 @@
 
 <div class="fv-row" [formGroup]="form">
   <div class="row">
-    <div class="col-lg-6 mb-4" *ngFor="let type of knowledgeTypes" >
+    <div class="col-md-6 mb-4" *ngFor="let type of knowledgeTypes" >
       <input
         formControlName="knowledgeType"
         name="knowledgeType"
@@ -36,13 +36,13 @@
         [disabled]="type.disabled || false"
       />
       <label
-        class="btn btn-outline btn-outline-dashed btn-outline-default p-7 d-flex align-items-center position-relative hover-elevate-up shadow-sm rounded-3 transition h-100"
+        class="knowledge-type-card btn btn-outline btn-outline-dashed btn-outline-default p-7 d-flex align-items-center position-relative hover-elevate-up shadow-sm rounded-3 transition h-100"
         [for]="type.id"
         (mouseenter)="type.tooltip ? activeTooltip = type.value : null"
         (mouseleave)="activeTooltip = null"
         [class.disabled]="type.disabled"
         [style.cursor]="type.disabled ? 'not-allowed' : 'pointer'"
-        style="min-height: 160px;"
+
       >
         <!-- Custom Tooltip -->
         <div 
