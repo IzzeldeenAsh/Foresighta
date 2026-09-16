@@ -6,174 +6,214 @@
 .white{
   color: #ffffff !important;
 }
+
 // Stepper container styles
-.stepper-nav {
-display: flex;
-justify-content: space-between;
-align-items: center;
-position: relative;
-padding: 0 1rem;
+// Size tokens driven per-breakpoint so the connector line always lands on the
+// vertical centre of the step icon, whatever the icon size is.
+#kt_create_account_stepper .stepper-nav {
+  --step-icon-size: 40px;
+  --step-gap: 0.5rem;
 
-// Line connector between steps
-&::before {
-  content: '';
-  position: absolute;
-  top: 40%;
-  left: 100px;
-  right: 80px;
-  height: 2px;
-  background: #E4E6EF;
-  z-index: 0;
-}
-}
-
-// Individual step item
-.stepper-item {
-position: relative;
-z-index: 1;
-padding: 1rem;
-min-width: 120px;
-text-align: center;
-transition: all 0.3s ease;
-
-// Step icon container
-.stepper-icon-i {
-  width: 40px;
-  height: 40px;
-  background: #ffffff;
-  border: 2px solid #E4E6EF;
-  border-radius: 50%;
-  margin: 0 auto 0.75rem;
   display: flex;
-  align-items: center;
+  flex-wrap: nowrap;
   justify-content: center;
+  align-items: flex-start;
   position: relative;
-  z-index: 1;
-  transition: all 0.3s ease;
+  padding: 0 0.5rem;
 
-  .stepper-icon-elem {
-    color: #B5B5C3;
-    font-size: 1.25rem;
+  // Individual step item
+  .stepper-item {
+    position: relative;
+    z-index: 1;
+    // Equal-width, shrinkable columns: every step keeps its label on one row of
+    // items no matter how narrow the viewport gets.
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: 160px;
+    margin: 0;
+    padding: 0 var(--step-gap);
+    text-align: center;
     transition: all 0.3s ease;
-  }
-}
 
-// Step title
-.stepper-title {
-  color: #3F4254;
-  font-weight: 500;
-  margin: 0;
-  transition: all 0.3s ease;
-  font-size: 0.9rem !important;
-}
-
-// Current step styles
-&.current {
-  .stepper-icon-i {
-    border-color: #3b82f6;
-    background: #3b82f6;
-    box-shadow: 0 0 10px rgba(0, 158, 247, 0.3);
-
-    .stepper-icon-elem {
-      color: #ffffff !important;
-    }
-  }
-
-  .stepper-title {
-    color: #3b82f6;
-    font-weight: 600;
-  }
-}
-
-// Completed step styles
-&.completed {
-  .stepper-icon-i {
-    border-color: #50CD89;
-    background: #50CD89;
-    box-shadow: 0 0 10px rgba(80, 205, 137, 0.3);
-
-    .stepper-icon-elem {
-      color: #ffffff !important;
-    }
-
-    &::after {
+    // Line connector to the previous step (logical props keep it correct in RTL)
+    &::before {
+      content: '';
       position: absolute;
-      color: #ffffff;
-      font-size: 1.1rem;
-      font-weight: bold;
+      top: calc(var(--step-icon-size) / 2 - 1px);
+      inset-inline-end: calc(50% + var(--step-icon-size) / 2 + 4px);
+      width: calc(100% - var(--step-icon-size) - 8px);
+      height: 2px;
+      background: #E4E6EF;
+      z-index: 0;
+    }
+
+    &:first-child::before {
+      content: none;
+    }
+
+    // Step icon container
+    .stepper-icon-i {
+      width: var(--step-icon-size);
+      height: var(--step-icon-size);
+      background: #ffffff;
+      border: 2px solid #E4E6EF;
+      border-radius: 50%;
+      margin: 0 auto 0.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      z-index: 1;
+      transition: all 0.3s ease;
+
+      // The template renders `<i class="ki-duotone ... fs-3">`; `fs-3` is a
+      // Bootstrap utility with !important, so the icon size has to be forced.
+      > i {
+        font-size: 1.15rem !important;
+        line-height: 1;
+        transition: all 0.3s ease;
+      }
+    }
+
+    // Step title
+    .stepper-title {
+      color: #3F4254;
+      font-weight: 500;
+      margin: 0;
+      transition: all 0.3s ease;
+      font-size: 0.9rem !important;
+      // Never clip or hide a label - let it wrap onto as many lines as it needs.
+      white-space: normal;
+      overflow-wrap: break-word;
+      word-break: break-word;
+      hyphens: auto;
+      line-height: 1.25;
+    }
+
+    // Current step styles
+    &.current {
+      .stepper-icon-i {
+        border-color: #3b82f6;
+        background: #3b82f6;
+        box-shadow: 0 0 10px rgba(0, 158, 247, 0.3);
+
+        > i {
+          color: #ffffff !important;
+        }
+      }
+
+      .stepper-title {
+        color: #3b82f6;
+        font-weight: 600;
+      }
+    }
+
+    // Completed step styles
+    &.completed {
+      .stepper-icon-i {
+        border-color: #50CD89;
+        background: #50CD89;
+        box-shadow: 0 0 10px rgba(80, 205, 137, 0.3);
+
+        > i {
+          color: #ffffff !important;
+        }
+
+        &::after {
+          position: absolute;
+          color: #ffffff;
+          font-size: 1.1rem;
+          font-weight: bold;
+        }
+      }
+
+      .stepper-title {
+        color: #50CD89;
+      }
+
+      &::before {
+        background: #50CD89;
+      }
+    }
+
+    // The segment leading into the current step is already walked through.
+    &.current::before {
+      background: #50CD89;
     }
   }
-
-  .stepper-title {
-    color: #50CD89;
-  }
-}
 }
 
 // Responsive styles
 @media screen and (max-width: 992px) {
-.stepper-nav {
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 1.5rem;
-  
-  &::before {
-    display: none;
-  }
-}
+  #kt_create_account_stepper .stepper-nav {
+    --step-icon-size: 36px;
+    --step-gap: 0.35rem;
 
-.stepper-item {
-  min-width: 110px;
-  padding: 0.5rem;
-  
-  .stepper-icon-i {
-    width: 40px;
-    height: 40px;
+    .stepper-item {
+      max-width: 140px;
 
-    .stepper-icon-elem {
-      font-size: 1.1rem;
+      .stepper-icon-i > i {
+        font-size: 1rem !important;
+      }
+
+      .stepper-title {
+        font-size: 0.8rem !important;
+      }
     }
   }
-  
-  .stepper-title {
-    font-size: 0.8rem !important;
-  }
-}
 }
 
 @media screen and (max-width: 768px) {
-.padding-responsive {
-  padding: 1rem;
-}
-
-.stepper-nav {
-  gap: 1rem;
-  @media screen and (max-width: 768px) {
-    gap: 2px;
+  .padding-responsive {
+    padding: 1rem;
   }
-}
 
-.stepper-item {
-  min-width: 40px;
-  
-  .stepper-icon-i {
-    width: 35px;
-    height: 35px;
+  #kt_create_account_stepper .stepper-nav {
+    --step-icon-size: 32px;
+    --step-gap: 0.25rem;
+    padding: 0 0.25rem;
 
-    .stepper-icon-elem {
-      font-size: 1rem;
+    .stepper-item {
+      max-width: none;
+
+      .stepper-icon-i {
+        margin-bottom: 0.4rem;
+
+        > i {
+          font-size: 0.9rem !important;
+        }
+
+        &::after {
+          font-size: 0.9rem;
+        }
+      }
+
+      // Fluid size so labels stay readable at 320px and never overflow.
+      .stepper-title {
+        font-size: clamp(0.58rem, 2.6vw, 0.78rem) !important;
+      }
     }
+  }
+}
 
-    &::after {
-      font-size: 0.9rem;
+@media screen and (max-width: 400px) {
+  #kt_create_account_stepper .stepper-nav {
+    --step-icon-size: 28px;
+    --step-gap: 0.15rem;
+
+    .stepper-item {
+      &::before {
+        inset-inline-end: calc(50% + var(--step-icon-size) / 2 + 2px);
+        width: calc(100% - var(--step-icon-size) - 4px);
+      }
+
+      .stepper-icon-i > i {
+        font-size: 0.8rem !important;
+      }
     }
   }
+}
 
-  .stepper-title {
-    font-size: 0.75rem !important;
-  }
-}
-}
-.stepper.stepper-links .stepper-nav .stepper-item:after{
+#kt_create_account_stepper .stepper-nav .stepper-item:after{
   display: none;
 }
