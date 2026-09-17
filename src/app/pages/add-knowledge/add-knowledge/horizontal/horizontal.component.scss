@@ -18,7 +18,10 @@
 // vertical centre of the step icon, whatever the icon size is.
 #kt_create_account_stepper .stepper-nav {
   --step-icon-size: 40px;
-  --step-gap: 0.5rem;
+  // Horizontal breathing room on each side of a step column. Together with the
+  // column width below it drives both the spacing between steps and the length
+  // of the connector line.
+  --step-gap: 1rem;
 
   display: flex;
   flex-wrap: nowrap;
@@ -26,6 +29,12 @@
   align-items: flex-start;
   position: relative;
   padding: 0 0.5rem;
+  // Metronic gives `.stepper-links .stepper-nav` auto inline margins, which stop
+  // it from stretching and shrink-wrap it around the labels - the step columns
+  // then never reach their max-width. Claim the full row so `flex: 1 1 0` below
+  // can actually space the steps out.
+  width: 100%;
+  margin-inline: 0;
 
   // Individual step item
   .stepper-item {
@@ -35,7 +44,7 @@
     // items no matter how narrow the viewport gets.
     flex: 1 1 0;
     min-width: 0;
-    max-width: 160px;
+    max-width: 210px;
     margin: 0;
     padding: 0 var(--step-gap);
     text-align: center;
@@ -153,10 +162,10 @@
 @media screen and (max-width: 992px) {
   #kt_create_account_stepper .stepper-nav {
     --step-icon-size: 36px;
-    --step-gap: 0.35rem;
+    --step-gap: 0.6rem;
 
     .stepper-item {
-      max-width: 140px;
+      max-width: 170px;
 
       .stepper-icon-i > i {
         font-size: 1rem !important;
@@ -176,7 +185,7 @@
 
   #kt_create_account_stepper .stepper-nav {
     --step-icon-size: 32px;
-    --step-gap: 0.25rem;
+    --step-gap: 0.4rem;
     padding: 0 0.25rem;
 
     .stepper-item {

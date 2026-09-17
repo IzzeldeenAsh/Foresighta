@@ -9,6 +9,10 @@
   transform: translateY(-5px);
   box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.1) !important;
   transition: all 0.3s ease;
+  // `transform` turns the hovered card into its own stacking context, which traps
+  // the tooltip inside it. Without a z-index here the stepper items (z-index: 1)
+  // paint over the tooltip and their labels bleed through it.
+  z-index: 1100;
 }
 
 // Custom tooltip wrapper
@@ -60,12 +64,14 @@
 
   // Card tooltip position (above the card)
   &.card-tooltip {
-    bottom: 140px;
+    // Anchored to the card itself so it always clears the card and never floats
+    // further up into the stepper than it needs to.
+    bottom: calc(100% + 10px);
     top: auto;
     left: 50%;
     transform: translateX(-50%);
   @media (max-width: 991px) {
-    bottom: 100px;
+    bottom: calc(100% + 8px);
   }
     &::before {
       top: auto;
@@ -117,7 +123,8 @@
     min-height: 104px;
     padding: 16px !important;
     gap: 16px;
-    > svg { width: 32px; height: 36px; margin: 0 !important; }
+    // `width: auto` keeps each icon's own aspect ratio instead of stretching it.
+    > svg { width: auto; height: 30px; margin: 0 !important; }
     .fs-6 { font-size: 13px !important; line-height: 1.5; }
   }
   .custom-tooltip-wrapper { position: static; }
