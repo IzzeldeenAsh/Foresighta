@@ -1,3 +1,4 @@
+import { redirectToNextSignIn } from 'src/app/shared/next-auth';
 import { inject } from '@angular/core';
 import { CanActivateFn, Router, UrlTree } from '@angular/router';
 import { Observable, of } from 'rxjs';
@@ -17,13 +18,13 @@ export const adminGuard: CanActivateFn = (route, state): Observable<boolean | Ur
       } else {
         // User does not have the required role, redirect to login
         localStorage.removeItem('foresighta-creds');
-        return router.createUrlTree(['/auth/login']);
+        return redirectToNextSignIn();
       }
     }),
     catchError(() => {
       // On error (e.g., token invalid), redirect to login
       localStorage.removeItem('foresighta-creds');
-      return of(router.createUrlTree(['/auth/login']));
+      return of(redirectToNextSignIn());
     })
   );
 };

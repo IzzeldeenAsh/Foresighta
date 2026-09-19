@@ -1,3 +1,4 @@
+import { redirectToNextSignIn } from 'src/app/shared/next-auth';
 import { Injectable } from "@angular/core";
 import { CanDeactivate, Router, UrlTree } from "@angular/router";
 import { Observable } from "rxjs";
@@ -20,7 +21,7 @@ export class VerifyLoginEmailExitGuard
     }
 
     if (this.isHandling) {
-      return this.router.createUrlTree(["/auth/login"]);
+      return redirectToNextSignIn();
     }
 
     this.isHandling = true;
@@ -32,7 +33,7 @@ export class VerifyLoginEmailExitGuard
       },
     });
 
-    return this.router.createUrlTree(["/auth/login"]);
+    return redirectToNextSignIn();
   }
 }
 

@@ -9,7 +9,7 @@
     (function () {
       var match = location.pathname.match(/^\/auth\/([^/]+)\/?$/);
       if (!match) return;
-      var pages = { login: 'signin', 'sign-up': 'signup', 'password-reset': 'reset-password', 'verify-login-email': 'verify-email', 'email-reconfirm': 'verify-email', 'verify-email': 'verify-email', callback: 'callback', logout: 'signout' };
+      var pages = { login: 'signin', 'sign-up': 'signup', registration: 'signup', register: 'signup', 'password-reset': 'reset-password', 'verify-login-email': 'verify-email', 'email-reconfirm': 'verify-email', 'verify-email': 'verify-email', callback: 'callback', logout: 'signout' };
       if (!pages[match[1]]) return;
       var host = location.hostname;
       var local = host === 'localhost' || host === '127.0.0.1';

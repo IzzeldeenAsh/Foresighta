@@ -1,3 +1,4 @@
+import { redirectToNextSignIn } from 'src/app/shared/next-auth';
 // roles.guard.ts
 import { Injectable } from '@angular/core';
 import { CanActivate, ActivatedRouteSnapshot, RouterStateSnapshot, Router, UrlTree } from '@angular/router';
@@ -42,9 +43,7 @@ export class RolesGuard implements CanActivate {
         const url = state.url;
         console.log('Roles Guard - Redirecting to login with returnUrl:', url);
         // Return router URL tree with returnUrl
-        return of(this.router.createUrlTree(['/auth/login'], { 
-          queryParams: { returnUrl: url } 
-        }));
+        return of(redirectToNextSignIn(url));
       })
     );
   }

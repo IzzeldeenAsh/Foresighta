@@ -9,7 +9,7 @@ export class AuthRedirectComponent implements OnInit {
   ngOnInit(): void {
     const url = new URL(this.router.url, window.location.origin);
     const page = url.pathname.split('/')[2] || 'login';
-    const pages: Record<string, string> = { login: 'signin', 'sign-up': 'signup', 'password-reset': 'reset-password', 'verify-login-email': 'verify-email', 'email-reconfirm': 'verify-email', 'verify-email': 'verify-email', callback: 'callback', logout: 'signout' };
+    const pages: Record<string, string> = { login: 'signin', 'sign-up': 'signup', registration: 'signup', register: 'signup', 'password-reset': 'reset-password', 'verify-login-email': 'verify-email', 'email-reconfirm': 'verify-email', 'verify-email': 'verify-email', callback: 'callback', logout: 'signout' };
     const lang = this.translation.getSelectedLanguage() === 'ar' ? 'ar' : 'en';
     const token = url.searchParams.get('token');
     if (page === 'callback' && token && /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(token)) {

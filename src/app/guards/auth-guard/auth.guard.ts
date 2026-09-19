@@ -1,3 +1,4 @@
+import { redirectToNextSignIn } from 'src/app/shared/next-auth';
 import { Injectable } from '@angular/core';
 import { ActivatedRouteSnapshot, Router, RouterStateSnapshot } from '@angular/router';
 import { AuthService } from '../../modules/auth/services/auth.service';
@@ -45,9 +46,7 @@ export class authGuard  {
       // No token - redirect to login
       console.log('Auth Guard - No token found, redirecting to login');
       const url = state.url;
-      return this.router.createUrlTree(['/auth/login'], {
-        queryParams: { returnUrl: url }
-      });
+      return redirectToNextSignIn(url);
     }
 
     // Check if token is expired
@@ -55,9 +54,7 @@ export class authGuard  {
       // Token expired - redirect to login
       console.log('Auth Guard - Token expired, redirecting to login');
       const url = state.url;
-      return this.router.createUrlTree(['/auth/login'], {
-        queryParams: { returnUrl: url }
-      });
+      return redirectToNextSignIn(url);
     }
 
     // Token exists and is valid - now check profile
@@ -85,9 +82,7 @@ export class authGuard  {
           // No user data - redirect to login
           console.log('Auth Guard - No user data, redirecting to login');
           const url = state.url;
-          return this.router.createUrlTree(['/auth/login'], {
-            queryParams: { returnUrl: url }
-          });
+          return redirectToNextSignIn(url);
         }
       }),
       catchError(error => {
@@ -117,9 +112,7 @@ export class authGuard  {
         localStorage.removeItem('token');
 
         const url = state.url;
-        return of(this.router.createUrlTree(['/auth/login'], {
-          queryParams: { returnUrl: url }
-        }));
+        return of(redirectToNextSignIn(url));
       })
     );
   }
