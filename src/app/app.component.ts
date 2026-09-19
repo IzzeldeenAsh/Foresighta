@@ -48,10 +48,7 @@ export class AppComponent implements OnInit {
     if (event instanceof NavigationEnd || 
         event instanceof NavigationCancel || 
         event instanceof NavigationError) {
-      // Set a small delay to allow the destination page to render properly
-      setTimeout(() => {
-        this.loaderService.hide();
-      }, 300);
+      this.loaderService.hide();
     }
   }
 }

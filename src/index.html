@@ -3,17 +3,48 @@
 
 <head>
   <meta charset="utf-8" />
+  <!-- Legacy auth URLs are handed off before loading the Angular application. -->
+  <meta name="referrer" content="no-referrer" />
+  <script>
+    (function () {
+      var match = location.pathname.match(/^\/auth\/([^/]+)\/?$/);
+      if (!match) return;
+      var pages = { login: 'signin', 'sign-up': 'signup', 'password-reset': 'reset-password', 'verify-login-email': 'verify-email', 'email-reconfirm': 'verify-email', 'verify-email': 'verify-email', callback: 'callback', logout: 'signout' };
+      if (!pages[match[1]]) return;
+      var host = location.hostname;
+      var local = host === 'localhost' || host === '127.0.0.1';
+      var domain = host === 'app.insightabusiness.com' ? 'insightabusiness.com' : host === 'app.foresighta.co' ? 'foresighta.co' : null;
+      if (!local && !domain) return;
+      var params = new URLSearchParams(location.search);
+      var readCookie = function(name) { var item = document.cookie.split('; ').find(function(c) { return c.indexOf(name + '=') === 0; }); if (!item) return ''; try { return decodeURIComponent(item.slice(name.length + 1)); } catch (_) { return ''; } };
+      var lang = params.get('lang') || readCookie('preferred_language');
+      if (lang !== 'ar' && lang !== 'en') { try { lang = localStorage.getItem('language'); } catch (_) {} }
+      lang = lang === 'ar' ? 'ar' : 'en';
+      var token = params.get('token');
+      // The backend still returns a bearer token to this legacy callback. Consume
+      // it on this origin and scrub it before handing off; never forward it.
+      if (match[1] === 'callback' && token && /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(token) && token.length < 12000) {
+        document.cookie = 'token=' + encodeURIComponent(token) + '; Path=/; Max-Age=604800; SameSite=Lax' + (domain ? '; Domain=.' + domain + '; Secure' : '');
+      }
+      params.delete('token'); params.delete('roles');
+      history.replaceState(null, '', location.pathname + (params.toString() ? '?' + params.toString() : ''));
+      var base = local ? location.protocol + '//' + host + ':3000' : 'https://' + domain;
+      location.replace(base + '/' + lang + '/' + pages[match[1]] + (params.toString() ? '?' + params.toString() : ''));
+      window.__authRedirecting = true;
+    })();
+  </script>
+
   <title>Insighta  - Redefining the insights landscape</title>
   <base href="/" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="shortcut icon" href="./assets/media/logos/favicon.ico" />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Almarai:300,400,500,600,700" type="text/css">
-  <script src="https://unpkg.com/@lottiefiles/lottie-player@2.0.8/dist/lottie-player.js"></script>
+  <script defer src="https://unpkg.com/@lottiefiles/lottie-player@2.0.8/dist/lottie-player.js"></script>
 <link rel="preconnect" type="text/css" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@160..700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-element-bundle.min.js"></script>
+
   <!-- SPLASH SCREEN-->
   <link rel="stylesheet" id="layout-styles-anchor" href="./assets/splash-screen.css" />
   <link rel="preconnect" href="https://fonts.gstatic.com">

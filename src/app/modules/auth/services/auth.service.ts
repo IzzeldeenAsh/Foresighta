@@ -425,6 +425,7 @@ export class AuthService implements OnDestroy {
     this.clearUserFromLocalStorage();
     localStorage.removeItem("user");
     localStorage.removeItem("authToken");
+    localStorage.removeItem("token");
     localStorage.removeItem("foresighta-creds");
     this.currentUserSubject.next(undefined);
   }

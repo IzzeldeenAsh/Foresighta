@@ -15,10 +15,9 @@ export const routes: Routes = [
 
 {
   path: 'auth',
-  loadChildren: () =>
-    import('./modules/auth/auth.module').then((m) => m.AuthModule),
-  canActivate: [adminExternalRedirectGuard],
-  canActivateChild: [adminExternalRedirectChildGuard],
+  children: [
+    { path: '**', loadComponent: () => import('./shared/auth-redirect.component').then(m => m.AuthRedirectComponent) },
+  ],
 },
 {
   path: 'app',
