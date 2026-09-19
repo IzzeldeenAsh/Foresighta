@@ -1,3 +1,4 @@
+import { redirectToNextSignIn } from 'src/app/shared/next-auth';
 import { Injectable } from '@angular/core';
 import { HttpInterceptor, HttpRequest, HttpHandler, HttpEvent, HttpErrorResponse } from '@angular/common/http';
 import { catchError, Observable, throwError } from 'rxjs';
@@ -64,24 +65,7 @@ export class AuthInterceptor implements HttpInterceptor {
     this.clearAuthData();
     
     // Navigate to login
-    this.router.navigate(['/auth/login']).then(() => {
-      // Determine appropriate message
-      const rawError = error && (error as any).error;
-      const apiMessage = typeof rawError === 'string'
-        ? rawError
-        : (rawError && rawError.message ? String(rawError.message) : '');
-      const responseUrl = (error && (error as any).url) ? String((error as any).url) : (requestUrl || '');
-      const isVerifyEmailRequest = typeof responseUrl === 'string' && responseUrl.includes('/api/account/email/verify');
-      const isExplicitUnauthenticated = apiMessage.toLowerCase().includes('unauthenticated');
-
-      if (isVerifyEmailRequest || isExplicitUnauthenticated) {
-        // Show "Unauthenticated" toast instead of "Session expired"
-        this.toastService.error('Unauthenticated', 'Error');
-      } else {
-        // Default behavior for other 401s
-        this.toastService.warning('Your session has expired. Please log in again.', 'Session Expired');
-      }
-    });
+    redirectToNextSignIn(this.router.url);
   }
 
   private handleForbidden(error: HttpErrorResponse): void {

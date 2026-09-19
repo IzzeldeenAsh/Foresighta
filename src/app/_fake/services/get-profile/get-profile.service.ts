@@ -1,3 +1,4 @@
+import { redirectToNextSignIn } from 'src/app/shared/next-auth';
 import { Injectable } from "@angular/core";
 import { HttpClient, HttpHeaders } from "@angular/common/http";
 import { BehaviorSubject, Observable, Subject, throwError } from "rxjs";
@@ -102,9 +103,7 @@ export class ProfileService {
           console.log('401 error - Saving return URL:', currentUrl);
 
           // Navigate to auth with returnUrl parameter
-          this.router.navigate(['/auth/login'], {
-            queryParams: { returnUrl: currentUrl }
-          });
+          redirectToNextSignIn(currentUrl);
         } else if (err.status === 403) {
           // Handle email verification errors
           if (isEmailNotVerified) {
@@ -121,9 +120,7 @@ export class ProfileService {
             const currentUrl = window.location.pathname;
             console.log('403 error - Access denied, redirecting to login');
 
-            this.router.navigate(['/auth/login'], {
-              queryParams: { returnUrl: currentUrl }
-            });
+            redirectToNextSignIn(currentUrl);
           }
         }
 
