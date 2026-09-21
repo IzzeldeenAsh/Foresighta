@@ -231,16 +231,22 @@ export class KnowledgeService {
     );
   }
 
-  getKnowledgeTypeStatistics(): Observable<KnowledgeTypeStatisticsResponse> {
+  /** `status` narrows the per-type counts to one library tab (published, scheduled, unpublished). */
+  getKnowledgeTypeStatistics(status?: string): Observable<KnowledgeTypeStatisticsResponse> {
     const headers = new HttpHeaders({
       'Accept': 'application/json',
       'Content-Type': 'application/json',
       'Accept-Language': this.currentLang,
     });
 
+    let url = `${this.baseUrl}/api/insighter/library/knowledge/statistics`;
+    if (status) {
+      url += `?status=${encodeURIComponent(status)}`;
+    }
+
     this.setLoading(true);
     return this.http.get<KnowledgeTypeStatisticsResponse>(
-      `${this.baseUrl}/api/insighter/library/knowledge/statistics`,
+      url,
       { headers }
     ).pipe(
       map((res) => res),

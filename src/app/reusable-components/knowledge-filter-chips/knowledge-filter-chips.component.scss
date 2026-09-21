@@ -8,19 +8,48 @@
   overflow-x: auto;
   padding-bottom: 4px;
   margin-bottom: 0;
-  
+
   &::-webkit-scrollbar {
     height: 4px;
   }
-  
+
   &::-webkit-scrollbar-track {
     background: #f1f1f1;
     border-radius: 4px;
   }
-  
+
   &::-webkit-scrollbar-thumb {
     background: #c1c1c1;
     border-radius: 4px;
+  }
+
+  // Small screens: keep every chip on a single row the user can swipe/drag
+  // through instead of wrapping onto several lines.
+  @media (max-width: 767.98px) {
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+    cursor: grab;
+    user-select: none;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+
+    &.is-dragging {
+      cursor: grabbing;
+      scroll-snap-type: none;
+    }
+
+    .filter-chip {
+      flex: 0 0 auto;
+      scroll-snap-align: start;
+    }
   }
 }
 
@@ -73,19 +102,38 @@
   background: #f9fafb;
 }
 
-.filter-chip.active {
-  border-color: #111827;
-  background: #111827;
-  color: #ffffff;
-}
+// An active chip takes its own icon's colour rather than a shared black, and
+// knocks the icon, label and count out in white. Keys match the `chip-*` class
+// on each chip; values are the primary fill of that chip's icon.
+$chip-colors: (
+  'all': #4b5563,
+  'data': #000000,
+  'statistic': #8a1538,
+  'report': #3699ff,
+  'manual': #ff9f43,
+  'course': #0abb87,
+  'media': #f64e60,
+);
 
-.filter-chip.active .count-badge {
-  background: rgba(255, 255, 255, 0.14);
-  color: #ffffff;
-}
+@each $name, $color in $chip-colors {
+  .filter-chip.chip-#{$name}.active {
+    border-color: $color;
+    background: $color;
+    color: #ffffff;
 
-.filter-chip.active svg path {
-  fill: #ffffff !important;
+    i {
+      color: #ffffff;
+    }
+
+    // No blanket white fill here: each path carries its own active colour in the
+    // template, which is what keeps two-tone icons (the play triangle, the
+    // manual's rules) legible instead of collapsing them into a white blob.
+
+    .count-badge {
+      background: #ffffff;
+      color: $color;
+    }
+  }
 }
 
 .knowledge-type-stats {
