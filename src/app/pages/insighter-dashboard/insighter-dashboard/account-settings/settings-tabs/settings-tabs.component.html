@@ -15,21 +15,24 @@
       <a class="nav-link text-active-primary pb-4"
         [class.active]="activeTab === 'general-settings'"
         (click)="switchTab('general-settings')">
-        {{ 'INSIGHTER.DASHBOARD.NAV.ACCOUNT_SETTINGS' | translate }}
+        <span class="d-none d-sm-inline">{{ 'INSIGHTER.DASHBOARD.NAV.ACCOUNT_SETTINGS' | translate }}</span>
+        <span class="d-inline d-sm-none">{{ lang === 'ar' ? 'الحساب' : 'Account' }}</span>
       </a>
     </li>
     <li class="nav-item" >
       <a class="nav-link text-active-primary pb-4"
         [class.active]="activeTab === 'notification-settings'"
         (click)="switchTab('notification-settings')">
-        {{ lang === 'ar' ? 'إعدادات الإشعارات' : 'Notification Settings' }}
+        <span class="d-none d-sm-inline">{{ lang === 'ar' ? 'إعدادات الإشعارات' : 'Notification Settings' }}</span>
+        <span class="d-inline d-sm-none">{{ lang === 'ar' ? 'الإشعارات' : 'Notification' }}</span>
       </a>
     </li>
     <li class="nav-item" *ngIf="(isInsighter$ | async) || (isCompany$ | async)">
       <a class="nav-link text-active-primary pb-4"
         [class.active]="activeTab === 'payment-settings'"
         (click)="switchTab('payment-settings')">
-        {{ 'INSIGHTER.DASHBOARD.NAV.PAYMENT_SETTINGS_HEADER' | translate }}
+        <span class="d-none d-sm-inline">{{ 'INSIGHTER.DASHBOARD.NAV.PAYMENT_SETTINGS_HEADER' | translate }}</span>
+        <span class="d-inline d-sm-none">{{ lang === 'ar' ? 'تلقي الدفعات' : 'Payout' }}</span>
       </a>
     </li>
   </ng-container>
