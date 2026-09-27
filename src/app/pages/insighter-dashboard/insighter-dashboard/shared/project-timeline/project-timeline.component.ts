@@ -63,7 +63,7 @@ export class ProjectTimelineComponent {
   constructor(private http: HttpClient) {}
 
   get visibleSteps(): ProjectTimelineStep[] {
-    return this.orderVisibleSteps(this.normalizeClosedStep((this.steps || []).filter(step => step?.display)));
+    return (this.steps || []).filter(step => step?.display);
   }
 
   get isClient(): boolean {
@@ -78,11 +78,10 @@ export class ProjectTimelineComponent {
     }
 
     let lastCompleted = -1;
-    steps.forEach((step, index) => {
-      if (step.state === 'completed') {
-        lastCompleted = index;
-      }
-    });
+    for (let index = 0; index < steps.length; index++) {
+      if (steps[index].state !== 'completed') break;
+      lastCompleted = index;
+    }
 
     if (lastCompleted < 0) {
       return '0%';
@@ -105,44 +104,6 @@ export class ProjectTimelineComponent {
 
   isParty(step: ProjectTimelineStep): boolean {
     return isPartyStep(step.key);
-  }
-
-  private orderVisibleSteps(steps: ProjectTimelineStep[]): ProjectTimelineStep[] {
-    const completedPartyIndex = steps.findIndex(step => this.isParty(step) && this.isCompleted(step));
-
-    if (completedPartyIndex <= 0) {
-      return steps;
-    }
-
-    const orderedSteps = [...steps];
-    const [completedPartyStep] = orderedSteps.splice(completedPartyIndex, 1);
-    orderedSteps.unshift(completedPartyStep);
-    return orderedSteps;
-  }
-
-  private normalizeClosedStep(steps: ProjectTimelineStep[]): ProjectTimelineStep[] {
-    const finalPaymentCompleted = steps.some(step => this.isFinalSettlementPayment(step) && this.isCompleted(step));
-
-    if (!finalPaymentCompleted) {
-      return steps;
-    }
-
-    return steps.map(step => {
-      if (step.key !== TIMELINE_STEP.CLOSED_PROJECT) {
-        return step;
-      }
-
-      return {
-        ...step,
-        status: 'completed',
-        state: 'completed',
-      };
-    });
-  }
-
-  private isFinalSettlementPayment(step: ProjectTimelineStep): boolean {
-    return step.key === TIMELINE_STEP.FINAL_PAYMENT
-      || step.key === TIMELINE_STEP.FULL_PAYMENT_AT_END;
   }
 
   isActive(step: ProjectTimelineStep): boolean {
@@ -199,13 +160,13 @@ export class ProjectTimelineComponent {
   }
 
   dateLabel(step: ProjectTimelineStep): string {
-    if (!step.date) {
+    if (!step.date && !step.meta?.['due_date']) {
       return '';
     }
 
-    const parsed = this.parseTimelineDate(step.date);
+    const parsed = this.parseTimelineDate(step.date || step.meta?.['due_date']);
     if (!parsed) {
-      return step.date;
+      return step.date || step.meta?.['due_date'];
     }
 
     return new Intl.DateTimeFormat(this.lang === 'ar' ? 'ar' : 'en-GB', {
@@ -272,7 +233,8 @@ export class ProjectTimelineComponent {
     // The timeline API returns SQL-style local timestamps. Normalizing the
     // separator keeps parsing consistent across browsers without changing the
     // timezone represented to the user.
-    const parsed = new Date(value.replace(' ', 'T'));
+    const normalized = /^\d{4}-\d{2}-\d{2}$/.test(value) ? value + 'T00:00:00' : value.replace(' ', 'T');
+    const parsed = new Date(normalized);
     return isNaN(parsed.getTime()) ? null : parsed;
   }
 
@@ -290,10 +252,6 @@ export class ProjectTimelineComponent {
   }
 
   private displayStepNumber(step: ProjectTimelineStep): number | string {
-    if (step.key === TIMELINE_STEP.CONTRACTING && this.hasVisiblePartyStep()) {
-      return 2;
-    }
-
     return step.step_no ?? '';
   }
 
@@ -302,6 +260,8 @@ export class ProjectTimelineComponent {
   }
 
   iconClass(step: ProjectTimelineStep): string {
+    if (this.isPayment(step)) return 'ki-dollar';
+    if (this.isDraft(step)) return 'ki-file-added';
     switch (step.key) {
       case TIMELINE_STEP.CONTRACTING:
         return 'ki-notepad-edit';
@@ -445,12 +405,14 @@ export class ProjectTimelineComponent {
       case 'view_offer':
         return ar ? 'عرض العرض' : 'View Offer';
       case 'pay':
+        if (step.meta?.['payment_uuid'] && ['pending', 'awaiting_charge'].includes(step.status || '')) return ar ? 'جاري معالجة الدفع' : 'Payment processing';
         return this.paymentButtonLabel || (ar ? 'ادفع الآن' : 'Pay Now');
       case 'open_review':
         if (this.isActiveDraftSubmission(step) && step.status === 'changes_requested') {
           return ar ? 'مطلوب تعديل' : 'Change Requested';
         }
         if (this.isActiveDraftSubmission(step)) {
+          if (step.key.startsWith('deliverable_')) return ar ? 'إرسال المخرج للمراجعة' : 'Submit deliverable';
           return step.key === TIMELINE_STEP.FINAL_DRAFT
             ? (ar ? 'إرسال المسودة النهائية' : 'Submit Final Draft')
             : (ar ? 'إرسال المسودة الأولى' : 'Submit First Draft');
@@ -529,7 +491,7 @@ export class ProjectTimelineComponent {
   actionDisabled(step: ProjectTimelineStep): boolean {
     switch (this.actionType(step)) {
       case 'pay':
-        return this.paymentSubmitting;
+        return this.paymentSubmitting || (!!step.meta?.['payment_uuid'] && ['pending', 'awaiting_charge'].includes(step.status || ''));
       case 'close_project':
         return this.closeSubmitting;
       default:

@@ -1,3 +1,4 @@
+import { ProjectDeliverable, OfferInstallment, offerTimelinePreview, appendInstallments, contractFirst, installmentTotal, validInstallments, validProjectFile, PROJECT_FILE_ACCEPT, canRespondToProposal } from 'src/app/_fake/services/project-offers/project-workflow';
 import { Component, Injector, OnDestroy, OnInit, QueryList, ViewChildren } from '@angular/core';
 import { NgModel } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -13,7 +14,7 @@ import {
 } from 'src/app/_fake/services/project-offers/project-offers.service';
 
 const HOURS_PER_DAY = 8;
-type PaymentPlan = 'partial' | 'full_at_start' | 'full_at_end';
+type PaymentPlan = 'partial' | 'full';
 
 @Component({
   selector: 'app-send-proposal',
@@ -40,15 +41,35 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
   estimateAmount: number | null = null;
   coverLetter: string = '';
   selectedAttachments: File[] = [];
-  firstPaymentPercentage: number | null = 30;
-  finalPaymentPercentage: number | null = 70;
-
-  get paymentPlan(): PaymentPlan {
-    const first = Number(this.firstPaymentPercentage);
-    const final = Number(this.finalPaymentPercentage);
-    if (first === 0 && final === 100) return 'full_at_end';
-    if (first === 100 && final === 0) return 'full_at_start';
-    return 'partial';
+  paymentPlan: PaymentPlan = 'partial';
+  installments: OfferInstallment[] = [];
+  readonly fileAccept = PROJECT_FILE_ACCEPT;
+  get deliverables() { return this.proposal?.project.project_services?.reduce<ProjectDeliverable[]>((items, service) => items.concat(service.deliverables), []) ?? []; }
+  get paymentSplitTotal(): number { return installmentTotal(this.installments); }
+  get timelinePreview() { return offerTimelinePreview(this.deliverables, this.installments); }
+  get paymentRemaining(): number { return Math.round((100 - this.paymentSplitTotal) * 10000) / 10000; }
+  get hasContractInstallment(): boolean { return this.installments.some(row => row.due_type === 'contract'); }
+  get canRespond(): boolean { return canRespondToProposal(this.proposal); }
+  addInstallment(): void { this.installments.push({ title: '', percentage: 0, due_type: 'date', due_date: '' }); }
+  removeInstallment(index: number): void { this.installments.splice(index, 1); }
+  changeDueType(row: OfferInstallment): void {
+    row.due_date = null;
+    row.project_service_deliverable_id = null;
+    this.installments = contractFirst(this.installments);
+  }
+  initializeInstallments(): void {
+    const deliverables = this.deliverables;
+    this.installments = [{ title: this.lang === 'ar' ? 'دفعة التعاقد' : 'Contract payment', percentage: 30, due_type: 'contract' }];
+    if (deliverables.length > 0 && deliverables.length <= 70) {
+      const percentage = Math.floor(70 / deliverables.length * 10000) / 10000;
+      deliverables.forEach((item, index) => this.installments.push({
+        title: `${item.title || (this.lang === 'ar' ? 'المخرج' : 'Deliverable')} — ${this.lang === 'ar' ? 'دفعة الاعتماد' : 'approval payment'}`,
+        percentage: index === deliverables.length - 1 ? Math.round((70 - percentage * index) * 10000) / 10000 : percentage,
+        due_type: 'deliverable', project_service_deliverable_id: item.id,
+      }));
+    } else {
+      this.installments.push({ title: this.lang === 'ar' ? 'دفعة مجدولة' : 'Scheduled payment', percentage: 70, due_type: 'date', due_date: this.proposal?.project.deadline || '' });
+    }
   }
 
   readonly hoursPerDay = HOURS_PER_DAY;
@@ -111,6 +132,10 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
     const input = event.target as HTMLInputElement;
     const files = input.files ? Array.from(input.files) : [];
     if (!files.length) return;
+    if (files.some(file => !validProjectFile(file))) {
+      this.showError(this.lang === 'ar' ? 'ملف غير صالح' : 'Invalid file', this.lang === 'ar' ? 'استخدم صيغة مدعومة وحجم لا يتجاوز 50 ميجابايت.' : 'Use a supported format, up to 50 MB per file.');
+      input.value = ''; return;
+    }
 
     this.selectedAttachments = [...this.selectedAttachments, ...files];
     input.value = '';
@@ -130,21 +155,6 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
   /** Auto-suggested price from hours × hourly rate (used when user hasn't edited). */
   get suggestedPrice(): number {
     return this.totalHours * (Number(this.hourlyRate) || 0);
-  }
-
-  get paymentSplitTotal(): number {
-    const first = Number(this.firstPaymentPercentage);
-    const final = Number(this.finalPaymentPercentage);
-    if (!isFinite(first) || !isFinite(final)) return 0;
-    return Number((first + final).toFixed(2));
-  }
-
-  get downPaymentPercentageForPayload(): number {
-    return Number(this.firstPaymentPercentage);
-  }
-
-  get finalPaymentPercentageForPayload(): number {
-    return Number(this.finalPaymentPercentage);
   }
 
   submitProposal(): void {
@@ -419,7 +429,7 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
   formatDate(value: string | null | undefined): string {
     if (!value) return '-';
     try {
-      const d = new Date(value);
+      const d = new Date(/^\d{4}-\d{2}-\d{2}$/.test(value) ? value + 'T00:00:00' : value.replace(' ', 'T'));
       return d.toLocaleDateString(this.lang === 'ar' ? 'ar-EG' : 'en-US', {
         year: 'numeric', month: 'short', day: 'numeric'
       });
@@ -449,15 +459,15 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
   }
 
   isCoverLetterInvalid(): boolean {
-    return !(this.coverLetter || '').trim();
+    return !(this.coverLetter || '').trim() || this.coverLetter.trim().length > 2000;
   }
 
   isEstimateAmountInvalid(): boolean {
-    return !this.estimateAmount || this.estimateAmount <= 0;
+    return this.totalHours < 1 || !Number.isInteger(this.totalHours);
   }
 
   isHourlyRateInvalid(): boolean {
-    return !this.hourlyRate || this.hourlyRate <= 0;
+    return this.hourlyRate === null || !Number.isFinite(Number(this.hourlyRate)) || Number(this.hourlyRate) < 0;
   }
 
   shouldShowFieldError(model: NgModel | null | undefined, invalidByValue: boolean = false): boolean {
@@ -473,24 +483,7 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
   }
 
   getPaymentSplitErrorMessage(): string {
-    const first = Number(this.firstPaymentPercentage);
-    const final = Number(this.finalPaymentPercentage);
-
-    if (first === 0 && final !== 100) {
-      return this.lang === 'ar'
-        ? 'عند جعل الدفعة المقدمة 0% يجب أن تكون الدفعة الأخيرة 100%.'
-        : 'When down payment is 0%, final payment must be 100%.';
-    }
-
-    if (final === 0 && first !== 100) {
-      return this.lang === 'ar'
-        ? 'عند جعل الدفعة الأخيرة 0% يجب أن تكون الدفعة المقدمة 100%.'
-        : 'When final payment is 0%, down payment must be 100%.';
-    }
-
-    return this.lang === 'ar'
-      ? 'يجب أن تكون كل نسبة بين 0 و100 وأن يكون المجموع 100%.'
-      : 'Each percentage must be between 0 and 100, and the total must be 100%.';
+    return this.lang === 'ar' ? 'أضف دفعتين على الأقل بعناوين وشروط استحقاق، ونسب بين 1 و100 ومجموع 100%، ودفعة تعاقد واحدة كحد أقصى.' : 'Add at least two payments with titles and due conditions, percentages from 1 to 100 totaling 100%, and at most one contract payment.';
   }
 
   // ---------- Internals ----------
@@ -503,8 +496,7 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
     formData.append('payment_plan', this.paymentPlan);
 
     if (this.paymentPlan === 'partial') {
-      formData.append('down_payment_percentage', `${this.downPaymentPercentageForPayload}`);
-      formData.append('final_payment_percentage', `${this.finalPaymentPercentageForPayload}`);
+      appendInstallments(formData, this.installments);
     }
 
 
@@ -515,23 +507,14 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
     return formData;
   }
 
-  private isPaymentSplitInvalid(): boolean {
-    if (!this.isValidPercentage(this.firstPaymentPercentage)
-      || !this.isValidPercentage(this.finalPaymentPercentage)) {
-      return true;
-    }
-
-    const first = Number(this.firstPaymentPercentage);
-    const final = Number(this.finalPaymentPercentage);
-
-    if (first === 0) return final !== 100;
-    if (final === 0) return first !== 100;
-
-    return this.paymentSplitTotal !== 100;
+  isPaymentSplitInvalid(): boolean {
+    return this.paymentPlan === 'partial' && !validInstallments(this.installments, this.deliverables);
   }
 
   private isProposalFormInvalid(): boolean {
-    return this.isCoverLetterInvalid()
+    return !this.canRespond
+      || this.selectedAttachments.some(file => !validProjectFile(file))
+      || this.isCoverLetterInvalid()
       || this.isEstimateAmountInvalid()
       || this.isHourlyRateInvalid()
       || this.isPaymentSplitInvalid();
@@ -564,6 +547,7 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
       .subscribe({
         next: (proposal) => {
           this.proposal = proposal;
+          this.initializeInstallments();
         },
         error: (err) => this.handleServerErrors(err),
       });

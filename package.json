@@ -14,7 +14,8 @@
     "build:ssr": "node --max-old-space-size=8192 node_modules/.bin/ng build && node --max-old-space-size=8192 node_modules/.bin/ng run demo1:server",
     "prerender": "ng run demo1:prerender",
     "build:prod": "node --max-old-space-size=8192 node_modules/.bin/ng build --configuration production",
-    "build:stage": "node --max-old-space-size=8192 node_modules/.bin/ng build --configuration staging"
+    "build:stage": "node --max-old-space-size=8192 node_modules/.bin/ng build --configuration staging",
+    "test:project-workflow": "ng test --watch=false --browsers=ChromeHeadless --main=src/test.project-workflow.ts --ts-config=tsconfig.project-workflow.json --include=src/app/_fake/services/project-offers/project-workflow.spec.ts --progress=false"
   },
   "private": true,
   "dependencies": {

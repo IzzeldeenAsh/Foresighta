@@ -1,3 +1,4 @@
+import { OfferInstallment, ProjectServiceDetails, mapProjectServices, calendarDate } from './project-workflow';
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { BehaviorSubject, Observable, throwError } from 'rxjs';
@@ -10,7 +11,7 @@ export type ProjectOfferType = 'ad_hoc' | 'frame_work_agreement' | 'urgent_reque
 export type ProjectOfferProjectStatus = 'invited' | 'cancelled' | 'submitted' | 'closed' | string;
 export type ProjectOfferActionStatus = 'pending' | 'viewed' | 'interested' | 'offered' | 'not_interested' | 'expired' | string;
 export type ProjectOfferStage = 'proposal' | 'project' | string;
-export type ProjectFileUploadType = 'first_draft' | 'final_draft' | 'samples' | 'document' | 'other' | string;
+export type ProjectFileUploadType = 'deliverable' | 'samples' | 'document' | 'other' | string;
 export type ProjectReviewSubmissionType = 'first_draft' | 'final_draft' | 'session_completed' | string;
 export type ProjectReviewSubmissionStatus = 'pending' | 'approved' | 'changes_requested' | string;
 export type ProjectReviewSubmissionPriorityValue = 'normal' | 'medium' | 'critical' | string;
@@ -121,16 +122,19 @@ export interface ProjectOfferProposalSummary {
   deadline: string | null;
   proposal_no?: string | null;
   match_uuid?: string | null;
+  offer_status?: string | null;
 }
 
 export interface ProjectOfferDetails {
+  installments?: OfferInstallment[];
+  hourly_rate?: string | number | null;
   uuid: string;
   proposed_price: string | number | null;
   payment_plan: string | null;
-  down_payment_percentage: string | number | null;
-  down_payment: string | number | null;
-  final_payment_percentage: string | number | null;
-  final_payment: string | number | null;
+  down_payment_percentage?: string | number | null;
+  down_payment?: string | number | null;
+  final_payment_percentage?: string | number | null;
+  final_payment?: string | number | null;
   estimated_hours: string | number | null;
   cover_letter: string | null;
   status: string | null;
@@ -165,6 +169,8 @@ export interface ProjectOffer {
   contract?: ProjectContract | null;
   offer?: ProjectOfferDetails | null;
   project: {
+    project_services?: ProjectServiceDetails[];
+    planned_start_date?: string | null;
     uuid?: string | null;
     title: string;
     type: ProjectOfferType;
@@ -257,9 +263,8 @@ export interface ProjectProposalOfferPayload {
   cover_letter: string;
   hourly_rate: string | number;
   estimated_hours: string | number;
-  payment_plan: 'full_at_start' | 'full_at_end' | 'partial';
-  down_payment_percentage?: string | number;
-  final_payment_percentage?: string | number;
+  payment_plan: 'full' | 'partial';
+  installments?: OfferInstallment[];
 }
 
 /**
@@ -684,7 +689,7 @@ export class ProjectOffersService {
       action_status: match?.action_status ?? proposal?.action_status ?? null,
       project_status: projectStatus,
       proposal_status: proposalStatus,
-      match_uuid: match?.uuid ?? null,
+      match_uuid: match?.uuid ?? proposal?.match_uuid ?? null,
       stage: project?.stage ?? 'proposal',
       created_at: project?.created_at ?? proposal?.created_at ?? null,
       updated_at: project?.updated_at ?? null,
@@ -696,6 +701,8 @@ export class ProjectOffersService {
       contract,
       offer: match?.offer ?? project?.offer ?? null,
       project: {
+        project_services: mapProjectServices(project?.project_services),
+        planned_start_date: calendarDate(project?.planned_start_date),
         uuid: project?.uuid ?? '',
         title: project?.title ?? '',
         type: project?.type ?? '',
@@ -707,7 +714,7 @@ export class ProjectOffersService {
         industry: project?.industry ?? null,
         description: project?.description ?? null,
         deadline_offer: proposal?.deadline_offer ?? proposal?.deadline ?? null,
-        deadline: project?.deadline ?? null,
+        deadline: calendarDate(project?.deadline),
         created_at: project?.created_at ?? null,
         updated_at: project?.updated_at ?? null,
         status: projectStatus,
@@ -717,7 +724,7 @@ export class ProjectOffersService {
         components: this.sanitizeBlocks(project?.components),
         addons: this.sanitizeBlocks(project?.addons),
         scopes: this.sanitizeScopes(project?.scopes),
-        request_files: this.sanitizeFiles(project?.request_files),
+        request_files: this.sanitizeFiles(project?.request_files ?? project?.file?.proposal?.general),
         file: this.sanitizeProjectFile(project?.file),
         contract_uuid: contractUuid,
         contract,
@@ -737,6 +744,7 @@ export class ProjectOffersService {
       .map(proposal => ({
         uuid: proposal?.uuid ?? '',
         status: proposal?.status ?? null,
+        offer_status: proposal?.match?.offer?.status ?? proposal?.offer_status ?? null,
         action_status: proposal?.match?.action_status ?? proposal?.action_status ?? null,
         deadline: proposal?.deadline_offer ?? proposal?.deadline ?? null,
         proposal_no: proposal?.proposal_no ?? null,
@@ -756,7 +764,11 @@ export class ProjectOffersService {
       return null;
     }
 
-    return proposals.find(proposal => !!proposal?.match) ?? proposals[0];
+    const ordered = [...proposals].sort((a, b) =>
+      (b.created_at || '').localeCompare(a.created_at || '')
+      || String(b.proposal_no || '').localeCompare(String(a.proposal_no || ''), undefined, { numeric: true }));
+    return ordered.find(proposal => proposal?.match?.offer?.status === 'awarded')
+      ?? ordered.find(proposal => !!proposal?.match) ?? ordered[0];
   }
 
   private mapProjectContract(contract: any): ProjectContract {

@@ -140,11 +140,11 @@
           </td>
 
           <td>
-            <div class="po-table__service-cell" *ngIf="offer.project.service?.name; else emptyService">
+            <div class="po-table__service-cell" *ngIf="getServiceNames(offer); else emptyService">
               <span class="po-card__service-icon">
                 <i class="ki-outline ki-briefcase fs-7"></i>
               </span>
-              <span>{{ offer.project.service?.name }}</span>
+              <span>{{ getServiceNames(offer) }}</span>
             </div>
             <ng-template #emptyService>-</ng-template>
           </td>
@@ -258,11 +258,11 @@
         </p>
       </div>
 
-      <div class="po-card__service" *ngIf="offer.project.service?.name">
+      <div class="po-card__service" *ngIf="getServiceNames(offer)">
         <span class="po-card__service-icon">
           <i class="ki-outline ki-briefcase fs-5"></i>
         </span>
-        <span class="po-card__service-text">{{ offer.project.service?.name }}</span>
+        <span class="po-card__service-text">{{ getServiceNames(offer) }}</span>
       </div>
     </div>
 
@@ -274,6 +274,8 @@
         <div class="po-card__deadline-copy">
           <span class="po-card__deadline-label">{{ lang === 'ar' ? 'الموعد النهائي' : 'Deadline' }}</span>
           <span class="po-card__deadline-value">{{ getDeadlineLabel(offer) }}</span>
+<small *ngIf="offer.project.planned_start_date">{{ lang === 'ar' ? 'البداية' : 'Starts' }}: {{ offer.project.planned_start_date }}</small>
+<small *ngIf="offer.project.deadline">{{ lang === 'ar' ? 'تسليم المشروع' : 'Project delivery' }}: {{ offer.project.deadline }}</small>
         </div>
       </div>
 
@@ -419,36 +421,7 @@
               <h3 class="po-drawer__title">{{ offer.project.title }}</h3>
 
               <div class="po-drawer__meta">
-                <div class="po-drawer__meta-item">
-                  <i class="ki-outline ki-calendar fs-6"></i>
-                  <div class="po-meta__text">
-                    <span class="po-meta__label">{{ lang === 'ar' ? 'الموعد النهائي' : 'Deadline' }}</span>
-                    <span class="po-meta__value">{{ formatDate(offer.project.deadline) }}</span>
-                  </div>
-                </div>
-                <div class="po-drawer__meta-item" *ngIf="offer.project.service?.name">
-                  <i class="ki-outline ki-briefcase fs-6"></i>
-                  <div class="po-meta__text">
-                    <span class="po-meta__label">{{ lang === 'ar' ? 'الخدمة' : 'Service' }}</span>
-                    <span class="po-meta__value">{{ offer.project.service?.name }}</span>
-                  </div>
-                </div>
-                <div class="po-drawer__meta-item" *ngIf="offer.project.language">
-                  <span class="po-language-icon" aria-hidden="true">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
-                      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M4 5h7"></path>
-                      <path d="M9 3v2c0 4.418 -2.239 8 -5 8"></path>
-                      <path d="M5 9c0 2.144 2.952 3.908 6.7 4"></path>
-                      <path d="M12 20l4 -9l4 9"></path>
-                      <path d="M19.1 18h-6.2"></path>
-                    </svg>
-                  </span>
-                  <div class="po-meta__text">
-                    <span class="po-meta__label">{{ lang === 'ar' ? 'اللغة' : 'Language' }}</span>
-                    <span class="po-meta__value">{{ getLanguageLabel(offer.project.language) }}</span>
-                  </div>
-                </div>
+                <app-project-dates [startDate]="offer.project.planned_start_date" [endDate]="offer.project.deadline" [lang]="lang"></app-project-dates>
               </div>
             </div>
           </div>
@@ -533,6 +506,18 @@
             </div>
           </section>
 
+          <details class="po-section po-section--accordion po-section--services" *ngIf="(offer.project.project_services || []).length">
+            <summary class="po-section__head po-section__summary">
+              <span class="po-section__title-icon" aria-hidden="true"><i class="pi pi-briefcase"></i></span>
+              <h6 class="po-section__title">{{ lang === 'ar' ? 'الخدمات المطلوبة' : 'Requested Services' }}</h6>
+              <span class="po-section__eyebrow">{{ lang === 'ar' ? 'خدمات المشروع' : 'Project Services' }}</span>
+              <span class="po-section__chevron" aria-hidden="true">
+                <i class="pi pi-chevron-down"></i>
+              </span>
+            </summary>
+            <app-project-services [services]="offer.project.project_services || []" [lang]="lang" (openFile)="openProjectFile($event)"></app-project-services>
+          </details>
+
           <details class="po-section po-section--accordion po-section--scope" *ngIf="offer.project.scopes?.length">
             <summary class="po-section__head po-section__summary">
               <span class="po-section__title-icon" aria-hidden="true"><i class="pi pi-list"></i></span>
@@ -593,28 +578,6 @@
             </div>
           </details>
 
-          <details class="po-section po-section--accordion" *ngIf="getRequestFiles(offer).length">
-            <summary class="po-section__head po-section__summary">
-              <span class="po-section__title-icon" aria-hidden="true"><i class="pi pi-paperclip"></i></span>
-              <h6 class="po-section__title">{{ lang === 'ar' ? 'ملفات الطلب' : 'Request Files' }}</h6>
-              <span class="po-section__eyebrow">{{ lang === 'ar' ? 'مرفقات العميل' : 'Client Attachments' }}</span>
-              <span class="po-section__chevron" aria-hidden="true">
-                <i class="pi pi-chevron-down"></i>
-              </span>
-            </summary>
-            <div class="po-detail-card po-detail-card--files">
-              <div class="po-detail-card__body">
-                <div class="po-file-list">
-                  <button type="button" class="po-file-button"
-                    *ngFor="let file of getRequestFiles(offer); trackBy: trackByFile"
-                    [disabled]="isOpeningFile(file)" (click)="openProjectFile(file)">
-                    <i class="ki-outline fs-5" [ngClass]="isOpeningFile(file) ? 'ki-loading' : 'ki-file-down'"></i>
-                    <span>{{ isOpeningFile(file) ? (lang === 'ar' ? 'جارٍ الفتح...' : 'Opening...') : getProjectFileName(file) }}</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </details>
 
           <details class="po-section po-section--accordion po-section--stages" *ngIf="getComponent(offer, 'deliverable-stage') as deliverableStage">
             <summary class="po-section__head po-section__summary">
@@ -1050,6 +1013,8 @@
                   </div>
                 </div>
 
+                <app-offer-installments [rows]="submittedOffer.installments || []" [price]="submittedOffer.proposed_price" [lang]="lang"></app-offer-installments>
+                <p>{{ lang === 'ar' ? 'سعر الساعة' : 'Hourly rate' }}: {{ offerHourlyRate(submittedOffer) | currency:'USD' }}</p>
                 <div class="po-offer-summary-grid mt-4">
                   <div class="po-offer-summary-card po-offer-summary-card--price">
                     <span class="po-offer-summary-card__icon">
@@ -1195,7 +1160,7 @@
                 </tr>
                 <tr>
                   <th scope="row">{{ lang === 'ar' ? 'الخدمة' : 'Service' }}</th>
-                  <td>{{ offer.project.service?.name || '-' }}</td>
+                  <td>{{ getServiceNames(offer) || '-' }}</td>
                 </tr>
                 <tr>
                   <th scope="row">{{ lang === 'ar' ? 'نوع المشروع' : 'Project Type' }}</th>

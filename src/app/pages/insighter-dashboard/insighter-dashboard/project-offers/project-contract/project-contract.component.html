@@ -112,7 +112,7 @@
             type="button"
             class="btn"
             [ngClass]="c.insighter_sign_at ? 'btn-outline btn-outline-success icn-signed-btn' : 'btn-info'"
-            [disabled]="c.insighter_sign_at || isSigning"
+            [disabled]="c.insighter_sign_at || isSigning || c.status !== 'awaiting_insighter_signature'"
             (click)="signContract()">
             <i class="ki-outline fs-6 me-1" [ngClass]="c.insighter_sign_at ? 'ki-check' : 'ki-pencil'"></i>
             {{

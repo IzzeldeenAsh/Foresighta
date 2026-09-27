@@ -6,11 +6,11 @@
  *  - Client:    GET {apiBaseUrl}/account/project/timeline/{uuid}
  *  - Insighter: GET {apiBaseUrl}/insighter/project/timeline/{uuid}
  *
- * Each step carries a fixed `key` (the behavioral contract), a `display` flag
+ * Each step carries a stable `key` (the behavioral contract), a `display` flag
  * (render or not), a `state` (progress bucket) and a `status` (granular state).
  */
 
-/** Fixed step keys returned by the timeline API. Treat these as constants. */
+/** Structural keys and historical aliases. Payments/deliverables use dynamic prefixes. */
 export const TIMELINE_STEP = {
   CONTRACTING: 'contracting',
   AWARDED_INSIGHTER: 'awarded_insighter',
@@ -58,10 +58,10 @@ export interface ProjectTimelineStep {
   display: boolean;
   status: string | null;
   state: TimelineStepState;
-  amount: number | null;
+  amount: number | string | null;
   date: string | null;
   party: TimelineParty | null;
-  meta: Record<string, any> | any[];
+  meta: Record<string, any>;
 }
 
 export interface ProjectTimeline {
@@ -98,11 +98,11 @@ export const PARTY_STEP_KEYS: TimelineStepKey[] = [
 ];
 
 export function isPaymentStep(key: TimelineStepKey): boolean {
-  return PAYMENT_STEP_KEYS.includes(key);
+  return key.startsWith('payment_installment_') || PAYMENT_STEP_KEYS.includes(key);
 }
 
 export function isDraftStep(key: TimelineStepKey): boolean {
-  return DRAFT_STEP_KEYS.includes(key);
+  return key.startsWith('deliverable_') || DRAFT_STEP_KEYS.includes(key);
 }
 
 export function isPartyStep(key: TimelineStepKey): boolean {

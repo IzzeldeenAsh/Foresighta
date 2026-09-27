@@ -59,7 +59,7 @@ export class ProjectContractComponent extends BaseComponent implements OnInit {
 
   async signContract(): Promise<void> {
     const contractUuid = this.getActiveContractUuid();
-    if (!contractUuid || this.isSigning || !this.contract?.user_sign_at || this.contract.insighter_sign_at) {
+    if (!contractUuid || this.isSigning || !this.contract?.user_sign_at || this.contract.insighter_sign_at || this.contract.status !== 'awaiting_insighter_signature') {
       return;
     }
 

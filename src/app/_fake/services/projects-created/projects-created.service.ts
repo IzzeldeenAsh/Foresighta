@@ -1,3 +1,4 @@
+import { OfferInstallment, ProjectServiceDetails, mapProjectServices } from '../project-offers/project-workflow';
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { BehaviorSubject, Observable, throwError } from 'rxjs';
@@ -144,6 +145,8 @@ export interface CreatedProjectScope {
 }
 
 export interface CreatedProject {
+  project_services?: ProjectServiceDetails[];
+  planned_start_date?: string | null;
   uuid: string;
   title: string;
   type: CreatedProjectType;
@@ -206,6 +209,7 @@ export interface CreatedProjectInvitedInsighter {
 }
 
 export interface CreatedProjectSubmittedOffer {
+  installments?: OfferInstallment[];
   uuid: string;
   proposed_price: string | number | null;
   payment_plan?: string | null;
@@ -514,36 +518,12 @@ export class ProjectsCreatedService {
     );
   }
 
-  checkoutProjectStart(
-    projectUuid: string,
-    paymentMethod: ProjectCheckoutPaymentMethod
-  ): Observable<any> {
+  checkoutProjectInstallment(installmentId: number, paymentMethod: ProjectCheckoutPaymentMethod): Observable<any> {
     this.setLoading(true);
-
-    return this.http.post<any>(
-      `${this.projectOrderBaseUrl}/checkout/start/${projectUuid}`,
-      { payment_method: paymentMethod },
-      { headers: this.getHeaders() }
-    ).pipe(
-      catchError(error => throwError(() => error)),
-      finalize(() => this.setLoading(false))
-    );
-  }
-
-  checkoutProjectEnd(
-    projectUuid: string,
-    paymentMethod: ProjectCheckoutPaymentMethod
-  ): Observable<any> {
-    this.setLoading(true);
-
-    return this.http.post<any>(
-      `${this.projectOrderBaseUrl}/checkout/end/${projectUuid}`,
-      { payment_method: paymentMethod },
-      { headers: this.getHeaders() }
-    ).pipe(
-      catchError(error => throwError(() => error)),
-      finalize(() => this.setLoading(false))
-    );
+    return this.http.post<any>(`${this.projectOrderBaseUrl}/checkout/${installmentId}`,
+      { payment_method: paymentMethod }, { headers: this.getHeaders() }).pipe(
+        catchError(error => throwError(() => error)), finalize(() => this.setLoading(false))
+      );
   }
 
   closeProject(projectUuid: string): Observable<any> {
@@ -759,6 +739,8 @@ export class ProjectsCreatedService {
 
   private mapProject(p: any): CreatedProject {
     return {
+      project_services: mapProjectServices(p?.project_services),
+      planned_start_date: p?.planned_start_date?.slice(0, 10) ?? null,
       uuid: p?.uuid ?? '',
       title: p?.title ?? '',
       type: p?.type ?? '',
@@ -806,6 +788,7 @@ export class ProjectsCreatedService {
     return {
       uuid: this.stringifyValue(offer?.uuid),
       proposed_price: offer?.proposed_price ?? null,
+      installments: offer?.installments ?? [],
       payment_plan: offer?.payment_plan ?? null,
       down_payment_percentage: offer?.down_payment_percentage ?? null,
       down_payment: offer?.down_payment ?? null,

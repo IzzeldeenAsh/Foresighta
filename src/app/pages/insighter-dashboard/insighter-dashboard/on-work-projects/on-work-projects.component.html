@@ -330,36 +330,7 @@
               <h3 class="po-drawer__title">{{ project.project.title }}</h3>
 
               <div class="po-drawer__meta">
-                <div class="po-drawer__meta-item" *ngIf="project.project.deadline">
-                  <i class="ki-outline ki-calendar fs-6"></i>
-                  <div class="po-meta__text">
-                    <span class="po-meta__label">{{ lang === 'ar' ? 'موعد التسليم' : 'Deadline' }}</span>
-                    <span class="po-meta__value">{{ formatDate(project.project.deadline) }}</span>
-                  </div>
-                </div>
-                <div class="po-drawer__meta-item" *ngIf="project.project.service?.name">
-                  <i class="ki-outline ki-briefcase fs-6"></i>
-                  <div class="po-meta__text">
-                    <span class="po-meta__label">{{ lang === 'ar' ? 'الخدمة' : 'Service' }}</span>
-                    <span class="po-meta__value">{{ project.project.service?.name }}</span>
-                  </div>
-                </div>
-                <div class="po-drawer__meta-item" *ngIf="project.project.language">
-                  <span class="po-language-icon" aria-hidden="true">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
-                      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M4 5h7"></path>
-                      <path d="M9 3v2c0 4.418 -2.239 8 -5 8"></path>
-                      <path d="M5 9c0 2.144 2.952 3.908 6.7 4"></path>
-                      <path d="M12 20l4 -9l4 9"></path>
-                      <path d="M19.1 18h-6.2"></path>
-                    </svg>
-                  </span>
-                  <div class="po-meta__text">
-                    <span class="po-meta__label">{{ lang === 'ar' ? 'اللغة' : 'Language' }}</span>
-                    <span class="po-meta__value">{{ getLanguageLabel(project.project.language) }}</span>
-                  </div>
-                </div>
+                <app-project-dates [startDate]="project.project.planned_start_date" [endDate]="project.project.deadline" [lang]="lang"></app-project-dates>
               </div>
             </div>
           </div>
@@ -410,7 +381,8 @@
             </button>
           </div>
 
-          <ng-container [ngSwitch]="activeDrawerTab">
+          <div class="alert alert-light mb-4" role="status">{{ projectStatusLabel }}</div>
+<ng-container [ngSwitch]="activeDrawerTab">
             <div *ngSwitchCase="'overview'" class="po-tab-panel">
               <section class="po-section" *ngIf="project.project.service_prompt || project.project.description">
                 <p class="po-section__text" *ngIf="project.project.service_prompt">{{ project.project.service_prompt }}</p>
@@ -467,6 +439,18 @@
                   </div>
                 </div>
               </section>
+
+              <details class="po-section po-section--accordion po-section--services" *ngIf="(project.project.project_services || []).length">
+                <summary class="po-section__head po-section__summary">
+                  <span class="po-section__title-icon" aria-hidden="true"><i class="pi pi-briefcase"></i></span>
+                  <h6 class="po-section__title">{{ lang === 'ar' ? 'الخدمات المطلوبة' : 'Requested Services' }}</h6>
+                  <span class="po-section__eyebrow">{{ lang === 'ar' ? 'خدمات المشروع' : 'Project Services' }}</span>
+                  <span class="po-section__chevron" aria-hidden="true">
+                    <i class="pi pi-chevron-down"></i>
+                  </span>
+                </summary>
+                <app-project-services [services]="project.project.project_services || []" [lang]="lang" (openFile)="openProjectFile($event)"></app-project-services>
+              </details>
 
               <details class="po-section po-section--accordion po-section--scope" *ngIf="project.project.scopes?.length">
                 <summary class="po-section__head po-section__summary">
@@ -724,7 +708,7 @@
               <button
                 type="button"
                 class="owp-document-submit-card"
-                (click)="documentUploadDialogVisible = true">
+                [disabled]="!canMutateProject()" (click)="documentUploadDialogVisible = true">
                 <span class="owp-document-submit-card__icon">
                   <i class="ki-outline ki-plus fs-2"></i>
                 </span>
@@ -983,7 +967,7 @@
                     <input
                       type="text"
                       name="projectFileName"
-                      [(ngModel)]="projectFileName"
+                      [(ngModel)]="projectFileName" maxlength="255" required
                       [placeholder]="lang === 'ar' ? 'مثال: مسودة التقرير الأولى' : 'Example: First report draft'">
                   </label>
 
@@ -998,7 +982,9 @@
                     </select>
                   </label>
 
-                  <label class="owp-upload-drop" for="owp-project-files">
+                  <label class="owp-field" *ngIf="projectFileType === 'deliverable'"><span>{{ lang === 'ar' ? 'المخرج' : 'Deliverable' }}</span>
+<select name="projectFileDeliverableId" [(ngModel)]="projectFileDeliverableId" required><option [ngValue]="null">{{ lang === 'ar' ? 'اختر المخرج' : 'Choose deliverable' }}</option><option *ngFor="let item of deliverables" [ngValue]="item.id">{{ item.service_title }} — {{ item.title }}</option></select></label>
+<label class="owp-upload-drop" for="owp-project-files">
                     <i class="ki-outline ki-file-up fs-2"></i>
                     <strong>{{ lang === 'ar' ? 'اختر الملفات' : 'Choose files' }}</strong>
                     <span>{{ lang === 'ar' ? 'يمكنك اختيار أكثر من ملف' : 'You can attach multiple files' }}</span>
@@ -1006,7 +992,7 @@
                   <input
                     id="owp-project-files"
                     class="owp-file-input"
-                    type="file"
+                    type="file" [accept]="fileAccept"
                     multiple
                     (change)="onProjectFilesSelected($event)">
 
@@ -1041,7 +1027,11 @@
               </p-dialog>
             </section>
 
-            <section *ngSwitchCase="'reviews'" class="po-section po-documents owp-doc-workspace po-section--reviews">
+            <section *ngSwitchCase="'reviews'" class="po-section po-documents owp-doc-workspace po-section--reviews"><section class="po-section" *ngFor="let item of deliverables"><h4>{{ item.service_title }} — {{ item.title }}</h4><p>{{ item.date }} · {{ item.report_type.join(', ').toUpperCase() }} · {{ getWayLabel(item.way.selected) }}</p>
+<p *ngFor="let payment of paymentsForDeliverable(item.id)">{{ payment.title }}: {{ payment.amount | currency:'USD' }} · {{ payment.status }}</p>
+<p *ngIf="!reviewsForDeliverable(item.id).length">{{ lang === 'ar' ? 'لم يتم إرسال المخرج بعد.' : 'No submissions yet.' }}</p>
+<details *ngIf="reviewsForDeliverable(item.id).length"><summary>{{ lang === 'ar' ? 'سجل المراجعات' : 'Submission history' }} · {{ getReviewStatusLabel(reviewsForDeliverable(item.id)[0].status) }}</summary><div *ngFor="let review of reviewsForDeliverable(item.id)"><strong>{{ getReviewStatusLabel(review.status) }}</strong> · {{ review.request_at }}<p>{{ review.note }}</p><p>{{ review.review_note }}</p></div></details>
+<button type="button" class="btn btn-sm btn-light-primary" *ngIf="canMutateProject() && !isDeliverableApproved(item.id)" [disabled]="hasPendingReviewForType() || reviewSubmissionsLoading" (click)="reviewDeliverableId = item.id; openReviewRequestDialog()">{{ lang === 'ar' ? 'طلب مراجعة' : 'Request review' }}</button></section>
               <div class="po-section__head">
                 <h6 class="po-section__title">{{ lang === 'ar' ? 'طلب المراجعة' : 'Review Request' }}</h6>
                 <span class="po-section__eyebrow">{{ lang === 'ar' ? 'اعتماد العميل' : 'Client Approval' }}</span>
@@ -1056,7 +1046,7 @@
               <div class="pd-review-tab">
                 <button
                   type="button"
-                  class="owp-review-request-trigger"
+                  class="owp-review-request-trigger" [disabled]="!canMutateProject() || hasPendingReviewForType()"
                   (click)="openReviewRequestDialog()">
                   <span class="owp-review-request-trigger__icon" aria-hidden="true">
                     <i class="pi pi-comments"></i>
@@ -1096,7 +1086,7 @@
                         <div class="pd-review-card__title-group">
                           <h3 class="pd-review-card__note">{{ getReviewMainText(review) }}</h3>
                           <div class="pd-review-card__meta">
-                            <span>{{ getReviewType(review) ? getReviewTypeLabel(getReviewType(review)) : (lang === 'ar' ? 'طلب مراجعة' : 'Review request') }}</span>
+                            <span>{{ getReviewType(review) ? review.deliverable?.title || getReviewTypeLabel(getReviewType(review)) : (lang === 'ar' ? 'طلب مراجعة' : 'Review request') }}</span>
                             <span>{{ formatDate(review.request_at) }}</span>
                             <span>{{ getReviewStatusLabel(review.status) }}</span>
                           </div>
@@ -1146,20 +1136,16 @@
                       </h3>
                       <div class="pd-review-card__meta">
                         <span>{{ lang === 'ar' ? 'اعتماد العميل' : 'Client approval' }}</span>
-                        <span>{{ getReviewTypeLabel(reviewRequestType) }}</span>
+
                       </div>
                     </div>
                   </div>
 
                   <label class="owp-review-type-select owp-review-type-select--modal">
-                    <span>{{ lang === 'ar' ? 'نوع المراجعة' : 'Review type' }}</span>
-                    <select name="reviewRequestType" [(ngModel)]="reviewRequestType">
-                      <option
-                        *ngFor="let option of reviewRequestTypeOptions; trackBy: trackByReviewTypeOption"
-                        [ngValue]="option.value"
-                        [disabled]="isReviewRequestTypeDisabled(option.value)">
-                        {{ lang === 'ar' ? option.labelAr : option.labelEn }}
-                      </option>
+                    <span>{{ lang === 'ar' ? 'المخرج' : 'Deliverable' }}</span>
+                    <select name="reviewDeliverableId" [(ngModel)]="reviewDeliverableId" required>
+                      <option [ngValue]="null">{{ lang === 'ar' ? 'اختر المخرج' : 'Choose deliverable' }}</option>
+                      <option *ngFor="let item of availableReviewDeliverables" [ngValue]="item.id">{{ item.service_title }} — {{ item.title }}</option>
                     </select>
                   </label>
 
@@ -1174,19 +1160,19 @@
                     </select>
                   </label>
 
-                  <div class="owp-inline-alert" *ngIf="hasPendingReviewForType(reviewRequestType)">
+                  <div class="owp-inline-alert" *ngIf="hasPendingReviewForType()">
                     <i class="ki-outline ki-time fs-5"></i>
-                    <span>{{ lang === 'ar' ? 'يوجد طلب مراجعة معلق لهذا النوع.' : 'A pending review already exists for this type.' }}</span>
+                    <span>{{ lang === 'ar' ? 'يوجد طلب مراجعة معلق لهذا المشروع.' : 'A pending review already exists for this project.' }}</span>
                   </div>
 
-                  <div class="owp-inline-alert" *ngIf="isReviewRequestTypeDisabled(reviewRequestType)">
+                  <div class="owp-inline-alert" *ngIf="isReviewRequestTypeDisabled()">
                     <i class="ki-outline ki-check-circle fs-5"></i>
                     <span>{{ lang === 'ar' ? 'تم اعتماد هذا النوع من المراجعة بالفعل.' : 'This review type is already approved.' }}</span>
                   </div>
 
                   <div class="pd-review-compose">
                     <textarea
-                      name="reviewRequestNote"
+                      name="reviewRequestNote" maxlength="255" required
                       rows="4"
                       [(ngModel)]="reviewRequestNote"
                       [placeholder]="lang === 'ar' ? 'اكتب ما تريد من العميل مراجعته...' : 'Describe what the client should review...'">
@@ -1201,7 +1187,7 @@
                   <input
                     id="owp-review-request-files"
                     class="owp-file-input"
-                    type="file"
+                    type="file" [accept]="fileAccept"
                     multiple
                     (change)="onReviewRequestFilesSelected($event)">
 
@@ -1368,7 +1354,8 @@
             <span class="po-section__eyebrow">{{ lang === 'ar' ? 'السعر والمدة' : 'Price & Time' }}</span>
           </div>
 
-          <div class="po-offer-summary-grid">
+          <app-offer-installments [rows]="offer.installments || []" [price]="offer.proposed_price" [deliverables]="deliverables" [lang]="lang"></app-offer-installments>
+<div class="po-offer-summary-grid">
             <div class="po-offer-summary-card po-offer-summary-card--price">
               <span class="po-offer-summary-card__icon">
                 <i class="ki-outline ki-dollar fs-4"></i>

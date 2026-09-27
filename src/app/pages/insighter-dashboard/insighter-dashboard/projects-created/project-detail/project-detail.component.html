@@ -42,34 +42,7 @@
             <h2 class="pd-hero__title">{{ p.title }}</h2>
 
             <div class="pd-hero__meta">
-              <div class="pd-meta-item" *ngIf="p.deadline">
-                <i class="ki-outline ki-calendar fs-6"></i>
-                <div class="pd-meta-item__text">
-                  <span class="pd-meta-item__label">{{ lang === 'ar' ? 'الموعد النهائي' : 'Deadline' }}</span>
-                  <span class="pd-meta-item__value">{{ formatDate(p.deadline) }}</span>
-                </div>
-              </div>
-              <div class="pd-meta-item" *ngIf="p.service?.name">
-                <i class="ki-outline ki-briefcase fs-6"></i>
-                <div class="pd-meta-item__text">
-                  <span class="pd-meta-item__label">{{ lang === 'ar' ? 'الخدمة' : 'Service' }}</span>
-                  <span class="pd-meta-item__value">{{ p.service?.name }}</span>
-                </div>
-              </div>
-              <div class="pd-meta-item" *ngIf="p.language">
-                <span class="pd-lang-icon" aria-hidden="true">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
-                       stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M4 5h7"></path><path d="M9 3v2c0 4.418 -2.239 8 -5 8"></path>
-                    <path d="M5 9c0 2.144 2.952 3.908 6.7 4"></path>
-                    <path d="M12 20l4 -9l4 9"></path><path d="M19.1 18h-6.2"></path>
-                  </svg>
-                </span>
-                <div class="pd-meta-item__text">
-                  <span class="pd-meta-item__label">{{ lang === 'ar' ? 'اللغة' : 'Language' }}</span>
-                  <span class="pd-meta-item__value">{{ getLanguageLabel(p.language) }}</span>
-                </div>
-              </div>
+              <app-project-dates [startDate]="p.planned_start_date" [endDate]="p.deadline" [lang]="lang"></app-project-dates>
             </div>
           </div>
 
@@ -207,6 +180,18 @@
           </section>
 
           <!-- Scopes -->
+          <details class="pd-section pd-section--accordion pd-section--services" *ngIf="(p.project_services || []).length">
+            <summary class="pd-section__head pd-section__summary">
+              <span class="pd-section__title-icon" aria-hidden="true"><i class="pi pi-briefcase"></i></span>
+              <h6 class="pd-section__title">{{ lang === 'ar' ? 'الخدمات المطلوبة' : 'Requested Services' }}</h6>
+              <span class="pd-section__eyebrow">{{ lang === 'ar' ? 'خدمات المشروع' : 'Project Services' }}</span>
+              <span class="pd-section__chevron" aria-hidden="true">
+                <i class="pi pi-chevron-down"></i>
+              </span>
+            </summary>
+            <app-project-services [services]="p.project_services || []" [lang]="lang" (openFile)="openProjectFile($event)"></app-project-services>
+          </details>
+
           <details class="pd-section pd-section--accordion pd-section--scope" *ngIf="p.scopes?.length">
             <summary class="pd-section__head pd-section__summary">
               <span class="pd-section__title-icon" aria-hidden="true"><i class="pi pi-list"></i></span>
@@ -611,6 +596,9 @@
           </ng-container>
 
           <ng-container *ngIf="activeTab === 'reviews'">
+<label *ngIf="canFilterReviewsByDeliverable" class="d-block mb-4">{{ lang === 'ar' ? 'المخرج' : 'Deliverable' }}
+<select class="form-select mt-2" [(ngModel)]="selectedReviewDeliverableId" [ngModelOptions]="{standalone: true}"><option [ngValue]="null">{{ lang === 'ar' ? 'جميع المخرجات' : 'All deliverables' }}</option><option *ngFor="let item of projectDeliverables" [ngValue]="item.id">{{ item.service_title }} — {{ item.title }}</option></select></label>
+<p *ngIf="canFilterReviewsByDeliverable && selectedReviewDeliverableId && !getSortedReviewSubmissions().length">{{ lang === 'ar' ? 'لا توجد مراجعات لهذا المخرج.' : 'No submissions for this deliverable.' }}</p>
             <section class="pd-review-tab">
               <p-progressBar
                 *ngIf="reviewSubmissionsLoading"
@@ -648,7 +636,7 @@
                       <div class="pd-review-card__title-group">
                         <h3 class="pd-review-card__note">{{ getReviewMainText(review) }}</h3>
                         <div class="pd-review-card__meta">
-                          <span>{{ getReviewType(review) ? getProjectFileTypeLabel(getReviewType(review)) : (lang === 'ar' ? 'طلب مراجعة' : 'Review request') }}</span>
+                          <span>{{ review.deliverable?.title || (getReviewType(review) ? getProjectFileTypeLabel(getReviewType(review)) : (lang === 'ar' ? 'طلب مراجعة' : 'Review request')) }}</span>
                           <span>{{ formatDate(review.request_at) }}</span>
                           <span>{{ getReviewStatusLabel(review.status) }}</span>
                         </div>
@@ -689,10 +677,10 @@
                       <small *ngIf="review.reviewed_at">{{ formatDate(review.reviewed_at) }}</small>
                     </div>
 
-                    <div class="pd-review-compose" *ngIf="isReviewPending(review)">
+                    <div class="pd-review-compose" *ngIf="isReviewPending(review) && canRespondToReview()">
                       <textarea
                         rows="4"
-                        [ngModel]="getReviewChangeNote(review.uuid)"
+                        maxlength="255" [ngModel]="getReviewChangeNote(review.uuid)"
                         (ngModelChange)="setReviewChangeNote(review.uuid, $event)"
                         [ngModelOptions]="{ standalone: true }"
                         [placeholder]="lang === 'ar' ? 'أضف تعليقك...' : 'Add your comment...'">
@@ -1705,7 +1693,8 @@
               <span class="pd-section__eyebrow">{{ lang === 'ar' ? 'سعر ومدة' : 'Price & Time' }}</span>
             </div>
 
-            <div class="pd-proposal-drawer__stats">
+            <app-offer-installments [rows]="invite.offer?.installments || []" [price]="invite.offer?.proposed_price ?? null" [lang]="lang"></app-offer-installments>
+<div class="pd-proposal-drawer__stats">
               <div class="pd-proposal-drawer__stat pd-proposal-drawer__stat--price">
                 <span class="pd-proposal-drawer__stat-icon">
                   <i class="ki-outline ki-dollar fs-4"></i>

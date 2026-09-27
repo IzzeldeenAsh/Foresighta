@@ -1,3 +1,4 @@
+import { canRespondToProposal } from 'src/app/_fake/services/project-offers/project-workflow';
 import { Component, Injector, OnDestroy, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { Observable } from 'rxjs';
@@ -293,13 +294,15 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
     this.router.navigate(['/app/insighter-dashboard/project-offers/details', detailsUuid]);
   }
 
+  getServiceNames(offer: ProjectOffer): string { return offer.project.project_services?.map(service => service.title || service.service?.name).filter(Boolean).join(' · ') || offer.project.service?.name || ''; }
+
   isActiveProject(offer: ProjectOffer | null | undefined): boolean {
     return (offer?.stage || '').toLowerCase() === 'project';
   }
 
   /** Awarded project that hasn't been closed yet — used to gate the "Active Project" marker. */
   isOpenActiveProject(offer: ProjectOffer | null | undefined): boolean {
-    return this.isActiveProject(offer) && this.getProjectWorkflowStatus(offer) !== 'closed';
+    return this.isActiveProject(offer) && !['closed', 'cancelled'].includes(this.getProjectWorkflowStatus(offer) || '');
   }
 
   openProjectWorkspace(offer: ProjectOffer | null | undefined = this.selectedOffer): void {
@@ -374,6 +377,8 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
       case 'pending':
       case 'invited':
         return 'badge-light-warning';
+      case 'technical_accepted':
+      case 'awarded':
       case 'accepted':
       case 'approved':
       case 'offered':
@@ -396,6 +401,7 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
         return 'badge-light-signature';
       case 'awarded':
         return 'badge-light-info';
+      case 'technical_rejected':
       case 'rejected':
       case 'declined':
       case 'cancelled':
@@ -427,6 +433,8 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
       case 'awarded':
       case 'active_project':
         return 'pi-star';
+      case 'technical_accepted':
+      case 'awarded':
       case 'accepted':
       case 'approved':
       case 'contract_signed':
@@ -445,6 +453,7 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
       case 'contract_waiting_client':
       case 'contract_waiting_insighter':
         return 'pi-pencil';
+      case 'technical_rejected':
       case 'rejected':
       case 'declined':
       case 'cancelled':
@@ -468,11 +477,14 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
     const normalized = (status || '').toLowerCase();
     const labels: { [k: string]: { en: string; ar: string } } = {
       pending: { en: 'Pending', ar: 'قيد الانتظار' },
+      technical_accepted: { en: 'Technically accepted', ar: 'مقبول فنياً' },
+      technical_rejected: { en: 'Technically rejected', ar: 'مرفوض فنياً' },
+      awarded: { en: 'Awarded', ar: 'تمت الترسية' },
+      scheduled: { en: 'Scheduled', ar: 'مجدول' },
       invited: { en: 'Invited', ar: 'مدعو' },
       viewed: { en: 'Viewed', ar: 'تمت المشاهدة' },
       offered: { en: 'Offered', ar: 'تم تقديم العرض' },
-      awarded: { en: 'Awarded', ar: 'تم الترسية' },
-      technical_rejected: { en: 'Technical Rejected', ar: 'مرفوض فنياً' },
+
       interested: { en: 'Interested', ar: 'مهتم' },
       not_interested: { en: 'Not Interested', ar: 'غير مهتم' },
       active_project: { en: 'Active Project', ar: 'مشروع نشط' },
@@ -511,7 +523,7 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
 
     return proposals
       .map((proposal, index, list) => {
-        const status = (proposal?.action_status || proposal?.status || '').toLowerCase();
+        const status = ((proposal as any)?.offer_status || proposal?.action_status || proposal?.status || '').toLowerCase();
         if (!status) return null;
 
         const proposalLabel = list.length > 1
@@ -591,7 +603,7 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
       return this.getProjectWorkflowStatus(offer) || 'active_project';
     }
 
-    return (offer.offer?.status || offer.action_status || offer.proposal_status || offer.status || '').toLowerCase();
+    return (offer.offer?.status || offer.proposals?.[0]?.offer_status || offer.action_status || offer.proposal_status || offer.status || '').toLowerCase();
   }
 
   getProposalStatusLabel(status: string | null | undefined): string {
@@ -614,7 +626,7 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
   formatDate(value: string | null | undefined): string {
     if (!value) return '-';
     try {
-      const d = new Date(value);
+      const d = new Date(/^\d{4}-\d{2}-\d{2}$/.test(value) ? value + 'T00:00:00' : value.replace(' ', 'T'));
       return d.toLocaleDateString('en-US', {
         year: 'numeric', month: 'short', day: 'numeric'
       });
@@ -650,7 +662,7 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
       return null;
     }
 
-    const date = new Date(value);
+    const date = new Date(/^\d{4}-\d{2}-\d{2}$/.test(value) ? value + 'T00:00:00' : value.replace(' ', 'T'));
     return Number.isNaN(date.getTime()) ? null : date;
   }
 
@@ -1027,6 +1039,10 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
   getOfferStatusLabel(status: string | null | undefined): string {
     return this.getMappedLabel(status, {
       pending: { en: 'Pending', ar: 'قيد الانتظار' },
+      technical_accepted: { en: 'Technically accepted', ar: 'مقبول فنياً' },
+      technical_rejected: { en: 'Technically rejected', ar: 'مرفوض فنياً' },
+      awarded: { en: 'Awarded', ar: 'تمت الترسية' },
+      scheduled: { en: 'Scheduled', ar: 'مجدول' },
       accepted: { en: 'Accepted', ar: 'مقبول' },
       approved: { en: 'Approved', ar: 'موافق عليه' },
       rejected: { en: 'Rejected', ar: 'مرفوض' },
@@ -1038,10 +1054,13 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
 
   getOfferStatusBadgeClass(status: string | null | undefined): string {
     switch ((status || '').toLowerCase()) {
+      case 'technical_accepted':
+      case 'awarded':
       case 'accepted':
       case 'approved':
       case 'selected':
         return 'badge-light-success';
+      case 'technical_rejected':
       case 'rejected':
       case 'declined':
       case 'cancelled':
@@ -1079,7 +1098,10 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
     });
   }
 
+  offerHourlyRate(offer: any): number { return Number(offer.hourly_rate ?? (Number(offer.estimated_hours) > 0 ? Number(offer.proposed_price) / Number(offer.estimated_hours) : 0)); }
+
   shouldShowDownPayment(offer: any): boolean {
+    if (offer?.installments?.length) return false;
     const paymentPlan = this.normalizePaymentPlan(offer?.payment_plan);
     if (paymentPlan) return paymentPlan === 'full_at_start' || paymentPlan === 'partial';
 
@@ -1087,6 +1109,7 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
   }
 
   shouldShowFinalPayment(offer: any): boolean {
+    if (offer?.installments?.length) return false;
     const paymentPlan = this.normalizePaymentPlan(offer?.payment_plan);
     if (paymentPlan) return paymentPlan === 'full_at_end' || paymentPlan === 'partial';
 
@@ -1396,7 +1419,7 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
   }
 
   canRejectOffer(offer: ProjectOffer | null): boolean {
-    if (!offer?.match_uuid || this.isActiveProject(offer)) {
+    if (!offer?.match_uuid || !canRespondToProposal(offer, this.currentTime)) {
       return false;
     }
 
@@ -1405,7 +1428,7 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
   }
 
   canSendOffer(offer: ProjectOffer | null): boolean {
-    if (!offer?.match_uuid || this.isActiveProject(offer)) {
+    if (!offer?.match_uuid || !canRespondToProposal(offer, this.currentTime)) {
       return false;
     }
 
@@ -1413,7 +1436,7 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
   }
 
   canInterestOffer(offer: ProjectOffer | null): boolean {
-    if (!offer?.match_uuid || this.isActiveProject(offer)) {
+    if (!offer?.match_uuid || !canRespondToProposal(offer, this.currentTime)) {
       return false;
     }
 

@@ -1,0 +1,14 @@
+{
+  "extends": "./tsconfig.spec.json",
+  "compilerOptions": {
+    "skipLibCheck": true
+  },
+  "files": [
+    "src/test.project-workflow.ts",
+    "src/polyfills.ts"
+  ],
+  "include": [
+    "src/app/_fake/services/project-offers/project-workflow.spec.ts",
+    "src/**/*.d.ts"
+  ]
+}
