@@ -34,9 +34,10 @@ function checkAdminAndMaybeRedirect(): boolean | Observable<boolean> {
   const token = authService.getTokenFromCookie();
   if (!token || isTokenExpired(token)) return true;
 
-  const cachedUser = profileService.getCurrentUser();
-  if (cachedUser?.roles?.includes('admin') || cachedUser?.roles?.includes('staff')) return redirectToAdminDashboard();
-
+  // Don't trust the localStorage-seeded user here: it survives sign-outs done on
+  // the Next.js origin, so a stale admin entry would bounce the next (non-admin)
+  // user to the admin panel. getProfile() resolves roles for the current token
+  // and is shared (shareReplay) with authGuard/RolesGuard, so no extra request.
   return profileService.getProfile().pipe(
     first(),
     map((user) => {

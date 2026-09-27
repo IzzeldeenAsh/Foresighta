@@ -356,7 +356,7 @@ export class SalesComponent extends BaseComponent implements OnInit, OnDestroy, 
 
   onNavigateToDownloads(order: Order): void {
     // Navigate to downloads page
-    this.router.navigate(['/app/my-downloads']);
+    this.router.navigate(['/app/insighter-dashboard/my-downloads']);
   }
 
   onCopyOrderNo(orderNo: string): void {

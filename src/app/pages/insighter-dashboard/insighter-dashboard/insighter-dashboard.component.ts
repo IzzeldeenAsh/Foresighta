@@ -236,7 +236,7 @@ export class InsighterDashboardComponent implements OnInit, OnDestroy {
           {
             label: this.translationService.getTranslation('INSIGHTER.DASHBOARD.NAV.OVERVIEW') || 'Overview',
             icon: 'pi pi-chart-line',
-            routerLink: '/app/dashboard/my-dashboard'
+            routerLink: '/app/insighter-dashboard/my-dashboard'
           }
         ]
       },
@@ -247,17 +247,17 @@ export class InsighterDashboardComponent implements OnInit, OnDestroy {
           {
             label: this.translationService.getTranslation('INSIGHTER.DASHBOARD.NAV.MY_REQUESTS') || 'My Requests',
             icon: 'pi pi-list',
-            routerLink: '/app/dashboard/my-requests'
+            routerLink: '/app/insighter-dashboard/my-requests'
           },
           {
             label: this.translationService.getTranslation('INSIGHTER.DASHBOARD.NAV.MY_KNOWLEDGE') || 'My Knowledge',
             icon: 'pi pi-book',
-            routerLink: '/app/dashboard/my-knowledge'
+            routerLink: '/app/insighter-dashboard/my-knowledge'
           },
           {
             label: this.translationService.getTranslation('INSIGHTER.DASHBOARD.NAV.MY_DOWNLOADS') || 'My Downloads',
             icon: 'pi pi-download',
-            routerLink: '/app/dashboard/my-downloads'
+            routerLink: '/app/insighter-dashboard/my-downloads'
           }
         ]
       }
@@ -272,7 +272,7 @@ export class InsighterDashboardComponent implements OnInit, OnDestroy {
           {
             label: this.translationService.getTranslation('INSIGHTER.DASHBOARD.NAV.MY_COMPANY') || 'My Company',
             icon: 'pi pi-users',
-            routerLink: '/app/dashboard/my-company-settings'
+            routerLink: '/app/insighter-dashboard/my-company-settings'
           }
         ]
       });
@@ -286,7 +286,7 @@ export class InsighterDashboardComponent implements OnInit, OnDestroy {
         {
           label: this.translationService.getTranslation('INSIGHTER.DASHBOARD.NAV.ACCOUNT_SETTINGS') || 'Account Settings',
           icon: 'pi pi-user-edit',
-          routerLink: '/app/dashboard/account-settings'
+          routerLink: '/app/insighter-dashboard/account-settings'
         }
       ]
     });
