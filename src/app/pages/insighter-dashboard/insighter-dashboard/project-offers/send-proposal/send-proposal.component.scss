@@ -918,7 +918,6 @@
   top: 0 !important;
   height: 100dvh !important;
   background: rgba(15, 23, 42, 0.22) !important;
-  z-index: 1300 !important;
 
   @media (max-width: 1199px) {
     top: 0 !important;
@@ -1787,8 +1786,363 @@
   }
 }
 
-.sp-installments { margin-top: 24px; display: grid; gap: 14px; }
-.sp-installment { border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px; display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 14px; }
-.sp-installment legend { float: none; width: auto; font-size: 14px; font-weight: 600; padding: 0 6px; }
-.sp-installment label { display: grid; gap: 6px; min-width: 0; }
-@media(max-width: 640px) { .sp-installment { grid-template-columns: 1fr; } }
+.sp-installments { margin-top: 24px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
+/* Payment plan: two selectable cards */
+.sp-plan {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+
+  &__options {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  &__card {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 16px;
+    border: 1px solid var(--sp-border);
+    border-radius: 12px;
+    background: var(--sp-surface);
+    cursor: pointer;
+    transition: border-color 0.15s ease, background-color 0.15s ease;
+
+    &:hover { border-color: var(--sp-border-strong); }
+
+    &.is-active {
+      border-color: var(--sp-primary);
+      background: #F5F9FF;
+
+      .sp-plan__icon { background: var(--sp-primary); color: #fff; }
+      .sp-plan__check { border-color: var(--sp-primary); background: var(--sp-primary); box-shadow: inset 0 0 0 3px #fff; }
+    }
+
+    &:has(.sp-plan__radio:focus-visible) { outline: 2px solid var(--sp-primary); outline-offset: 2px; }
+  }
+
+  &__radio {
+    position: absolute;
+    opacity: 0;
+    width: 1px;
+    height: 1px;
+    pointer-events: none;
+  }
+
+  &__icon {
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+    border-radius: 10px;
+    background: #EFF6FF;
+    color: var(--sp-primary);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.15s ease, color 0.15s ease;
+
+    i { font-size: 16px; color: inherit; }
+  }
+
+  &__text {
+    flex-grow: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  &__title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--sp-ink-900);
+  }
+
+  &__desc {
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--sp-ink-500);
+  }
+
+  &__check {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    margin-top: 2px;
+    box-sizing: border-box;
+    border: 1.5px solid var(--sp-border-strong);
+    border-radius: 50%;
+    background: var(--sp-surface);
+    transition: border-color 0.15s ease, background-color 0.15s ease;
+  }
+}
+
+@media (max-width: 575px) {
+  .sp-plan__options { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* Payment schedule: timeline of installment cards */
+.sp-timeline {
+  list-style: none;
+  min-width: 0;
+  margin: 4px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.sp-timeline__item {
+  --due: var(--sp-primary);
+  --due-soft: #EFF6FF;
+  --due-ink: #1D4ED8;
+  position: relative;
+  display: flex;
+  gap: 16px;
+  align-items: stretch;
+  min-width: 0;
+
+
+  &.is-promoted { z-index: 1; }
+  &.is-promoted .sp-pay-card { border-color: var(--due); background: var(--due-soft); }
+}
+
+.sp-timeline__rail {
+  width: 28px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  &::after {
+    content: '';
+    width: 2px;
+    flex-grow: 1;
+    background: var(--sp-rule);
+  }
+}
+
+.sp-timeline__dot {
+  width: 28px;
+  height: 28px;
+  margin-top: 18px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--due);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 0 4px var(--due-soft);
+  transition: background-color 0.25s ease, box-shadow 0.25s ease;
+
+  &--add {
+    margin-top: 6px;
+    background: var(--sp-surface);
+    border: 2px dashed var(--sp-border-strong);
+    box-shadow: none;
+  }
+}
+
+.sp-timeline__item--add {
+  align-items: flex-start;
+
+  .sp-timeline__rail::after { display: none; }
+}
+
+.sp-pay-card {
+  flex-grow: 1;
+  min-width: 0;
+  margin: 0 0 16px;
+  padding: 16px;
+  border: 1px solid var(--sp-border);
+  border-radius: 12px;
+  background: var(--sp-surface);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  transition: border-color 0.6s ease, background-color 0.6s ease;
+
+  &__head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  &__heading {
+    flex-grow: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  &__title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--sp-ink-900);
+  }
+
+  &__due {
+    font-size: 12px;
+    color: var(--due-ink);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &__amount {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--sp-ink-900);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+
+    &.is-empty { color: var(--sp-ink-300); font-weight: 500; }
+  }
+
+  &__remove {
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+    padding: 0;
+    border: 1px solid #FECDCA;
+    border-radius: 8px;
+    background: #FEF3F2;
+    color: #D92D20;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+
+    i { color: inherit; }
+    &:hover:not(:disabled) { background: #FEE4E2; border-color: #FDA29B; }
+    &:focus-visible { outline: 2px solid #D92D20; outline-offset: 2px; }
+    &:disabled { cursor: not-allowed; opacity: 0.45; }
+  }
+
+  &__fields {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 160px;
+    gap: 12px;
+  }
+}
+
+.sp-pay-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  margin: 0;
+
+  > span:first-child {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--sp-ink-500);
+  }
+
+  &--condition { max-width: 360px; }
+
+  select.sp-input { text-overflow: ellipsis; }
+
+  &__suffixed {
+    position: relative;
+    display: block;
+
+    .sp-input { padding-inline-end: 34px; }
+
+    > span {
+      position: absolute;
+      inset-inline-end: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--sp-ink-400);
+      pointer-events: none;
+    }
+  }
+}
+
+.sp-due-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.sp-due-option {
+  --opt: var(--sp-primary);
+  --opt-soft: #EFF6FF;
+  --opt-ink: #1D4ED8;
+  height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--sp-border);
+  border-radius: 10px;
+  background: var(--sp-surface);
+  color: var(--sp-ink-700);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease;
+
+  i { font-size: 16px; color: var(--opt); }
+
+
+  &:hover:not(:disabled) { border-color: var(--opt); }
+  &:focus-visible { outline: 2px solid var(--opt); outline-offset: 2px; }
+
+  &.is-active {
+    border-color: var(--opt);
+    background: var(--opt-soft);
+    color: var(--opt-ink);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    color: var(--sp-ink-300);
+    background: var(--sp-surface-muted);
+    border-color: var(--sp-rule);
+
+    i { color: var(--sp-ink-300); }
+  }
+}
+
+.sp-add-payment {
+  height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--sp-border);
+  border-radius: 10px;
+  background: var(--sp-surface);
+  color: var(--sp-primary);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+
+  i { color: inherit; }
+  &:hover { border-color: var(--sp-primary); background: #EFF6FF; }
+  &:focus-visible { outline: 2px solid var(--sp-primary); outline-offset: 2px; }
+}
+
+@media (max-width: 640px) {
+  .sp-timeline__item { gap: 12px; }
+  .sp-pay-card { padding: 14px; }
+  .sp-pay-card__fields { grid-template-columns: minmax(0, 1fr); }
+  .sp-pay-field--condition { max-width: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sp-timeline__dot, .sp-pay-card { transition: none; }
+}

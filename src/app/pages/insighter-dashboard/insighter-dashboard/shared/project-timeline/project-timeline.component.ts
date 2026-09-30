@@ -62,8 +62,22 @@ export class ProjectTimelineComponent {
 
   constructor(private http: HttpClient) {}
 
+  /**
+   * Visible steps with completed ones pulled to the top (API order kept within
+   * each group), so a completed step never sits below a pending/active one.
+   * Closed/cancelled always stay last.
+   */
   get visibleSteps(): ProjectTimelineStep[] {
-    return (this.steps || []).filter(step => step?.display);
+    const rank = (step: ProjectTimelineStep): number => {
+      if (step.key === TIMELINE_STEP.CLOSED_PROJECT || step.key === TIMELINE_STEP.CANCELLED_PROJECT) return 2;
+      return step.state === 'completed' ? 0 : 1;
+    };
+
+    return (this.steps || [])
+      .filter(step => step?.display)
+      .map((step, index) => ({ step, index }))
+      .sort((a, b) => rank(a.step) - rank(b.step) || a.index - b.index)
+      .map(({ step }) => step);
   }
 
   get isClient(): boolean {
@@ -251,8 +265,10 @@ export class ProjectTimelineComponent {
       : `${stepWord} ${displayStepNo}`;
   }
 
+  /** Numbered by displayed position, since completed steps are reordered to the top. */
   private displayStepNumber(step: ProjectTimelineStep): number | string {
-    return step.step_no ?? '';
+    const index = this.visibleSteps.indexOf(step);
+    return index >= 0 ? index + 1 : (step.step_no ?? '');
   }
 
   private hasVisiblePartyStep(): boolean {

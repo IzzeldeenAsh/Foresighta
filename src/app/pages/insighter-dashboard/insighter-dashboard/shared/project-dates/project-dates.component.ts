@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, OnChanges } from '@angular/core';
 
 // Compact start → deadline timeline shown under project titles.
 @Component({
@@ -39,7 +39,7 @@ import { Component, Input } from '@angular/core';
     @container (max-width:270px){.tl{flex-wrap:wrap;row-gap:10px}.rail{display:none}}
   `],
 })
-export class ProjectDatesComponent {
+export class ProjectDatesComponent implements OnChanges {
   @Input() startDate: string | null | undefined;
   @Input() endDate: string | null | undefined;
   @Input() lang = 'en';
@@ -66,11 +66,13 @@ export class ProjectDatesComponent {
     const days = Math.round((range[1].getTime() - range[0].getTime()) / 86400000);
     return this.ar ? `${days} يوم` : `${days} ${days === 1 ? 'day' : 'days'}`;
   }
-  // Share of the start → deadline window that has already elapsed.
-  get progress(): number {
+  // Share of the start → deadline window that has already elapsed. Computed on input
+  // changes, not in a getter: Date.now() differs between change-detection passes (NG0100).
+  progress = 0;
+  ngOnChanges(): void {
     const range = this.range;
-    if (!range) return 0;
+    if (!range) { this.progress = 0; return; }
     const [start, end] = range;
-    return Math.min(100, Math.max(0, ((Date.now() - start.getTime()) / (end.getTime() - start.getTime())) * 100));
+    this.progress = Math.min(100, Math.max(0, ((Date.now() - start.getTime()) / (end.getTime() - start.getTime())) * 100));
   }
 }

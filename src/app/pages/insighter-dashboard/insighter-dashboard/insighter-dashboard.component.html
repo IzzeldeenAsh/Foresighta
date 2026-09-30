@@ -17,7 +17,7 @@
   </button>
 </div>
 <!-- Mobile Sidebar -->
-<p-sidebar [(visible)]="isMobileSidebarVisible" [position]="lang === 'ar' ? 'right' : 'left'" [modal]="true" [showCloseIcon]="false"
+<p-sidebar [(visible)]="isMobileSidebarVisible" [position]="lang === 'ar' ? 'right' : 'left'" appendTo="body" [modal]="true" [showCloseIcon]="false"
   [style]="{width: '352px'}" (onHide)="closeMobileSidebar()" styleClass="mobile-sidebar feed-sidebar-drawer">
   <div class="mobile-nav-content">
     <section *ngIf="lastProfile" class="mobile-sidebar-profile-card">

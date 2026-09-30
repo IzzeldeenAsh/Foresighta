@@ -90,12 +90,13 @@ describe('Project offers and installment API contract', () => {
     expect(component.canFilterReviewsByDeliverable).toBeFalse();
     expect(component.getSortedReviewSubmissions().map(review => review.uuid)).toEqual(['review']);
   });
-  it('preserves API timeline order, numbering and independent completion', () => {
+  it('orders completed timeline steps first and numbers by displayed position', () => {
     const timeline = new ProjectTimelineComponent({} as any);
     const step = (key: string, step_no: number, state: any, extra = {}): ProjectTimelineStep => ({ key, step_no, state, display: true, title: key, status: 'pending', amount: null, date: null, party: null, meta: {}, ...extra });
     timeline.steps = [step('contracting', 1, 'in_progress'), step('client_info', 2, 'completed'), step('payment_installment_4', 3, 'locked', { amount: '200.00' }), step('payment_installment_3', 4, 'locked'), step('closed_project', 5, 'locked')];
-    expect(timeline.visibleSteps.map(item => item.key)).toEqual(timeline.steps.map(item => item.key));
-    expect(timeline.stepNumberLabel(timeline.steps[0])).toBe('Step 1');
+    expect(timeline.visibleSteps.map(item => item.key)).toEqual(['client_info', 'contracting', 'payment_installment_4', 'payment_installment_3', 'closed_project']);
+    expect(timeline.stepNumberLabel(timeline.steps[1])).toBe('Step 1');
+    expect(timeline.stepNumberLabel(timeline.steps[0])).toBe('Step 2');
     expect(timeline.progress).toBe('0%');
     expect(timeline.isPayment(timeline.steps[2])).toBeTrue();
     expect(timeline.amountLabel(timeline.steps[2])).toBe('$200.00');

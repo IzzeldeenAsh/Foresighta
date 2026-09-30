@@ -196,38 +196,101 @@
             </div>
 
             <section class="sp-installments" aria-label="Payment schedule">
-              <label class="sp-field__label" for="payment-plan">{{ lang === 'ar' ? 'خطة الدفع' : 'Payment plan' }}</label>
-              <select id="payment-plan" name="paymentPlan" class="sp-input" [(ngModel)]="paymentPlan">
-                <option value="full">{{ lang === 'ar' ? 'دفعة واحدة' : 'Full payment' }}</option>
-                <option value="partial">{{ lang === 'ar' ? 'دفعات' : 'Installments' }}</option>
-              </select>
-              <p *ngIf="paymentPlan === 'full'" class="sp-field__hint">{{ lang === 'ar' ? 'دفعة واحدة بنسبة 100% بعد المخرجات وفق جدول المشروع.' : 'One 100% payment after the deliverables in the project timeline.' }}</p>
+              <div class="sp-plan" role="radiogroup" aria-labelledby="payment-plan-label">
+                <span id="payment-plan-label" class="sp-field__label">{{ lang === 'ar' ? 'خطة الدفع' : 'Payment plan' }}</span>
+                <div class="sp-plan__options">
+                  <label class="sp-plan__card" [class.is-active]="paymentPlan === 'full'">
+                    <input type="radio" class="sp-plan__radio" name="paymentPlan" value="full" [(ngModel)]="paymentPlan">
+                    <span class="sp-plan__icon" aria-hidden="true"><i class="pi pi-wallet"></i></span>
+                    <span class="sp-plan__text">
+                      <span class="sp-plan__title">{{ lang === 'ar' ? 'دفعة واحدة' : 'Full payment' }}</span>
+                      <span class="sp-plan__desc">{{ lang === 'ar' ? 'دفعة واحدة بنسبة 100% بعد المخرجات وفق جدول المشروع.' : 'One 100% payment after the deliverables in the project timeline.' }}</span>
+                    </span>
+                    <span class="sp-plan__check" aria-hidden="true"></span>
+                  </label>
+                  <label class="sp-plan__card" [class.is-active]="paymentPlan === 'partial'">
+                    <input type="radio" class="sp-plan__radio" name="paymentPlan" value="partial" [(ngModel)]="paymentPlan">
+                    <span class="sp-plan__icon" aria-hidden="true"><i class="pi pi-calendar-clock"></i></span>
+                    <span class="sp-plan__text">
+                      <span class="sp-plan__title">{{ lang === 'ar' ? 'دفعات' : 'Installments' }}</span>
+                      <span class="sp-plan__desc">{{ lang === 'ar' ? 'قسّم المبلغ على دفعات عند التعاقد أو في تواريخ أو بعد اعتماد المخرجات.' : 'Split the amount into payments on contract, on dates, or after deliverables.' }}</span>
+                    </span>
+                    <span class="sp-plan__check" aria-hidden="true"></span>
+                  </label>
+                </div>
+              </div>
               <ng-container *ngIf="paymentPlan === 'partial'">
-                <p class="sp-field__hint">{{ lang === 'ar' ? 'دفعة التعاقد أولاً. يلزم سدادها وأي دفعات بتاريخ قبل بدء المشروع لبدء العمل.' : 'Contract payment comes first. It and dated payments before the planned start must be paid before work starts.' }}</p>
-                <fieldset *ngFor="let row of installments; let i = index" class="sp-installment">
-                  <legend>{{ lang === 'ar' ? 'دفعة' : 'Payment' }} {{ i + 1 }} · {{ formatPrice(suggestedPrice * (+row.percentage) / 100) }}</legend>
-                  <label>{{ lang === 'ar' ? 'العنوان' : 'Title' }}<input class="sp-input" [name]="'title-' + i" [(ngModel)]="row.title" required maxlength="255"></label>
-                  <label>{{ lang === 'ar' ? 'النسبة %' : 'Percentage %' }}<input class="sp-input" type="number" min="1" max="100" step="0.0001" [name]="'percentage-' + i" [(ngModel)]="row.percentage" required></label>
-                  <label>{{ lang === 'ar' ? 'الاستحقاق' : 'Due condition' }}
-                    <select class="sp-input" [name]="'due-' + i" [(ngModel)]="row.due_type" (ngModelChange)="changeDueType(row)">
-                      <option value="contract" [disabled]="hasContractInstallment && row.due_type !== 'contract'">{{ lang === 'ar' ? 'عند التعاقد' : 'On contract signing' }}</option>
-                      <option value="date">{{ lang === 'ar' ? 'في تاريخ' : 'On a date' }}</option>
-                      <option value="deliverable" [disabled]="!deliverables.length">{{ lang === 'ar' ? 'بعد اعتماد مخرج' : 'After deliverable approval' }}</option>
-                    </select>
-                  </label>
-                  <label *ngIf="row.due_type === 'date'">{{ lang === 'ar' ? 'التاريخ' : 'Date' }}<input class="sp-input" type="date" [name]="'date-' + i" [(ngModel)]="row.due_date" required></label>
-                  <label *ngIf="row.due_type === 'deliverable'">{{ lang === 'ar' ? 'المخرج' : 'Deliverable' }}
-                    <select class="sp-input" [name]="'deliverable-' + i" [(ngModel)]="row.project_service_deliverable_id" required>
-                      <option [ngValue]="null">{{ lang === 'ar' ? 'اختر المخرج' : 'Choose deliverable' }}</option>
-                      <option *ngFor="let item of deliverables" [ngValue]="item.id">{{ item.service_title }} — {{ item.title }}</option>
-                    </select>
-                  </label>
-                  <button type="button" class="btn btn-sm btn-light-danger" (click)="removeInstallment(i)">{{ lang === 'ar' ? 'حذف' : 'Remove' }}</button>
-                </fieldset>
-                <button type="button" class="btn btn-light-primary" (click)="addInstallment()">{{ lang === 'ar' ? 'إضافة دفعة' : 'Add payment' }}</button>
-                <p aria-live="polite">{{ lang === 'ar' ? 'المجموع' : 'Total' }}: <strong>{{ paymentSplitTotal }}%</strong> · {{ lang === 'ar' ? 'المتبقي' : 'Remaining' }}: {{ paymentRemaining }}%</p>
-                <p class="sp-field__hint sp-field__hint--danger" *ngIf="isPaymentSplitInvalid()">{{ getPaymentSplitErrorMessage() }}</p>
-<details><summary>{{ lang === 'ar' ? 'معاينة ترتيب التسليم والدفعات' : 'Preview delivery and payment order' }}</summary><ol><li *ngFor="let step of timelinePreview">{{ step.title || (lang === 'ar' ? 'دفعة بدون عنوان' : 'Untitled payment') }} <span *ngIf="step.kind === 'payment'">(#{{ step.position }})</span> <span *ngIf="step.date">· {{ step.date }}</span></li></ol></details>
+                <p class="sp-field__hint">{{ lang === 'ar' ? 'دفعة التعاقد أولاً، ويلزم سدادها قبل بدء العمل. يجب أن تقع الدفعات المؤرخة بين بداية المشروع وموعده النهائي.' : 'The contract payment comes first and must be paid before work starts. Dated payments must fall between the project start and its deadline.' }}</p>
+                <ol class="sp-timeline">
+                  <li *ngFor="let row of installments; let i = index" #installmentItem class="sp-timeline__item" [attr.data-due]="row.due_type">
+                    <span class="sp-timeline__rail" aria-hidden="true"><span class="sp-timeline__dot">{{ i + 1 }}</span></span>
+                    <fieldset class="sp-pay-card">
+                      <legend class="visually-hidden">{{ lang === 'ar' ? 'دفعة' : 'Payment' }} {{ i + 1 }}</legend>
+                      <div class="sp-pay-card__head">
+                        <div class="sp-pay-card__heading">
+                          <span class="sp-pay-card__title" aria-hidden="true">{{ lang === 'ar' ? 'دفعة' : 'Payment' }} {{ i + 1 }}</span>
+                          <span class="sp-pay-card__due">{{ installmentDueSummary(row) }}</span>
+                        </div>
+                        <span class="sp-pay-card__amount" [class.is-empty]="suggestedPrice <= 0">{{ suggestedPrice > 0 ? formatPrice(suggestedPrice * (+row.percentage || 0) / 100) : '—' }}</span>
+                        <button type="button" class="sp-pay-card__remove" (click)="removeInstallment(i)" [disabled]="installments.length <= 2" [attr.aria-label]="(lang === 'ar' ? 'حذف الدفعة ' : 'Remove payment ') + (i + 1)" [title]="installments.length <= 2 ? (lang === 'ar' ? 'يلزم وجود دفعتين على الأقل' : 'At least two payments are required') : (lang === 'ar' ? 'حذف' : 'Remove')">
+                          <i class="ki-outline ki-trash fs-4"></i>
+                        </button>
+                      </div>
+                      <div class="sp-pay-card__fields">
+                        <label class="sp-pay-field">
+                          <span>{{ lang === 'ar' ? 'العنوان' : 'Title' }}</span>
+                          <input class="sp-input" [name]="'title-' + rowKey(row)" [(ngModel)]="row.title" #titleModel="ngModel" required maxlength="255"
+                            [class.is-invalid]="shouldShowFieldError(titleModel, !row.title.trim())">
+                        </label>
+                        <label class="sp-pay-field">
+                          <span>{{ lang === 'ar' ? 'النسبة' : 'Percentage' }}</span>
+                          <span class="sp-pay-field__suffixed">
+                            <input #pctInput class="sp-input" type="number" min="1" step="0.0001" [attr.max]="maxPercentageFor(row)" [name]="'percentage-' + rowKey(row)"
+                              [ngModel]="row.percentage" (ngModelChange)="onPercentageChange(row, $event, pctInput)" [class.is-invalid]="isPercentageInvalid(row)" required>
+                            <span aria-hidden="true">%</span>
+                          </span>
+                          <small class="sp-field__hint sp-field__hint--danger" *ngIf="isPercentageCapped(row)">{{ getPercentageCapMessage(row) }}</small>
+                        </label>
+                      </div>
+                      <div class="sp-pay-field">
+                        <span>{{ lang === 'ar' ? 'الاستحقاق' : 'Due' }}</span>
+                        <div class="sp-due-options" role="group" [attr.aria-label]="lang === 'ar' ? 'شرط الاستحقاق' : 'Due condition'">
+                          <button type="button" class="sp-due-option sp-due-option--contract" [class.is-active]="row.due_type === 'contract'" [attr.aria-pressed]="row.due_type === 'contract'"
+                            [disabled]="hasContractInstallment && row.due_type !== 'contract'" (click)="setDueType(row, 'contract')">
+                            <i class="ki-outline ki-document"></i>{{ lang === 'ar' ? 'عند التعاقد' : 'On contract' }}
+                          </button>
+                          <button type="button" class="sp-due-option sp-due-option--date" [class.is-active]="row.due_type === 'date'" [attr.aria-pressed]="row.due_type === 'date'" (click)="setDueType(row, 'date')">
+                            <i class="ki-outline ki-calendar"></i>{{ lang === 'ar' ? 'في تاريخ' : 'On a date' }}
+                          </button>
+                          <button type="button" class="sp-due-option sp-due-option--deliverable" [class.is-active]="row.due_type === 'deliverable'" [attr.aria-pressed]="row.due_type === 'deliverable'"
+                            [disabled]="!deliverables.length" (click)="setDueType(row, 'deliverable')">
+                            <i class="pi pi-file-check"></i>{{ lang === 'ar' ? 'بعد اعتماد مخرج' : 'After a deliverable' }}
+                          </button>
+                        </div>
+                      </div>
+                      <label *ngIf="row.due_type === 'date'" class="sp-pay-field sp-pay-field--condition">
+                        <span>{{ lang === 'ar' ? 'التاريخ' : 'Date' }}</span>
+                        <input class="sp-input" type="date" [name]="'date-' + rowKey(row)" [(ngModel)]="row.due_date" required
+                          [attr.min]="paymentDateMin" [attr.max]="paymentDateMax" [class.is-invalid]="isInstallmentDateOutOfRange(row)">
+                        <small class="sp-field__hint" [class.sp-field__hint--danger]="isInstallmentDateOutOfRange(row)" *ngIf="paymentDateMin || paymentDateMax">{{ getInstallmentDateRangeMessage() }}</small>
+                      </label>
+                      <label *ngIf="row.due_type === 'deliverable'" class="sp-pay-field sp-pay-field--condition">
+                        <span>{{ lang === 'ar' ? 'المخرج' : 'Deliverable' }}</span>
+                        <select class="sp-input" [name]="'deliverable-' + rowKey(row)" [(ngModel)]="row.project_service_deliverable_id" required>
+                          <option [ngValue]="null">{{ lang === 'ar' ? 'اختر المخرج' : 'Choose deliverable' }}</option>
+                          <option *ngFor="let item of deliverables" [ngValue]="item.id">{{ item.service_title }} — {{ item.title }}</option>
+                        </select>
+                      </label>
+                    </fieldset>
+                  </li>
+                  <li class="sp-timeline__item sp-timeline__item--add">
+                    <span class="sp-timeline__rail" aria-hidden="true"><span class="sp-timeline__dot sp-timeline__dot--add"></span></span>
+                    <button type="button" class="sp-add-payment" (click)="addInstallment()">
+                      <i class="ki-outline ki-plus fs-5"></i>{{ lang === 'ar' ? 'إضافة دفعة' : 'Add payment' }}
+                    </button>
+                  </li>
+                </ol>
+                <p class="sp-field__hint sp-field__hint--danger mb-0" aria-live="polite" *ngIf="paymentSplitValidationAttempted && isPaymentSplitInvalid()">{{ getPaymentSplitErrorMessage() }}</p>
               </ng-container>
               <p class="sp-field__hint sp-field__hint--danger" *ngIf="!canRespond">{{ lang === 'ar' ? 'لم يعد هذا المشروع يقبل عروضاً.' : 'This project is no longer accepting offers.' }}</p>
             </section>

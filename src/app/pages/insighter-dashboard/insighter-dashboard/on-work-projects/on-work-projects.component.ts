@@ -158,13 +158,6 @@ export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
   readonly fileAccept = PROJECT_FILE_ACCEPT;
   get deliverables(): ProjectDeliverable[] { return this.selectedProject?.project.project_services?.reduce<ProjectDeliverable[]>((items, service) => items.concat(service.deliverables), []) ?? []; }
   get availableReviewDeliverables(): ProjectDeliverable[] { return this.deliverables.filter(item => !this.isDeliverableApproved(item.id)); }
-  get projectStatusLabel(): string {
-    const status = this.selectedProject?.project_status || this.selectedProject?.project.status || this.selectedProject?.status || '';
-    const labels: Record<string, [string, string]> = {
-      contracting: ['Contracting — signatures required', 'التعاقد — التوقيعات مطلوبة'], payment: ['Awaiting client payment', 'بانتظار دفع العميل'], scheduled: ['Scheduled — awaiting planned start', 'مجدول — بانتظار تاريخ البدء'], in_progress: ['In progress', 'قيد التنفيذ'], in_review: ['Awaiting client review', 'بانتظار مراجعة العميل'], closed: ['Closed', 'مغلق'], cancelled: ['Cancelled', 'ملغي'],
-    };
-    return labels[status]?.[this.lang === 'ar' ? 1 : 0] || status;
-  }
   canMutateProject(): boolean { return ['in_progress', 'in_review'].includes(this.selectedProject?.project_status || this.selectedProject?.project.status || this.selectedProject?.status || ''); }
   reviewsForDeliverable(id: number): ProjectReviewSubmission[] { return this.reviewSubmissions.filter(review => Number(review.deliverable?.id ?? review.project_service_deliverable_id) === id).sort((a, b) => (b.request_at || '').localeCompare(a.request_at || '')); }
   isDeliverableApproved(id: number): boolean { return this.reviewsForDeliverable(id).some(review => review.status === 'approved') || this.timelineSteps.some(step => Number(step.meta?.['deliverable_id']) === id && step.status === 'approved'); }

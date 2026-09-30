@@ -1,5 +1,5 @@
-import { ProjectDeliverable, OfferInstallment, offerTimelinePreview, appendInstallments, contractFirst, installmentTotal, validInstallments, validProjectFile, PROJECT_FILE_ACCEPT, canRespondToProposal } from 'src/app/_fake/services/project-offers/project-workflow';
-import { Component, Injector, OnDestroy, OnInit, QueryList, ViewChildren } from '@angular/core';
+import { ProjectDeliverable, OfferInstallment, InstallmentDueType, appendInstallments, contractFirst, installmentTotal, validInstallments, validProjectFile, PROJECT_FILE_ACCEPT, canRespondToProposal } from 'src/app/_fake/services/project-offers/project-workflow';
+import { Component, ElementRef, Injector, OnDestroy, OnInit, QueryList, ViewChildren } from '@angular/core';
 import { NgModel } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { takeUntil } from 'rxjs/operators';
@@ -23,6 +23,10 @@ type PaymentPlan = 'partial' | 'full';
 })
 export class SendProposalComponent extends BaseComponent implements OnInit, OnDestroy {
   @ViewChildren(NgModel) private formModels!: QueryList<NgModel>;
+  @ViewChildren('installmentItem') private installmentItems!: QueryList<ElementRef<HTMLElement>>;
+  private installmentKeys = new WeakMap<OfferInstallment, number>();
+  private cappedRows = new WeakSet<OfferInstallment>();
+  private nextInstallmentKey = 0;
 
   proposal: ProjectOffer | null = null;
 
@@ -43,33 +47,121 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
   selectedAttachments: File[] = [];
   paymentPlan: PaymentPlan = 'partial';
   installments: OfferInstallment[] = [];
+  paymentSplitValidationAttempted = false;
   readonly fileAccept = PROJECT_FILE_ACCEPT;
   get deliverables() { return this.proposal?.project.project_services?.reduce<ProjectDeliverable[]>((items, service) => items.concat(service.deliverables), []) ?? []; }
   get paymentSplitTotal(): number { return installmentTotal(this.installments); }
-  get timelinePreview() { return offerTimelinePreview(this.deliverables, this.installments); }
-  get paymentRemaining(): number { return Math.round((100 - this.paymentSplitTotal) * 10000) / 10000; }
   get hasContractInstallment(): boolean { return this.installments.some(row => row.due_type === 'contract'); }
   get canRespond(): boolean { return canRespondToProposal(this.proposal); }
-  addInstallment(): void { this.installments.push({ title: '', percentage: 0, due_type: 'date', due_date: '' }); }
-  removeInstallment(index: number): void { this.installments.splice(index, 1); }
-  changeDueType(row: OfferInstallment): void {
+  addInstallment(): void {
+    this.installments.push({ title: '', percentage: '', due_type: 'date', due_date: '' });
+    this.paymentSplitValidationAttempted = false;
+  }
+  /** At least two payments are required. Other payments keep their values. */
+  removeInstallment(index: number): void {
+    if (this.installments.length > 2) this.installments.splice(index, 1);
+  }
+  /** Highest value a row may take without pushing the total above 100%. */
+  maxPercentageFor(row: OfferInstallment): number {
+    const others = this.installments.filter(item => item !== row).reduce((sum, item) => sum + this.pct(item), 0);
+    return this.roundPct(Math.max(100 - others, 0));
+  }
+  /** Caps the typed value so the total can never exceed 100%; nothing else is changed. */
+  onPercentageChange(row: OfferInstallment, value: string | number | null, input: HTMLInputElement): void {
+    const typed = Number(value);
+    if (value === '' || value === null || !Number.isFinite(typed)) { row.percentage = value ?? ''; return; }
+    const capped = this.roundPct(Math.min(typed, this.maxPercentageFor(row)));
+    row.percentage = capped;
+    if (capped !== typed) { input.value = String(capped); this.cappedRows.add(row); } else { this.cappedRows.delete(row); }
+  }
+  isPercentageCapped(row: OfferInstallment): boolean { return this.cappedRows.has(row); }
+  getPercentageCapMessage(row: OfferInstallment): string {
+    const left = this.maxPercentageFor(row);
+    if (this.lang === 'ar') return left > 0 ? `المتبقي ${left}% فقط. خفّض دفعة أخرى أولاً.` : 'لا توجد نسبة متبقية. خفّض دفعة أخرى أولاً.';
+    return left > 0 ? `Only ${left}% is left. Lower another payment first.` : 'No percentage is left. Lower another payment first.';
+  }
+  /** Red border: the row's own value is missing or out of range, or the rows are all valid but don't reach 100%. */
+  isPercentageInvalid(row: OfferInstallment): boolean {
+    if (this.isRowPercentageInvalid(row)) return true;
+    return this.paymentSplitTotal !== 100 && !this.installments.some(item => this.isRowPercentageInvalid(item));
+  }
+  private isRowPercentageInvalid(row: OfferInstallment): boolean {
+    const value = Number(row.percentage);
+    return row.percentage === '' || row.percentage === null || !Number.isFinite(value) || value < 1 || value > 100;
+  }
+  private pct(row: OfferInstallment): number { return Number(row.percentage) || 0; }
+  private roundPct(value: number): number { return Math.round(value * 10000) / 10000; }
+  /** Stable per-row key so ngModel names survive reordering. */
+  rowKey(row: OfferInstallment): number {
+    if (!this.installmentKeys.has(row)) this.installmentKeys.set(row, this.nextInstallmentKey++);
+    return this.installmentKeys.get(row)!;
+  }
+  setDueType(row: OfferInstallment, type: InstallmentDueType): void {
+    if (row.due_type === type) return;
+    row.due_type = type;
     row.due_date = null;
     row.project_service_deliverable_id = null;
+    const before = this.installmentRects();
     this.installments = contractFirst(this.installments);
+    // Runs after change detection has moved the cards, so the moved card glides to its new slot.
+    if (before.size) setTimeout(() => this.animateReorder(before, type === 'contract' ? row : null));
   }
+  /** Dated payments must fall inside the project window: planned start → deadline (inclusive). */
+  get paymentDateMin(): string | null { return this.proposal?.project.planned_start_date || null; }
+  get paymentDateMax(): string | null { return this.proposal?.project.deadline || null; }
+  isInstallmentDateOutOfRange(row: OfferInstallment): boolean {
+    if (row.due_type !== 'date' || !row.due_date) return false;
+    return (!!this.paymentDateMin && row.due_date < this.paymentDateMin)
+      || (!!this.paymentDateMax && row.due_date > this.paymentDateMax);
+  }
+  getInstallmentDateRangeMessage(): string {
+    const ar = this.lang === 'ar';
+    const min = this.paymentDateMin ? this.formatDate(this.paymentDateMin) : null;
+    const max = this.paymentDateMax ? this.formatDate(this.paymentDateMax) : null;
+    if (min && max) return ar ? `اختر تاريخاً بين ${min} و${max}.` : `Pick a date between ${min} and ${max}.`;
+    if (min) return ar ? `اختر تاريخاً في ${min} أو بعده.` : `Pick a date on or after ${min}.`;
+    return ar ? `اختر تاريخاً في ${max} أو قبله.` : `Pick a date on or before ${max}.`;
+  }
+  installmentDueSummary(row: OfferInstallment): string {
+    const ar = this.lang === 'ar';
+    if (row.due_type === 'contract') return ar ? 'تستحق عند توقيع العقد' : 'Due on contract signing';
+    if (row.due_type === 'date') return row.due_date ? `${ar ? 'تستحق في' : 'Due'} ${this.formatDate(row.due_date)}` : (ar ? 'اختر تاريخ الاستحقاق' : 'Pick a due date');
+    const item = this.deliverables.find(d => d.id === Number(row.project_service_deliverable_id));
+    return item ? `${ar ? 'تستحق بعد اعتماد' : 'Due after approval of'} ${item.title}` : (ar ? 'اختر المخرج' : 'Pick a deliverable');
+  }
+  private installmentRects(): Map<HTMLElement, DOMRect> {
+    return new Map((this.installmentItems?.toArray() ?? []).map(ref => [ref.nativeElement, ref.nativeElement.getBoundingClientRect()]));
+  }
+  private animateReorder(before: Map<HTMLElement, DOMRect>, promoted: OfferInstallment | null): void {
+    if (typeof window === 'undefined' || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+    const promotedIndex = promoted ? this.installments.indexOf(promoted) : -1;
+    this.installmentItems.forEach((ref, index) => {
+      const el = ref.nativeElement;
+      const old = before.get(el);
+      if (!old || typeof el.animate !== 'function') return;
+      const dy = old.top - el.getBoundingClientRect().top;
+      if (Math.abs(dy) < 1) return;
+      el.animate([{ transform: `translateY(${dy}px)` }, { transform: 'translateY(0)' }],
+        { duration: 450, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' });
+      if (index === promotedIndex) {
+        el.classList.add('is-promoted');
+        setTimeout(() => el.classList.remove('is-promoted'), 1200);
+      }
+    });
+  }
+  /** Default schedule: two payments — 30% on contract, 70% after the final deliverable (or on the deadline). */
   initializeInstallments(): void {
-    const deliverables = this.deliverables;
-    this.installments = [{ title: this.lang === 'ar' ? 'دفعة التعاقد' : 'Contract payment', percentage: 30, due_type: 'contract' }];
-    if (deliverables.length > 0 && deliverables.length <= 70) {
-      const percentage = Math.floor(70 / deliverables.length * 10000) / 10000;
-      deliverables.forEach((item, index) => this.installments.push({
-        title: `${item.title || (this.lang === 'ar' ? 'المخرج' : 'Deliverable')} — ${this.lang === 'ar' ? 'دفعة الاعتماد' : 'approval payment'}`,
-        percentage: index === deliverables.length - 1 ? Math.round((70 - percentage * index) * 10000) / 10000 : percentage,
-        due_type: 'deliverable', project_service_deliverable_id: item.id,
-      }));
-    } else {
-      this.installments.push({ title: this.lang === 'ar' ? 'دفعة مجدولة' : 'Scheduled payment', percentage: 70, due_type: 'date', due_date: this.proposal?.project.deadline || '' });
-    }
+    this.paymentSplitValidationAttempted = false;
+    const ar = this.lang === 'ar';
+    const finalDeliverable = [...this.deliverables]
+      .sort((a, b) => (a.project_service_id ?? 0) - (b.project_service_id ?? 0) || a.position - b.position)
+      .pop();
+    this.installments = [
+      { title: ar ? 'دفعة التعاقد' : 'Contract payment', percentage: 30, due_type: 'contract' },
+      finalDeliverable
+        ? { title: '', percentage: 70, due_type: 'deliverable', project_service_deliverable_id: finalDeliverable.id }
+        : { title: '', percentage: 70, due_type: 'date', due_date: this.proposal?.project.deadline || '' },
+    ];
   }
 
   readonly hoursPerDay = HOURS_PER_DAY;
@@ -159,6 +251,7 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
 
   submitProposal(): void {
     if (this.isSubmitting) return;
+    this.paymentSplitValidationAttempted = true;
     if (!this.proposalUuid || this.isProposalFormInvalid()) {
       this.markRequiredFieldsTouchedAndDirty();
       return;
@@ -508,7 +601,8 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
   }
 
   isPaymentSplitInvalid(): boolean {
-    return this.paymentPlan === 'partial' && !validInstallments(this.installments, this.deliverables);
+    return this.paymentPlan === 'partial'
+      && (!validInstallments(this.installments, this.deliverables) || this.installments.some(row => this.isInstallmentDateOutOfRange(row)));
   }
 
   private isProposalFormInvalid(): boolean {

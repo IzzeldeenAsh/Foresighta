@@ -381,8 +381,7 @@
             </button>
           </div>
 
-          <div class="alert alert-light mb-4" role="status">{{ projectStatusLabel }}</div>
-<ng-container [ngSwitch]="activeDrawerTab">
+          <ng-container [ngSwitch]="activeDrawerTab">
             <div *ngSwitchCase="'overview'" class="po-tab-panel">
               <section class="po-section" *ngIf="project.project.service_prompt || project.project.description">
                 <p class="po-section__text" *ngIf="project.project.service_prompt">{{ project.project.service_prompt }}</p>
@@ -1027,11 +1026,7 @@
               </p-dialog>
             </section>
 
-            <section *ngSwitchCase="'reviews'" class="po-section po-documents owp-doc-workspace po-section--reviews"><section class="po-section" *ngFor="let item of deliverables"><h4>{{ item.service_title }} — {{ item.title }}</h4><p>{{ item.date }} · {{ item.report_type.join(', ').toUpperCase() }} · {{ getWayLabel(item.way.selected) }}</p>
-<p *ngFor="let payment of paymentsForDeliverable(item.id)">{{ payment.title }}: {{ payment.amount | currency:'USD' }} · {{ payment.status }}</p>
-<p *ngIf="!reviewsForDeliverable(item.id).length">{{ lang === 'ar' ? 'لم يتم إرسال المخرج بعد.' : 'No submissions yet.' }}</p>
-<details *ngIf="reviewsForDeliverable(item.id).length"><summary>{{ lang === 'ar' ? 'سجل المراجعات' : 'Submission history' }} · {{ getReviewStatusLabel(reviewsForDeliverable(item.id)[0].status) }}</summary><div *ngFor="let review of reviewsForDeliverable(item.id)"><strong>{{ getReviewStatusLabel(review.status) }}</strong> · {{ review.request_at }}<p>{{ review.note }}</p><p>{{ review.review_note }}</p></div></details>
-<button type="button" class="btn btn-sm btn-light-primary" *ngIf="canMutateProject() && !isDeliverableApproved(item.id)" [disabled]="hasPendingReviewForType() || reviewSubmissionsLoading" (click)="reviewDeliverableId = item.id; openReviewRequestDialog()">{{ lang === 'ar' ? 'طلب مراجعة' : 'Request review' }}</button></section>
+            <section *ngSwitchCase="'reviews'" class="po-section po-documents owp-doc-workspace po-section--reviews">
               <div class="po-section__head">
                 <h6 class="po-section__title">{{ lang === 'ar' ? 'طلب المراجعة' : 'Review Request' }}</h6>
                 <span class="po-section__eyebrow">{{ lang === 'ar' ? 'اعتماد العميل' : 'Client Approval' }}</span>

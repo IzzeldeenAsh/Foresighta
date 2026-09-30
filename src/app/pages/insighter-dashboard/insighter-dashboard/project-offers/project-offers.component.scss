@@ -1381,7 +1381,6 @@
   top: 0 !important;
   height: 100dvh !important;
   background: rgba(15, 23, 42, 0.22) !important;
-  z-index: 1300 !important;
 
   @media (max-width: 1199px) {
     top: 0 !important;
@@ -2318,6 +2317,63 @@
   grid-template-columns: 1fr;
   gap: 10px;
   position: relative;
+}
+
+.po-offer-detail {
+  .po-detail-card__header:last-child {
+    border-bottom: 0;
+  }
+
+  .po-detail-card__badge {
+    align-self: center;
+    flex-shrink: 0;
+    margin-inline-start: auto;
+    padding: 6px 10px;
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .po-document-group {
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    background: #ffffff;
+    padding: 18px 22px 12px;
+  }
+
+  .po-offer-summary-grid {
+    gap: 0;
+    overflow: hidden;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    background: #ffffff;
+  }
+
+  .po-offer-summary-card {
+    min-height: 72px;
+    padding: 14px 22px;
+
+    &::before {
+      left: 42px;
+    }
+
+    &:last-child {
+      border-bottom: 0;
+    }
+
+    @media (max-width: 575px) {
+      padding: 14px 18px;
+
+      &::before {
+        left: 38px;
+      }
+    }
+  }
+
+  .po-offer-summary-card--rate .po-offer-summary-card__icon {
+    background: #ecfeff;
+    color: #0e7490;
+    box-shadow: inset 0 0 0 1px rgba(14, 116, 144, 0.14);
+  }
 }
 
 .po-offer-summary-card {

@@ -945,7 +945,7 @@
             </ng-container>
 
             <ng-container *ngSwitchCase="'offer'">
-              <details class="po-section po-section--accordion po-offer-detail" *ngIf="offer.offer as submittedOffer">
+              <details class="po-section po-section--accordion po-offer-detail" open *ngIf="offer.offer as submittedOffer">
                 <summary class="po-section__head po-section__summary">
                   <span class="po-section__title-icon" aria-hidden="true"><i class="pi pi-briefcase"></i></span>
                   <h6 class="po-section__title">{{ lang === 'ar' ? 'تفاصيل عرضي' : 'My Offer Details' }}</h6>
@@ -979,8 +979,13 @@
                     </span>
                     <div class="po-detail-card__copy">
                       <div class="po-detail-card__title">{{ lang === 'ar' ? 'حالة العرض' : 'Offer Status' }}</div>
-                      <div class="po-detail-card__subtitle">{{ getOfferStatusLabel(submittedOffer.status) }}</div>
+                      <div class="po-detail-card__subtitle">
+                        {{ lang === 'ar' ? 'الحالة الحالية لعرضك لدى العميل.' : 'Where your offer currently stands with the client.' }}
+                      </div>
                     </div>
+                    <span class="badge po-detail-card__badge" [ngClass]="getOfferStatusBadgeClass(submittedOffer.status)">
+                      {{ getOfferStatusLabel(submittedOffer.status) }}
+                    </span>
                   </div>
                 </div>
 
@@ -1013,8 +1018,6 @@
                   </div>
                 </div>
 
-                <app-offer-installments [rows]="submittedOffer.installments || []" [price]="submittedOffer.proposed_price" [lang]="lang"></app-offer-installments>
-                <p>{{ lang === 'ar' ? 'سعر الساعة' : 'Hourly rate' }}: {{ offerHourlyRate(submittedOffer) | currency:'USD' }}</p>
                 <div class="po-offer-summary-grid mt-4">
                   <div class="po-offer-summary-card po-offer-summary-card--price">
                     <span class="po-offer-summary-card__icon">
@@ -1032,6 +1035,15 @@
                     <span class="po-offer-summary-card__copy">
                       <span class="po-offer-summary-card__label">{{ lang === 'ar' ? 'الساعات المقدرة' : 'Working Hours' }}</span>
                       <span class="po-offer-summary-card__value">{{ submittedOffer.estimated_hours || '-' }}</span>
+                    </span>
+                  </div>
+                  <div class="po-offer-summary-card po-offer-summary-card--rate">
+                    <span class="po-offer-summary-card__icon">
+                      <i class="ki-outline ki-price-tag fs-4"></i>
+                    </span>
+                    <span class="po-offer-summary-card__copy">
+                      <span class="po-offer-summary-card__label">{{ lang === 'ar' ? 'سعر الساعة' : 'Hourly Rate' }}</span>
+                      <span class="po-offer-summary-card__value">{{ offerHourlyRate(submittedOffer) | currency:'USD' }}</span>
                     </span>
                   </div>
                   <div class="po-offer-summary-card po-offer-summary-card--down"
@@ -1059,6 +1071,8 @@
                     </span>
                   </div>
                 </div>
+
+                <app-offer-installments *ngIf="submittedOffer.installments?.length" [rows]="submittedOffer.installments || []" [price]="submittedOffer.proposed_price" [lang]="lang"></app-offer-installments>
               </details>
             </ng-container>
           </ng-container>
