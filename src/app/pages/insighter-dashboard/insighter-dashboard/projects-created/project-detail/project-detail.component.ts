@@ -1,9 +1,7 @@
-import { validProjectFile, ProjectDeliverable } from 'src/app/_fake/services/project-offers/project-workflow';
-import { isPaymentStep } from 'src/app/_fake/services/project-timeline/project-timeline.model';
 import { Component, Injector, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { BehaviorSubject, forkJoin, Observable, from } from 'rxjs';
-import { finalize, map, shareReplay, switchMap, takeUntil, tap, concatMap, toArray } from 'rxjs/operators';
+import { BehaviorSubject, forkJoin, Observable } from 'rxjs';
+import { finalize, map, shareReplay, switchMap, takeUntil, tap } from 'rxjs/operators';
 import Swal from 'sweetalert2';
 import { WalletService } from 'src/app/_fake/services/wallet/wallet.service';
 import { BaseComponent } from 'src/app/modules/base.component';
@@ -37,7 +35,10 @@ import {
   TIMELINE_STEP,
   TimelineParty,
   TimelineStepActionEvent,
+  isInstallmentStep,
+  orderInstallmentIdFromStep,
 } from 'src/app/_fake/services/project-timeline/project-timeline.model';
+import { addDaysToDate, offerPricingSummary } from 'src/app/_fake/services/project-phase2/project-phase2.model';
 
 type ProjectDetailTab = 'overview' | 'documents' | 'reviews' | 'discussion';
 type RematchWizardStep =
@@ -87,7 +88,8 @@ interface SpecificRematchPropertiesForm {
   insighter_max_years_experience: string;
   company_min_team_size: string;
   company_max_team_size: string;
-  deadline: string;
+  planned_start_date: string;
+  duration_days: number | null;
 }
 
 const MATCH_CRITERIA_LABELS: Record<string, { en: string; ar: string }> = {
@@ -143,7 +145,12 @@ const PROJECT_FILE_GROUP_META: Record<string, Omit<ProjectDocumentGroup, 'files'
   },
 };
 
-const PROJECT_FILE_GROUP_ORDER = ['first_draft', 'final_draft', 'samples', 'document', 'other'];
+const PROJECT_FILE_GROUP_ORDER = ['samples', 'document', 'other'];
+
+/** Review submissions and deliverable files are keyed by deliverable: `deliverable_{id}`. */
+function deliverableKey(id: number | string): string {
+  return `deliverable_${id}`;
+}
 
 @Component({
   selector: 'app-project-detail',
@@ -153,6 +160,8 @@ const PROJECT_FILE_GROUP_ORDER = ['first_draft', 'final_draft', 'samples', 'docu
 export class ProjectDetailComponent extends BaseComponent implements OnInit, OnDestroy {
   project: CreatedProject | null = null;
   timelineSteps: ProjectTimelineStep[] = [];
+  /** Installment step the client chose to pay from the timeline. */
+  payingInstallmentStep: ProjectTimelineStep | null = null;
   invitedInsighters: CreatedProjectProposalInvite[] = [];
   activeTab: ProjectDetailTab = 'overview';
   isLoading: boolean = false;
@@ -219,8 +228,6 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
     { key: 'urgent_request', labelEn: 'Urgent Request', labelAr: 'طلب عاجل' },
   ];
   projectFileTypeOptions: ProjectFileTypeOption[] = [
-    { value: 'first_draft', labelEn: 'First Draft', labelAr: 'المسودة الأولى' },
-    { value: 'final_draft', labelEn: 'Final Draft', labelAr: 'المسودة النهائية' },
     { value: 'samples', labelEn: 'Samples', labelAr: 'عينات' },
     { value: 'document', labelEn: 'Documents', labelAr: 'مستندات' },
     { value: 'other', labelEn: 'Other', labelAr: 'أخرى' },
@@ -341,7 +348,7 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
       propertySteps.push({ id: 'team-size', labelEn: 'Team size', labelAr: 'حجم الفريق' });
     }
 
-    propertySteps.push({ id: 'project-deadline', labelEn: 'Project deadline', labelAr: 'موعد المشروع' });
+    propertySteps.push({ id: 'project-deadline', labelEn: 'Project schedule', labelAr: 'جدول المشروع' });
     return [...propertySteps, ...matchSteps];
   }
 
@@ -360,8 +367,7 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
       case 'team-size':
         return !this.getSpecificRematchTeamSizeError();
       case 'project-deadline':
-        return !!this.specificRematchProperties.deadline
-          && !this.getSpecificProjectDeadlineError();
+        return !this.getSpecificProjectDeadlineError();
       default:
         return false;
     }
@@ -1100,15 +1106,6 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
     };
   }
 
-  selectedReviewDeliverableId: number | null = null;
-  get projectDeliverables(): ProjectDeliverable[] { return this.project?.project_services?.reduce<ProjectDeliverable[]>((items, service) => items.concat(service.deliverables), []) ?? []; }
-  selectedPaymentStep: ProjectTimelineStep | null = null;
-  get activePaymentStep(): ProjectTimelineStep | null {
-    const selectedId = this.selectedPaymentStep?.meta?.['order_installment_id'];
-    const active = this.timelineSteps.filter(step => step.display && isPaymentStep(step.key) && step.state === 'in_progress' && Number(step.meta?.['order_installment_id']) > 0);
-    return active.find(step => step.meta?.['order_installment_id'] === selectedId) ?? active[0] ?? null;
-  }
-
   onTimelineAction(event: TimelineStepActionEvent): void {
     switch (event.action) {
       case 'view_contract':
@@ -1118,12 +1115,10 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
         this.openAwardedOfferDrawer(event.step);
         break;
       case 'pay':
-        this.selectedPaymentStep = event.step;
-        this.openProjectPaymentDialog();
+        this.openProjectPaymentDialog(event.step);
         break;
       case 'open_review':
       case 'view_reviews':
-        this.selectedReviewDeliverableId = Number(event.step.meta?.['project_service_deliverable_id']) || null;
         this.openReviewsTab();
         break;
       case 'close_project':
@@ -1174,7 +1169,29 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
   }
 
   shouldShowProjectPayment(project: CreatedProject | null = this.project): boolean {
-    return !!project && !['closed', 'cancelled', 'expired'].includes(project.status || '') && !!this.activePaymentStep;
+    if (!project?.order || this.isProjectClosed(project)) return false;
+    return !!this.getPayableInstallmentStep();
+  }
+
+  /** Order installment steps from the API timeline, in payment order. */
+  getInstallmentSteps(): ProjectTimelineStep[] {
+    return (this.timelineSteps || []).filter(step => isInstallmentStep(step.key));
+  }
+
+  /** The installment the client can pay now — the timeline marks it in progress. */
+  getPayableInstallmentStep(): ProjectTimelineStep | null {
+    return this.getInstallmentSteps()
+      .find(step => step.state === 'in_progress' && !!orderInstallmentIdFromStep(step)) ?? null;
+  }
+
+  /** Installment being paid: the one picked from the timeline, else the next payable one. */
+  private getActiveInstallmentStep(): ProjectTimelineStep | null {
+    return this.payingInstallmentStep ?? this.getPayableInstallmentStep();
+  }
+
+  private isLastInstallmentStep(step: ProjectTimelineStep | null): boolean {
+    const steps = this.getInstallmentSteps();
+    return !!step && steps.length > 0 && steps[steps.length - 1].key === step.key;
   }
 
   getProjectCheckoutProjectUuid(project: CreatedProject | null = this.project): string | undefined {
@@ -1191,8 +1208,17 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
     );
   }
 
-  getRequiredProjectPaymentAmount(order: CreatedProjectOrder | null | undefined, project: CreatedProject | null = this.project): number {
-    return Number(this.activePaymentStep?.amount ?? 0);
+  getRequiredProjectPaymentAmount(
+    order: CreatedProjectOrder | null | undefined,
+    _project: CreatedProject | null = this.project
+  ): number {
+    if (!order) return 0;
+    const step = this.getActiveInstallmentStep();
+    if (step?.amount !== null && step?.amount !== undefined) return this.toNumber(step.amount);
+
+    const installmentId = orderInstallmentIdFromStep(step);
+    const installment = order.installments.find(item => item.id === installmentId);
+    return installment?.amount ?? 0;
   }
 
   getProjectRequiredPaymentLabel(order: CreatedProjectOrder | null | undefined): string {
@@ -1205,109 +1231,47 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
     return this.formatProjectCurrency(order.amount, order.currency);
   }
 
-  getProjectPaymentPlanLabel(order: CreatedProjectOrder | null | undefined): string {
-    const plan = this.getProjectOrderPaymentPlan(order);
-    const labels: Record<string, { en: string; ar: string }> = {
-      full_payment: { en: 'Full payment', ar: 'دفعة كاملة' },
-      full_at_start: { en: 'Full payment', ar: 'دفعة كاملة' },
-      full_start: { en: 'Full payment', ar: 'دفعة كاملة' },
-      down_payment: { en: 'Down payment', ar: 'دفعة مقدمة' },
-      partial: { en: 'Down payment', ar: 'دفعة مقدمة' },
-      partial_payment: { en: 'Down payment', ar: 'دفعة مقدمة' },
-      final_payment: { en: 'Final payment', ar: 'دفعة نهائية' },
-    };
-
-    const match = labels[plan];
-    if (match) return this.lang === 'ar' ? match.ar : match.en;
-
+  getProjectPaymentPlanLabel(_order: CreatedProjectOrder | null | undefined): string {
+    const step = this.getActiveInstallmentStep();
+    if (step?.title) return step.title;
     return this.lang === 'ar' ? 'دفعة المشروع' : 'Project payment';
   }
 
-  getProjectPaymentButtonLabel(order: CreatedProjectOrder | null | undefined): string {
-    return this.lang === 'ar' ? 'دفع القسط' : 'Pay installment';
+  getProjectPaymentButtonLabel(_order: CreatedProjectOrder | null | undefined): string {
+    const title = this.getActiveInstallmentStep()?.title;
+    if (title) {
+      return this.lang === 'ar' ? `ادفع «${title}»` : `Pay “${title}”`;
+    }
+
+    return this.lang === 'ar' ? 'ادفع الآن' : 'Pay now';
   }
 
   getProjectPaymentDueCaption(project: CreatedProject | null = this.project): string {
-    return this.activePaymentStep?.title || (this.lang === 'ar' ? 'الدفعة المستحقة' : 'Due installment');
-  }
-
-  shouldShowCompletedDownPayment(project: CreatedProject | null = this.project): boolean {
-    return (this.isProjectWorkStatus(project) || this.isProjectClosed(project))
-      && this.isProjectDownPaymentDue(project?.order);
-  }
-
-  shouldShowPendingReviewStep(project: CreatedProject | null = this.project): boolean {
-    return this.getWorkflowReviewStatus(project) === 'pending';
-  }
-
-  shouldShowAnsweredReviewStep(project: CreatedProject | null = this.project): boolean {
-    const status = this.getWorkflowReviewStatus(project);
-    return status === 'approved' || status === 'changes_requested' || status === 'request_change';
-  }
-
-  shouldShowWorkflowReviewStep(project: CreatedProject | null = this.project): boolean {
-    return this.shouldShowPendingReviewStep(project) || this.shouldShowAnsweredReviewStep(project);
-  }
-
-  shouldShowPendingFinalPayment(project: CreatedProject | null = this.project): boolean {
-    if (!project?.order) return false;
-    if (!this.isProjectWorkStatus(project) && !this.isPaymentStatusOnly(project)) return false;
-    if (this.isPaymentStatusOnly(project) && this.isProjectFinalPaymentPlan(project.order)) return false;
-
-    const reviewStatus = this.getWorkflowReviewStatus(project);
-    if (reviewStatus === 'changes_requested' || reviewStatus === 'request_change') return false;
-
-    if ((project.order as any).has_outstanding_payment === false) return false;
-    if ((project.order as any).has_outstanding_payment === true) return true;
-
-    return this.orderHasFinalPaymentComponent(project.order);
-  }
-
-  shouldShowClosedFinalPayment(project: CreatedProject | null = this.project): boolean {
-    return this.isProjectClosed(project) && this.orderHasFinalPaymentComponent(project?.order);
-  }
-
-  private orderHasFinalPaymentComponent(order: CreatedProjectOrder | null | undefined): boolean {
-    if (!order) return false;
-
-    const plan = this.getProjectOrderPaymentPlan(order);
-    if (['partial', 'partial_payment', 'down_payment', 'final_payment', 'full_at_end'].includes(plan)) return true;
-
-    const finalPayment = this.toOptionalNumber(order.final_payment);
-    if (finalPayment !== null && finalPayment > 0) return true;
-
-    const finalPaymentPercentage = this.toOptionalNumber(order.final_payment_percentage);
-    return finalPaymentPercentage !== null && finalPaymentPercentage > 0;
-  }
-
-  isFinalPaymentActiveWorkflowStep(project: CreatedProject | null = this.project): boolean {
-    return !this.isPaymentStatusOnly(project) && this.isFirstPendingWorkflowStep('final_payment', project);
-  }
-
-  isProjectFinalPaymentDue(project: CreatedProject | null = this.project): boolean {
-    if (!project?.order || this.normalizeValue(project.status) === 'closed') return false;
-
-    if (this.isProjectPaymentStatus(project) && this.isProjectFinalPaymentPlan(project.order)) {
-      return true;
+    if (this.isProjectFinalPaymentDue(project)) {
+      return this.lang === 'ar'
+        ? 'الدفعة الأخيرة قبل إغلاق المشروع'
+        : 'Last payment before closing the project';
     }
 
-    if (this.isProjectPaymentStatus(project)) return false;
+    return this.lang === 'ar' ? 'المبلغ المستحق الآن' : 'Amount due now';
+  }
 
-    return this.shouldShowPendingFinalPayment(project);
+  /** True when the installment due now is the last one, which settles the project. */
+  isProjectFinalPaymentDue(project: CreatedProject | null = this.project): boolean {
+    if (!project?.order || this.isProjectClosed(project)) return false;
+    const step = this.getActiveInstallmentStep();
+    return this.isLastInstallmentStep(step) && this.getInstallmentSteps().length > 1;
   }
 
   hasUnpaidFinalPayment(project: CreatedProject | null = this.project): boolean {
-    if (!project?.order || this.normalizeValue(project.status) === 'closed') return false;
-    if ((project.order as any).has_outstanding_payment === false) return false;
-    if ((project.order as any).has_outstanding_payment === true) return true;
-    if (this.isProjectFinalPaymentDue(project)) return true;
+    if (!project?.order || this.isProjectClosed(project)) return false;
+    if (project.order.has_outstanding_payment === false) return false;
+    if (project.order.has_outstanding_payment === true) return true;
 
-    const plan = this.getProjectOrderPaymentPlan(project.order);
-    if (['partial', 'partial_payment', 'down_payment', 'final_payment', 'full_at_end'].includes(plan)) {
-      return this.getProjectFinalPaymentAmount(project.order) > 0;
-    }
+    const steps = this.getInstallmentSteps();
+    if (steps.length) return steps.some(step => step.state !== 'completed');
 
-    return false;
+    return project.order.installments.some(item => !['paid', 'refunded'].includes(item.status || ''));
   }
 
   shouldShowCloseProjectPanel(project: CreatedProject | null = this.project): boolean {
@@ -1316,15 +1280,16 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
   }
 
   canCloseProject(project: CreatedProject | null = this.project): boolean {
-    return !!project && !['closed', 'cancelled', 'expired'].includes(project.status || '')
-      && this.timelineSteps.some(step => step.key === 'closed_project' && step.display && step.state === 'in_progress');
+    return !!this.getProjectWorkUuid(project)
+      && this.shouldShowCloseProjectPanel(project)
+      && !this.hasUnpaidFinalPayment(project);
   }
 
   getCloseProjectDisabledReason(project: CreatedProject | null = this.project): string {
     if (this.hasUnpaidFinalPayment(project)) {
       return this.lang === 'ar'
         ? 'يجب دفع الدفعة النهائية قبل إغلاق المشروع.'
-        : 'All deliverables must be approved and required installments paid before closing the project.';
+        : 'Final payment must be paid before closing the project.';
     }
 
     return this.lang === 'ar'
@@ -1443,85 +1408,6 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
     return result.isConfirmed;
   }
 
-  getProjectDownPaymentLabel(order: CreatedProjectOrder | null | undefined): string {
-    if (!order) return '-';
-    return this.formatProjectCurrency(this.getProjectDownPaymentAmount(order), order.currency);
-  }
-
-  getProjectFinalPaymentLabel(order: CreatedProjectOrder | null | undefined): string {
-    if (!order) return '-';
-    return this.formatProjectCurrency(this.getProjectFinalPaymentAmount(order), order.currency);
-  }
-
-  getWorkflowStepNumber(
-    step: 'contracting' | 'down_payment' | 'review' | 'final_payment',
-    project: CreatedProject | null = this.project,
-  ): number {
-    const steps: Array<'contracting' | 'down_payment' | 'review' | 'final_payment'> = ['contracting'];
-
-    if (this.shouldShowCompletedDownPayment(project)) steps.push('down_payment');
-    if (this.shouldShowWorkflowReviewStep(project)) steps.push('review');
-    if (this.shouldShowPendingFinalPayment(project) || this.shouldShowClosedFinalPayment(project)) steps.push('final_payment');
-
-    const index = steps.indexOf(step);
-    return index >= 0 ? index + 1 : steps.length + 1;
-  }
-
-  isFirstPendingWorkflowStep(
-    step: 'review' | 'final_payment',
-    project: CreatedProject | null = this.project,
-  ): boolean {
-    const pendingSteps: Array<'review' | 'final_payment'> = [];
-
-    if (this.shouldShowPendingReviewStep(project)) pendingSteps.push('review');
-    if (this.shouldShowPendingFinalPayment(project)) pendingSteps.push('final_payment');
-
-    return pendingSteps[0] === step;
-  }
-
-  getWorkflowTimelineProgress(project: CreatedProject | null = this.project): string {
-    if (this.isProjectClosed(project)) return '100%';
-
-    const totalSteps = this.getWorkflowTotalSteps(project);
-    if (totalSteps <= 1) return '0%';
-
-    const completedSegments = Math.max(this.getWorkflowCompletedSteps(project) - 1, 0);
-    const progress = Math.min(Math.max(completedSegments / (totalSteps - 1), 0), 1) * 100;
-
-    return `${progress}%`;
-  }
-
-  getWorkflowReviewStatus(project: CreatedProject | null = this.project): string | null {
-    if (this.isProjectClosed(project)) {
-      // A closed project's work was approved; surface the review step as completed.
-      return this.getWorkflowReviewSubmission() ? 'approved' : null;
-    }
-
-    if (!this.isProjectReviewStatus(project)) return null;
-
-    const review = this.getWorkflowReviewSubmission();
-    if (!review) return 'pending';
-
-    return this.normalizeValue(review.status) || 'pending';
-  }
-
-  getWorkflowReviewStatusLabel(project: CreatedProject | null = this.project): string {
-    return this.getReviewStatusLabel(this.getWorkflowReviewStatus(project));
-  }
-
-  getWorkflowReviewStatusBadgeClass(project: CreatedProject | null = this.project): string {
-    const status = this.getWorkflowReviewStatus(project);
-    if (status === 'approved') return 'text-success bg-light-success border-success-clarity';
-    if (status === 'changes_requested' || status === 'request_change') {
-      return 'text-warning bg-light-warning border-warning-clarity';
-    }
-    return 'text-primary bg-light-primary border-primary-clarity';
-  }
-
-  isWorkflowReviewApproved(project: CreatedProject | null = this.project): boolean {
-    return this.getWorkflowReviewStatus(project) === 'approved';
-  }
-
   getProjectPaymentMethodLabel(method: ProjectCheckoutPaymentMethod): string {
     if (method === 'manual') {
       return this.lang === 'ar' ? 'محفظة إنسايتا' : 'Insighta Wallet';
@@ -1548,8 +1434,10 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
     return this.projectWalletBalance >= this.getRequiredProjectPaymentAmount(project.order);
   }
 
-  async openProjectPaymentDialog(): Promise<void> {
-    if (!this.shouldShowProjectPayment(this.project)) {
+  async openProjectPaymentDialog(step: ProjectTimelineStep | null = null): Promise<void> {
+    this.payingInstallmentStep = step && orderInstallmentIdFromStep(step) ? step : null;
+
+    if (!this.getActiveInstallmentStep()) {
       this.showError(
         this.lang === 'ar' ? 'تعذر بدء الدفع' : 'Cannot start payment',
         this.lang === 'ar' ? 'لم يتم العثور على طلب دفع صالح لهذا المشروع.' : 'A valid payment order was not found for this project.'
@@ -1557,7 +1445,10 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
       return;
     }
 
-
+    if (this.isProjectFinalPaymentDue(this.project)) {
+      const confirmed = await this.confirmFinalProjectPayment();
+      if (!confirmed) return;
+    }
 
     this.projectCheckoutError = null;
     this.projectPaymentDialogVisible = true;
@@ -1572,6 +1463,7 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
     if (this.projectCheckoutSubmitting) return;
     this.projectPaymentDialogVisible = false;
     this.projectCheckoutError = null;
+    this.payingInstallmentStep = null;
   }
 
   selectProjectPaymentMethod(method: ProjectCheckoutPaymentMethod): void {
@@ -1588,16 +1480,15 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
   submitProjectPayment(): void {
     if (this.projectCheckoutSubmitting) return;
 
-    const isFinalPayment = false;
-    const projectUuid = this.project?.uuid || '';
-    const installmentId = Number(this.activePaymentStep?.meta?.['order_installment_id']);
-    if (!Number.isInteger(installmentId) || installmentId <= 0 || !this.shouldShowProjectPayment()) return;
+    const isFinalPayment = this.isProjectFinalPaymentDue(this.project);
+    const projectUuid = this.getProjectCheckoutProjectUuid(this.project) || '';
+    const installmentId = orderInstallmentIdFromStep(this.getActiveInstallmentStep());
     const paymentMethod = this.selectedProjectPaymentMethod;
 
-    if (!projectUuid) {
+    if (!installmentId) {
       this.projectCheckoutError = this.lang === 'ar'
-        ? 'لم يتم العثور على معرّف المشروع.'
-        : 'The project identifier was not found.';
+        ? 'لم يتم العثور على الدفعة المستحقة.'
+        : 'The installment due was not found.';
       return;
     }
 
@@ -1618,15 +1509,16 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
     this.projectCheckoutSubmitting = true;
     this.projectCheckoutError = null;
 
-    const checkout$ = this.projectsCreatedService.checkoutProjectInstallment(installmentId, paymentMethod);
-
-    checkout$
+    this.projectsCreatedService.checkoutProjectInstallment(installmentId, paymentMethod)
       .pipe(
         takeUntil(this.unsubscribe$),
         finalize(() => (this.projectCheckoutSubmitting = false))
       )
       .subscribe({
-        next: response => this.handleProjectCheckoutResponse(response, paymentMethod, projectUuid, isFinalPayment),
+        next: response => {
+          this.payingInstallmentStep = null;
+          this.handleProjectCheckoutResponse(response, paymentMethod, projectUuid, isFinalPayment);
+        },
         error: err => {
           this.projectCheckoutError = this.getServerErrorMessage(
             err,
@@ -1745,39 +1637,6 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
       style: 'currency',
       currency: 'USD',
     });
-  }
-
-  shouldShowDownPayment(offer: CreatedProjectSubmittedOffer | null | undefined): boolean {
-    if (offer?.installments?.length) return false;
-    const paymentPlan = this.normalizeValue(offer?.payment_plan);
-    if (paymentPlan) return paymentPlan === 'full_at_start' || paymentPlan === 'partial';
-
-    return this.hasPaymentAmount(offer?.down_payment);
-  }
-
-  shouldShowFinalPayment(offer: CreatedProjectSubmittedOffer | null | undefined): boolean {
-    if (offer?.installments?.length) return false;
-    const paymentPlan = this.normalizeValue(offer?.payment_plan);
-    if (paymentPlan) return paymentPlan === 'full_at_end' || paymentPlan === 'partial';
-
-    return this.hasPaymentAmount(offer?.final_payment);
-  }
-
-  getDownPaymentAmount(offer: CreatedProjectSubmittedOffer | null | undefined): string | number | null | undefined {
-    return this.normalizeValue(offer?.payment_plan) === 'full_at_start'
-      ? offer?.proposed_price
-      : offer?.down_payment;
-  }
-
-  getFinalPaymentAmount(offer: CreatedProjectSubmittedOffer | null | undefined): string | number | null | undefined {
-    return this.normalizeValue(offer?.payment_plan) === 'full_at_end'
-      ? offer?.proposed_price
-      : offer?.final_payment;
-  }
-
-  private hasPaymentAmount(value: string | number | null | undefined): boolean {
-    const n = Number(value ?? 0);
-    return Number.isFinite(n) && n > 0;
   }
 
   getProfileUrl(insighterUuid: string | null | undefined): string {
@@ -2191,15 +2050,13 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
 
   getProjectFileTypeLabel(value: string | null | undefined): string {
     const normalized = this.normalizeValue(value);
+    const deliverable = (this.project?.deliverables ?? []).find(item => deliverableKey(item.id) === normalized);
+    if (deliverable) return deliverable.title;
     const option = this.projectFileTypeOptions.find(item => item.value === normalized);
     if (option) return this.lang === 'ar' ? option.labelAr : option.labelEn;
     const meta = PROJECT_FILE_GROUP_META[normalized];
     if (meta) return this.lang === 'ar' ? meta.labelAr : meta.labelEn;
     return this.humanizeValue(normalized);
-  }
-
-  get canFilterReviewsByDeliverable(): boolean {
-    return this.reviewSubmissions.length > 0 && this.reviewSubmissions.every(review => !!review.deliverable?.id);
   }
 
   getSortedReviewSubmissions(): ProjectReviewSubmission[] {
@@ -2209,7 +2066,7 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
       approved: 2,
     };
 
-    return this.reviewSubmissions.filter(review => !this.canFilterReviewsByDeliverable || !this.selectedReviewDeliverableId || Number(review.deliverable?.id) === this.selectedReviewDeliverableId).sort((a, b) => {
+    return [...this.reviewSubmissions].sort((a, b) => {
       const aPriorityRank = this.getReviewPriorityRank(a);
       const bPriorityRank = this.getReviewPriorityRank(b);
       if (aPriorityRank !== bPriorityRank) return aPriorityRank - bPriorityRank;
@@ -2249,6 +2106,11 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
   }
 
   getReviewType(review: ProjectReviewSubmission | null | undefined): string {
+    const reviewDeliverableId = Number(review?.['deliverable']?.id);
+    if (reviewDeliverableId > 0) {
+      return deliverableKey(reviewDeliverableId);
+    }
+
     return this.normalizeValue(
       review?.type
       || review?.second_identifier
@@ -2383,16 +2245,19 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
     this.reviewSubmissionsSubject.next([...this.reviewSubmissions]);
   }
 
-  canRespondToReview(): boolean { return ['in_progress', 'in_review'].includes(this.project?.status || ''); }
-
   respondToReview(review: ProjectReviewSubmission, action: ProjectReviewAction): void {
-    if (!review?.uuid || this.respondingReviewUuid || !this.canRespondToReview() || !this.isReviewPending(review)) return;
+    if (!review?.uuid || this.respondingReviewUuid) return;
 
     const noteValue = this.getReviewChangeNote(review.uuid).trim();
     const reviewNote = noteValue || null;
 
-    if (noteValue.length > 255) {
-      this.showError(this.lang === 'ar' ? 'ملاحظة طويلة' : 'Note too long', this.lang === 'ar' ? 'الحد الأقصى 255 حرفاً.' : 'Use at most 255 characters.');
+    if (action === 'request_change' && !reviewNote) {
+      this.showError(
+        this.lang === 'ar' ? 'الملاحظة مطلوبة' : 'Note required',
+        this.lang === 'ar'
+          ? 'اكتب ملاحظة توضح التعديلات المطلوبة.'
+          : 'Write a note explaining the requested changes.'
+      );
       return;
     }
 
@@ -2444,7 +2309,7 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
     const projectUuid = this.project?.uuid || '';
     const name = (this.projectFileName || '').trim();
 
-    if (!projectUuid || !name || name.length > 255 || !this.selectedProjectFiles.length || this.selectedProjectFiles.some(file => !validProjectFile(file)) || !['in_progress', 'in_review'].includes(this.project?.status || '')) {
+    if (!projectUuid || !name || !this.selectedProjectFiles.length) {
       this.showError(
         this.lang === 'ar' ? 'تعذر رفع الملفات' : 'Cannot upload files',
         this.lang === 'ar'
@@ -2454,20 +2319,18 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
       return;
     }
 
+    const payload = new FormData();
+    payload.append('name', name);
+    payload.append('type', 'document');
+    this.selectedProjectFiles.forEach(file => payload.append('file', file, file.name));
+
     this.projectFilesUploading = true;
-    from([...this.selectedProjectFiles]).pipe(
-      concatMap(file => {
-        const payload = new FormData();
-        payload.append('name', name);
-        payload.append('type', 'document');
-        payload.append('file', file, file.name);
-        return this.projectsCreatedService.uploadClientProjectFile(projectUuid, payload).pipe(
-          tap(() => this.selectedProjectFiles = this.selectedProjectFiles.filter(item => item !== file))
-        );
-      }),
-      toArray(), takeUntil(this.unsubscribe$),
-      finalize(() => { this.projectFilesUploading = false; this.loadProject(projectUuid); })
-    )
+
+    this.projectsCreatedService.uploadClientProjectFile(projectUuid, payload)
+      .pipe(
+        takeUntil(this.unsubscribe$),
+        finalize(() => (this.projectFilesUploading = false))
+      )
       .subscribe({
         next: () => {
           this.showSuccess(
@@ -2489,10 +2352,8 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
     return this.invitedInsighters.length > 0;
   }
 
-  getEstimatedHours(value: string | number | null | undefined): string {
-    const hours = Number(value ?? 0);
-    if (!isFinite(hours) || hours <= 0) return '-';
-    return `${hours} ${this.lang === 'ar' ? 'ساعة' : 'hrs'}`;
+  getPricingSummary(offer: CreatedProjectSubmittedOffer | null | undefined): string {
+    return offer ? offerPricingSummary(offer, this.lang) : '-';
   }
 
   getFormattedValue(value: any): string {
@@ -2626,22 +2487,43 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
     if (!project) return [];
 
     const grouped = new Map<string, CreatedProjectFile[]>();
+    const deliverableMeta = new Map<string, Omit<ProjectDocumentGroup, 'files'>>();
+    const describeDeliverable = (key: string, title: string) => ({
+      key,
+      labelEn: title,
+      labelAr: title,
+      descriptionEn: 'Files delivered for this deliverable.',
+      descriptionAr: 'الملفات المسلّمة لهذا المخرج.',
+    });
+
+    project.deliverables.forEach(deliverable => {
+      const key = deliverableKey(deliverable.id);
+      deliverableMeta.set(key, describeDeliverable(key, deliverable.title));
+    });
+
     this.getProjectDeliveryFiles(project).forEach(file => {
-      const key = this.normalizeValue(file.second_identifier || file.type || file.identifier || 'unknown');
-      const groupKey = PROJECT_FILE_GROUP_META[key] ? key : 'unknown';
+      const fileDeliverableId = Number(file['deliverable']?.id);
+      const key = fileDeliverableId > 0
+        ? deliverableKey(fileDeliverableId)
+        : this.normalizeValue(file.second_identifier || file.type || file.identifier || 'unknown');
+      if (fileDeliverableId > 0 && !deliverableMeta.has(key)) {
+        deliverableMeta.set(key, describeDeliverable(key, file['deliverable']?.title || (this.lang === 'ar' ? 'مخرج' : 'Deliverable')));
+      }
+      const groupKey = PROJECT_FILE_GROUP_META[key] || deliverableMeta.has(key) ? key : 'unknown';
       grouped.set(groupKey, [...(grouped.get(groupKey) || []), file]);
     });
 
     const orderedKeys = [
+      ...Array.from(deliverableMeta.keys()),
       ...PROJECT_FILE_GROUP_ORDER,
-      ...Array.from(grouped.keys()).filter(key => !PROJECT_FILE_GROUP_ORDER.includes(key) && key !== 'unknown'),
+      ...Array.from(grouped.keys()).filter(key => !PROJECT_FILE_GROUP_ORDER.includes(key) && !deliverableMeta.has(key) && key !== 'unknown'),
       'unknown',
     ];
 
     return orderedKeys
       .filter(key => grouped.has(key))
       .map(key => ({
-        ...(PROJECT_FILE_GROUP_META[key] || PROJECT_FILE_GROUP_META.unknown),
+        ...(deliverableMeta.get(key) || PROJECT_FILE_GROUP_META[key] || PROJECT_FILE_GROUP_META.unknown),
         key,
         files: this.uniqueFiles(grouped.get(key) || []),
       }));
@@ -3008,8 +2890,25 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
       insighter_max_years_experience: '',
       company_min_team_size: '',
       company_max_team_size: '',
-      deadline: '',
+      planned_start_date: this.defaultRematchStartDate(),
+      duration_days: this.project?.schedule?.duration_days ?? this.minimumRematchDurationDays,
     };
+  }
+
+  private defaultRematchStartDate(): string {
+    const planned = this.project?.schedule?.planned_start_date;
+    return planned && planned >= this.todayDateString ? planned : '';
+  }
+
+  /** The duration has to cover the latest deliverable. */
+  get minimumRematchDurationDays(): number {
+    return (this.project?.deliverables ?? []).reduce((max, item) => Math.max(max, item.period_days), 0);
+  }
+
+  get specificRematchPlannedCloseDate(): string | null {
+    const form = this.specificRematchProperties;
+    if (!form.planned_start_date || form.duration_days === null || form.duration_days === undefined) return null;
+    return addDaysToDate(form.planned_start_date, Number(form.duration_days));
   }
 
   private getNextSpecificRematchCriteriaStep(): RematchWizardStep {
@@ -3025,7 +2924,8 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
     const payload: RematchPropertiesPayload = {
       insighter_industry_id: form.insighter_industry_id,
       insighter_preferred_type: preferredType,
-      deadline: form.deadline ? this.formatDeadlineOffer(form.deadline) : null,
+      planned_start_date: form.planned_start_date || null,
+      duration_days: form.duration_days === null ? null : Math.round(Number(form.duration_days)),
     };
 
     if (form.insighter_origin_id) {
@@ -3106,13 +3006,24 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
   }
 
   private getSpecificProjectDeadlineError(): string | null {
-    const deadline = this.specificRematchProperties.deadline;
-    if (!deadline) {
-      return this.lang === 'ar' ? 'يرجى اختيار موعد المشروع.' : 'Please select the project deadline.';
+    const { planned_start_date: start, duration_days: duration } = this.specificRematchProperties;
+    if (!start) {
+      return this.lang === 'ar' ? 'يرجى اختيار تاريخ البدء المخطط.' : 'Please select the planned start date.';
     }
 
-    if (deadline < this.todayDateString) {
-      return this.lang === 'ar' ? 'لا يمكن أن يكون موعد المشروع في الماضي.' : 'Project deadline cannot be in the past.';
+    if (start < this.todayDateString) {
+      return this.lang === 'ar' ? 'لا يمكن أن يكون تاريخ البدء في الماضي.' : 'The start date cannot be in the past.';
+    }
+
+    const days = Number(duration);
+    if (duration === null || !Number.isInteger(days) || days < 0) {
+      return this.lang === 'ar' ? 'يرجى إدخال مدة المشروع بالأيام.' : 'Enter the project duration in days.';
+    }
+
+    if (days < this.minimumRematchDurationDays) {
+      return this.lang === 'ar'
+        ? `يجب أن تغطي المدة آخر مخرج (${this.minimumRematchDurationDays} يومًا على الأقل).`
+        : `The duration has to cover the last deliverable (at least ${this.minimumRematchDurationDays} days).`;
     }
 
     return null;
@@ -3383,95 +3294,6 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
   private isProjectPaymentStatus(project: CreatedProject | null | undefined): boolean {
     return this.normalizeValue(project?.status) === 'payment'
       || this.normalizeValue(project?.stage) === 'payment';
-  }
-
-  private isProjectFinalPaymentPlan(order: CreatedProjectOrder | null | undefined): boolean {
-    const plan = this.getProjectOrderPaymentPlan(order);
-    return plan === 'final_payment' || plan === 'full_at_end';
-  }
-
-  private getProjectOrderPaymentPlan(order: CreatedProjectOrder | null | undefined): string {
-    return this.normalizeValue(order?.order_payment_plan ?? order?.payment_plan);
-  }
-
-  private getWorkflowTotalSteps(project: CreatedProject | null = this.project): number {
-    let totalSteps = 1;
-    if (this.shouldShowCompletedDownPayment(project)) totalSteps += 1;
-    if (this.shouldShowWorkflowReviewStep(project)) totalSteps += 1;
-    if (this.shouldShowPendingFinalPayment(project)) totalSteps += 1;
-    if (this.isPaymentStatusOnly(project)) totalSteps += 1;
-    return totalSteps;
-  }
-
-  private getWorkflowCompletedSteps(project: CreatedProject | null = this.project): number {
-    let completedSteps = this.getContractStepState(project) === 'completed' ? 1 : 0;
-    if (this.shouldShowCompletedDownPayment(project)) completedSteps += 1;
-    if (this.shouldShowAnsweredReviewStep(project)) completedSteps += 1;
-    return completedSteps;
-  }
-
-  private isProjectDownPaymentDue(order: CreatedProjectOrder | null | undefined): boolean {
-    if (!order) return false;
-
-    const plan = this.getProjectOrderPaymentPlan(order);
-    if (['down_payment', 'partial', 'partial_payment'].includes(plan)) return true;
-
-    const downPaymentAmount = this.toOptionalNumber(order.down_payment_amount ?? order.down_payment);
-    if (downPaymentAmount !== null && downPaymentAmount > 0) return true;
-
-    const downPaymentPercentage = this.toOptionalNumber(order.down_payment_percentage);
-    if (downPaymentPercentage !== null && downPaymentPercentage > 0) return true;
-
-    const startPaymentAmount = this.getProjectStartPaymentAmount(order);
-
-    return plan.includes('partial') && startPaymentAmount !== null && startPaymentAmount > 0;
-  }
-
-  private getProjectDownPaymentAmount(order: CreatedProjectOrder | null | undefined): number {
-    if (!order) return 0;
-
-    const directDownPayment = this.toOptionalNumber(order.down_payment_amount ?? order.down_payment);
-    if (directDownPayment !== null) return directDownPayment;
-
-    const startPaymentAmount = this.getProjectStartPaymentAmount(order);
-    if (startPaymentAmount !== null) return startPaymentAmount;
-
-    const downPaymentPercentage = this.toOptionalNumber(order.down_payment_percentage);
-    if (downPaymentPercentage !== null) {
-      return this.toNumber(order.amount) * downPaymentPercentage / 100;
-    }
-
-    return 0;
-  }
-
-  private getProjectFinalPaymentAmount(order: CreatedProjectOrder | null | undefined): number {
-    if (!order) return 0;
-
-    const directFinalPayment = this.toOptionalNumber(order.final_payment);
-    if (directFinalPayment !== null) return directFinalPayment;
-
-    const finalPaymentPercentage = this.toOptionalNumber(order.final_payment_percentage);
-    if (finalPaymentPercentage !== null) {
-      return this.toNumber(order.amount) * finalPaymentPercentage / 100;
-    }
-
-    const downPaymentAmount = this.getProjectDownPaymentAmount(order);
-    if (downPaymentAmount > 0) {
-      return Math.max(this.toNumber(order.amount) - downPaymentAmount, 0);
-    }
-
-    return this.toNumber(order.amount);
-  }
-
-  private getProjectStartPaymentAmount(order: CreatedProjectOrder | null | undefined): number | null {
-    if (!order) return null;
-
-    return this.toOptionalNumber(
-      (order as any).start_payment_amount
-        ?? (order as any).start_payment
-        ?? (order as any).start_amount
-        ?? (order as any).upfront_payment_amount
-    );
   }
 
   private getProjectContractUuid(project: CreatedProject | null | undefined): string {

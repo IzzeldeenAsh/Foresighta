@@ -1,4 +1,3 @@
-import { OfferInstallment, ProjectServiceDetails, mapProjectServices, calendarDate } from './project-workflow';
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { BehaviorSubject, Observable, throwError } from 'rxjs';
@@ -6,12 +5,27 @@ import { catchError, finalize, map } from 'rxjs/operators';
 import { TranslationService } from 'src/app/modules/i18n/translation.service';
 import { environment } from 'src/environments/environment';
 import { ProjectTimeline } from '../project-timeline/project-timeline.model';
+import {
+  InstallmentDueType,
+  ProjectDeliverable,
+  ProjectInstallment,
+  ProjectPriceType,
+  ProjectScheduleFields,
+  ProjectServiceDetails,
+  flatMapList,
+  flattenDeliverables,
+  flattenScopes,
+  mapInstallments,
+  mapProjectSchedule,
+  mapProjectServices,
+  mergeComponents,
+} from '../project-phase2/project-phase2.model';
 
 export type ProjectOfferType = 'ad_hoc' | 'frame_work_agreement' | 'urgent_request' | string;
 export type ProjectOfferProjectStatus = 'invited' | 'cancelled' | 'submitted' | 'closed' | string;
 export type ProjectOfferActionStatus = 'pending' | 'viewed' | 'interested' | 'offered' | 'not_interested' | 'expired' | string;
 export type ProjectOfferStage = 'proposal' | 'project' | string;
-export type ProjectFileUploadType = 'deliverable' | 'samples' | 'document' | 'other' | string;
+export type ProjectFileUploadType = 'first_draft' | 'final_draft' | 'samples' | 'document' | 'other' | string;
 export type ProjectReviewSubmissionType = 'first_draft' | 'final_draft' | 'session_completed' | string;
 export type ProjectReviewSubmissionStatus = 'pending' | 'approved' | 'changes_requested' | string;
 export type ProjectReviewSubmissionPriorityValue = 'normal' | 'medium' | 'critical' | string;
@@ -122,20 +136,19 @@ export interface ProjectOfferProposalSummary {
   deadline: string | null;
   proposal_no?: string | null;
   match_uuid?: string | null;
-  offer_status?: string | null;
 }
 
 export interface ProjectOfferDetails {
-  installments?: OfferInstallment[];
-  hourly_rate?: string | number | null;
   uuid: string;
+  price_type: ProjectPriceType | string | null;
   proposed_price: string | number | null;
   payment_plan: string | null;
-  down_payment_percentage?: string | number | null;
-  down_payment?: string | number | null;
-  final_payment_percentage?: string | number | null;
-  final_payment?: string | number | null;
+  installments: ProjectInstallment[];
+  hourly_rate: string | number | null;
   estimated_hours: string | number | null;
+  daily_rate: string | number | null;
+  estimated_days: string | number | null;
+  fixed_price: string | number | null;
   cover_letter: string | null;
   status: string | null;
   contract_uuid?: string | null;
@@ -169,8 +182,6 @@ export interface ProjectOffer {
   contract?: ProjectContract | null;
   offer?: ProjectOfferDetails | null;
   project: {
-    project_services?: ProjectServiceDetails[];
-    planned_start_date?: string | null;
     uuid?: string | null;
     title: string;
     type: ProjectOfferType;
@@ -182,14 +193,19 @@ export interface ProjectOffer {
     industry: any;
     description: string | null;
     deadline_offer: string | null;
-    deadline: string | null;
     created_at?: string | null;
     updated_at?: string | null;
     is_read?: boolean | null;
     read_at?: string | null;
+    /** Project-level and service-level components merged (deliverables excluded). */
     components: ProjectOfferBlock[];
     addons: ProjectOfferBlock[];
+    /** Scopes across all project services. */
     scopes: ProjectOfferScope[];
+    project_services: ProjectServiceDetails[];
+    /** Deliverables across all project services, in timeline order. */
+    deliverables: ProjectDeliverable[];
+    schedule: ProjectScheduleFields;
     request_files: ProjectOfferFile[];
     file?: ProjectOfferFiles;
     status?: ProjectOfferProjectStatus | null;
@@ -257,14 +273,12 @@ export interface InsighterProjectAccountSettings {
   [key: string]: any;
 }
 
-export type ProposalEstimateUnit = 'hours' | 'days';
-
-export interface ProjectProposalOfferPayload {
-  cover_letter: string;
-  hourly_rate: string | number;
-  estimated_hours: string | number;
-  payment_plan: 'full' | 'partial';
-  installments?: OfferInstallment[];
+export interface ProjectProposalOfferInstallmentPayload {
+  title: string;
+  percentage: number;
+  due_type: InstallmentDueType;
+  period_days?: number;
+  project_service_deliverable_id?: number;
 }
 
 /**
@@ -287,7 +301,6 @@ interface ApiInsighterProject {
   read_at?: string | null;
   business_type?: string | null;
   description?: string | null;
-  deadline?: string | null;
   components?: ProjectOfferBlock[];
   addons?: ProjectOfferBlock[];
   scopes?: ProjectOfferScope[] | null;
@@ -682,6 +695,7 @@ export class ProjectOffersService {
       ? this.mapProjectContract(project.contract)
       : null;
     const contractUuid = contract?.uuid ?? project?.contract_uuid ?? null;
+    const projectServices = mapProjectServices(project?.project_services);
 
     return {
       uuid: project?.uuid ?? '',
@@ -689,7 +703,7 @@ export class ProjectOffersService {
       action_status: match?.action_status ?? proposal?.action_status ?? null,
       project_status: projectStatus,
       proposal_status: proposalStatus,
-      match_uuid: match?.uuid ?? proposal?.match_uuid ?? null,
+      match_uuid: match?.uuid ?? null,
       stage: project?.stage ?? 'proposal',
       created_at: project?.created_at ?? proposal?.created_at ?? null,
       updated_at: project?.updated_at ?? null,
@@ -699,10 +713,8 @@ export class ProjectOffersService {
       proposals: this.mapProposalSummaries(project?.proposals),
       contract_uuid: contractUuid,
       contract,
-      offer: match?.offer ?? project?.offer ?? null,
+      offer: this.mapOfferDetails(match?.offer ?? project?.offer ?? null),
       project: {
-        project_services: mapProjectServices(project?.project_services),
-        planned_start_date: calendarDate(project?.planned_start_date),
         uuid: project?.uuid ?? '',
         title: project?.title ?? '',
         type: project?.type ?? '',
@@ -714,21 +726,49 @@ export class ProjectOffersService {
         industry: project?.industry ?? null,
         description: project?.description ?? null,
         deadline_offer: proposal?.deadline_offer ?? proposal?.deadline ?? null,
-        deadline: calendarDate(project?.deadline),
         created_at: project?.created_at ?? null,
         updated_at: project?.updated_at ?? null,
         status: projectStatus,
         cancelled_at: project?.cancelled_at ?? null,
         is_read: this.toReadState(project?.is_read),
         read_at: project?.read_at ?? null,
-        components: this.sanitizeBlocks(project?.components),
-        addons: this.sanitizeBlocks(project?.addons),
-        scopes: this.sanitizeScopes(project?.scopes),
-        request_files: this.sanitizeFiles(project?.request_files ?? project?.file?.proposal?.general),
+        components: this.sanitizeBlocks(mergeComponents(project?.components, projectServices)),
+        addons: this.sanitizeBlocks([
+          ...(project?.addons ?? []),
+          ...flatMapList(projectServices, service => service.addons),
+        ]),
+        scopes: this.sanitizeScopes(projectServices.length ? flattenScopes(projectServices) : project?.scopes),
+        project_services: projectServices,
+        deliverables: flattenDeliverables(projectServices),
+        schedule: mapProjectSchedule(project),
+        request_files: this.sanitizeFiles(project?.request_files),
         file: this.sanitizeProjectFile(project?.file),
         contract_uuid: contractUuid,
         contract,
       },
+    };
+  }
+
+  private mapOfferDetails(offer: any): ProjectOfferDetails | null {
+    if (!offer || typeof offer !== 'object') {
+      return null;
+    }
+
+    return {
+      ...offer,
+      uuid: offer?.uuid ?? '',
+      price_type: offer?.price_type ?? null,
+      proposed_price: offer?.proposed_price ?? null,
+      payment_plan: offer?.payment_plan ?? null,
+      installments: mapInstallments(offer?.installments),
+      hourly_rate: offer?.hourly_rate ?? null,
+      estimated_hours: offer?.estimated_hours ?? null,
+      daily_rate: offer?.daily_rate ?? null,
+      estimated_days: offer?.estimated_days ?? null,
+      fixed_price: offer?.fixed_price ?? null,
+      cover_letter: offer?.cover_letter ?? null,
+      status: offer?.status ?? null,
+      files: this.sanitizeFiles(offer?.files),
     };
   }
 
@@ -744,7 +784,6 @@ export class ProjectOffersService {
       .map(proposal => ({
         uuid: proposal?.uuid ?? '',
         status: proposal?.status ?? null,
-        offer_status: proposal?.match?.offer?.status ?? proposal?.offer_status ?? null,
         action_status: proposal?.match?.action_status ?? proposal?.action_status ?? null,
         deadline: proposal?.deadline_offer ?? proposal?.deadline ?? null,
         proposal_no: proposal?.proposal_no ?? null,
@@ -764,11 +803,7 @@ export class ProjectOffersService {
       return null;
     }
 
-    const ordered = [...proposals].sort((a, b) =>
-      (b.created_at || '').localeCompare(a.created_at || '')
-      || String(b.proposal_no || '').localeCompare(String(a.proposal_no || ''), undefined, { numeric: true }));
-    return ordered.find(proposal => proposal?.match?.offer?.status === 'awarded')
-      ?? ordered.find(proposal => !!proposal?.match) ?? ordered[0];
+    return proposals.find(proposal => !!proposal?.match) ?? proposals[0];
   }
 
   private mapProjectContract(contract: any): ProjectContract {

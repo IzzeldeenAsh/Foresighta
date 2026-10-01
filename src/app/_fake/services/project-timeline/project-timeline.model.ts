@@ -6,11 +6,16 @@
  *  - Client:    GET {apiBaseUrl}/account/project/timeline/{uuid}
  *  - Insighter: GET {apiBaseUrl}/insighter/project/timeline/{uuid}
  *
- * Each step carries a stable `key` (the behavioral contract), a `display` flag
+ * Each step carries a fixed `key` (the behavioral contract), a `display` flag
  * (render or not), a `state` (progress bucket) and a `status` (granular state).
  */
 
-/** Structural keys and historical aliases. Payments/deliverables use dynamic prefixes. */
+/**
+ * Step keys returned by the timeline API. Phase 2 replaced the fixed draft and
+ * payment steps with one step per deliverable (`deliverable_{id}`) and one per
+ * order installment (`payment_installment_{position}`); the legacy keys are
+ * kept for older payloads.
+ */
 export const TIMELINE_STEP = {
   CONTRACTING: 'contracting',
   AWARDED_INSIGHTER: 'awarded_insighter',
@@ -24,6 +29,9 @@ export const TIMELINE_STEP = {
   CLOSED_PROJECT: 'closed_project',
   CANCELLED_PROJECT: 'cancelled_project',
 } as const;
+
+export const DELIVERABLE_STEP_PREFIX = 'deliverable_';
+export const INSTALLMENT_STEP_PREFIX = 'payment_installment_';
 
 export type TimelineStepKey =
   | typeof TIMELINE_STEP[keyof typeof TIMELINE_STEP]
@@ -58,10 +66,10 @@ export interface ProjectTimelineStep {
   display: boolean;
   status: string | null;
   state: TimelineStepState;
-  amount: number | string | null;
+  amount: number | null;
   date: string | null;
   party: TimelineParty | null;
-  meta: Record<string, any>;
+  meta: Record<string, any> | any[];
 }
 
 export interface ProjectTimeline {
@@ -97,12 +105,37 @@ export const PARTY_STEP_KEYS: TimelineStepKey[] = [
   TIMELINE_STEP.CLIENT_INFO,
 ];
 
+export function isInstallmentStep(key: TimelineStepKey): boolean {
+  return `${key || ''}`.startsWith(INSTALLMENT_STEP_PREFIX);
+}
+
+export function isDeliverableStep(key: TimelineStepKey): boolean {
+  return `${key || ''}`.startsWith(DELIVERABLE_STEP_PREFIX);
+}
+
+/** Deliverable id carried by a `deliverable_{id}` step (meta first, key as fallback). */
+export function deliverableIdFromStep(step: ProjectTimelineStep | null | undefined): number | null {
+  if (!step || !isDeliverableStep(step.key)) return null;
+  const meta = step.meta as Record<string, any>;
+  const fromMeta = Number(meta?.['project_service_deliverable_id'] ?? meta?.['deliverable_id']);
+  if (Number.isFinite(fromMeta) && fromMeta > 0) return fromMeta;
+  const fromKey = Number(`${step.key}`.slice(DELIVERABLE_STEP_PREFIX.length));
+  return Number.isFinite(fromKey) && fromKey > 0 ? fromKey : null;
+}
+
+/** Order installment id carried by a `payment_installment_{n}` step. */
+export function orderInstallmentIdFromStep(step: ProjectTimelineStep | null | undefined): number | null {
+  if (!step || !isInstallmentStep(step.key)) return null;
+  const id = Number((step.meta as Record<string, any>)?.['order_installment_id']);
+  return Number.isFinite(id) && id > 0 ? id : null;
+}
+
 export function isPaymentStep(key: TimelineStepKey): boolean {
-  return key.startsWith('payment_installment_') || PAYMENT_STEP_KEYS.includes(key);
+  return PAYMENT_STEP_KEYS.includes(key) || isInstallmentStep(key);
 }
 
 export function isDraftStep(key: TimelineStepKey): boolean {
-  return key.startsWith('deliverable_') || DRAFT_STEP_KEYS.includes(key);
+  return DRAFT_STEP_KEYS.includes(key) || isDeliverableStep(key);
 }
 
 export function isPartyStep(key: TimelineStepKey): boolean {

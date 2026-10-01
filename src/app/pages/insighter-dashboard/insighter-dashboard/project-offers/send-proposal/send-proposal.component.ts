@@ -1,5 +1,4 @@
-import { ProjectDeliverable, OfferInstallment, InstallmentDueType, appendInstallments, contractFirst, installmentTotal, validInstallments, validProjectFile, PROJECT_FILE_ACCEPT, canRespondToProposal } from 'src/app/_fake/services/project-offers/project-workflow';
-import { Component, ElementRef, Injector, OnDestroy, OnInit, QueryList, ViewChildren } from '@angular/core';
+import { Component, Injector, OnDestroy, OnInit, QueryList, ViewChildren } from '@angular/core';
 import { NgModel } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { takeUntil } from 'rxjs/operators';
@@ -10,11 +9,30 @@ import {
   ProjectOfferFile,
   ProjectOfferScope,
   ProjectOffersService,
-  ProposalEstimateUnit,
 } from 'src/app/_fake/services/project-offers/project-offers.service';
+import {
+  InstallmentDueType,
+  ProjectDeliverable,
+  ProjectPaymentPlan,
+  ProjectPriceType,
+  addDaysToDate,
+  deliverableWayLabel,
+  dueTypeLabel,
+  periodDaysLabel,
+  priceTypeLabel,
+  scheduleBaseDate,
+} from 'src/app/_fake/services/project-phase2/project-phase2.model';
 
 const HOURS_PER_DAY = 8;
-type PaymentPlan = 'partial' | 'full';
+
+export interface InstallmentDraft {
+  key: number;
+  title: string;
+  percentage: number | null;
+  due_type: InstallmentDueType;
+  period_days: number | null;
+  project_service_deliverable_id: number | null;
+}
 
 @Component({
   selector: 'app-send-proposal',
@@ -23,10 +41,6 @@ type PaymentPlan = 'partial' | 'full';
 })
 export class SendProposalComponent extends BaseComponent implements OnInit, OnDestroy {
   @ViewChildren(NgModel) private formModels!: QueryList<NgModel>;
-  @ViewChildren('installmentItem') private installmentItems!: QueryList<ElementRef<HTMLElement>>;
-  private installmentKeys = new WeakMap<OfferInstallment, number>();
-  private cappedRows = new WeakSet<OfferInstallment>();
-  private nextInstallmentKey = 0;
 
   proposal: ProjectOffer | null = null;
 
@@ -41,127 +55,26 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
   openingFileUuid: string | null = null;
 
   // Form state
-  estimateUnit: ProposalEstimateUnit = 'hours';
-  estimateAmount: number | null = null;
+  priceType: ProjectPriceType = 'hourly';
+  estimatedHours: number | null = null;
+  dailyRate: number | null = null;
+  estimatedDays: number | null = null;
+  fixedPrice: number | null = null;
   coverLetter: string = '';
   selectedAttachments: File[] = [];
-  paymentPlan: PaymentPlan = 'partial';
-  installments: OfferInstallment[] = [];
-  paymentSplitValidationAttempted = false;
-  readonly fileAccept = PROJECT_FILE_ACCEPT;
-  get deliverables() { return this.proposal?.project.project_services?.reduce<ProjectDeliverable[]>((items, service) => items.concat(service.deliverables), []) ?? []; }
-  get paymentSplitTotal(): number { return installmentTotal(this.installments); }
-  get hasContractInstallment(): boolean { return this.installments.some(row => row.due_type === 'contract'); }
-  get canRespond(): boolean { return canRespondToProposal(this.proposal); }
-  addInstallment(): void {
-    this.installments.push({ title: '', percentage: '', due_type: 'date', due_date: '' });
-    this.paymentSplitValidationAttempted = false;
+  paymentPlan: ProjectPaymentPlan = 'partial';
+  installments: InstallmentDraft[] = [];
+  /** Set once the insighter edits the plan, so project data no longer reseeds it. */
+  private installmentsTouched = false;
+  private installmentKey = 0;
+  private submitAttempted = false;
+
+  get showInstallmentErrors(): boolean {
+    return this.submitAttempted || this.installmentsTouched;
   }
-  /** At least two payments are required. Other payments keep their values. */
-  removeInstallment(index: number): void {
-    if (this.installments.length > 2) this.installments.splice(index, 1);
-  }
-  /** Highest value a row may take without pushing the total above 100%. */
-  maxPercentageFor(row: OfferInstallment): number {
-    const others = this.installments.filter(item => item !== row).reduce((sum, item) => sum + this.pct(item), 0);
-    return this.roundPct(Math.max(100 - others, 0));
-  }
-  /** Caps the typed value so the total can never exceed 100%; nothing else is changed. */
-  onPercentageChange(row: OfferInstallment, value: string | number | null, input: HTMLInputElement): void {
-    const typed = Number(value);
-    if (value === '' || value === null || !Number.isFinite(typed)) { row.percentage = value ?? ''; return; }
-    const capped = this.roundPct(Math.min(typed, this.maxPercentageFor(row)));
-    row.percentage = capped;
-    if (capped !== typed) { input.value = String(capped); this.cappedRows.add(row); } else { this.cappedRows.delete(row); }
-  }
-  isPercentageCapped(row: OfferInstallment): boolean { return this.cappedRows.has(row); }
-  getPercentageCapMessage(row: OfferInstallment): string {
-    const left = this.maxPercentageFor(row);
-    if (this.lang === 'ar') return left > 0 ? `المتبقي ${left}% فقط. خفّض دفعة أخرى أولاً.` : 'لا توجد نسبة متبقية. خفّض دفعة أخرى أولاً.';
-    return left > 0 ? `Only ${left}% is left. Lower another payment first.` : 'No percentage is left. Lower another payment first.';
-  }
-  /** Red border: the row's own value is missing or out of range, or the rows are all valid but don't reach 100%. */
-  isPercentageInvalid(row: OfferInstallment): boolean {
-    if (this.isRowPercentageInvalid(row)) return true;
-    return this.paymentSplitTotal !== 100 && !this.installments.some(item => this.isRowPercentageInvalid(item));
-  }
-  private isRowPercentageInvalid(row: OfferInstallment): boolean {
-    const value = Number(row.percentage);
-    return row.percentage === '' || row.percentage === null || !Number.isFinite(value) || value < 1 || value > 100;
-  }
-  private pct(row: OfferInstallment): number { return Number(row.percentage) || 0; }
-  private roundPct(value: number): number { return Math.round(value * 10000) / 10000; }
-  /** Stable per-row key so ngModel names survive reordering. */
-  rowKey(row: OfferInstallment): number {
-    if (!this.installmentKeys.has(row)) this.installmentKeys.set(row, this.nextInstallmentKey++);
-    return this.installmentKeys.get(row)!;
-  }
-  setDueType(row: OfferInstallment, type: InstallmentDueType): void {
-    if (row.due_type === type) return;
-    row.due_type = type;
-    row.due_date = null;
-    row.project_service_deliverable_id = null;
-    const before = this.installmentRects();
-    this.installments = contractFirst(this.installments);
-    // Runs after change detection has moved the cards, so the moved card glides to its new slot.
-    if (before.size) setTimeout(() => this.animateReorder(before, type === 'contract' ? row : null));
-  }
-  /** Dated payments must fall inside the project window: planned start → deadline (inclusive). */
-  get paymentDateMin(): string | null { return this.proposal?.project.planned_start_date || null; }
-  get paymentDateMax(): string | null { return this.proposal?.project.deadline || null; }
-  isInstallmentDateOutOfRange(row: OfferInstallment): boolean {
-    if (row.due_type !== 'date' || !row.due_date) return false;
-    return (!!this.paymentDateMin && row.due_date < this.paymentDateMin)
-      || (!!this.paymentDateMax && row.due_date > this.paymentDateMax);
-  }
-  getInstallmentDateRangeMessage(): string {
-    const ar = this.lang === 'ar';
-    const min = this.paymentDateMin ? this.formatDate(this.paymentDateMin) : null;
-    const max = this.paymentDateMax ? this.formatDate(this.paymentDateMax) : null;
-    if (min && max) return ar ? `اختر تاريخاً بين ${min} و${max}.` : `Pick a date between ${min} and ${max}.`;
-    if (min) return ar ? `اختر تاريخاً في ${min} أو بعده.` : `Pick a date on or after ${min}.`;
-    return ar ? `اختر تاريخاً في ${max} أو قبله.` : `Pick a date on or before ${max}.`;
-  }
-  installmentDueSummary(row: OfferInstallment): string {
-    const ar = this.lang === 'ar';
-    if (row.due_type === 'contract') return ar ? 'تستحق عند توقيع العقد' : 'Due on contract signing';
-    if (row.due_type === 'date') return row.due_date ? `${ar ? 'تستحق في' : 'Due'} ${this.formatDate(row.due_date)}` : (ar ? 'اختر تاريخ الاستحقاق' : 'Pick a due date');
-    const item = this.deliverables.find(d => d.id === Number(row.project_service_deliverable_id));
-    return item ? `${ar ? 'تستحق بعد اعتماد' : 'Due after approval of'} ${item.title}` : (ar ? 'اختر المخرج' : 'Pick a deliverable');
-  }
-  private installmentRects(): Map<HTMLElement, DOMRect> {
-    return new Map((this.installmentItems?.toArray() ?? []).map(ref => [ref.nativeElement, ref.nativeElement.getBoundingClientRect()]));
-  }
-  private animateReorder(before: Map<HTMLElement, DOMRect>, promoted: OfferInstallment | null): void {
-    if (typeof window === 'undefined' || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
-    const promotedIndex = promoted ? this.installments.indexOf(promoted) : -1;
-    this.installmentItems.forEach((ref, index) => {
-      const el = ref.nativeElement;
-      const old = before.get(el);
-      if (!old || typeof el.animate !== 'function') return;
-      const dy = old.top - el.getBoundingClientRect().top;
-      if (Math.abs(dy) < 1) return;
-      el.animate([{ transform: `translateY(${dy}px)` }, { transform: 'translateY(0)' }],
-        { duration: 450, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' });
-      if (index === promotedIndex) {
-        el.classList.add('is-promoted');
-        setTimeout(() => el.classList.remove('is-promoted'), 1200);
-      }
-    });
-  }
-  /** Default schedule: two payments — 30% on contract, 70% after the final deliverable (or on the deadline). */
-  initializeInstallments(): void {
-    this.paymentSplitValidationAttempted = false;
-    const ar = this.lang === 'ar';
-    const finalDeliverable = [...this.deliverables]
-      .sort((a, b) => (a.project_service_id ?? 0) - (b.project_service_id ?? 0) || a.position - b.position)
-      .pop();
-    this.installments = [
-      { title: ar ? 'دفعة التعاقد' : 'Contract payment', percentage: 30, due_type: 'contract' },
-      finalDeliverable
-        ? { title: '', percentage: 70, due_type: 'deliverable', project_service_deliverable_id: finalDeliverable.id }
-        : { title: '', percentage: 70, due_type: 'date', due_date: this.proposal?.project.deadline || '' },
-    ];
+
+  get priceTypeLabel(): string {
+    return priceTypeLabel(this.priceType, this.lang);
   }
 
   readonly hoursPerDay = HOURS_PER_DAY;
@@ -215,19 +128,10 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
     return this.humanizeValue(value);
   }
 
-  setEstimateUnit(unit: ProposalEstimateUnit): void {
-    if (this.estimateUnit === unit) return;
-    this.estimateUnit = unit;
-  }
-
   onAttachmentsSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
     const files = input.files ? Array.from(input.files) : [];
     if (!files.length) return;
-    if (files.some(file => !validProjectFile(file))) {
-      this.showError(this.lang === 'ar' ? 'ملف غير صالح' : 'Invalid file', this.lang === 'ar' ? 'استخدم صيغة مدعومة وحجم لا يتجاوز 50 ميجابايت.' : 'Use a supported format, up to 50 MB per file.');
-      input.value = ''; return;
-    }
 
     this.selectedAttachments = [...this.selectedAttachments, ...files];
     input.value = '';
@@ -237,21 +141,215 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
     this.selectedAttachments = this.selectedAttachments.filter((_, i) => i !== index);
   }
 
-  /** Total estimated working hours (what we send to the API). */
-  get totalHours(): number {
-    const amt = Number(this.estimateAmount ?? 0);
-    if (!isFinite(amt) || amt <= 0) return 0;
-    return this.estimateUnit === 'days' ? amt * HOURS_PER_DAY : amt;
+  // ---------- Pricing ----------
+
+  setPriceType(type: ProjectPriceType): void {
+    if (this.priceType === type) return;
+    this.priceType = type;
+    if (type === 'daily' && !this.dailyRate && this.hourlyRate) {
+      this.dailyRate = Number(this.hourlyRate) * HOURS_PER_DAY;
+    }
   }
 
-  /** Auto-suggested price from hours × hourly rate (used when user hasn't edited). */
-  get suggestedPrice(): number {
-    return this.totalHours * (Number(this.hourlyRate) || 0);
+  /** Offer total — what the backend stores as `proposed_price`. */
+  get totalPrice(): number {
+    const value = (() => {
+      switch (this.priceType) {
+        case 'daily': return (Number(this.dailyRate) || 0) * (Number(this.estimatedDays) || 0);
+        case 'fixed': return Number(this.fixedPrice) || 0;
+        default: return (Number(this.hourlyRate) || 0) * (Number(this.estimatedHours) || 0);
+      }
+    })();
+    return isFinite(value) && value > 0 ? Number(value.toFixed(2)) : 0;
+  }
+
+  // ---------- Project schedule ----------
+
+  get deliverables(): ProjectDeliverable[] {
+    return this.proposal?.project?.deliverables ?? [];
+  }
+
+  get lastDeliverable(): ProjectDeliverable | null {
+    const list = this.deliverables;
+    return list.length ? list[list.length - 1] : null;
+  }
+
+  get plannedStartDate(): string | null {
+    const schedule = this.proposal?.project?.schedule;
+    return schedule ? scheduleBaseDate(schedule) : null;
+  }
+
+  get durationDays(): number | null {
+    return this.proposal?.project?.schedule?.duration_days ?? null;
+  }
+
+  get plannedCloseDate(): string | null {
+    return this.proposal?.project?.schedule?.planned_close_date ?? null;
+  }
+
+  dateForDays(days: number | null | undefined): string | null {
+    if (days === null || days === undefined || !this.plannedStartDate) return null;
+    return addDaysToDate(this.plannedStartDate, days);
+  }
+
+  periodLabel(days: number | null | undefined): string {
+    return periodDaysLabel(days, this.lang);
+  }
+
+  wayLabel(way: string | null | undefined): string {
+    return deliverableWayLabel(way, this.lang);
+  }
+
+  dueTypeLabel(type: string | null | undefined): string {
+    return dueTypeLabel(type, this.lang);
+  }
+
+  // ---------- Payment plan & installments ----------
+
+  readonly dueTypes: InstallmentDueType[] = ['contract', 'date', 'deliverable'];
+
+  setPaymentPlan(plan: ProjectPaymentPlan): void {
+    if (this.paymentPlan === plan) return;
+    this.paymentPlan = plan;
+    this.installmentsTouched = true;
+    this.installments = plan === 'full' ? [this.defaultFullInstallment()] : this.defaultPartialInstallments();
+  }
+
+  addInstallment(): void {
+    this.installmentsTouched = true;
+    const used = this.installmentsPercentTotal;
+    const lastDay = this.durationDays ?? (this.lastDeliverable?.period_days ?? 0);
+    this.installments = [
+      ...this.installments,
+      this.createInstallment({
+        title: this.lang === 'ar' ? `دفعة ${this.installments.length + 1}` : `Payment ${this.installments.length + 1}`,
+        percentage: Math.max(0, 100 - used) || null,
+        due_type: 'date',
+        period_days: lastDay,
+      }),
+    ];
+  }
+
+  removeInstallment(key: number): void {
+    if (this.installments.length <= 2) return;
+    this.installmentsTouched = true;
+    this.installments = this.installments.filter(item => item.key !== key);
+  }
+
+  onInstallmentChanged(item: InstallmentDraft): void {
+    this.installmentsTouched = true;
+    if (item.due_type === 'date' && (item.period_days === null || item.period_days === undefined)) {
+      item.period_days = 0;
+    }
+    if (item.due_type === 'deliverable' && !item.project_service_deliverable_id) {
+      item.project_service_deliverable_id = this.lastDeliverable?.id ?? null;
+    }
+  }
+
+  canChooseContract(item: InstallmentDraft): boolean {
+    return item.due_type === 'contract'
+      || !this.installments.some(other => other.key !== item.key && other.due_type === 'contract');
+  }
+
+  get installmentsPercentTotal(): number {
+    const total = this.installments.reduce((sum, item) => sum + (Number(item.percentage) || 0), 0);
+    return Number(total.toFixed(4));
+  }
+
+  installmentAmount(item: InstallmentDraft): number {
+    return Number(((this.totalPrice * (Number(item.percentage) || 0)) / 100).toFixed(2));
+  }
+
+  /** Planned date of an installment, for display (contract = signing date, unknown in advance). */
+  installmentDate(item: InstallmentDraft): string | null {
+    if (item.due_type === 'date') return this.dateForDays(item.period_days);
+    if (item.due_type === 'deliverable') {
+      const deliverable = this.deliverables.find(d => d.id === item.project_service_deliverable_id);
+      return deliverable?.date ?? this.dateForDays(deliverable?.period_days);
+    }
+    return null;
+  }
+
+  trackByInstallment(_: number, item: InstallmentDraft): number { return item.key; }
+  trackByDeliverable(_: number, item: ProjectDeliverable): number { return item.id; }
+
+  getInstallmentErrors(item: InstallmentDraft): string[] {
+    const errors: string[] = [];
+    const ar = this.lang === 'ar';
+    if (!(item.title || '').trim()) errors.push(ar ? 'عنوان الدفعة مطلوب.' : 'Give the payment a title.');
+    const pct = Number(item.percentage);
+    if (!isFinite(pct) || pct < 1 || pct > 100) errors.push(ar ? 'النسبة بين 1 و100.' : 'Percentage must be between 1 and 100.');
+    if (item.due_type === 'date' && !(Number(item.period_days) >= 0 && Number.isInteger(Number(item.period_days)))) {
+      errors.push(ar ? 'حدد عدد الأيام من بدء المشروع.' : 'Enter the number of days from the project start.');
+    }
+    if (item.due_type === 'deliverable' && !item.project_service_deliverable_id) {
+      errors.push(ar ? 'اختر المخرج المرتبط.' : 'Pick the linked deliverable.');
+    }
+    return errors;
+  }
+
+  getPaymentPlanError(): string | null {
+    const ar = this.lang === 'ar';
+    if (this.paymentPlan === 'full' && this.installments.length !== 1) {
+      return ar ? 'الدفع الكامل يكون دفعة واحدة.' : 'A full payment is a single installment.';
+    }
+    if (this.paymentPlan === 'partial' && this.installments.length < 2) {
+      return ar ? 'أضف دفعتين على الأقل.' : 'Add at least two installments.';
+    }
+    if (this.installmentsPercentTotal !== 100) {
+      return ar
+        ? `يجب أن يكون مجموع النسب 100% (الحالي ${this.installmentsPercentTotal}%).`
+        : `Percentages must add up to 100% (currently ${this.installmentsPercentTotal}%).`;
+    }
+    if (this.installments.filter(item => item.due_type === 'contract').length > 1) {
+      return ar ? 'يمكن ربط دفعة واحدة فقط بتوقيع العقد.' : 'Only one installment can be due on contract signing.';
+    }
+    return null;
+  }
+
+  private createInstallment(partial: Partial<InstallmentDraft>): InstallmentDraft {
+    this.installmentKey += 1;
+    return {
+      key: this.installmentKey,
+      title: '',
+      percentage: null,
+      due_type: 'date',
+      period_days: 0,
+      project_service_deliverable_id: null,
+      ...partial,
+    };
+  }
+
+  private defaultFullInstallment(): InstallmentDraft {
+    return this.createInstallment({
+      title: this.lang === 'ar' ? 'الدفعة الكاملة' : 'Full payment',
+      percentage: 100,
+      due_type: 'contract',
+      period_days: 0,
+    });
+  }
+
+  private defaultPartialInstallments(): InstallmentDraft[] {
+    const lastDeliverable = this.lastDeliverable ?? null;
+    return [
+      this.createInstallment({
+        title: this.lang === 'ar' ? 'دفعة توقيع العقد' : 'Contract payment',
+        percentage: 30,
+        due_type: 'contract',
+        period_days: 0,
+      }),
+      this.createInstallment({
+        title: this.lang === 'ar' ? 'الدفعة الأخيرة' : 'Final payment',
+        percentage: 70,
+        due_type: lastDeliverable ? 'deliverable' : 'date',
+        period_days: lastDeliverable ? lastDeliverable.period_days : (this.durationDays ?? 0),
+        project_service_deliverable_id: lastDeliverable?.id ?? null,
+      }),
+    ];
   }
 
   submitProposal(): void {
     if (this.isSubmitting) return;
-    this.paymentSplitValidationAttempted = true;
     if (!this.proposalUuid || this.isProposalFormInvalid()) {
       this.markRequiredFieldsTouchedAndDirty();
       return;
@@ -522,7 +620,7 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
   formatDate(value: string | null | undefined): string {
     if (!value) return '-';
     try {
-      const d = new Date(/^\d{4}-\d{2}-\d{2}$/.test(value) ? value + 'T00:00:00' : value.replace(' ', 'T'));
+      const d = new Date(value);
       return d.toLocaleDateString(this.lang === 'ar' ? 'ar-EG' : 'en-US', {
         year: 'numeric', month: 'short', day: 'numeric'
       });
@@ -552,15 +650,40 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
   }
 
   isCoverLetterInvalid(): boolean {
-    return !(this.coverLetter || '').trim() || this.coverLetter.trim().length > 2000;
+    return !(this.coverLetter || '').trim();
   }
 
-  isEstimateAmountInvalid(): boolean {
-    return this.totalHours < 1 || !Number.isInteger(this.totalHours);
+  isEstimatedHoursInvalid(): boolean {
+    return this.priceType === 'hourly' && !(Number(this.estimatedHours) >= 1);
   }
 
   isHourlyRateInvalid(): boolean {
-    return this.hourlyRate === null || !Number.isFinite(Number(this.hourlyRate)) || Number(this.hourlyRate) < 0;
+    return this.priceType === 'hourly' && !(Number(this.hourlyRate) > 0);
+  }
+
+  isEstimatedDaysInvalid(): boolean {
+    return this.priceType === 'daily' && !(Number(this.estimatedDays) >= 1);
+  }
+
+  isDailyRateInvalid(): boolean {
+    return this.priceType === 'daily' && !(Number(this.dailyRate) > 0);
+  }
+
+  isFixedPriceInvalid(): boolean {
+    return this.priceType === 'fixed' && !(Number(this.fixedPrice) > 0);
+  }
+
+  isPricingInvalid(): boolean {
+    return this.isEstimatedHoursInvalid()
+      || this.isHourlyRateInvalid()
+      || this.isEstimatedDaysInvalid()
+      || this.isDailyRateInvalid()
+      || this.isFixedPriceInvalid();
+  }
+
+  isPaymentPlanInvalid(): boolean {
+    return !!this.getPaymentPlanError()
+      || this.installments.some(item => this.getInstallmentErrors(item).length > 0);
   }
 
   shouldShowFieldError(model: NgModel | null | undefined, invalidByValue: boolean = false): boolean {
@@ -570,28 +693,37 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
     );
   }
 
-  shouldShowPaymentSplitError(...models: Array<NgModel | null | undefined>): boolean {
-    const hasInteracted = models.some(model => !!(model?.touched || model?.dirty));
-    return hasInteracted && this.isPaymentSplitInvalid();
-  }
-
-  getPaymentSplitErrorMessage(): string {
-    return this.lang === 'ar' ? 'أضف دفعتين على الأقل بعناوين وشروط استحقاق، ونسب بين 1 و100 ومجموع 100%، ودفعة تعاقد واحدة كحد أقصى.' : 'Add at least two payments with titles and due conditions, percentages from 1 to 100 totaling 100%, and at most one contract payment.';
-  }
-
   // ---------- Internals ----------
 
   private buildProposalFormData(): FormData {
     const formData = new FormData();
-    formData.append('hourly_rate', `${Number(this.hourlyRate)}`);
-    formData.append('estimated_hours', `${this.totalHours}`);
-    formData.append('cover_letter', (this.coverLetter || '').trim());
-    formData.append('payment_plan', this.paymentPlan);
+    formData.append('price_type', this.priceType);
 
-    if (this.paymentPlan === 'partial') {
-      appendInstallments(formData, this.installments);
+    if (this.priceType === 'hourly') {
+      formData.append('hourly_rate', `${Number(this.hourlyRate)}`);
+      formData.append('estimated_hours', `${Math.round(Number(this.estimatedHours))}`);
+    } else if (this.priceType === 'daily') {
+      formData.append('daily_rate', `${Number(this.dailyRate)}`);
+      formData.append('estimated_days', `${Math.round(Number(this.estimatedDays))}`);
+    } else {
+      formData.append('fixed_price', `${Number(this.fixedPrice)}`);
     }
 
+    formData.append('payment_plan', this.paymentPlan);
+    this.installments.forEach((item, index) => {
+      const prefix = `installments[${index}]`;
+      formData.append(`${prefix}[title]`, item.title.trim());
+      formData.append(`${prefix}[percentage]`, `${Number(item.percentage)}`);
+      formData.append(`${prefix}[due_type]`, item.due_type);
+      if (item.due_type === 'date') {
+        formData.append(`${prefix}[period_days]`, `${Math.max(0, Math.round(Number(item.period_days) || 0))}`);
+      }
+      if (item.due_type === 'deliverable' && item.project_service_deliverable_id) {
+        formData.append(`${prefix}[project_service_deliverable_id]`, `${item.project_service_deliverable_id}`);
+      }
+    });
+
+    formData.append('cover_letter', (this.coverLetter || '').trim());
 
     this.selectedAttachments.forEach((file, index) => {
       formData.append(`files[${index}]`, file, file.name);
@@ -600,26 +732,14 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
     return formData;
   }
 
-  isPaymentSplitInvalid(): boolean {
-    return this.paymentPlan === 'partial'
-      && (!validInstallments(this.installments, this.deliverables) || this.installments.some(row => this.isInstallmentDateOutOfRange(row)));
-  }
-
   private isProposalFormInvalid(): boolean {
-    return !this.canRespond
-      || this.selectedAttachments.some(file => !validProjectFile(file))
-      || this.isCoverLetterInvalid()
-      || this.isEstimateAmountInvalid()
-      || this.isHourlyRateInvalid()
-      || this.isPaymentSplitInvalid();
-  }
-
-  private isValidPercentage(value: number | null): boolean {
-    const n = Number(value);
-    return isFinite(n) && n >= 0 && n <= 100;
+    return this.isCoverLetterInvalid()
+      || this.isPricingInvalid()
+      || this.isPaymentPlanInvalid();
   }
 
   private markRequiredFieldsTouchedAndDirty(): void {
+    this.submitAttempted = true;
     this.formModels?.forEach(model => {
       model.control.markAsTouched();
       model.control.markAsDirty();
@@ -630,7 +750,7 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
 
   private scrollToFirstInvalidField(): void {
     const firstInvalid = document.querySelector<HTMLElement>(
-      '.sp-input.is-invalid, .sp-input-group.is-invalid'
+      '.sp-input.is-invalid, .sp-input-group.is-invalid, .sp-installments__total.is-invalid'
     );
     firstInvalid?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
@@ -641,7 +761,11 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
       .subscribe({
         next: (proposal) => {
           this.proposal = proposal;
-          this.initializeInstallments();
+          if (!this.installmentsTouched) {
+            this.installments = this.paymentPlan === 'full'
+              ? [this.defaultFullInstallment()]
+              : this.defaultPartialInstallments();
+          }
         },
         error: (err) => this.handleServerErrors(err),
       });

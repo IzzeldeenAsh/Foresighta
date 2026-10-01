@@ -131,7 +131,16 @@
             <!-- Draft delivery date -->
             <div class="pd-tl-card__meta" *ngIf="isDraft(step) && dateLabel(step)">
               <i class="ki-outline ki-calendar fs-7"></i>
-              <span>{{ lang === 'ar' ? 'التاريخ:' : 'Date:' }} {{ dateLabel(step) }}</span>
+              <span>
+                {{ isDeliverable(step) ? (lang === 'ar' ? 'الموعد المخطط:' : 'Planned date:') : (lang === 'ar' ? 'التاريخ:' : 'Date:') }}
+                {{ dateLabel(step) }}
+              </span>
+            </div>
+
+            <!-- Installment due date (until paid) -->
+            <div class="pd-tl-card__meta" *ngIf="installmentDueLabel(step) as dueLabel">
+              <i class="ki-outline ki-calendar fs-7"></i>
+              <span>{{ lang === 'ar' ? 'الاستحقاق:' : 'Due:' }} {{ dueLabel }}</span>
             </div>
 
             <!-- Payment date (all visible payment-plan variants) -->

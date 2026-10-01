@@ -1,0 +1,97 @@
+:host {
+  display: block;
+}
+
+.oi-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #e9ecf2;
+  border-radius: 12px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.oi-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+
+  & + & {
+    border-top: 1px solid #eceef3;
+  }
+
+  &__index {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 999px;
+    background: #f1f5f9;
+    color: #475569;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  &__body {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+  }
+
+  &__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+  }
+
+  &__title {
+    color: #0b1220;
+    font-size: 13.5px;
+    font-weight: 600;
+  }
+
+  &__when {
+    color: #5b6477;
+    font-size: 12.5px;
+  }
+
+  &__date {
+    color: #0b1220;
+    font-weight: 500;
+  }
+
+  &__money {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  &__amount {
+    color: #0b1220;
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  &__percent {
+    color: #7b8497;
+    font-size: 12px;
+  }
+}
+
+.oi-empty {
+  margin: 0;
+  color: #7b8497;
+  font-size: 13px;
+}

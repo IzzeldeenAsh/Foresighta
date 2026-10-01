@@ -8,7 +8,9 @@ import {
   TimelineActionType,
   TimelineAudience,
   TimelineStepActionEvent,
+  isDeliverableStep,
   isDraftStep,
+  isInstallmentStep,
   isPartyStep,
   isPaymentStep,
 } from 'src/app/_fake/services/project-timeline/project-timeline.model';
@@ -62,22 +64,8 @@ export class ProjectTimelineComponent {
 
   constructor(private http: HttpClient) {}
 
-  /**
-   * Visible steps with completed ones pulled to the top (API order kept within
-   * each group), so a completed step never sits below a pending/active one.
-   * Closed/cancelled always stay last.
-   */
   get visibleSteps(): ProjectTimelineStep[] {
-    const rank = (step: ProjectTimelineStep): number => {
-      if (step.key === TIMELINE_STEP.CLOSED_PROJECT || step.key === TIMELINE_STEP.CANCELLED_PROJECT) return 2;
-      return step.state === 'completed' ? 0 : 1;
-    };
-
-    return (this.steps || [])
-      .filter(step => step?.display)
-      .map((step, index) => ({ step, index }))
-      .sort((a, b) => rank(a.step) - rank(b.step) || a.index - b.index)
-      .map(({ step }) => step);
+    return this.orderVisibleSteps(this.normalizeClosedStep((this.steps || []).filter(step => step?.display)));
   }
 
   get isClient(): boolean {
@@ -92,10 +80,11 @@ export class ProjectTimelineComponent {
     }
 
     let lastCompleted = -1;
-    for (let index = 0; index < steps.length; index++) {
-      if (steps[index].state !== 'completed') break;
-      lastCompleted = index;
-    }
+    steps.forEach((step, index) => {
+      if (step.state === 'completed') {
+        lastCompleted = index;
+      }
+    });
 
     if (lastCompleted < 0) {
       return '0%';
@@ -118,6 +107,53 @@ export class ProjectTimelineComponent {
 
   isParty(step: ProjectTimelineStep): boolean {
     return isPartyStep(step.key);
+  }
+
+  private orderVisibleSteps(steps: ProjectTimelineStep[]): ProjectTimelineStep[] {
+    const completedPartyIndex = steps.findIndex(step => this.isParty(step) && this.isCompleted(step));
+
+    if (completedPartyIndex <= 0) {
+      return steps;
+    }
+
+    const orderedSteps = [...steps];
+    const [completedPartyStep] = orderedSteps.splice(completedPartyIndex, 1);
+    orderedSteps.unshift(completedPartyStep);
+    return orderedSteps;
+  }
+
+  private normalizeClosedStep(steps: ProjectTimelineStep[]): ProjectTimelineStep[] {
+    const finalPaymentCompleted = steps.some(step => this.isFinalSettlementPayment(step) && this.isCompleted(step));
+
+    if (!finalPaymentCompleted) {
+      return steps;
+    }
+
+    return steps.map(step => {
+      if (step.key !== TIMELINE_STEP.CLOSED_PROJECT) {
+        return step;
+      }
+
+      return {
+        ...step,
+        status: 'completed',
+        state: 'completed',
+      };
+    });
+  }
+
+  /** The payment that settles the project: the legacy final step, or the last installment. */
+  private isFinalSettlementPayment(step: ProjectTimelineStep): boolean {
+    if (step.key === TIMELINE_STEP.FINAL_PAYMENT || step.key === TIMELINE_STEP.FULL_PAYMENT_AT_END) {
+      return true;
+    }
+
+    if (!isInstallmentStep(step.key)) {
+      return false;
+    }
+
+    const installmentSteps = (this.steps || []).filter(item => isInstallmentStep(item.key));
+    return installmentSteps[installmentSteps.length - 1]?.key === step.key;
   }
 
   isActive(step: ProjectTimelineStep): boolean {
@@ -174,13 +210,13 @@ export class ProjectTimelineComponent {
   }
 
   dateLabel(step: ProjectTimelineStep): string {
-    if (!step.date && !step.meta?.['due_date']) {
+    if (!step.date) {
       return '';
     }
 
-    const parsed = this.parseTimelineDate(step.date || step.meta?.['due_date']);
+    const parsed = this.parseTimelineDate(step.date);
     if (!parsed) {
-      return step.date || step.meta?.['due_date'];
+      return step.date;
     }
 
     return new Intl.DateTimeFormat(this.lang === 'ar' ? 'ar' : 'en-GB', {
@@ -188,6 +224,25 @@ export class ProjectTimelineComponent {
       month: 'short',
       year: 'numeric',
     }).format(parsed);
+  }
+
+  /** Planned due date of an order installment step (contract-type installments are due on signing). */
+  installmentDueLabel(step: ProjectTimelineStep): string {
+    if (!isInstallmentStep(step.key) || this.isCompleted(step)) {
+      return '';
+    }
+
+    const meta = (step.meta && !Array.isArray(step.meta) ? step.meta : {}) as Record<string, any>;
+    if (meta['due_type'] === 'contract') {
+      return this.lang === 'ar' ? 'عند توقيع العقد' : 'On contract signing';
+    }
+
+    const due = meta['calculated_date'] ?? meta['date'];
+    return due ? this.dateLabel({ ...step, date: `${due}` }) : '';
+  }
+
+  isDeliverable(step: ProjectTimelineStep): boolean {
+    return isDeliverableStep(step.key);
   }
 
   showContractSignatures(step: ProjectTimelineStep): boolean {
@@ -247,8 +302,7 @@ export class ProjectTimelineComponent {
     // The timeline API returns SQL-style local timestamps. Normalizing the
     // separator keeps parsing consistent across browsers without changing the
     // timezone represented to the user.
-    const normalized = /^\d{4}-\d{2}-\d{2}$/.test(value) ? value + 'T00:00:00' : value.replace(' ', 'T');
-    const parsed = new Date(normalized);
+    const parsed = new Date(value.replace(' ', 'T'));
     return isNaN(parsed.getTime()) ? null : parsed;
   }
 
@@ -265,10 +319,12 @@ export class ProjectTimelineComponent {
       : `${stepWord} ${displayStepNo}`;
   }
 
-  /** Numbered by displayed position, since completed steps are reordered to the top. */
   private displayStepNumber(step: ProjectTimelineStep): number | string {
-    const index = this.visibleSteps.indexOf(step);
-    return index >= 0 ? index + 1 : (step.step_no ?? '');
+    if (step.key === TIMELINE_STEP.CONTRACTING && this.hasVisiblePartyStep()) {
+      return 2;
+    }
+
+    return step.step_no ?? '';
   }
 
   private hasVisiblePartyStep(): boolean {
@@ -276,8 +332,6 @@ export class ProjectTimelineComponent {
   }
 
   iconClass(step: ProjectTimelineStep): string {
-    if (this.isPayment(step)) return 'ki-dollar';
-    if (this.isDraft(step)) return 'ki-file-added';
     switch (step.key) {
       case TIMELINE_STEP.CONTRACTING:
         return 'ki-notepad-edit';
@@ -299,6 +353,8 @@ export class ProjectTimelineComponent {
       case TIMELINE_STEP.CANCELLED_PROJECT:
         return 'ki-cross-circle';
       default:
+        if (isInstallmentStep(step.key)) return 'ki-dollar';
+        if (isDeliverableStep(step.key)) return 'ki-file-added';
         return 'ki-abstract-26';
     }
   }
@@ -421,14 +477,15 @@ export class ProjectTimelineComponent {
       case 'view_offer':
         return ar ? 'عرض العرض' : 'View Offer';
       case 'pay':
-        if (step.meta?.['payment_uuid'] && ['pending', 'awaiting_charge'].includes(step.status || '')) return ar ? 'جاري معالجة الدفع' : 'Payment processing';
         return this.paymentButtonLabel || (ar ? 'ادفع الآن' : 'Pay Now');
       case 'open_review':
         if (this.isActiveDraftSubmission(step) && step.status === 'changes_requested') {
           return ar ? 'مطلوب تعديل' : 'Change Requested';
         }
+        if (this.isActiveDraftSubmission(step) && isDeliverableStep(step.key)) {
+          return ar ? `إرسال «${step.title || 'المخرج'}»` : `Submit “${step.title || 'deliverable'}”`;
+        }
         if (this.isActiveDraftSubmission(step)) {
-          if (step.key.startsWith('deliverable_')) return ar ? 'إرسال المخرج للمراجعة' : 'Submit deliverable';
           return step.key === TIMELINE_STEP.FINAL_DRAFT
             ? (ar ? 'إرسال المسودة النهائية' : 'Submit Final Draft')
             : (ar ? 'إرسال المسودة الأولى' : 'Submit First Draft');
@@ -507,7 +564,7 @@ export class ProjectTimelineComponent {
   actionDisabled(step: ProjectTimelineStep): boolean {
     switch (this.actionType(step)) {
       case 'pay':
-        return this.paymentSubmitting || (!!step.meta?.['payment_uuid'] && ['pending', 'awaiting_charge'].includes(step.status || ''));
+        return this.paymentSubmitting;
       case 'close_project':
         return this.closeSubmitting;
       default:
