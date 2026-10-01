@@ -5,6 +5,21 @@ import { catchError, finalize, map } from 'rxjs/operators';
 import { TranslationService } from 'src/app/modules/i18n/translation.service';
 import { environment } from 'src/environments/environment';
 import { ProjectTimeline } from '../project-timeline/project-timeline.model';
+import {
+  InstallmentDueType,
+  ProjectDeliverable,
+  ProjectInstallment,
+  ProjectPriceType,
+  ProjectScheduleFields,
+  ProjectServiceDetails,
+  flatMapList,
+  flattenDeliverables,
+  flattenScopes,
+  mapInstallments,
+  mapProjectSchedule,
+  mapProjectServices,
+  mergeComponents,
+} from '../project-phase2/project-phase2.model';
 
 export type ProjectOfferType = 'ad_hoc' | 'frame_work_agreement' | 'urgent_request' | string;
 export type ProjectOfferProjectStatus = 'invited' | 'cancelled' | 'submitted' | 'closed' | string;
@@ -125,13 +140,15 @@ export interface ProjectOfferProposalSummary {
 
 export interface ProjectOfferDetails {
   uuid: string;
+  price_type: ProjectPriceType | string | null;
   proposed_price: string | number | null;
   payment_plan: string | null;
-  down_payment_percentage: string | number | null;
-  down_payment: string | number | null;
-  final_payment_percentage: string | number | null;
-  final_payment: string | number | null;
+  installments: ProjectInstallment[];
+  hourly_rate: string | number | null;
   estimated_hours: string | number | null;
+  daily_rate: string | number | null;
+  estimated_days: string | number | null;
+  fixed_price: string | number | null;
   cover_letter: string | null;
   status: string | null;
   contract_uuid?: string | null;
@@ -176,14 +193,19 @@ export interface ProjectOffer {
     industry: any;
     description: string | null;
     deadline_offer: string | null;
-    deadline: string | null;
     created_at?: string | null;
     updated_at?: string | null;
     is_read?: boolean | null;
     read_at?: string | null;
+    /** Project-level and service-level components merged (deliverables excluded). */
     components: ProjectOfferBlock[];
     addons: ProjectOfferBlock[];
+    /** Scopes across all project services. */
     scopes: ProjectOfferScope[];
+    project_services: ProjectServiceDetails[];
+    /** Deliverables across all project services, in timeline order. */
+    deliverables: ProjectDeliverable[];
+    schedule: ProjectScheduleFields;
     request_files: ProjectOfferFile[];
     file?: ProjectOfferFiles;
     status?: ProjectOfferProjectStatus | null;
@@ -251,15 +273,12 @@ export interface InsighterProjectAccountSettings {
   [key: string]: any;
 }
 
-export type ProposalEstimateUnit = 'hours' | 'days';
-
-export interface ProjectProposalOfferPayload {
-  cover_letter: string;
-  hourly_rate: string | number;
-  estimated_hours: string | number;
-  payment_plan: 'full_at_start' | 'full_at_end' | 'partial';
-  down_payment_percentage?: string | number;
-  final_payment_percentage?: string | number;
+export interface ProjectProposalOfferInstallmentPayload {
+  title: string;
+  percentage: number;
+  due_type: InstallmentDueType;
+  period_days?: number;
+  project_service_deliverable_id?: number;
 }
 
 /**
@@ -282,7 +301,6 @@ interface ApiInsighterProject {
   read_at?: string | null;
   business_type?: string | null;
   description?: string | null;
-  deadline?: string | null;
   components?: ProjectOfferBlock[];
   addons?: ProjectOfferBlock[];
   scopes?: ProjectOfferScope[] | null;
@@ -677,6 +695,7 @@ export class ProjectOffersService {
       ? this.mapProjectContract(project.contract)
       : null;
     const contractUuid = contract?.uuid ?? project?.contract_uuid ?? null;
+    const projectServices = mapProjectServices(project?.project_services);
 
     return {
       uuid: project?.uuid ?? '',
@@ -694,7 +713,7 @@ export class ProjectOffersService {
       proposals: this.mapProposalSummaries(project?.proposals),
       contract_uuid: contractUuid,
       contract,
-      offer: match?.offer ?? project?.offer ?? null,
+      offer: this.mapOfferDetails(match?.offer ?? project?.offer ?? null),
       project: {
         uuid: project?.uuid ?? '',
         title: project?.title ?? '',
@@ -707,21 +726,49 @@ export class ProjectOffersService {
         industry: project?.industry ?? null,
         description: project?.description ?? null,
         deadline_offer: proposal?.deadline_offer ?? proposal?.deadline ?? null,
-        deadline: project?.deadline ?? null,
         created_at: project?.created_at ?? null,
         updated_at: project?.updated_at ?? null,
         status: projectStatus,
         cancelled_at: project?.cancelled_at ?? null,
         is_read: this.toReadState(project?.is_read),
         read_at: project?.read_at ?? null,
-        components: this.sanitizeBlocks(project?.components),
-        addons: this.sanitizeBlocks(project?.addons),
-        scopes: this.sanitizeScopes(project?.scopes),
+        components: this.sanitizeBlocks(mergeComponents(project?.components, projectServices)),
+        addons: this.sanitizeBlocks([
+          ...(project?.addons ?? []),
+          ...flatMapList(projectServices, service => service.addons),
+        ]),
+        scopes: this.sanitizeScopes(projectServices.length ? flattenScopes(projectServices) : project?.scopes),
+        project_services: projectServices,
+        deliverables: flattenDeliverables(projectServices),
+        schedule: mapProjectSchedule(project),
         request_files: this.sanitizeFiles(project?.request_files),
         file: this.sanitizeProjectFile(project?.file),
         contract_uuid: contractUuid,
         contract,
       },
+    };
+  }
+
+  private mapOfferDetails(offer: any): ProjectOfferDetails | null {
+    if (!offer || typeof offer !== 'object') {
+      return null;
+    }
+
+    return {
+      ...offer,
+      uuid: offer?.uuid ?? '',
+      price_type: offer?.price_type ?? null,
+      proposed_price: offer?.proposed_price ?? null,
+      payment_plan: offer?.payment_plan ?? null,
+      installments: mapInstallments(offer?.installments),
+      hourly_rate: offer?.hourly_rate ?? null,
+      estimated_hours: offer?.estimated_hours ?? null,
+      daily_rate: offer?.daily_rate ?? null,
+      estimated_days: offer?.estimated_days ?? null,
+      fixed_price: offer?.fixed_price ?? null,
+      cover_letter: offer?.cover_letter ?? null,
+      status: offer?.status ?? null,
+      files: this.sanitizeFiles(offer?.files),
     };
   }
 

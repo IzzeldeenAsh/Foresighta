@@ -8,7 +8,9 @@ import {
   TimelineActionType,
   TimelineAudience,
   TimelineStepActionEvent,
+  isDeliverableStep,
   isDraftStep,
+  isInstallmentStep,
   isPartyStep,
   isPaymentStep,
 } from 'src/app/_fake/services/project-timeline/project-timeline.model';
@@ -140,9 +142,18 @@ export class ProjectTimelineComponent {
     });
   }
 
+  /** The payment that settles the project: the legacy final step, or the last installment. */
   private isFinalSettlementPayment(step: ProjectTimelineStep): boolean {
-    return step.key === TIMELINE_STEP.FINAL_PAYMENT
-      || step.key === TIMELINE_STEP.FULL_PAYMENT_AT_END;
+    if (step.key === TIMELINE_STEP.FINAL_PAYMENT || step.key === TIMELINE_STEP.FULL_PAYMENT_AT_END) {
+      return true;
+    }
+
+    if (!isInstallmentStep(step.key)) {
+      return false;
+    }
+
+    const installmentSteps = (this.steps || []).filter(item => isInstallmentStep(item.key));
+    return installmentSteps[installmentSteps.length - 1]?.key === step.key;
   }
 
   isActive(step: ProjectTimelineStep): boolean {
@@ -213,6 +224,25 @@ export class ProjectTimelineComponent {
       month: 'short',
       year: 'numeric',
     }).format(parsed);
+  }
+
+  /** Planned due date of an order installment step (contract-type installments are due on signing). */
+  installmentDueLabel(step: ProjectTimelineStep): string {
+    if (!isInstallmentStep(step.key) || this.isCompleted(step)) {
+      return '';
+    }
+
+    const meta = (step.meta && !Array.isArray(step.meta) ? step.meta : {}) as Record<string, any>;
+    if (meta['due_type'] === 'contract') {
+      return this.lang === 'ar' ? 'عند توقيع العقد' : 'On contract signing';
+    }
+
+    const due = meta['calculated_date'] ?? meta['date'];
+    return due ? this.dateLabel({ ...step, date: `${due}` }) : '';
+  }
+
+  isDeliverable(step: ProjectTimelineStep): boolean {
+    return isDeliverableStep(step.key);
   }
 
   showContractSignatures(step: ProjectTimelineStep): boolean {
@@ -323,6 +353,8 @@ export class ProjectTimelineComponent {
       case TIMELINE_STEP.CANCELLED_PROJECT:
         return 'ki-cross-circle';
       default:
+        if (isInstallmentStep(step.key)) return 'ki-dollar';
+        if (isDeliverableStep(step.key)) return 'ki-file-added';
         return 'ki-abstract-26';
     }
   }
@@ -449,6 +481,9 @@ export class ProjectTimelineComponent {
       case 'open_review':
         if (this.isActiveDraftSubmission(step) && step.status === 'changes_requested') {
           return ar ? 'مطلوب تعديل' : 'Change Requested';
+        }
+        if (this.isActiveDraftSubmission(step) && isDeliverableStep(step.key)) {
+          return ar ? `إرسال «${step.title || 'المخرج'}»` : `Submit “${step.title || 'deliverable'}”`;
         }
         if (this.isActiveDraftSubmission(step)) {
           return step.key === TIMELINE_STEP.FINAL_DRAFT

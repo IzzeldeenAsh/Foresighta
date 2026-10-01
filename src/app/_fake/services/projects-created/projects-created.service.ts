@@ -5,6 +5,20 @@ import { catchError, finalize, map } from 'rxjs/operators';
 import { TranslationService } from 'src/app/modules/i18n/translation.service';
 import { environment } from 'src/environments/environment';
 import { ProjectTimeline } from '../project-timeline/project-timeline.model';
+import {
+  ProjectDeliverable,
+  ProjectInstallment,
+  ProjectPriceType,
+  ProjectScheduleFields,
+  ProjectServiceDetails,
+  flatMapList,
+  flattenDeliverables,
+  flattenScopes,
+  mapInstallments,
+  mapProjectSchedule,
+  mapProjectServices,
+  mergeComponents,
+} from '../project-phase2/project-phase2.model';
 
 export type CreatedProjectType = 'ad_hoc' | 'frame_work_agreement' | 'urgent_request' | string;
 export type CreatedProjectStatus =
@@ -92,17 +106,9 @@ export interface CreatedProjectOrder {
   payments?: any[];
   status?: string | null;
   orderable?: any;
-  order_payment_plan?: ProjectOrderPaymentPlan | null;
   payment_plan?: ProjectOrderPaymentPlan | null;
-  down_payment_amount?: number | null;
-  down_payment_percentage?: number | null;
-  down_payment?: number | null;
-  start_payment_amount?: number | null;
-  start_payment?: number | null;
-  start_amount?: number | null;
-  upfront_payment_amount?: number | null;
-  final_payment?: number | null;
-  final_payment_percentage?: number | null;
+  installments: ProjectInstallment[];
+  has_outstanding_payment?: boolean | null;
   [key: string]: any;
 }
 
@@ -164,11 +170,16 @@ export interface CreatedProject {
   description: string | null;
   budget_min: number | null;
   budget_max: number | null;
-  deadline: string | null;
   last_proposal_deadline?: string | null;
+  schedule: ProjectScheduleFields;
+  /** Project-level and service-level components merged (deliverables excluded). */
   components: CreatedProjectBlock[];
   addons: CreatedProjectBlock[];
+  /** Scopes across all project services. */
   scopes: CreatedProjectScope[];
+  project_services: ProjectServiceDetails[];
+  /** Deliverables across all project services, in timeline order. */
+  deliverables: ProjectDeliverable[];
   request_files: CreatedProjectFile[];
   file: CreatedProjectFiles | null;
   invited: CreatedProjectProposalInvite[];
@@ -207,13 +218,15 @@ export interface CreatedProjectInvitedInsighter {
 
 export interface CreatedProjectSubmittedOffer {
   uuid: string;
+  price_type: ProjectPriceType | string | null;
   proposed_price: string | number | null;
   payment_plan?: string | null;
-  down_payment_percentage?: string | number | null;
-  down_payment: string | number | null;
-  final_payment_percentage?: string | number | null;
-  final_payment: string | number | null;
+  installments: ProjectInstallment[];
+  hourly_rate: string | number | null;
   estimated_hours: string | number | null;
+  daily_rate: string | number | null;
+  estimated_days: string | number | null;
+  fixed_price: string | number | null;
   cover_letter: string | null;
   status: string | null;
   files: CreatedProjectFile[];
@@ -297,7 +310,8 @@ export interface RematchPropertiesPayload {
   insighter_max_years_experience?: string | null;
   company_min_team_size?: string | null;
   company_max_team_size?: string | null;
-  deadline?: string | null;
+  planned_start_date?: string | null;
+  duration_days?: number | null;
 }
 
 export interface ProjectSettingOption {
@@ -514,30 +528,15 @@ export class ProjectsCreatedService {
     );
   }
 
-  checkoutProjectStart(
-    projectUuid: string,
+  /** Pays one order installment: POST /account/order/project/checkout/{order_installment}. */
+  checkoutProjectInstallment(
+    orderInstallmentId: number | string,
     paymentMethod: ProjectCheckoutPaymentMethod
   ): Observable<any> {
     this.setLoading(true);
 
     return this.http.post<any>(
-      `${this.projectOrderBaseUrl}/checkout/start/${projectUuid}`,
-      { payment_method: paymentMethod },
-      { headers: this.getHeaders() }
-    ).pipe(
-      catchError(error => throwError(() => error)),
-      finalize(() => this.setLoading(false))
-    );
-  }
-
-  checkoutProjectEnd(
-    projectUuid: string,
-    paymentMethod: ProjectCheckoutPaymentMethod
-  ): Observable<any> {
-    this.setLoading(true);
-
-    return this.http.post<any>(
-      `${this.projectOrderBaseUrl}/checkout/end/${projectUuid}`,
+      `${this.projectOrderBaseUrl}/checkout/${orderInstallmentId}`,
       { payment_method: paymentMethod },
       { headers: this.getHeaders() }
     ).pipe(
@@ -758,6 +757,8 @@ export class ProjectsCreatedService {
   }
 
   private mapProject(p: any): CreatedProject {
+    const projectServices = mapProjectServices(p?.project_services);
+
     return {
       uuid: p?.uuid ?? '',
       title: p?.title ?? '',
@@ -779,11 +780,16 @@ export class ProjectsCreatedService {
       description: p?.description ?? null,
       budget_min: p?.budget_min ?? null,
       budget_max: p?.budget_max ?? null,
-      deadline: p?.deadline ?? null,
       last_proposal_deadline: p?.last_proposal_deadline ?? null,
-      components: this.sanitizeBlocks(p?.components),
-      addons: this.sanitizeBlocks(p?.addons),
-      scopes: this.sanitizeScopes(p?.scopes),
+      schedule: mapProjectSchedule(p),
+      components: this.sanitizeBlocks(mergeComponents(p?.components, projectServices)),
+      addons: this.sanitizeBlocks([
+        ...(Array.isArray(p?.addons) ? p.addons : []),
+        ...flatMapList(projectServices, service => service.addons),
+      ]),
+      scopes: this.sanitizeScopes(projectServices.length ? flattenScopes(projectServices) : p?.scopes),
+      project_services: projectServices,
+      deliverables: flattenDeliverables(projectServices),
       request_files: this.sanitizeFiles(p?.request_files),
       file: this.sanitizeProjectFiles(p?.file),
       invited: this.mapProjectInvites(p?.invited),
@@ -805,13 +811,15 @@ export class ProjectsCreatedService {
 
     return {
       uuid: this.stringifyValue(offer?.uuid),
+      price_type: offer?.price_type ?? null,
       proposed_price: offer?.proposed_price ?? null,
       payment_plan: offer?.payment_plan ?? null,
-      down_payment_percentage: offer?.down_payment_percentage ?? null,
-      down_payment: offer?.down_payment ?? null,
-      final_payment_percentage: offer?.final_payment_percentage ?? null,
-      final_payment: offer?.final_payment ?? null,
+      installments: mapInstallments(offer?.installments),
+      hourly_rate: offer?.hourly_rate ?? null,
       estimated_hours: offer?.estimated_hours ?? null,
+      daily_rate: offer?.daily_rate ?? null,
+      estimated_days: offer?.estimated_days ?? null,
+      fixed_price: offer?.fixed_price ?? null,
       cover_letter: offer?.cover_letter ?? null,
       status: offer?.status ?? null,
       files: this.sanitizeFiles(offer?.files),
@@ -832,17 +840,9 @@ export class ProjectsCreatedService {
       payments: Array.isArray(order?.payments) ? order.payments : [],
       status: order?.status ?? null,
       orderable: order?.orderable ?? null,
-      order_payment_plan: order?.order_payment_plan ?? null,
       payment_plan: order?.payment_plan ?? null,
-      down_payment_amount: this.toOptionalNumber(order?.down_payment_amount),
-      down_payment_percentage: this.toOptionalNumber(order?.down_payment_percentage),
-      down_payment: this.toOptionalNumber(order?.down_payment),
-      start_payment_amount: this.toOptionalNumber(order?.start_payment_amount),
-      start_payment: this.toOptionalNumber(order?.start_payment),
-      start_amount: this.toOptionalNumber(order?.start_amount),
-      upfront_payment_amount: this.toOptionalNumber(order?.upfront_payment_amount),
-      final_payment: this.toOptionalNumber(order?.final_payment),
-      final_payment_percentage: this.toOptionalNumber(order?.final_payment_percentage),
+      installments: mapInstallments(order?.installments),
+      has_outstanding_payment: typeof order?.has_outstanding_payment === 'boolean' ? order.has_outstanding_payment : null,
     };
   }
 
@@ -1021,11 +1021,6 @@ export class ProjectsCreatedService {
     return Number.isFinite(numberValue) ? numberValue : 0;
   }
 
-  private toOptionalNumber(value: any): number | null {
-    if (value === null || value === undefined || value === '') return null;
-    const numberValue = Number(value);
-    return Number.isFinite(numberValue) ? numberValue : null;
-  }
 
   private toBoolean(value: any): boolean {
     if (typeof value === 'boolean') return value;

@@ -5,13 +5,17 @@ import { TooltipModule } from 'primeng/tooltip';
 import { PageHeaderComponent } from './page-header/page-header.component';
 import { ProjectDiscussionComponent } from './project-discussion/project-discussion.component';
 import { ProjectTimelineComponent } from './project-timeline/project-timeline.component';
+import { ProjectDeliverablesComponent } from './project-deliverables/project-deliverables.component';
+import { OfferInstallmentsComponent } from './offer-installments/offer-installments.component';
 import { DashboardNavIconComponent } from 'src/app/reusable-components/dashboard-nav-icon/dashboard-nav-icon.component';
 
 @NgModule({
   declarations: [
     PageHeaderComponent,
     ProjectDiscussionComponent,
-    ProjectTimelineComponent
+    ProjectTimelineComponent,
+    ProjectDeliverablesComponent,
+    OfferInstallmentsComponent
   ],
   imports: [
     CommonModule,
@@ -23,6 +27,8 @@ import { DashboardNavIconComponent } from 'src/app/reusable-components/dashboard
     PageHeaderComponent,
     ProjectDiscussionComponent,
     ProjectTimelineComponent,
+    ProjectDeliverablesComponent,
+    OfferInstallmentsComponent,
     DashboardNavIconComponent
   ]
 })

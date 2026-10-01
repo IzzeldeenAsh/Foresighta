@@ -104,145 +104,240 @@
             </div>
           </section>
 
-          <!-- Pricing & Estimated Working Time -->
+          <!-- Pricing -->
           <section class="sp-section">
             <div class="sp-section__head">
               <div class="sp-section__copy">
-                <h3 class="sp-section__title">{{ lang === 'ar' ? 'التسعير والمدة' : 'Pricing & estimated time' }}</h3>
+                <h3 class="sp-section__title">{{ lang === 'ar' ? 'التسعير' : 'Pricing' }}</h3>
                 <p class="sp-section__sub">
                   {{ lang === 'ar'
-                  ? 'حدّد أسلوب التقدير وسعر الساعة وخطة الدفعات.'
-                  : 'Choose the estimate basis, hourly rate, and payment plan.' }}
+                  ? 'سعّر العرض بالساعة أو باليوم أو بسعر ثابت.'
+                  : 'Price the offer by the hour, by the day, or as a fixed price.' }}
                 </p>
               </div>
             </div>
 
-            <div class="sp-duo-grid">
-              <!-- Unit toggle -->
-              <div class="sp-field">
-                <label class="sp-field__label">
-                  {{ lang === 'ar' ? 'أساس التقدير' : 'Estimate basis' }}
-                </label>
-                <div class="sp-toggle" role="tablist">
-                  <button type="button" role="tab" class="sp-toggle__btn" [class.is-active]="estimateUnit === 'hours'"
-                    (click)="setEstimateUnit('hours')">
-                    <i class="ki-outline ki-time fs-6"></i>
-                    {{ lang === 'ar' ? 'ساعات' : 'Hours' }}
-                  </button>
-                  <button type="button" role="tab" class="sp-toggle__btn" [class.is-active]="estimateUnit === 'days'"
-                    (click)="setEstimateUnit('days')">
-                    <i class="ki-outline ki-calendar fs-6"></i>
-                    {{ lang === 'ar' ? 'أيام' : 'Days' }}
-                  </button>
-                </div>
-              </div>
-
-              <!-- Amount input + suffix -->
-              <div class="sp-field">
-                <label class="sp-field__label" for="sp-estimate-amount">
-                  {{ estimateUnit === 'days'
-                  ? (lang === 'ar' ? 'عدد الأيام' : 'Number of Days')
-                  : (lang === 'ar' ? 'عدد الساعات' : 'Number of Hours') }}
-                </label>
-                <div class="sp-input-group"
-                  [class.is-invalid]="shouldShowFieldError(estimateAmountModel, isEstimateAmountInvalid())">
-                  <input id="sp-estimate-amount" name="estimateAmount" type="number" min="1" step="1" class="sp-input"
-                    [(ngModel)]="estimateAmount" #estimateAmountModel="ngModel" required
-                    [placeholder]="estimateUnit === 'days' ? '0' : '0'" />
-                  <span class="sp-input-group__suffix" *ngIf="estimateUnit === 'days'">
-                    {{ lang === 'ar' ? '8 ساعات/يوم' : '8 hrs / Day' }}
-                  </span>
-                  <span class="sp-input-group__suffix" *ngIf="estimateUnit === 'hours'">
-                    {{ lang === 'ar' ? 'ساعة' : 'hrs' }}
-                  </span>
-                </div>
-                <div class="sp-field__hint sp-field__hint--danger"
-                  *ngIf="shouldShowFieldError(estimateAmountModel, isEstimateAmountInvalid())">
-                  {{ estimateUnit === 'days'
-                  ? (lang === 'ar' ? 'عدد الأيام مطلوب.' : 'Number of days is required.')
-                  : (lang === 'ar' ? 'عدد الساعات مطلوب.' : 'Number of hours is required.') }}
-                </div>
-                <div class="sp-field__hint" *ngIf="estimateUnit === 'days' && totalHours > 0">
-                  {{ lang === 'ar' ? 'إجمالي الساعات' : 'Total hours' }}
-                  <strong>{{ totalHours }}</strong>
-                  {{ lang === 'ar' ? 'ساعة' : 'hrs' }}
-                </div>
-              </div>
-            </div>
-
-            <!-- Hourly rate -->
             <div class="sp-field">
-              <label class="sp-field__label" for="sp-hourly-rate">
-                {{ lang === 'ar' ? 'سعر الساعة' : 'Hourly rate' }}
-              </label>
-              <div class="sp-input-group"
-                [class.is-invalid]="shouldShowFieldError(hourlyRateModel, isHourlyRateInvalid())">
-                <span class="sp-input-group__prefix">$</span>
-                <input id="sp-hourly-rate" name="hourlyRate" type="number"
-                  class="sp-input sp-input--price" [(ngModel)]="hourlyRate" #hourlyRateModel="ngModel"
-                  required placeholder="0.00" />
-                <span class="sp-input-group__suffix sp-input-group__suffix--muted">USD/hr</span>
-              </div>
-              <div class="sp-field__hint sp-field__hint--danger"
-                *ngIf="shouldShowFieldError(hourlyRateModel, isHourlyRateInvalid())">
-                {{ lang === 'ar' ? 'سعر الساعة مطلوب.' : 'Hourly rate is required.' }}
-              </div>
-              <div class="sp-field__hint" *ngIf="totalHours > 0 && hourlyRate">
-                {{ lang === 'ar' ? 'الإجمالي التقديري' : 'Estimated total' }}:
-                <strong>{{ formatPrice(suggestedPrice) }}</strong>
-                ({{ totalHours }} {{ lang === 'ar' ? 'ساعة' : 'hrs' }} × {{ formatPrice(hourlyRate) }})
+              <span class="sp-field__label" id="sp-price-type-label">
+                {{ lang === 'ar' ? 'طريقة التسعير' : 'Pricing method' }}
+              </span>
+              <div class="sp-toggle" role="radiogroup" aria-labelledby="sp-price-type-label">
+                <button type="button" role="radio" class="sp-toggle__btn" [class.is-active]="priceType === 'hourly'"
+                  [attr.aria-checked]="priceType === 'hourly'" (click)="setPriceType('hourly')">
+                  <i class="ki-outline ki-time fs-6"></i>
+                  {{ lang === 'ar' ? 'بالساعة' : 'Hourly' }}
+                </button>
+                <button type="button" role="radio" class="sp-toggle__btn" [class.is-active]="priceType === 'daily'"
+                  [attr.aria-checked]="priceType === 'daily'" (click)="setPriceType('daily')">
+                  <i class="ki-outline ki-calendar fs-6"></i>
+                  {{ lang === 'ar' ? 'باليوم' : 'Daily' }}
+                </button>
+                <button type="button" role="radio" class="sp-toggle__btn" [class.is-active]="priceType === 'fixed'"
+                  [attr.aria-checked]="priceType === 'fixed'" (click)="setPriceType('fixed')">
+                  <i class="ki-outline ki-dollar fs-6"></i>
+                  {{ lang === 'ar' ? 'سعر ثابت' : 'Fixed price' }}
+                </button>
               </div>
             </div>
 
-            <ng-container>
-              <div class="sp-subhead">
-                <span class="sp-subhead__title">{{ lang === 'ar' ? 'جدول الدفعات' : 'Payment schedule' }}</span>
-                <span class="sp-subhead__sub">
-                  {{ lang === 'ar' ? 'يجب أن يكون مجموع النسبتين 100%.' : 'The two percentages must add up to 100%.' }}
-                </span>
-              </div>
-              <div class="sp-payment-grid">
-                <div class="sp-field">
-                  <label class="sp-field__label" for="sp-first-payment-percentage">
-                    {{ lang === 'ar' ? 'نسبة الدفعة المقدمة' : 'Down payment percentage' }}
-                  </label>
-                  <div class="sp-input-group"
-                    [class.is-invalid]="shouldShowFieldError(firstPaymentPercentageModel) || shouldShowPaymentSplitError(firstPaymentPercentageModel, finalPaymentPercentageModel)">
-                    <input id="sp-first-payment-percentage" name="firstPaymentPercentage" type="number" min="0"
-                      max="100" step="1" class="sp-input" [(ngModel)]="firstPaymentPercentage"
-                      #firstPaymentPercentageModel="ngModel" required placeholder="30" />
-                    <span class="sp-input-group__suffix">%</span>
-                  </div>
-                  <div class="sp-field__hint sp-field__hint--danger"
-                    *ngIf="shouldShowFieldError(firstPaymentPercentageModel)">
-                    {{ lang === 'ar' ? 'نسبة الدفعة المقدمة مطلوبة.' : 'Down payment percentage is required.' }}
-                  </div>
+            <div class="sp-payment-grid" *ngIf="priceType === 'hourly'">
+              <div class="sp-field">
+                <label class="sp-field__label" for="sp-hourly-rate">{{ lang === 'ar' ? 'سعر الساعة' : 'Hourly rate' }}</label>
+                <div class="sp-input-group" [class.is-invalid]="shouldShowFieldError(hourlyRateModel, isHourlyRateInvalid())">
+                  <span class="sp-input-group__prefix">$</span>
+                  <input id="sp-hourly-rate" name="hourlyRate" type="number" min="0" step="0.01" class="sp-input sp-input--price"
+                    [(ngModel)]="hourlyRate" #hourlyRateModel="ngModel" required placeholder="0.00" />
+                  <span class="sp-input-group__suffix sp-input-group__suffix--muted">USD/hr</span>
                 </div>
-
-                <div class="sp-field">
-                  <label class="sp-field__label" for="sp-final-payment-percentage">
-                    {{ lang === 'ar' ? 'نسبة الدفعة الأخيرة' : 'Final payment percentage' }}
-                  </label>
-                  <div class="sp-input-group"
-                    [class.is-invalid]="shouldShowFieldError(finalPaymentPercentageModel) || shouldShowPaymentSplitError(firstPaymentPercentageModel, finalPaymentPercentageModel)">
-                    <input id="sp-final-payment-percentage" name="finalPaymentPercentage" type="number" min="0"
-                      max="100" step="1" class="sp-input" [(ngModel)]="finalPaymentPercentage"
-                      #finalPaymentPercentageModel="ngModel" required placeholder="70" />
-                    <span class="sp-input-group__suffix">%</span>
-                  </div>
-                  <div class="sp-field__hint sp-field__hint--danger"
-                    *ngIf="shouldShowFieldError(finalPaymentPercentageModel)">
-                    {{ lang === 'ar' ? 'نسبة الدفعة الأخيرة مطلوبة.' : 'Final payment percentage is required.' }}
-                  </div>
+                <div class="sp-field__hint sp-field__hint--danger" *ngIf="shouldShowFieldError(hourlyRateModel, isHourlyRateInvalid())">
+                  {{ lang === 'ar' ? 'سعر الساعة مطلوب.' : 'Hourly rate is required.' }}
                 </div>
               </div>
-
-              <div class="sp-field__hint sp-field__hint--danger"
-                *ngIf="shouldShowPaymentSplitError(firstPaymentPercentageModel, finalPaymentPercentageModel)">
-                {{ getPaymentSplitErrorMessage() }}
+              <div class="sp-field">
+                <label class="sp-field__label" for="sp-estimated-hours">{{ lang === 'ar' ? 'الساعات المقدرة' : 'Estimated hours' }}</label>
+                <div class="sp-input-group" [class.is-invalid]="shouldShowFieldError(estimatedHoursModel, isEstimatedHoursInvalid())">
+                  <input id="sp-estimated-hours" name="estimatedHours" type="number" min="1" step="1" class="sp-input"
+                    [(ngModel)]="estimatedHours" #estimatedHoursModel="ngModel" required placeholder="0" />
+                  <span class="sp-input-group__suffix">{{ lang === 'ar' ? 'ساعة' : 'hrs' }}</span>
+                </div>
+                <div class="sp-field__hint sp-field__hint--danger" *ngIf="shouldShowFieldError(estimatedHoursModel, isEstimatedHoursInvalid())">
+                  {{ lang === 'ar' ? 'عدد الساعات مطلوب.' : 'Number of hours is required.' }}
+                </div>
               </div>
-            </ng-container>
+            </div>
 
+            <div class="sp-payment-grid" *ngIf="priceType === 'daily'">
+              <div class="sp-field">
+                <label class="sp-field__label" for="sp-daily-rate">{{ lang === 'ar' ? 'السعر اليومي' : 'Daily rate' }}</label>
+                <div class="sp-input-group" [class.is-invalid]="shouldShowFieldError(dailyRateModel, isDailyRateInvalid())">
+                  <span class="sp-input-group__prefix">$</span>
+                  <input id="sp-daily-rate" name="dailyRate" type="number" min="0" step="0.01" class="sp-input sp-input--price"
+                    [(ngModel)]="dailyRate" #dailyRateModel="ngModel" required placeholder="0.00" />
+                  <span class="sp-input-group__suffix sp-input-group__suffix--muted">{{ lang === 'ar' ? 'دولار/يوم' : 'USD/day' }}</span>
+                </div>
+                <div class="sp-field__hint sp-field__hint--danger" *ngIf="shouldShowFieldError(dailyRateModel, isDailyRateInvalid())">
+                  {{ lang === 'ar' ? 'السعر اليومي مطلوب.' : 'Daily rate is required.' }}
+                </div>
+              </div>
+              <div class="sp-field">
+                <label class="sp-field__label" for="sp-estimated-days">{{ lang === 'ar' ? 'الأيام المقدرة' : 'Estimated days' }}</label>
+                <div class="sp-input-group" [class.is-invalid]="shouldShowFieldError(estimatedDaysModel, isEstimatedDaysInvalid())">
+                  <input id="sp-estimated-days" name="estimatedDays" type="number" min="1" step="1" class="sp-input"
+                    [(ngModel)]="estimatedDays" #estimatedDaysModel="ngModel" required placeholder="0" />
+                  <span class="sp-input-group__suffix">{{ lang === 'ar' ? 'يوم' : 'days' }}</span>
+                </div>
+                <div class="sp-field__hint sp-field__hint--danger" *ngIf="shouldShowFieldError(estimatedDaysModel, isEstimatedDaysInvalid())">
+                  {{ lang === 'ar' ? 'عدد الأيام مطلوب.' : 'Number of days is required.' }}
+                </div>
+              </div>
+            </div>
+
+            <div class="sp-field" *ngIf="priceType === 'fixed'">
+              <label class="sp-field__label" for="sp-fixed-price">{{ lang === 'ar' ? 'السعر الإجمالي' : 'Total price' }}</label>
+              <div class="sp-input-group" [class.is-invalid]="shouldShowFieldError(fixedPriceModel, isFixedPriceInvalid())">
+                <span class="sp-input-group__prefix">$</span>
+                <input id="sp-fixed-price" name="fixedPrice" type="number" min="0" step="0.01" class="sp-input sp-input--price"
+                  [(ngModel)]="fixedPrice" #fixedPriceModel="ngModel" required placeholder="0.00" />
+                <span class="sp-input-group__suffix sp-input-group__suffix--muted">USD</span>
+              </div>
+              <div class="sp-field__hint sp-field__hint--danger" *ngIf="shouldShowFieldError(fixedPriceModel, isFixedPriceInvalid())">
+                {{ lang === 'ar' ? 'السعر مطلوب.' : 'Price is required.' }}
+              </div>
+            </div>
+
+            <div class="sp-field__hint" *ngIf="totalPrice > 0">
+              {{ lang === 'ar' ? 'إجمالي العرض' : 'Offer total' }}: <strong>{{ formatPrice(totalPrice) }}</strong>
+            </div>
+          </section>
+
+          <!-- Payment schedule -->
+          <section class="sp-section">
+            <div class="sp-section__head">
+              <div class="sp-section__copy">
+                <h3 class="sp-section__title">{{ lang === 'ar' ? 'جدول الدفعات' : 'Payment schedule' }}</h3>
+                <p class="sp-section__sub">
+                  {{ lang === 'ar'
+                  ? 'المواعيد محسوبة من بدء المشروع، فإذا وُقّع العقد في يوم آخر تتحرك معه.'
+                  : 'Dates count from the project start, so they move if the contract is signed on a different day.' }}
+                </p>
+              </div>
+            </div>
+
+            <div class="sp-schedule" *ngIf="plannedStartDate || deliverables.length">
+              <div class="sp-schedule__facts">
+                <div class="sp-schedule__fact" *ngIf="plannedStartDate">
+                  <span class="sp-schedule__label">{{ lang === 'ar' ? 'البدء المخطط' : 'Planned start' }}</span>
+                  <span class="sp-schedule__value">{{ formatDate(plannedStartDate) }}</span>
+                </div>
+                <div class="sp-schedule__fact" *ngIf="durationDays !== null">
+                  <span class="sp-schedule__label">{{ lang === 'ar' ? 'المدة' : 'Duration' }}</span>
+                  <span class="sp-schedule__value">{{ durationDays }} {{ lang === 'ar' ? 'يوم' : 'days' }}</span>
+                </div>
+                <div class="sp-schedule__fact" *ngIf="plannedCloseDate">
+                  <span class="sp-schedule__label">{{ lang === 'ar' ? 'الإغلاق المخطط' : 'Planned close' }}</span>
+                  <span class="sp-schedule__value">{{ formatDate(plannedCloseDate) }}</span>
+                </div>
+              </div>
+              <ol class="sp-schedule__deliverables" *ngIf="deliverables.length">
+                <li *ngFor="let deliverable of deliverables; trackBy: trackByDeliverable">
+                  <span class="sp-schedule__deliverable-title">{{ deliverable.title }}</span>
+                  <span class="sp-schedule__deliverable-when">
+                    {{ periodLabel(deliverable.period_days) }}<ng-container *ngIf="deliverable.date"> · {{ formatDate(deliverable.date) }}</ng-container>
+                  </span>
+                </li>
+              </ol>
+            </div>
+
+            <div class="sp-field">
+              <span class="sp-field__label" id="sp-payment-plan-label">{{ lang === 'ar' ? 'خطة الدفع' : 'Payment plan' }}</span>
+              <div class="sp-toggle" role="radiogroup" aria-labelledby="sp-payment-plan-label">
+                <button type="button" role="radio" class="sp-toggle__btn" [class.is-active]="paymentPlan === 'full'"
+                  [attr.aria-checked]="paymentPlan === 'full'" (click)="setPaymentPlan('full')">
+                  {{ lang === 'ar' ? 'دفعة واحدة' : 'Full payment' }}
+                </button>
+                <button type="button" role="radio" class="sp-toggle__btn" [class.is-active]="paymentPlan === 'partial'"
+                  [attr.aria-checked]="paymentPlan === 'partial'" (click)="setPaymentPlan('partial')">
+                  {{ lang === 'ar' ? 'على دفعات' : 'Installments' }}
+                </button>
+              </div>
+            </div>
+
+            <div class="sp-installments">
+              <div class="sp-installment" *ngFor="let item of installments; let i = index; trackBy: trackByInstallment">
+                <div class="sp-installment__head">
+                  <span class="sp-installment__index" aria-hidden="true">{{ i + 1 }}</span>
+                  <input class="sp-input sp-installment__title" [name]="'installment-title-' + item.key" [(ngModel)]="item.title"
+                    (ngModelChange)="onInstallmentChanged(item)" maxlength="255"
+                    [attr.aria-label]="lang === 'ar' ? 'عنوان الدفعة' : 'Payment title'"
+                    [placeholder]="lang === 'ar' ? 'عنوان الدفعة' : 'Payment title'" />
+                  <div class="sp-input-group sp-installment__percent">
+                    <input class="sp-input" type="number" min="1" max="100" step="1" [name]="'installment-percent-' + item.key"
+                      [(ngModel)]="item.percentage" (ngModelChange)="onInstallmentChanged(item)"
+                      [readonly]="paymentPlan === 'full'"
+                      [attr.aria-label]="lang === 'ar' ? 'نسبة الدفعة' : 'Payment percentage'" />
+                    <span class="sp-input-group__suffix">%</span>
+                  </div>
+                  <span class="sp-installment__amount">{{ formatPrice(installmentAmount(item)) }}</span>
+                  <button type="button" class="sp-attachment__remove" *ngIf="paymentPlan === 'partial'"
+                    [disabled]="installments.length <= 2" (click)="removeInstallment(item.key)"
+                    [attr.aria-label]="lang === 'ar' ? 'حذف الدفعة' : 'Remove payment'">
+                    <i class="ki-outline ki-trash fs-5"></i>
+                  </button>
+                </div>
+
+                <div class="sp-installment__due">
+                  <label class="sp-field__label" [for]="'installment-due-' + item.key">{{ lang === 'ar' ? 'موعد الاستحقاق' : 'Due' }}</label>
+                  <select class="sp-input sp-installment__select" [id]="'installment-due-' + item.key"
+                    [name]="'installment-due-' + item.key" [(ngModel)]="item.due_type" (ngModelChange)="onInstallmentChanged(item)">
+                    <option *ngFor="let type of dueTypes" [ngValue]="type"
+                      [disabled]="(type === 'contract' && !canChooseContract(item)) || (type === 'deliverable' && !deliverables.length)">
+                      {{ dueTypeLabel(type) }}
+                    </option>
+                  </select>
+
+                  <div class="sp-input-group sp-installment__days" *ngIf="item.due_type === 'date'">
+                    <input class="sp-input" type="number" min="0" step="1" [name]="'installment-days-' + item.key"
+                      [(ngModel)]="item.period_days" (ngModelChange)="onInstallmentChanged(item)"
+                      [attr.aria-label]="lang === 'ar' ? 'عدد الأيام من بدء المشروع' : 'Days from project start'" />
+                    <span class="sp-input-group__suffix">{{ lang === 'ar' ? 'يوم من البدء' : 'days after start' }}</span>
+                  </div>
+
+                  <select class="sp-input sp-installment__select" *ngIf="item.due_type === 'deliverable'"
+                    [name]="'installment-deliverable-' + item.key" [(ngModel)]="item.project_service_deliverable_id"
+                    (ngModelChange)="onInstallmentChanged(item)"
+                    [attr.aria-label]="lang === 'ar' ? 'المخرج المرتبط' : 'Linked deliverable'">
+                    <option *ngFor="let deliverable of deliverables; trackBy: trackByDeliverable" [ngValue]="deliverable.id">
+                      {{ deliverable.title }} · {{ periodLabel(deliverable.period_days) }}
+                    </option>
+                  </select>
+
+                  <span class="sp-installment__when">
+                    <ng-container *ngIf="item.due_type === 'contract'">
+                      {{ lang === 'ar' ? 'تُستحق بعد توقيع العقد مباشرة.' : 'Due right after the contract is signed.' }}
+                    </ng-container>
+                    <ng-container *ngIf="item.due_type !== 'contract' && installmentDate(item) as date">
+                      {{ lang === 'ar' ? 'الموعد المخطط' : 'Planned date' }}: {{ formatDate(date) }}
+                    </ng-container>
+                  </span>
+                </div>
+
+                <div class="sp-field__hint sp-field__hint--danger" *ngIf="showInstallmentErrors && getInstallmentErrors(item).length">
+                  {{ getInstallmentErrors(item).join(' ') }}
+                </div>
+              </div>
+            </div>
+
+            <button type="button" class="sp-add-installment" *ngIf="paymentPlan === 'partial'" (click)="addInstallment()">
+              <i class="ki-outline ki-plus fs-6"></i>
+              {{ lang === 'ar' ? 'إضافة دفعة' : 'Add installment' }}
+            </button>
+
+            <div class="sp-installments__total" [class.is-invalid]="installmentsPercentTotal !== 100">
+              {{ lang === 'ar' ? 'مجموع النسب' : 'Total' }}: {{ installmentsPercentTotal }}%
+            </div>
+            <div class="sp-field__hint sp-field__hint--danger" *ngIf="showInstallmentErrors && getPaymentPlanError() as planError">
+              {{ planError }}
+            </div>
           </section>
 
           </div>
@@ -251,16 +346,16 @@
           <footer class="sp-summary">
             <div class="sp-summary__stats">
               <div class="sp-stat">
-                <span class="sp-stat__label">{{ lang === 'ar' ? 'إجمالي الساعات' : 'Total hours' }}</span>
-                <span class="sp-stat__value">{{ totalHours || 0 }} {{ lang === 'ar' ? 'ساعة' : 'hrs' }}</span>
+                <span class="sp-stat__label">{{ lang === 'ar' ? 'التسعير' : 'Pricing' }}</span>
+                <span class="sp-stat__value">{{ priceTypeLabel }}</span>
               </div>
               <div class="sp-stat">
-                <span class="sp-stat__label">{{ lang === 'ar' ? 'سعر الساعة' : 'Hourly rate' }}</span>
-                <span class="sp-stat__value">{{ formatPrice(hourlyRate) }}</span>
+                <span class="sp-stat__label">{{ lang === 'ar' ? 'الدفعات' : 'Installments' }}</span>
+                <span class="sp-stat__value">{{ installments.length }}</span>
               </div>
               <div class="sp-stat sp-stat--total">
-                <span class="sp-stat__label">{{ lang === 'ar' ? 'الإجمالي التقديري' : 'Estimated total' }}</span>
-                <span class="sp-stat__value">{{ formatPrice(suggestedPrice) }}</span>
+                <span class="sp-stat__label">{{ lang === 'ar' ? 'إجمالي العرض' : 'Offer total' }}</span>
+                <span class="sp-stat__value">{{ formatPrice(totalPrice) }}</span>
               </div>
             </div>
 
@@ -308,9 +403,13 @@
                   <th scope="row">{{ lang === 'ar' ? 'الخدمة' : 'Service' }}</th>
                   <td>{{ p.project?.service?.name }}</td>
                 </tr>
-                <tr *ngIf="p.project?.deadline">
-                  <th scope="row">{{ lang === 'ar' ? 'الموعد النهائي' : 'Deadline' }}</th>
-                  <td>{{ formatDate(p.project?.deadline) }}</td>
+                <tr *ngIf="p.project?.schedule?.planned_start_date">
+                  <th scope="row">{{ lang === 'ar' ? 'البدء المخطط' : 'Planned start' }}</th>
+                  <td>{{ formatDate(p.project?.schedule?.planned_start_date) }}</td>
+                </tr>
+                <tr *ngIf="p.project?.schedule?.planned_close_date">
+                  <th scope="row">{{ lang === 'ar' ? 'الإغلاق المخطط' : 'Planned close' }}</th>
+                  <td>{{ formatDate(p.project?.schedule?.planned_close_date) }}</td>
                 </tr>
                 <tr *ngIf="p.project?.deadline_offer">
                   <th scope="row">{{ lang === 'ar' ? 'موعد العرض' : 'Offer Deadline' }}</th>
@@ -430,11 +529,11 @@
               <h3 class="po-drawer__title">{{ p.project?.title }}</h3>
 
               <div class="po-drawer__meta">
-                <div class="po-drawer__meta-item po-drawer__meta-item--deadline" *ngIf="p.project?.deadline">
+                <div class="po-drawer__meta-item po-drawer__meta-item--deadline" *ngIf="p.project?.schedule?.planned_close_date">
                   <i class="ki-outline ki-calendar fs-6"></i>
                   <div class="po-meta__text">
-                    <span class="po-meta__label">{{ lang === 'ar' ? 'الموعد النهائي' : 'Deadline' }}</span>
-                    <span class="po-meta__value">{{ formatDate(p.project?.deadline) }}</span>
+                    <span class="po-meta__label">{{ lang === 'ar' ? 'الإغلاق المخطط' : 'Planned close' }}</span>
+                    <span class="po-meta__value">{{ formatDate(p.project?.schedule?.planned_close_date) }}</span>
                   </div>
                 </div>
                 <div class="po-drawer__meta-item po-drawer__meta-item--service" *ngIf="p.project?.service?.name">
@@ -604,92 +703,12 @@
             </div>
           </section>
 
-          <section class="po-section" *ngIf="getComponent('deliverable-stage') as deliverableStage">
+          <section class="po-section" *ngIf="p.project.deliverables?.length">
             <div class="po-section__head">
-              <h6 class="po-section__title">{{ lang === 'ar' ? 'مراحل التسليم' : 'Deliverable Stages' }}</h6>
+              <h6 class="po-section__title">{{ lang === 'ar' ? 'المخرجات' : 'Deliverables' }}</h6>
               <span class="po-section__eyebrow">{{ lang === 'ar' ? 'خطة التسليم' : 'Delivery Timeline' }}</span>
             </div>
-            <div class="po-stage-grid">
-              <div class="po-stage-card" *ngIf="deliverableStage.first_draft as firstDraft">
-                <div class="po-stage-card__head">
-                  <span class="po-stage-card__icon po-stage-card__icon--draft">
-                    <i class="pi pi-file-edit"></i>
-                  </span>
-                  <div class="po-stage-card__copy">
-                    <span class="po-stage-card__title">{{ lang === 'ar' ? 'المسودة الأولى' : 'First Draft' }}</span>
-                    <span class="po-stage-card__subtitle">
-                      {{ lang === 'ar' ? 'مراجعة أولية للمخرجات قبل النسخة النهائية.' : 'Initial review milestone before
-                      the final delivery.' }}
-                    </span>
-                  </div>
-                </div>
-                <div class="po-stage-card__body">
-                  <div class="po-detail-row">
-                    <span class="po-detail-row__label">{{ lang === 'ar' ? 'التاريخ' : 'Date' }}</span>
-                    <span class="po-detail-row__value">{{ formatDate(firstDraft.date) }}</span>
-                  </div>
-                  <div class="po-detail-row" *ngIf="firstDraft.way?.selected">
-                    <span class="po-detail-row__label">{{ lang === 'ar' ? 'طريقة التسليم' : 'Delivery Way' }}</span>
-                    <span class="po-detail-row__value">{{ getWayLabel(firstDraft.way?.selected) }}</span>
-                  </div>
-                  <div class="po-detail-row" *ngIf="firstDraft.way?.address">
-                    <span class="po-detail-row__label">{{ lang === 'ar' ? 'العنوان' : 'Address' }}</span>
-                    <span class="po-detail-row__value">{{ firstDraft.way?.address }}</span>
-                  </div>
-                  <div class="po-detail-chip-wrap" *ngIf="firstDraft.report_type?.length">
-                    <div class="po-stage-card__files-label">
-                      {{ lang === 'ar' ? 'أنواع الملفات المطلوبة:' : 'Required File types:' }}
-                    </div>
-                    <span class="po-detail-chip po-detail-chip--file"
-                      *ngFor="let type of firstDraft.report_type; trackBy: trackByValue">
-                      <img class="po-detail-chip__file" [src]="getFileTypeIconPath(type)" [alt]="type" loading="lazy"
-                        (error)="onFileIconLoadError($event)">
-                      {{ getFormattedValue(type) }}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div class="po-stage-card" *ngIf="deliverableStage.final_version as finalVersion">
-                <div class="po-stage-card__head">
-                  <span class="po-stage-card__icon po-stage-card__icon--final">
-                    <i class="pi pi-file-check"></i>
-                  </span>
-                  <div class="po-stage-card__copy">
-                    <span class="po-stage-card__title">{{ lang === 'ar' ? 'النسخة النهائية' : 'Final Version' }}</span>
-                    <span class="po-stage-card__subtitle">
-                      {{ lang === 'ar' ? 'الإصدار النهائي المعتمد للتسليم على العميل أو المنصة.' : 'Final approved
-                      version for client or platform delivery.' }}
-                    </span>
-                  </div>
-                </div>
-                <div class="po-stage-card__body">
-                  <div class="po-detail-row">
-                    <span class="po-detail-row__label">{{ lang === 'ar' ? 'التاريخ' : 'Date' }}</span>
-                    <span class="po-detail-row__value">{{ formatDate(finalVersion.date) }}</span>
-                  </div>
-                  <div class="po-detail-row" *ngIf="finalVersion.way?.selected">
-                    <span class="po-detail-row__label">{{ lang === 'ar' ? 'طريقة التسليم' : 'Delivery Way' }}</span>
-                    <span class="po-detail-row__value">{{ getWayLabel(finalVersion.way?.selected) }}</span>
-                  </div>
-                  <div class="po-detail-row" *ngIf="finalVersion.way?.address">
-                    <span class="po-detail-row__label">{{ lang === 'ar' ? 'العنوان' : 'Address' }}</span>
-                    <span class="po-detail-row__value">{{ finalVersion.way?.address }}</span>
-                  </div>
-                  <div class="po-detail-chip-wrap" *ngIf="finalVersion.report_type?.length">
-                    <div class="po-stage-card__files-label">
-                      {{ lang === 'ar' ? 'أنواع الملفات المطلوبة:' : 'Required File types:' }}
-                    </div>
-                    <span class="po-detail-chip po-detail-chip--file"
-                      *ngFor="let type of finalVersion.report_type; trackBy: trackByValue">
-                      <img class="po-detail-chip__file" [src]="getFileTypeIconPath(type)" [alt]="type" loading="lazy"
-                        (error)="onFileIconLoadError($event)">
-                      {{ getFormattedValue(type) }}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <app-project-deliverables [deliverables]="p.project.deliverables ?? []" [lang]="lang"></app-project-deliverables>
           </section>
 
           <section class="po-section" *ngIf="getComponent('target-market') as targetMarket">
@@ -862,8 +881,16 @@
                   <td>{{ getTypeLabel(p.project?.type) }}</td>
                 </tr>
                 <tr>
-                  <th scope="row">{{ lang === 'ar' ? 'الموعد النهائي' : 'Deadline' }}</th>
-                  <td>{{ formatDate(p.project?.deadline) }}</td>
+                  <th scope="row">{{ lang === 'ar' ? 'البدء المخطط' : 'Planned start' }}</th>
+                  <td>{{ formatDate(p.project?.schedule?.planned_start_date) }}</td>
+                </tr>
+                <tr>
+                  <th scope="row">{{ lang === 'ar' ? 'المدة' : 'Duration' }}</th>
+                  <td>{{ p.project?.schedule?.duration_days ?? '-' }} {{ p.project?.schedule?.duration_days !== null ? (lang === 'ar' ? 'يوم' : 'days') : '' }}</td>
+                </tr>
+                <tr>
+                  <th scope="row">{{ lang === 'ar' ? 'الإغلاق المخطط' : 'Planned close' }}</th>
+                  <td>{{ formatDate(p.project?.schedule?.planned_close_date) }}</td>
                 </tr>
                 <tr *ngIf="p.project?.deadline_offer">
                   <th scope="row">{{ lang === 'ar' ? 'موعد العرض' : 'Offer Deadline' }}</th>

@@ -103,10 +103,12 @@ export class OnWorkProjectDetailsComponent extends OnWorkProjectsComponent imple
         industry: null,
         description: null,
         deadline_offer: null,
-        deadline: null,
         components: [],
         addons: [],
         scopes: [],
+        project_services: [],
+        deliverables: [],
+        schedule: { planned_start_date: null, duration_days: null, planned_close_date: null, started_at: null, closed_at: null },
         request_files: [],
       },
     };

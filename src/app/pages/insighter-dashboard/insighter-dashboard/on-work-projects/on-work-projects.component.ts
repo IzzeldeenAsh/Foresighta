@@ -18,9 +18,11 @@ import {
 import {
   ProjectTimelineStep,
   TIMELINE_STEP,
+  deliverableIdFromStep,
   TimelineStepActionEvent,
 } from 'src/app/_fake/services/project-timeline/project-timeline.model';
 import { BaseComponent } from 'src/app/modules/base.component';
+import { offerPricingSummary } from 'src/app/_fake/services/project-phase2/project-phase2.model';
 
 type ViewMode = 'grid' | 'list';
 export type DrawerTab = 'overview' | 'documents' | 'reviews' | 'discussion';
@@ -110,7 +112,20 @@ const PROJECT_FILE_GROUP_META: Record<string, Omit<ProjectDeliveryDocumentGroup,
   },
 };
 
-const PROJECT_FILE_GROUP_ORDER = ['first_draft', 'final_draft', 'samples', 'document', 'other'];
+const PROJECT_FILE_GROUP_ORDER = ['samples', 'document', 'other'];
+
+/** Review requests and deliverable files are keyed by deliverable: `deliverable_{id}`. */
+const DELIVERABLE_KEY_PREFIX = 'deliverable_';
+
+function deliverableKey(id: number | string): string {
+  return `${DELIVERABLE_KEY_PREFIX}${id}`;
+}
+
+function deliverableIdFromKey(key: string | null | undefined): number | null {
+  if (!key || !key.startsWith(DELIVERABLE_KEY_PREFIX)) return null;
+  const id = Number(key.slice(DELIVERABLE_KEY_PREFIX.length));
+  return Number.isFinite(id) && id > 0 ? id : null;
+}
 
 @Component({
   selector: 'app-on-work-projects',
@@ -150,13 +165,13 @@ export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
     map(reviews => this.countUnreadItems(reviews))
   );
   projectFileName = '';
-  projectFileType: ProjectFileUploadType = 'first_draft';
+  projectFileType: ProjectFileUploadType = '';
   selectedProjectFiles: File[] = [];
   projectFilesUploading = false;
   documentUploadDialogVisible = false;
   reviewRequestDialogVisible = false;
   offerDrawerVisible = false;
-  reviewRequestType: ProjectReviewSubmissionType = 'first_draft';
+  reviewRequestType: ProjectReviewSubmissionType = '';
   reviewRequestPriority: ProjectReviewSubmissionPriorityValue = 'normal';
   reviewRequestNote = '';
   selectedReviewRequestFiles: File[] = [];
@@ -184,18 +199,28 @@ export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
     { value: 'reviews', labelEn: 'Review Request', labelAr: 'طلب المراجعة', iconClass: 'ki-check-square' },
     { value: 'discussion', labelEn: 'Discussion', labelAr: 'النقاش', iconClass: 'ki-messages' },
   ];
-  projectFileTypeOptions: ProjectFileTypeOption[] = [
-    { value: 'first_draft', labelEn: 'First Draft', labelAr: 'المسودة الأولى' },
-    { value: 'final_draft', labelEn: 'Final Draft', labelAr: 'المسودة النهائية' },
+  private readonly generalFileTypeOptions: ProjectFileTypeOption[] = [
     { value: 'samples', labelEn: 'Samples', labelAr: 'عينات' },
     { value: 'document', labelEn: 'Documents', labelAr: 'مستندات' },
     { value: 'other', labelEn: 'Other', labelAr: 'أخرى' },
   ];
-  reviewRequestTypeOptions: ProjectReviewTypeOption[] = [
-    { value: 'first_draft', labelEn: 'First Draft', labelAr: 'المسودة الأولى' },
-    { value: 'final_draft', labelEn: 'Final Draft', labelAr: 'المسودة النهائية' },
-    { value: 'session_completed', labelEn: 'Session Completed', labelAr: 'اكتمال الجلسة' },
-  ];
+
+  /** One option per project deliverable, then the general document types. */
+  get projectFileTypeOptions(): ProjectFileTypeOption[] {
+    return [
+      ...this.reviewRequestTypeOptions,
+      ...this.generalFileTypeOptions,
+    ];
+  }
+
+  /** Reviews are requested per deliverable. */
+  get reviewRequestTypeOptions(): ProjectReviewTypeOption[] {
+    return (this.selectedProject?.project?.deliverables ?? []).map(deliverable => ({
+      value: deliverableKey(deliverable.id),
+      labelEn: deliverable.title,
+      labelAr: deliverable.title,
+    }));
+  }
   reviewPriorityOptions: ProjectReviewPriorityOption[] = [
     { value: 'normal', labelEn: 'Normal', labelAr: 'عادي' },
     { value: 'medium', labelEn: 'Medium', labelAr: 'متوسط' },
@@ -607,31 +632,10 @@ export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
     });
   }
 
-  shouldShowDownPayment(offer: any): boolean {
-    const paymentPlan = this.normalizePaymentPlan(offer?.payment_plan);
-    if (paymentPlan) return paymentPlan === 'full_at_start' || paymentPlan === 'partial';
-
-    return this.hasPaymentAmount(offer?.down_payment);
+  getPricingSummary(offer: any): string {
+    return offerPricingSummary(offer, this.lang);
   }
 
-  shouldShowFinalPayment(offer: any): boolean {
-    const paymentPlan = this.normalizePaymentPlan(offer?.payment_plan);
-    if (paymentPlan) return paymentPlan === 'full_at_end' || paymentPlan === 'partial';
-
-    return this.hasPaymentAmount(offer?.final_price ?? offer?.final_payment);
-  }
-
-  getDownPaymentAmount(offer: any): string | number | null | undefined {
-    return this.normalizePaymentPlan(offer?.payment_plan) === 'full_at_start'
-      ? offer?.proposed_price
-      : offer?.down_payment;
-  }
-
-  getFinalPaymentAmount(offer: any): string | number | null | undefined {
-    return this.normalizePaymentPlan(offer?.payment_plan) === 'full_at_end'
-      ? offer?.proposed_price
-      : (offer?.final_price ?? offer?.final_payment);
-  }
 
   getProjectDeliveryFiles(project: ProjectOffer | null | undefined = this.selectedProject): ProjectOfferFile[] {
     const files = project?.project?.file?.project;
@@ -641,22 +645,48 @@ export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
   getDeliveryDocumentGroups(project: ProjectOffer | null | undefined = this.selectedProject): ProjectDeliveryDocumentGroup[] {
     const grouped = new Map<string, ProjectOfferFile[]>();
 
+    const deliverables = project?.project?.deliverables ?? [];
+    const deliverableMeta = new Map<string, Omit<ProjectDeliveryDocumentGroup, 'files'>>();
+    deliverables.forEach(deliverable => {
+      const key = deliverableKey(deliverable.id);
+      deliverableMeta.set(key, {
+        key,
+        labelEn: deliverable.title,
+        labelAr: deliverable.title,
+        descriptionEn: 'Files delivered for this deliverable.',
+        descriptionAr: 'الملفات المسلّمة لهذا المخرج.',
+      });
+    });
+
     this.getProjectDeliveryFiles(project).forEach(file => {
-      const key = this.normalizeProjectFileType(file.second_identifier || file.type || file.identifier || 'unknown');
-      const groupKey = PROJECT_FILE_GROUP_META[key] ? key : 'unknown';
+      const fileDeliverableId = Number(file['deliverable']?.id);
+      const key = fileDeliverableId > 0
+        ? deliverableKey(fileDeliverableId)
+        : this.normalizeProjectFileType(file.second_identifier || file.type || file.identifier || 'unknown');
+      const groupKey = PROJECT_FILE_GROUP_META[key] || deliverableMeta.has(key) ? key : 'unknown';
+      if (!deliverableMeta.has(groupKey) && fileDeliverableId > 0) {
+        deliverableMeta.set(groupKey, {
+          key: groupKey,
+          labelEn: file['deliverable']?.title || 'Deliverable',
+          labelAr: file['deliverable']?.title || 'مخرج',
+          descriptionEn: 'Files delivered for this deliverable.',
+          descriptionAr: 'الملفات المسلّمة لهذا المخرج.',
+        });
+      }
       grouped.set(groupKey, [...(grouped.get(groupKey) || []), file]);
     });
 
     const orderedKeys = [
+      ...Array.from(deliverableMeta.keys()),
       ...PROJECT_FILE_GROUP_ORDER,
-      ...Array.from(grouped.keys()).filter(key => !PROJECT_FILE_GROUP_ORDER.includes(key) && key !== 'unknown'),
+      ...Array.from(grouped.keys()).filter(key => !PROJECT_FILE_GROUP_ORDER.includes(key) && !deliverableMeta.has(key) && key !== 'unknown'),
       'unknown',
     ];
 
     return orderedKeys
       .filter(key => grouped.has(key))
       .map(key => ({
-        ...(PROJECT_FILE_GROUP_META[key] || PROJECT_FILE_GROUP_META.unknown),
+        ...(deliverableMeta.get(key) || PROJECT_FILE_GROUP_META[key] || PROJECT_FILE_GROUP_META.unknown),
         key,
         files: grouped.get(key) || [],
       }));
@@ -695,6 +725,8 @@ export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
     const normalized = this.normalizeProjectFileType(value || '');
     const option = this.reviewRequestTypeOptions.find(item => item.value === normalized);
     if (option) return this.lang === 'ar' ? option.labelAr : option.labelEn;
+    const review = this.reviewSubmissions.find(item => this.getReviewType(item) === normalized);
+    if (review?.['deliverable']?.title) return review['deliverable'].title;
     return this.getProjectFileTypeLabel(value);
   }
 
@@ -782,6 +814,11 @@ export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
   }
 
   getReviewType(review: ProjectReviewSubmission | null | undefined): string {
+    const reviewDeliverableId = Number(review?.['deliverable']?.id);
+    if (reviewDeliverableId > 0) {
+      return deliverableKey(reviewDeliverableId);
+    }
+
     return this.normalizeProjectFileType(
       review?.type
       || review?.second_identifier
@@ -829,8 +866,7 @@ export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
 
   isReviewRequestTypeDisabled(type: ProjectReviewSubmissionType): boolean {
     const normalizedType = this.normalizeProjectFileType(type);
-    return ['first_draft', 'final_draft'].includes(normalizedType)
-      && this.hasApprovedReviewForType(type);
+    return !!deliverableIdFromKey(normalizedType) && this.hasApprovedReviewForType(type);
   }
 
   isProjectClosed(project: ProjectOffer | null | undefined = this.selectedProject): boolean {
@@ -856,13 +892,22 @@ export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
       && !this.isProjectClosed()
       && !this.reviewRequestSubmitting
       && (this.reviewRequestNote || '').trim()
+      && !!deliverableIdFromKey(this.reviewRequestType)
       && !this.hasPendingReviewForType(this.reviewRequestType)
       && !this.isReviewRequestTypeDisabled(this.reviewRequestType)
     );
   }
 
+  openDocumentUploadDialog(): void {
+    if (!this.projectFileTypeOptions.some(option => option.value === this.projectFileType)) {
+      this.projectFileType = this.projectFileTypeOptions[0]?.value ?? 'document';
+    }
+
+    this.documentUploadDialogVisible = true;
+  }
+
   openReviewRequestDialog(): void {
-    if (this.isReviewRequestTypeDisabled(this.reviewRequestType)) {
+    if (!this.reviewRequestType || this.isReviewRequestTypeDisabled(this.reviewRequestType)) {
       this.reviewRequestType = this.getFirstAvailableReviewRequestType();
     }
 
@@ -913,7 +958,13 @@ export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
 
     const payload = new FormData();
     payload.append('name', name);
-    payload.append('type', this.projectFileType);
+    const uploadDeliverableId = deliverableIdFromKey(this.projectFileType);
+    if (uploadDeliverableId) {
+      payload.append('type', 'deliverable');
+      payload.append('deliverable_id', `${uploadDeliverableId}`);
+    } else {
+      payload.append('type', this.projectFileType);
+    }
     this.selectedProjectFiles.forEach(file => payload.append('file', file, file.name));
 
     this.projectFilesUploading = true;
@@ -945,9 +996,12 @@ export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
     const projectUuid = this.getProjectUuid(this.selectedProject);
     const note = (this.reviewRequestNote || '').trim();
 
+    const reviewDeliverableId = deliverableIdFromKey(this.reviewRequestType);
+
     if (
       !projectUuid
       || !note
+      || !reviewDeliverableId
       || this.isProjectClosed()
       || this.hasPendingReviewForType(this.reviewRequestType)
       || this.isReviewRequestTypeDisabled(this.reviewRequestType)
@@ -957,16 +1011,18 @@ export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
         this.isProjectClosed()
           ? (this.lang === 'ar' ? 'لا يمكن طلب مراجعة لمشروع مغلق.' : 'Review requests are disabled for closed projects.')
           : this.isReviewRequestTypeDisabled(this.reviewRequestType)
-          ? (this.lang === 'ar' ? 'تم اعتماد هذا النوع من المراجعة بالفعل.' : 'This review type is already approved.')
+          ? (this.lang === 'ar' ? 'تم اعتماد هذا المخرج بالفعل.' : 'This deliverable is already approved.')
+          : !reviewDeliverableId
+          ? (this.lang === 'ar' ? 'اختر المخرج المطلوب مراجعته.' : 'Choose the deliverable to review.')
           : this.lang === 'ar'
-          ? 'يرجى كتابة ملاحظة والتأكد من عدم وجود طلب معلق لنفس النوع.'
-          : 'Add a note and make sure there is no pending request for the same type.'
+          ? 'يرجى كتابة ملاحظة والتأكد من عدم وجود طلب معلق لنفس المخرج.'
+          : 'Add a note and make sure there is no pending request for the same deliverable.'
       );
       return;
     }
 
     const payload = new FormData();
-    payload.append('type', this.reviewRequestType);
+    payload.append('project_service_deliverable_id', `${reviewDeliverableId}`);
     payload.append('priority', this.reviewRequestPriority);
     payload.append('note', note);
     this.selectedReviewRequestFiles.forEach(file => payload.append('files[]', file, file.name));
@@ -1269,7 +1325,7 @@ export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
   }
 
   getDeadlineLabel(project: ProjectOffer): string {
-    return this.formatDate(project.project?.deadline);
+    return this.formatDate(project.project?.schedule?.planned_close_date);
   }
 
   formatDate(value: string | null | undefined): string {
@@ -1564,11 +1620,11 @@ export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
 
     if (clearSelections) {
       this.projectFileName = '';
-      this.projectFileType = 'first_draft';
+      this.projectFileType = '';
       this.selectedProjectFiles = [];
       this.projectFilesUploading = false;
       this.reviewRequestDialogVisible = false;
-      this.reviewRequestType = 'first_draft';
+      this.reviewRequestType = '';
       this.reviewRequestPriority = 'normal';
       this.reviewRequestNote = '';
       this.selectedReviewRequestFiles = [];
@@ -1641,15 +1697,8 @@ export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
       return null;
     }
 
-    if (step?.key === TIMELINE_STEP.FIRST_DRAFT) {
-      return 'first_draft';
-    }
-
-    if (step?.key === TIMELINE_STEP.FINAL_DRAFT) {
-      return 'final_draft';
-    }
-
-    return null;
+    const stepDeliverableId = deliverableIdFromStep(step);
+    return stepDeliverableId ? deliverableKey(stepDeliverableId) : null;
   }
 
   private applyDraftReviewState(
@@ -1729,15 +1778,8 @@ export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
   private getDraftReviewTypeForTimelineStep(
     step: ProjectTimelineStep | null | undefined
   ): ProjectReviewSubmissionType | null {
-    if (step?.key === TIMELINE_STEP.FIRST_DRAFT) {
-      return 'first_draft';
-    }
-
-    if (step?.key === TIMELINE_STEP.FINAL_DRAFT) {
-      return 'final_draft';
-    }
-
-    return null;
+    const stepDeliverableId = deliverableIdFromStep(step);
+    return stepDeliverableId ? deliverableKey(stepDeliverableId) : null;
   }
 
   private getDraftTimelineReviewStatus(
@@ -1763,7 +1805,7 @@ export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
 
   private getFirstAvailableReviewRequestType(): ProjectReviewSubmissionType {
     return this.reviewRequestTypeOptions.find(option => !this.isReviewRequestTypeDisabled(option.value))?.value
-      || 'session_completed';
+      || '';
   }
 
   private getProjectUuid(project: ProjectOffer | null | undefined): string {
@@ -1806,16 +1848,6 @@ export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
 
   private normalizeProjectFileType(value: string): string {
     return (value || '').trim().toLowerCase().replace(/[-\s]+/g, '_');
-  }
-
-  private normalizePaymentPlan(value: unknown): string {
-    return String(value || '').trim().toLowerCase();
-  }
-
-  private hasPaymentAmount(value: string | number | null | undefined): boolean {
-    if (value === null || value === undefined || value === '') return false;
-    const numericValue = typeof value === 'number' ? value : Number(value);
-    return !Number.isNaN(numericValue) && numericValue > 0;
   }
 
   private getReviewPriorityRank(review: ProjectReviewSubmission | null | undefined): number {

@@ -1,0 +1,24 @@
+<ol class="oi-list" *ngIf="installments.length; else empty">
+  <li class="oi-item" *ngFor="let item of installments; let i = index; trackBy: trackByPosition">
+    <span class="oi-item__index" aria-hidden="true">{{ i + 1 }}</span>
+    <div class="oi-item__body">
+      <div class="oi-item__head">
+        <span class="oi-item__title">{{ item.title || (lang === 'ar' ? 'دفعة' : 'Payment') }}</span>
+        <span class="badge oi-item__status" *ngIf="showStatus && item.status" [ngClass]="statusClass(item.status)">
+          {{ statusLabel(item.status) }}
+        </span>
+      </div>
+      <div class="oi-item__when">
+        <span>{{ dueLabel(item) }}</span>
+        <span class="oi-item__date" *ngIf="item.due_type !== 'contract' && item.date">· {{ formatDate(item.date) }}</span>
+      </div>
+    </div>
+    <div class="oi-item__money">
+      <span class="oi-item__amount">{{ formatPrice(amountFor(item)) }}</span>
+      <span class="oi-item__percent">{{ item.percentage }}%</span>
+    </div>
+  </li>
+</ol>
+<ng-template #empty>
+  <p class="oi-empty">{{ lang === 'ar' ? 'لا توجد دفعات.' : 'No installments.' }}</p>
+</ng-template>

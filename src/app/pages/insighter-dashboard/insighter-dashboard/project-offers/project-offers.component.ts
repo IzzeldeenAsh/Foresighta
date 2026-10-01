@@ -16,6 +16,7 @@ import {
   ProjectOfferStatistics,
   ProjectOfferType,
 } from 'src/app/_fake/services/project-offers/project-offers.service';
+import { offerPricingSummary } from 'src/app/_fake/services/project-phase2/project-phase2.model';
 
 type ViewMode = 'grid' | 'list';
 export type DrawerTab = 'overview' | 'documents' | 'offer' | 'discussion';
@@ -640,7 +641,7 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
   }
 
   getDeadlineLabel(offer: ProjectOffer): string {
-    const date = offer.project?.deadline_offer || offer.project?.deadline;
+    const date = offer.project?.deadline_offer;
     return this.formatDate(date);
   }
 
@@ -1079,40 +1080,11 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
     });
   }
 
-  shouldShowDownPayment(offer: any): boolean {
-    const paymentPlan = this.normalizePaymentPlan(offer?.payment_plan);
-    if (paymentPlan) return paymentPlan === 'full_at_start' || paymentPlan === 'partial';
-
-    return this.hasPaymentAmount(offer?.down_payment);
+  getPricingSummary(offer: any): string {
+    return offerPricingSummary(offer, this.lang);
   }
 
-  shouldShowFinalPayment(offer: any): boolean {
-    const paymentPlan = this.normalizePaymentPlan(offer?.payment_plan);
-    if (paymentPlan) return paymentPlan === 'full_at_end' || paymentPlan === 'partial';
 
-    return this.hasPaymentAmount(offer?.final_price ?? offer?.final_payment);
-  }
-
-  getDownPaymentAmount(offer: any): string | number | null | undefined {
-    return this.normalizePaymentPlan(offer?.payment_plan) === 'full_at_start'
-      ? offer?.proposed_price
-      : offer?.down_payment;
-  }
-
-  getFinalPaymentAmount(offer: any): string | number | null | undefined {
-    return this.normalizePaymentPlan(offer?.payment_plan) === 'full_at_end'
-      ? offer?.proposed_price
-      : (offer?.final_price ?? offer?.final_payment);
-  }
-
-  private normalizePaymentPlan(value: unknown): string {
-    return String(value || '').trim().toLowerCase();
-  }
-
-  private hasPaymentAmount(value: string | number | null | undefined): boolean {
-    const numericValue = Number(value ?? 0);
-    return Number.isFinite(numericValue) && numericValue > 0;
-  }
 
   formatPercentage(value: string | number | null | undefined): string {
     if (value === null || value === undefined || value === '') {
