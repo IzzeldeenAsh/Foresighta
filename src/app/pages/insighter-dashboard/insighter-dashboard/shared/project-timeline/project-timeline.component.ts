@@ -1,3 +1,4 @@
+import { ProjectReviewSubmission } from 'src/app/_fake/services/project-offers/project-offers.service';
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { finalize } from 'rxjs';
@@ -9,6 +10,7 @@ import {
   TimelineAudience,
   TimelineStepActionEvent,
   isDeliverableStep,
+  deliverableIdFromStep,
   isDraftStep,
   isInstallmentStep,
   isPartyStep,
@@ -26,7 +28,7 @@ interface TimelineBadge {
 
 /**
  * Presentational timeline. Renders the API-driven project timeline steps as the
- * shared "Project Actions" card + dot + progress-line design, and emits
+ * shared "Project Milestone" card + dot + progress-line design, and emits
  * `stepAction` events (keyed by step `key`) for the host to handle. All render
  * decisions come from the step payload (`display`, `state`, `status`, `amount`,
  * `date`, `party`) — the component never decides which steps exist.
@@ -38,6 +40,7 @@ interface TimelineBadge {
 })
 export class ProjectTimelineComponent {
   @Input() steps: ProjectTimelineStep[] = [];
+  @Input() reviews: ProjectReviewSubmission[] = [];
   @Input() audience: TimelineAudience = 'client';
   @Input() lang: 'en' | 'ar' | string = 'en';
 
@@ -187,6 +190,13 @@ export class ProjectTimelineComponent {
     return this.isActiveDraftSubmission(step) && step.status === 'pending';
   }
 
+  isAwaitingInsighterSubmission(step: ProjectTimelineStep): boolean {
+    return this.isClient
+      && this.isDeliverable(step)
+      && this.isActive(step)
+      && step.status === 'waiting_for_draft';
+  }
+
   /** Amount is only ever rendered for payment steps that carry a value. */
   showAmount(step: ProjectTimelineStep): boolean {
     return this.isPayment(step) && step.amount !== null && step.amount !== undefined;
@@ -228,7 +238,7 @@ export class ProjectTimelineComponent {
 
   /** Planned due date of an order installment step (contract-type installments are due on signing). */
   installmentDueLabel(step: ProjectTimelineStep): string {
-    if (!isInstallmentStep(step.key) || this.isCompleted(step)) {
+    if (!isInstallmentStep(step.key)) {
       return '';
     }
 
@@ -239,6 +249,15 @@ export class ProjectTimelineComponent {
 
     const due = meta['calculated_date'] ?? meta['date'];
     return due ? this.dateLabel({ ...step, date: `${due}` }) : '';
+  }
+
+  deliverableReviews(step: ProjectTimelineStep): ProjectReviewSubmission[] {
+    const id = deliverableIdFromStep(step);
+    return id ? this.reviews.filter(review => Number(review.deliverable?.id) === id) : [];
+  }
+
+  reviewEventDate(step: ProjectTimelineStep, value: string | null): string {
+    return value ? this.dateLabel({ ...step, date: value }) : '';
   }
 
   isDeliverable(step: ProjectTimelineStep): boolean {
@@ -306,29 +325,12 @@ export class ProjectTimelineComponent {
     return isNaN(parsed.getTime()) ? null : parsed;
   }
 
-  stepNumberLabel(step: ProjectTimelineStep): string {
-    if (step.key === TIMELINE_STEP.CANCELLED_PROJECT) {
+  deliverableLabel(step: ProjectTimelineStep): string {
+    if (!this.isDeliverable(step)) {
       return '';
     }
 
-    const stepWord = this.lang === 'ar' ? 'الخطوة' : 'Step';
-    const displayStepNo = this.displayStepNumber(step);
-
-    return step.key === TIMELINE_STEP.CLOSED_PROJECT
-      ? (this.lang === 'ar' ? 'الخطوة الأخيرة' : 'Final Step')
-      : `${stepWord} ${displayStepNo}`;
-  }
-
-  private displayStepNumber(step: ProjectTimelineStep): number | string {
-    if (step.key === TIMELINE_STEP.CONTRACTING && this.hasVisiblePartyStep()) {
-      return 2;
-    }
-
-    return step.step_no ?? '';
-  }
-
-  private hasVisiblePartyStep(): boolean {
-    return this.visibleSteps.some(item => this.isParty(item));
+    return this.lang === 'ar' ? 'المخرج' : 'Deliverable';
   }
 
   iconClass(step: ProjectTimelineStep): string {
@@ -533,6 +535,10 @@ export class ProjectTimelineComponent {
 
   readonlyDraftReviewStatusLabel(): string {
     return this.lang === 'ar' ? 'بانتظار مراجعة العميل' : "Waiting Client's Review";
+  }
+
+  awaitingInsighterSubmissionLabel(): string {
+    return this.lang === 'ar' ? 'بانتظار تسليم الخبير' : "Awaiting Insighter’s submission";
   }
 
   cancelledByClientLabel(): string {

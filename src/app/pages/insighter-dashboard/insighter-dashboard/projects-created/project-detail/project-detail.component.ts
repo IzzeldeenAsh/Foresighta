@@ -1153,8 +1153,13 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
 
     if (this.shouldShowProjectPayment(project)) {
       return this.lang === 'ar'
-        ? 'اكتمل العقد. اختر طريقة الدفع المناسبة لبدء المشروع.'
-        : 'The contract is complete. Choose a payment method to start the project.';
+        ? 'توجد دفعة متاحة للدفع. راجع القسط الحالي وموعد استحقاقه في التايملاين.'
+        : 'An installment is available for payment. Review the current installment and its due date in the timeline.';
+    }
+
+    if (this.timelineSteps.some(step => (isInstallmentStep(step.key) || step.key === TIMELINE_STEP.CONTRACTING) && step.state === 'completed')) {
+      return this.lang === 'ar' ? 'تابع المرحلة الحالية ومراجعات المخرجات في التايملاين.'
+        : 'Follow the current stage and deliverable reviews in the timeline.';
     }
 
     if (this.hasContractAction(project)) {

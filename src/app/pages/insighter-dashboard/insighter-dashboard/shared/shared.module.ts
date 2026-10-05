@@ -1,3 +1,5 @@
+import { ProjectDatesComponent } from './project-dates/project-dates.component';
+import { ProjectServicesComponent } from './project-services/project-services.component';
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -11,6 +13,8 @@ import { DashboardNavIconComponent } from 'src/app/reusable-components/dashboard
 
 @NgModule({
   declarations: [
+    ProjectDatesComponent,
+    ProjectServicesComponent,
     PageHeaderComponent,
     ProjectDiscussionComponent,
     ProjectTimelineComponent,
@@ -24,6 +28,8 @@ import { DashboardNavIconComponent } from 'src/app/reusable-components/dashboard
     DashboardNavIconComponent
   ],
   exports: [
+    ProjectDatesComponent,
+    ProjectServicesComponent,
     PageHeaderComponent,
     ProjectDiscussionComponent,
     ProjectTimelineComponent,

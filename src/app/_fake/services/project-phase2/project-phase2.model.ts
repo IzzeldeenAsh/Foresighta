@@ -301,7 +301,7 @@ export function priceTypeLabel(type: string | null | undefined, lang: string): s
 export function dueTypeLabel(type: string | null | undefined, lang: string): string {
   const labels: Record<string, { en: string; ar: string }> = {
     contract: { en: 'On contract signing', ar: 'عند توقيع العقد' },
-    date: { en: 'On a date', ar: 'في موعد محدد' },
+    date: { en: 'After a duration', ar: 'بعد مدة من بدء المشروع' },
     deliverable: { en: 'On a deliverable', ar: 'عند تسليم مخرج' },
   };
   const label = labels[type || ''];

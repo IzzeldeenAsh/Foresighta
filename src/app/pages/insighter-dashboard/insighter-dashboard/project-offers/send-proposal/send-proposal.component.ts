@@ -32,6 +32,7 @@ export interface InstallmentDraft {
   due_type: InstallmentDueType;
   period_days: number | null;
   project_service_deliverable_id: number | null;
+  isProjectEnd?: boolean;
 }
 
 @Component({
@@ -55,7 +56,7 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
   openingFileUuid: string | null = null;
 
   // Form state
-  priceType: ProjectPriceType = 'hourly';
+  priceType: ProjectPriceType = 'fixed';
   estimatedHours: number | null = null;
   dailyRate: number | null = null;
   estimatedDays: number | null = null;
@@ -163,6 +164,18 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
     return isFinite(value) && value > 0 ? Number(value.toFixed(2)) : 0;
   }
 
+  /** How the total was reached, e.g. "$85.00 × 120 hrs". Empty for fixed price or missing inputs. */
+  get priceBreakdown(): string {
+    const ar = this.lang === 'ar';
+    if (this.priceType === 'hourly' && this.hourlyRate && this.estimatedHours) {
+      return `${this.formatPrice(this.hourlyRate)} × ${this.estimatedHours} ${ar ? 'ساعة' : 'hrs'}`;
+    }
+    if (this.priceType === 'daily' && this.dailyRate && this.estimatedDays) {
+      return `${this.formatPrice(this.dailyRate)} × ${this.estimatedDays} ${ar ? 'يوم' : 'days'}`;
+    }
+    return '';
+  }
+
   // ---------- Project schedule ----------
 
   get deliverables(): ProjectDeliverable[] {
@@ -236,19 +249,49 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
     this.installments = this.installments.filter(item => item.key !== key);
   }
 
+  getAvailableDeliverables(item: InstallmentDraft): ProjectDeliverable[] {
+    const selectedIds = new Set(this.installments
+      .filter(other => other.key !== item.key && other.due_type === 'deliverable')
+      .map(other => other.project_service_deliverable_id));
+    return this.deliverables.filter(deliverable => !selectedIds.has(deliverable.id));
+  }
+
   onInstallmentChanged(item: InstallmentDraft): void {
     this.installmentsTouched = true;
-    if (item.due_type === 'date' && (item.period_days === null || item.period_days === undefined)) {
-      item.period_days = 0;
+    if (item.isProjectEnd) {
+      item.period_days = this.durationDays;
     }
-    if (item.due_type === 'deliverable' && !item.project_service_deliverable_id) {
-      item.project_service_deliverable_id = this.lastDeliverable?.id ?? null;
+    if (item.due_type === 'deliverable') {
+      const available = this.getAvailableDeliverables(item);
+      if (!available.some(deliverable => deliverable.id === item.project_service_deliverable_id)) {
+        item.project_service_deliverable_id = available[0]?.id ?? null;
+      }
     }
   }
 
   canChooseContract(item: InstallmentDraft): boolean {
     return item.due_type === 'contract'
       || !this.installments.some(other => other.key !== item.key && other.due_type === 'contract');
+  }
+
+  isDueTypeDisabled(item: InstallmentDraft, type: InstallmentDueType): boolean {
+    return (type === 'contract' && !this.canChooseContract(item))
+      || (type === 'deliverable' && !this.getAvailableDeliverables(item).length);
+  }
+
+  setDueType(item: InstallmentDraft, type: InstallmentDueType): void {
+    if ((item.due_type === type && !item.isProjectEnd) || this.isDueTypeDisabled(item, type)) return;
+    item.isProjectEnd = false;
+    item.due_type = type;
+    this.onInstallmentChanged(item);
+  }
+
+  setProjectEnd(item: InstallmentDraft): void {
+    if (this.paymentPlan !== 'full' || this.durationDays === null) return;
+    item.isProjectEnd = true;
+    item.due_type = 'date';
+    item.period_days = this.durationDays;
+    this.onInstallmentChanged(item);
   }
 
   get installmentsPercentTotal(): number {
@@ -279,8 +322,18 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
     if (!(item.title || '').trim()) errors.push(ar ? 'عنوان الدفعة مطلوب.' : 'Give the payment a title.');
     const pct = Number(item.percentage);
     if (!isFinite(pct) || pct < 1 || pct > 100) errors.push(ar ? 'النسبة بين 1 و100.' : 'Percentage must be between 1 and 100.');
-    if (item.due_type === 'date' && !(Number(item.period_days) >= 0 && Number.isInteger(Number(item.period_days)))) {
+    if (item.due_type === 'date' && (item.period_days === null || item.period_days === undefined
+      || !(Number(item.period_days) >= 0 && Number.isInteger(Number(item.period_days))))) {
       errors.push(ar ? 'حدد عدد الأيام من بدء المشروع.' : 'Enter the number of days from the project start.');
+    }
+    const paymentDays = item.due_type === 'deliverable'
+      ? this.deliverables.find(deliverable => deliverable.id === item.project_service_deliverable_id)?.period_days
+      : item.due_type === 'date' ? item.period_days : null;
+    if (this.durationDays !== null && paymentDays !== null && paymentDays !== undefined
+      && Number(paymentDays) > this.durationDays) {
+      errors.push(ar
+        ? `لا يمكن أن تتجاوز مدة استحقاق الدفعة مدة المشروع (${this.durationDays} يومًا).`
+        : `Payment duration cannot exceed the project duration (${this.durationDays} days).`);
     }
     if (item.due_type === 'deliverable' && !item.project_service_deliverable_id) {
       errors.push(ar ? 'اختر المخرج المرتبط.' : 'Pick the linked deliverable.');
@@ -330,7 +383,7 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
   }
 
   private defaultPartialInstallments(): InstallmentDraft[] {
-    const lastDeliverable = this.lastDeliverable ?? null;
+    const firstDeliverable = this.deliverables[0] ?? null;
     return [
       this.createInstallment({
         title: this.lang === 'ar' ? 'دفعة توقيع العقد' : 'Contract payment',
@@ -339,11 +392,11 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
         period_days: 0,
       }),
       this.createInstallment({
-        title: this.lang === 'ar' ? 'الدفعة الأخيرة' : 'Final payment',
+        title: this.lang === 'ar' ? 'دفعة 2' : 'Payment 2',
         percentage: 70,
-        due_type: lastDeliverable ? 'deliverable' : 'date',
-        period_days: lastDeliverable ? lastDeliverable.period_days : (this.durationDays ?? 0),
-        project_service_deliverable_id: lastDeliverable?.id ?? null,
+        due_type: firstDeliverable ? 'deliverable' : 'date',
+        period_days: firstDeliverable ? firstDeliverable.period_days : (this.durationDays ?? 0),
+        project_service_deliverable_id: firstDeliverable?.id ?? null,
       }),
     ];
   }

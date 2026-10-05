@@ -1131,7 +1131,10 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
       return;
     }
 
-    this.router.navigate(['/app/insighter-dashboard/project-offers/contract', contractUuid]);
+    this.router.navigate(
+      ['/app/insighter-dashboard/project-offers/contract', contractUuid],
+      { queryParams: { projectUuid: offer ? this.getProposalDetailsUuid(offer) : null } }
+    );
   }
 
   onAskClient(): void {

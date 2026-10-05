@@ -1,7 +1,8 @@
 import { Component, Injector, OnInit } from '@angular/core';
 import { DomSanitizer, SafeHtml, SafeResourceUrl } from '@angular/platform-browser';
 import { ActivatedRoute, Router } from '@angular/router';
-import { finalize, takeUntil } from 'rxjs/operators';
+import { combineLatest, of } from 'rxjs';
+import { catchError, finalize, map, switchMap, takeUntil } from 'rxjs/operators';
 import Swal from 'sweetalert2';
 import {
   ProjectContract,
@@ -9,6 +10,7 @@ import {
   ProjectOffersService,
 } from 'src/app/_fake/services/project-offers/project-offers.service';
 import { BaseComponent } from 'src/app/modules/base.component';
+import { ProjectScheduleFields } from 'src/app/_fake/services/project-phase2/project-phase2.model';
 
 @Component({
   selector: 'app-insighter-project-contract',
@@ -18,6 +20,7 @@ import { BaseComponent } from 'src/app/modules/base.component';
 export class ProjectContractComponent extends BaseComponent implements OnInit {
   contractUuid = '';
   contract: ProjectContract | null = null;
+  projectSchedule: ProjectScheduleFields | null = null;
   contractHtml: SafeHtml | null = null;
   filePreviewUrl: SafeResourceUrl | null = null;
   isLoadingContract = false;
@@ -37,20 +40,32 @@ export class ProjectContractComponent extends BaseComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.route.queryParamMap
-      .pipe(takeUntil(this.unsubscribe$))
-      .subscribe(params => {
-        this.returnUrl = params.get('returnUrl') || '/app/insighter-dashboard/project-offers';
-      });
+    combineLatest([this.route.paramMap, this.route.queryParamMap])
+      .pipe(
+        switchMap(([params, query]) => {
+          this.returnUrl = query.get('returnUrl') || '/app/insighter-dashboard/project-offers';
+          this.contractUuid = params.get('contractUuid') || '';
+          this.projectSchedule = null;
+          if (this.contractUuid) this.loadContract();
 
-    this.route.paramMap
-      .pipe(takeUntil(this.unsubscribe$))
-      .subscribe(params => {
-        this.contractUuid = params.get('contractUuid') || '';
-        if (this.contractUuid) {
-          this.loadContract();
-        }
-      });
+          const projectUuid = query.get('projectUuid');
+          const contractUuid = this.contractUuid;
+          if (!projectUuid || !contractUuid) return of(null);
+
+          return this.projectOffersService.getInsighterProjectDetails(projectUuid).pipe(
+            map(project => {
+              // Only show dates from the project belonging to this contract.
+              const projectContractUuid = project.contract_uuid
+                || project.project.contract_uuid || project.offer?.contract_uuid;
+              return projectContractUuid === contractUuid ? project.project.schedule : null;
+            }),
+            // Schedule details are supplementary; their failure must not block signing.
+            catchError(() => of(null)),
+          );
+        }),
+        takeUntil(this.unsubscribe$),
+      )
+      .subscribe(schedule => { this.projectSchedule = schedule; });
   }
 
   goBack(): void {

@@ -42,46 +42,8 @@
             <h2 class="pd-hero__title">{{ p.title }}</h2>
 
             <div class="pd-hero__meta">
-              <div class="pd-meta-item" *ngIf="p.schedule.started_at || p.schedule.planned_start_date">
-                <i class="ki-outline ki-calendar fs-6"></i>
-                <div class="pd-meta-item__text">
-                  <span class="pd-meta-item__label">
-                    {{ p.schedule.started_at ? (lang === 'ar' ? 'تاريخ البدء' : 'Started') : (lang === 'ar' ? 'البدء المخطط' : 'Planned start') }}
-                  </span>
-                  <span class="pd-meta-item__value">{{ formatDate(p.schedule.started_at || p.schedule.planned_start_date) }}</span>
-                </div>
+                <app-project-dates [startDate]="p.schedule.started_at || p.schedule.planned_start_date" [endDate]="p.schedule.closed_at || p.schedule.planned_close_date" [actualStart]="!!p.schedule.started_at" [actualEnd]="!!p.schedule.closed_at" [durationDays]="p.schedule.duration_days" [lang]="lang"></app-project-dates>
               </div>
-              <div class="pd-meta-item" *ngIf="p.schedule.closed_at || p.schedule.planned_close_date">
-                <i class="ki-outline ki-calendar-tick fs-6"></i>
-                <div class="pd-meta-item__text">
-                  <span class="pd-meta-item__label">
-                    {{ p.schedule.closed_at ? (lang === 'ar' ? 'تاريخ الإغلاق' : 'Closed') : (lang === 'ar' ? 'الإغلاق المخطط' : 'Planned close') }}
-                  </span>
-                  <span class="pd-meta-item__value">{{ formatDate(p.schedule.closed_at || p.schedule.planned_close_date) }}</span>
-                </div>
-              </div>
-              <div class="pd-meta-item" *ngIf="p.service?.name">
-                <i class="ki-outline ki-briefcase fs-6"></i>
-                <div class="pd-meta-item__text">
-                  <span class="pd-meta-item__label">{{ lang === 'ar' ? 'الخدمة' : 'Service' }}</span>
-                  <span class="pd-meta-item__value">{{ p.service?.name }}</span>
-                </div>
-              </div>
-              <div class="pd-meta-item" *ngIf="p.language">
-                <span class="pd-lang-icon" aria-hidden="true">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
-                       stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M4 5h7"></path><path d="M9 3v2c0 4.418 -2.239 8 -5 8"></path>
-                    <path d="M5 9c0 2.144 2.952 3.908 6.7 4"></path>
-                    <path d="M12 20l4 -9l4 9"></path><path d="M19.1 18h-6.2"></path>
-                  </svg>
-                </span>
-                <div class="pd-meta-item__text">
-                  <span class="pd-meta-item__label">{{ lang === 'ar' ? 'اللغة' : 'Language' }}</span>
-                  <span class="pd-meta-item__value">{{ getLanguageLabel(p.language) }}</span>
-                </div>
-              </div>
-            </div>
           </div>
 
           <div class="pd-tabs" role="tablist" [attr.aria-label]="lang === 'ar' ? 'أقسام المشروع' : 'Project sections'">
@@ -218,7 +180,19 @@
           </section>
 
           <!-- Scopes -->
-          <details class="pd-section pd-section--accordion pd-section--scope" *ngIf="p.scopes?.length">
+          <details class="pd-section pd-section--accordion pd-section--services" *ngIf="(p.project_services || []).length">
+            <summary class="pd-section__head pd-section__summary">
+              <span class="pd-section__title-icon" aria-hidden="true"><i class="pi pi-briefcase"></i></span>
+              <h6 class="pd-section__title">{{ lang === 'ar' ? 'الخدمات المطلوبة' : 'Requested Services' }}</h6>
+              <span class="pd-section__eyebrow">{{ lang === 'ar' ? 'خدمات المشروع' : 'Project Services' }}</span>
+              <span class="pd-section__chevron" aria-hidden="true">
+                <i class="pi pi-chevron-down"></i>
+              </span>
+            </summary>
+            <app-project-services [services]="p.project_services || []" [lang]="lang" (openFile)="openProjectFile($event)"></app-project-services>
+          </details>
+
+          <details class="pd-section pd-section--accordion pd-section--scope" *ngIf="!p.project_services.length && p.scopes?.length">
             <summary class="pd-section__head pd-section__summary">
               <span class="pd-section__title-icon" aria-hidden="true"><i class="pi pi-list"></i></span>
               <h6 class="pd-section__title">{{ lang === 'ar' ? 'نطاقات العمل' : 'Scopes' }}</h6>
@@ -269,7 +243,7 @@
           </details>
 
           <!-- Deliverable Stages -->
-          <details class="pd-section pd-section--accordion pd-section--stages" *ngIf="p.deliverables?.length">
+          <details class="pd-section pd-section--accordion pd-section--stages" *ngIf="!p.project_services.length && p.deliverables?.length">
             <summary class="pd-section__head pd-section__summary">
               <span class="pd-section__title-icon" aria-hidden="true"><i class="pi pi-file"></i></span>
               <h6 class="pd-section__title">{{ lang === 'ar' ? 'المخرجات' : 'Deliverables' }}</h6>
@@ -571,7 +545,7 @@
                     {{ lang === 'ar' ? 'جديد' : 'New' }}
                   </span>
                   <div class="pd-review-card__tab">
-                    {{ lang === 'ar' ? 'مراجعة' : 'Review' }} {{ i + 1 }}
+                    {{ lang === 'ar' ? 'مرجع المراجعة' : 'Review reference' }} <span dir="ltr" [title]="review.uuid">{{ review.uuid | slice:0:8 }}</span>
                   </div>
                   <div
                     class="pd-review-card__priority-ribbon"
@@ -684,7 +658,7 @@
       <aside class="pd-aside">
         <div class="pd-aside-card">
           <div class="pd-aside-card__title">
-            {{ lang === 'ar' ? 'إجراءات المشروع' : 'Project Actions' }}
+            {{ lang === 'ar' ? 'مراحل المشروع' : 'Project Milestone' }}
           </div>
           <p class="pd-aside-card__hint">
             {{ getProjectActionsHint(p) }}
@@ -846,6 +820,7 @@
             class="pd-contract-timeline mt-4 d-block"
             audience="client"
             [steps]="timelineSteps"
+            [reviews]="reviewSubmissions"
             [lang]="lang"
             [cancelledAt]="p.cancelled_at || null"
             [paymentSubmitting]="projectCheckoutSubmitting"
