@@ -106,7 +106,7 @@
           <!-- Body -->
           <div class="d-flex flex-column gap-2 pd-tl-card__body">
             <div class="d-flex flex-column">
-              <span class="pd-tl-card__step" *ngIf="stepNumberLabel(step)">{{ stepNumberLabel(step) }}</span>
+              <span class="pd-tl-card__step" *ngIf="deliverableLabel(step) as label">{{ label }}</span>
               <span class="pd-tl-card__title">{{ step.title }}</span>
             </div>
 
@@ -131,7 +131,28 @@
             <!-- Draft delivery date -->
             <div class="pd-tl-card__meta" *ngIf="isDraft(step) && dateLabel(step)">
               <i class="ki-outline ki-calendar fs-7"></i>
-              <span>{{ lang === 'ar' ? 'التاريخ:' : 'Date:' }} {{ dateLabel(step) }}</span>
+              <span>
+                {{ isDeliverable(step) ? (lang === 'ar' ? 'الموعد المخطط:' : 'Planned date:') : (lang === 'ar' ? 'التاريخ:' : 'Date:') }}
+                {{ dateLabel(step) }}
+              </span>
+            </div>
+
+            <div class="pd-tl-card__meta" *ngFor="let review of deliverableReviews(step)">
+              <div>
+                <span dir="ltr" [title]="review.uuid">{{ review.uuid | slice:0:8 }}</span>
+                <div *ngIf="review.request_at">{{ lang === 'ar' ? 'أُرسل للمراجعة:' : 'Submitted for review:' }}
+                  <time [attr.datetime]="review.request_at">{{ reviewEventDate(step, review.request_at) }}</time>
+                </div>
+                <div *ngIf="review.reviewed_at">{{ review.status === 'approved' ? (lang === 'ar' ? 'اعتُمد:' : 'Approved:') : (lang === 'ar' ? 'رد العميل:' : 'Client responded:') }}
+                  <time [attr.datetime]="review.reviewed_at">{{ reviewEventDate(step, review.reviewed_at) }}</time>
+                </div>
+              </div>
+            </div>
+
+            <!-- Installment due date, retained after payment -->
+            <div class="pd-tl-card__meta" *ngIf="installmentDueLabel(step) as dueLabel">
+              <i class="ki-outline ki-calendar fs-7"></i>
+              <span>{{ lang === 'ar' ? 'الاستحقاق:' : 'Due:' }} {{ dueLabel }}</span>
             </div>
 
             <!-- Payment date (all visible payment-plan variants) -->
@@ -202,6 +223,15 @@
                     aria-disabled="true">
               <i class="ki-outline ki-lock-2 fs-6 text-white"></i>
               <span>{{ readonlyContractStatusLabel() }}</span>
+            </button>
+
+            <button type="button"
+                    *ngIf="isAwaitingInsighterSubmission(step)"
+                    class="btn btn-sm fw-bold w-100 d-flex align-items-center justify-content-center gap-2 pd-tl-card__readonly-action pd-glass-btn"
+                    disabled
+                    aria-disabled="true">
+              <i class="ki-outline ki-time fs-6 text-white" aria-hidden="true"></i>
+              <span>{{ awaitingInsighterSubmissionLabel() }}</span>
             </button>
 
             <!-- Read-only draft review state (insighter side) -->

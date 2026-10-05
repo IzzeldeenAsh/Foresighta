@@ -15,6 +15,16 @@
     </div>
   </div>
 
+  <ng-container *ngIf="project?.schedule as schedule">
+    <app-project-dates
+      *ngIf="schedule.planned_start_date || schedule.planned_close_date"
+      [startDate]="schedule.started_at || schedule.planned_start_date"
+      [endDate]="schedule.closed_at || schedule.planned_close_date"
+      [actualStart]="!!schedule.started_at" [actualEnd]="!!schedule.closed_at" [durationDays]="schedule.duration_days"
+      [lang]="lang">
+    </app-project-dates>
+  </ng-container>
+
   <div *ngIf="errorMessage && !contractUuid" class="alert alert-warning pcn-alert">
     {{ errorMessage }}
   </div>

@@ -15,6 +15,16 @@
     </div>
   </div>
 
+  <ng-container *ngIf="projectSchedule as schedule">
+    <app-project-dates
+      *ngIf="schedule.planned_start_date || schedule.planned_close_date"
+      [startDate]="schedule.started_at || schedule.planned_start_date"
+      [endDate]="schedule.closed_at || schedule.planned_close_date"
+      [actualStart]="!!schedule.started_at" [actualEnd]="!!schedule.closed_at" [durationDays]="schedule.duration_days"
+      [lang]="lang">
+    </app-project-dates>
+  </ng-container>
+
   <div *ngIf="errorMessage" class="alert alert-danger icn-alert">{{ errorMessage }}</div>
   <div *ngIf="successMessage" class="icn-success-alert" role="status">
     <span class="icn-success-alert__icon">
@@ -112,7 +122,7 @@
             type="button"
             class="btn"
             [ngClass]="c.insighter_sign_at ? 'btn-outline btn-outline-success icn-signed-btn' : 'btn-info'"
-            [disabled]="c.insighter_sign_at || isSigning"
+            [disabled]="c.insighter_sign_at || isSigning || c.status !== 'awaiting_insighter_signature'"
             (click)="signContract()">
             <i class="ki-outline fs-6 me-1" [ngClass]="c.insighter_sign_at ? 'ki-check' : 'ki-pencil'"></i>
             {{

@@ -11,6 +11,7 @@ import { ProgressBarModule } from 'primeng/progressbar';
 import { PaginatorModule } from 'primeng/paginator';
 import { SidebarModule } from 'primeng/sidebar';
 import { ButtonModule } from 'primeng/button';
+import { DropdownModule } from 'primeng/dropdown';
 import { TooltipModule } from 'primeng/tooltip';
 import { InsighterDashboardSharedModule } from '../shared/shared.module';
 
@@ -46,6 +47,7 @@ const routes: Routes = [
     SidebarModule,
     ButtonModule,
     TooltipModule,
+    DropdownModule,
     InsighterDashboardSharedModule,
   ]
 })

@@ -1,3 +1,4 @@
+import { ProjectReviewSubmission } from 'src/app/_fake/services/project-offers/project-offers.service';
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { finalize } from 'rxjs';
@@ -8,7 +9,10 @@ import {
   TimelineActionType,
   TimelineAudience,
   TimelineStepActionEvent,
+  isDeliverableStep,
+  deliverableIdFromStep,
   isDraftStep,
+  isInstallmentStep,
   isPartyStep,
   isPaymentStep,
 } from 'src/app/_fake/services/project-timeline/project-timeline.model';
@@ -24,7 +28,7 @@ interface TimelineBadge {
 
 /**
  * Presentational timeline. Renders the API-driven project timeline steps as the
- * shared "Project Actions" card + dot + progress-line design, and emits
+ * shared "Project Milestone" card + dot + progress-line design, and emits
  * `stepAction` events (keyed by step `key`) for the host to handle. All render
  * decisions come from the step payload (`display`, `state`, `status`, `amount`,
  * `date`, `party`) — the component never decides which steps exist.
@@ -36,6 +40,7 @@ interface TimelineBadge {
 })
 export class ProjectTimelineComponent {
   @Input() steps: ProjectTimelineStep[] = [];
+  @Input() reviews: ProjectReviewSubmission[] = [];
   @Input() audience: TimelineAudience = 'client';
   @Input() lang: 'en' | 'ar' | string = 'en';
 
@@ -140,9 +145,18 @@ export class ProjectTimelineComponent {
     });
   }
 
+  /** The payment that settles the project: the legacy final step, or the last installment. */
   private isFinalSettlementPayment(step: ProjectTimelineStep): boolean {
-    return step.key === TIMELINE_STEP.FINAL_PAYMENT
-      || step.key === TIMELINE_STEP.FULL_PAYMENT_AT_END;
+    if (step.key === TIMELINE_STEP.FINAL_PAYMENT || step.key === TIMELINE_STEP.FULL_PAYMENT_AT_END) {
+      return true;
+    }
+
+    if (!isInstallmentStep(step.key)) {
+      return false;
+    }
+
+    const installmentSteps = (this.steps || []).filter(item => isInstallmentStep(item.key));
+    return installmentSteps[installmentSteps.length - 1]?.key === step.key;
   }
 
   isActive(step: ProjectTimelineStep): boolean {
@@ -174,6 +188,13 @@ export class ProjectTimelineComponent {
 
   isReadonlyDraftReviewStatus(step: ProjectTimelineStep): boolean {
     return this.isActiveDraftSubmission(step) && step.status === 'pending';
+  }
+
+  isAwaitingInsighterSubmission(step: ProjectTimelineStep): boolean {
+    return this.isClient
+      && this.isDeliverable(step)
+      && this.isActive(step)
+      && step.status === 'waiting_for_draft';
   }
 
   /** Amount is only ever rendered for payment steps that carry a value. */
@@ -213,6 +234,34 @@ export class ProjectTimelineComponent {
       month: 'short',
       year: 'numeric',
     }).format(parsed);
+  }
+
+  /** Planned due date of an order installment step (contract-type installments are due on signing). */
+  installmentDueLabel(step: ProjectTimelineStep): string {
+    if (!isInstallmentStep(step.key)) {
+      return '';
+    }
+
+    const meta = (step.meta && !Array.isArray(step.meta) ? step.meta : {}) as Record<string, any>;
+    if (meta['due_type'] === 'contract') {
+      return this.lang === 'ar' ? 'عند توقيع العقد' : 'On contract signing';
+    }
+
+    const due = meta['calculated_date'] ?? meta['date'];
+    return due ? this.dateLabel({ ...step, date: `${due}` }) : '';
+  }
+
+  deliverableReviews(step: ProjectTimelineStep): ProjectReviewSubmission[] {
+    const id = deliverableIdFromStep(step);
+    return id ? this.reviews.filter(review => Number(review.deliverable?.id) === id) : [];
+  }
+
+  reviewEventDate(step: ProjectTimelineStep, value: string | null): string {
+    return value ? this.dateLabel({ ...step, date: value }) : '';
+  }
+
+  isDeliverable(step: ProjectTimelineStep): boolean {
+    return isDeliverableStep(step.key);
   }
 
   showContractSignatures(step: ProjectTimelineStep): boolean {
@@ -276,29 +325,12 @@ export class ProjectTimelineComponent {
     return isNaN(parsed.getTime()) ? null : parsed;
   }
 
-  stepNumberLabel(step: ProjectTimelineStep): string {
-    if (step.key === TIMELINE_STEP.CANCELLED_PROJECT) {
+  deliverableLabel(step: ProjectTimelineStep): string {
+    if (!this.isDeliverable(step)) {
       return '';
     }
 
-    const stepWord = this.lang === 'ar' ? 'الخطوة' : 'Step';
-    const displayStepNo = this.displayStepNumber(step);
-
-    return step.key === TIMELINE_STEP.CLOSED_PROJECT
-      ? (this.lang === 'ar' ? 'الخطوة الأخيرة' : 'Final Step')
-      : `${stepWord} ${displayStepNo}`;
-  }
-
-  private displayStepNumber(step: ProjectTimelineStep): number | string {
-    if (step.key === TIMELINE_STEP.CONTRACTING && this.hasVisiblePartyStep()) {
-      return 2;
-    }
-
-    return step.step_no ?? '';
-  }
-
-  private hasVisiblePartyStep(): boolean {
-    return this.visibleSteps.some(item => this.isParty(item));
+    return this.lang === 'ar' ? 'المخرج' : 'Deliverable';
   }
 
   iconClass(step: ProjectTimelineStep): string {
@@ -323,6 +355,8 @@ export class ProjectTimelineComponent {
       case TIMELINE_STEP.CANCELLED_PROJECT:
         return 'ki-cross-circle';
       default:
+        if (isInstallmentStep(step.key)) return 'ki-dollar';
+        if (isDeliverableStep(step.key)) return 'ki-file-added';
         return 'ki-abstract-26';
     }
   }
@@ -450,6 +484,9 @@ export class ProjectTimelineComponent {
         if (this.isActiveDraftSubmission(step) && step.status === 'changes_requested') {
           return ar ? 'مطلوب تعديل' : 'Change Requested';
         }
+        if (this.isActiveDraftSubmission(step) && isDeliverableStep(step.key)) {
+          return ar ? `إرسال «${step.title || 'المخرج'}»` : `Submit “${step.title || 'deliverable'}”`;
+        }
         if (this.isActiveDraftSubmission(step)) {
           return step.key === TIMELINE_STEP.FINAL_DRAFT
             ? (ar ? 'إرسال المسودة النهائية' : 'Submit Final Draft')
@@ -498,6 +535,10 @@ export class ProjectTimelineComponent {
 
   readonlyDraftReviewStatusLabel(): string {
     return this.lang === 'ar' ? 'بانتظار مراجعة العميل' : "Waiting Client's Review";
+  }
+
+  awaitingInsighterSubmissionLabel(): string {
+    return this.lang === 'ar' ? 'بانتظار تسليم الخبير' : "Awaiting Insighter’s submission";
   }
 
   cancelledByClientLabel(): string {

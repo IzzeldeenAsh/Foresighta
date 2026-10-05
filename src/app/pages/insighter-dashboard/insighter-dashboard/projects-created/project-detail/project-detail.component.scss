@@ -56,7 +56,7 @@
     grid-template-areas:
       'aside'
       'main';
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
@@ -1101,6 +1101,7 @@
 // Aside
 .pd-aside {
   grid-area: aside;
+  min-width: 0;
   background: var(--pd-surface-muted);
   border-radius: 0 16px 16px 0;
 
@@ -1676,7 +1677,7 @@
   background: var(--pd-surface);
 
   @media (max-width: 991px) {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 

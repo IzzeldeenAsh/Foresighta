@@ -121,7 +121,7 @@
           </th>
           <th class="min-w-170px">{{ lang === 'ar' ? 'النوع' : 'Type' }}</th>
           <th class="min-w-180px">{{ lang === 'ar' ? 'الخدمة' : 'Service' }}</th>
-          <th class="min-w-150px">{{ lang === 'ar' ? 'الموعد النهائي' : 'Deadline' }}</th>
+          <th class="min-w-150px">{{ lang === 'ar' ? 'الإغلاق المخطط' : 'Planned close' }}</th>
           <th class="min-w-180px" *ngIf="hasProjectStatus()">{{ lang === 'ar' ? 'الحالة' : 'Status' }}</th>
           <th class="w-120px"></th>
         </tr>
@@ -172,7 +172,7 @@
             <ng-template #emptyService>-</ng-template>
           </td>
 
-          <td class="text-gray-800 fw-semibold">{{ formatDate(project.deadline) }}</td>
+          <td class="text-gray-800 fw-semibold">{{ formatDate(project.schedule.closed_at || project.schedule.planned_close_date) }}</td>
 
           <td *ngIf="hasProjectStatus()" class="text-nowrap">
             <span class="pc-status-badge" [ngClass]="getStatusBadgeClass(project.status)">
@@ -231,8 +231,8 @@
 
             <div class="pc-mobile-table__meta">
               <div class="pc-mobile-table__deadline">
-                <span class="pc-mobile-table__meta-label">{{ lang === 'ar' ? 'الموعد النهائي' : 'Deadline' }}</span>
-                <span class="pc-mobile-table__meta-value">{{ formatDate(project.deadline) }}</span>
+                <span class="pc-mobile-table__meta-label">{{ lang === 'ar' ? 'الإغلاق المخطط' : 'Planned close' }}</span>
+                <span class="pc-mobile-table__meta-value">{{ formatDate(project.schedule.closed_at || project.schedule.planned_close_date) }}</span>
               </div>
               <span *ngIf="project.status"
                     class="pc-status-badge"
@@ -291,8 +291,8 @@
       <div class="pc-card__deadline">
         <span class="pc-card__deadline-icon"><i class="ki-outline ki-calendar fs-5"></i></span>
         <div class="pc-card__deadline-copy">
-          <span class="pc-card__deadline-label">{{ lang === 'ar' ? 'الموعد النهائي' : 'Deadline' }}</span>
-          <span class="pc-card__deadline-value">{{ formatDate(project.deadline) }}</span>
+          <span class="pc-card__deadline-label">{{ lang === 'ar' ? 'الإغلاق المخطط' : 'Planned close' }}</span>
+          <span class="pc-card__deadline-value">{{ formatDate(project.schedule.closed_at || project.schedule.planned_close_date) }}</span>
         </div>
       </div>
 

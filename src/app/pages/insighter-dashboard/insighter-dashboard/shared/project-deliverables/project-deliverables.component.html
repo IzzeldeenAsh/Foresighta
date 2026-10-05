@@ -1,0 +1,28 @@
+<ol class="pdl-list" *ngIf="deliverables.length; else empty">
+  <li class="pdl-item" *ngFor="let item of deliverables; let i = index; trackBy: trackById">
+    <span class="pdl-item__index" aria-hidden="true">{{ i + 1 }}</span>
+    <div class="pdl-item__body">
+      <div class="pdl-item__head">
+        <span class="pdl-item__title">{{ item.title }}</span>
+        <span class="pdl-item__service" *ngIf="showServiceNames && item.service_name">{{ item.service_name }}</span>
+      </div>
+      <div class="pdl-item__when">
+        <i class="ki-outline ki-calendar fs-7" aria-hidden="true"></i>
+        <span>{{ periodLabel(item.period_days) }}</span>
+        <span class="pdl-item__date" *ngIf="item.date">· {{ formatDate(item.date) }}</span>
+      </div>
+      <div class="pdl-item__meta">
+        <span class="pdl-chip" *ngIf="item.way.selected">
+          {{ wayLabel(item.way.selected) }}<ng-container *ngIf="item.way.address"> · {{ item.way.address }}</ng-container>
+        </span>
+        <span class="pdl-chip pdl-chip--file" *ngFor="let type of item.report_type">
+          <img [src]="fileIcon(type)" [alt]="" (error)="onFileIconError($event)" loading="lazy" />
+          {{ type.toUpperCase() }}
+        </span>
+      </div>
+    </div>
+  </li>
+</ol>
+<ng-template #empty>
+  <p class="pdl-empty">{{ lang === 'ar' ? 'لا توجد مخرجات محددة.' : 'No deliverables defined.' }}</p>
+</ng-template>
