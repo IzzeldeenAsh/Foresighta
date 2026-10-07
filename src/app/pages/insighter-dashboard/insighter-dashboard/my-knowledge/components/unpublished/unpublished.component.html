@@ -3,7 +3,7 @@
       <!-- Search and filters section - visible when there's data or after search -->
       <div class="card-header p-0 mb-4" *ngIf="(knowledges && knowledges.length > 0) || searchTerm || selectedKnowledgeType">
         <div class="d-flex justify-content-between align-items-center flex-column flex-md-row w-100 gap-3">
-          <div class="card-title" [ngClass]="allKnowledges && allKnowledges.length > 0 ? 'w-100 w-md-auto' : 'w-100'">
+          <div class="card-title w-100 w-md-auto">
             <!--begin::Search-->
             <div class="d-flex align-items-center position-relative my-1 w-100">
               <i class="ki-outline ki-magnifier fs-1 position-absolute mx-2"></i>

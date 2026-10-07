@@ -29,9 +29,9 @@ export class MyKnowledgeComponent implements OnInit, OnDestroy {
 
   private checkForKnowledge(showLoader: boolean = true) {
     if (showLoader) this.loading = true;
-    this.knowledgeService.getListKnowledge().subscribe(
+    this.knowledgeService.getPaginatedKnowledges(1).subscribe(
       (response) => {
-        this.hasKnowledge = response.data && response.data.length > 0;
+        this.hasKnowledge = response.meta?.total > 0;
         if (showLoader) this.loading = false;
       },
       (error) => {

@@ -18,7 +18,6 @@ import Swal from 'sweetalert2';
 })
 export class UnpublishedComponent implements OnInit {
   knowledges: Knowledge[] = [];
-  allKnowledges: Knowledge[] = [];
   currentPage: number = 1;
   totalPages: number = 1;
   totalItems: number = 0;
@@ -35,15 +34,6 @@ export class UnpublishedComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadPage(1);
-    this.loadAllKnowledges();
-  }
-
-  loadAllKnowledges() {
-    this.knowledgeService.getListKnowledge().subscribe(
-      (knowledges) => {
-        this.allKnowledges = knowledges.data.filter(k => k.status === 'unpublished');
-      }
-    );
   }
 
   // Filter knowledges by type

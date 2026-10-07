@@ -3,7 +3,7 @@
      <!-- Search and filters section - visible when there's data or after search -->
      <div class="card-header p-0 mb-4" *ngIf="(knowledges && knowledges.length > 0) || searchTerm || selectedKnowledgeType">
       <div class="d-flex justify-content-between align-items-center flex-column flex-md-row w-100 gap-3">
-        <div class="card-title" [ngClass]="allKnowledges && allKnowledges.length > 0 ? 'w-100 w-md-auto' : 'w-100'">
+        <div class="card-title w-100 w-md-auto">
           <!--begin::Search-->
           <div class="d-flex align-items-center position-relative my-1 w-100">
             <i class="ki-outline ki-magnifier fs-1 position-absolute mx-2"></i>
@@ -134,8 +134,7 @@
       
       <div class="d-flex gap-4">
         <!-- Table Column -->
-        <div [@columnResize]="showPackageBuilder ? 'w-65' : 'w-100'" 
-             [class]="showPackageBuilder ? 'w-65' : 'w-100'">
+        <div class="w-100">
               
           <!--begin::Table - List View-->
           <div class="table-responsive" *ngIf="selectedType === 'list'">
@@ -146,14 +145,11 @@
                   <th class="min-w-10px">{{ 'KNOWLEDGE.TYPE' | translate }}</th>
                   <th class="min-w-125px">{{ 'KNOWLEDGE.TOTAL_PRICE' | translate }}</th>
                   <th class="min-w-100px">{{ 'KNOWLEDGE.STATUS' | translate }}</th>
-                  <th class="w-125px" *ngIf="!showPackageBuilder"></th>
+                  <th class="w-125px"></th>
                 </tr>
               </thead>
               <tbody class="fw-semibold text-gray-600">
-                <tr *ngFor="let knowledge of knowledges; trackBy: trackById"
-                    draggable="true"
-                    (dragstart)="onDragStart($event, knowledge)"
-                    (dragend)="onDragEnd($event)">
+                <tr *ngFor="let knowledge of knowledges; trackBy: trackById">
                   <td>
                     <div class="d-flex align-items-center">
                       <a [routerLink]="['/app/my-knowledge-base/view-my-knowledge/', knowledge.id]" class="text-gray-800 text-hover-primary">{{ knowledge.title }}</a>
@@ -197,7 +193,7 @@
                   <td>
                     <span class="badge badge-light-success text-capitalize">{{ getStatusDisplayLabel(knowledge) }}</span>
                   </td>
-                  <td class="text-end" *ngIf="!showPackageBuilder">
+                  <td class="text-end">
                     <div class="d-flex justify-content-end">
                       <a [routerLink]="['/app/my-knowledge-base/view-my-knowledge/', knowledge.id]" 
                          class="btn btn-sm btn-icon btn-light btn-active-light-primary"
@@ -248,7 +244,7 @@
             
             <!-- Knowledge Cards -->
             <div class="col-md-6 col-lg-4 col-xl-3" *ngFor="let knowledge of knowledges; trackBy: trackById">
-              <div class="card knowledge-card h-100 min-h-220px" draggable="true" (dragstart)="onDragStart($event, knowledge)" (dragend)="onDragEnd($event)">
+              <div class="card knowledge-card h-100 min-h-220px">
                 <div class="card-body">
                   <!-- Title Section -->
                   <div class="title-section">
@@ -359,51 +355,6 @@
           </div>
           <!--end::Pagination-->
         </div>
-
-        <!-- Package Sidebar -->
-        <div class="w-35 package-sidebar position-sticky" 
-             *ngIf="showPackageBuilder && !isSmallScreen" 
-             [@slideInOut]
-             style="top: 200px; height: calc(100vh - 100px); overflow-y: auto;">
-          <div class="card">
-            <div class="card-body">
-              <app-package-builder-content
-                [packageName]="packageName"
-                [(packages)]="packages"
-                [(discount)]="discount"
-                [allKnowledges]="allKnowledges"
-                [(selectedKnowledge)]="selectedKnowledge"
-                [showDragDrop]="true"
-                [loading]="loading"
-                (savePackage)="showEmittedPackage($event)"
-                (onKnowledgeSelect)="onKnowledgeSelect($event)">
-              </app-package-builder-content>
-            </div>
-          </div>
-        </div>
-
-        <!-- Package Builder Dialog for small screens -->
-        <p-dialog 
-          [(visible)]="showDialog" 
-          [modal]="true"
-          [style]="{width: '90vw', maxWidth: '800px'}"
-          [contentStyle]="{overflow: 'visible'}"
-          [maximizable]="true"
-          [draggable]="false" 
-          [resizable]="false"
-          *ngIf="isSmallScreen && showPackageBuilder">
-          <app-package-builder-content
-            [packageName]="packageName"
-            [(packages)]="packages"
-            [(discount)]="discount"
-            [allKnowledges]="allKnowledges"
-            [(selectedKnowledge)]="selectedKnowledge"
-            [showDragDrop]="false"
-            [loading]="loading"
-            (savePackage)="showEmittedPackage($event)"
-            (onKnowledgeSelect)="onKnowledgeSelect($event)">
-          </app-package-builder-content>
-        </p-dialog>
       </div>
     </ng-container>
   </div>
