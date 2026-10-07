@@ -8,18 +8,14 @@ import { DashboardNavIconComponent } from 'src/app/reusable-components/dashboard
 import { GeneralComponent } from './components/general/general.component';
 import { ScheduledComponent } from './components/scheduled/scheduled.component';
 import { PostedComponent } from './components/posted/posted.component';
-import { PackagesComponent } from './components/packages/packages.component';
 import { FormsModule } from '@angular/forms';
-import { DragDropModule } from 'primeng/dragdrop';
 import { TooltipModule } from 'primeng/tooltip';
 import { DropdownModule } from 'primeng/dropdown';
 import { InputTextModule } from 'primeng/inputtext';
-import { PackageBuilderContentComponent } from './components/package-builder-content/package-builder-content.component';
-import { DialogModule } from 'primeng/dialog';
 import { NgbDropdownModule, NgbTooltip } from '@ng-bootstrap/ng-bootstrap';
 import { SharedModule as MetronicSharedModule } from 'src/app/_metronic/shared/shared.module';
 import { SharedModule } from 'src/app/shared/shared.module';
-import { ScheduleDialogComponent } from './components/packages/schedule-dialog/schedule-dialog.component';
+import { ScheduleDialogComponent } from './components/schedule-dialog/schedule-dialog.component';
 import { DynamicDialogModule } from 'primeng/dynamicdialog';
 import { EditorModule } from '@tinymce/tinymce-angular';
 import { UnpublishedComponent } from './components/unpublished/unpublished.component';
@@ -53,10 +49,6 @@ const routes: Routes = [
       {
         path: 'posted',
         component: PostedComponent
-      },
-      {
-        path: 'packages',
-        component: PackagesComponent
       }
     ]
   },
@@ -71,8 +63,6 @@ const routes: Routes = [
     ScheduledComponent,
     UnpublishedComponent,
     PostedComponent,
-    PackageBuilderContentComponent,
-    PackagesComponent,
     ScheduleDialogComponent,
    
   ],
@@ -84,10 +74,8 @@ const routes: Routes = [
     KnowledgeFilterChipsComponent,
     DashboardNavIconComponent,
     DropdownModule,
-    DialogModule,
     InlineSVGModule,
     FormsModule,
-    DragDropModule,
     NgbTooltip,
     ProgressBarModule,
     InputTextModule,

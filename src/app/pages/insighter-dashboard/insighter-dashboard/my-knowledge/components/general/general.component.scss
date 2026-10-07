@@ -248,23 +248,8 @@
   background: #f9fafb;
 }
 
-.w-35 {
-  width: 35%;
-}
-
-.w-65 {
-  width: 65%;
-}
-
 .min-h-220px {
   min-height: 210px;
-}
-
-.package-sidebar {
-  background: #fff;
-  border-left: 1px solid #e5e7eb;
-  padding: 0 0.5rem;
-  width: 100%;
 }
 
 .knowledge-card,
@@ -327,12 +312,6 @@
     width: 100%;
     justify-content: flex-end;
     margin-inline-start: 0;
-  }
-
-  .package-sidebar {
-    border-left: 0;
-    border-top: 1px solid #e5e7eb;
-    margin-top: 1rem;
   }
 }
 

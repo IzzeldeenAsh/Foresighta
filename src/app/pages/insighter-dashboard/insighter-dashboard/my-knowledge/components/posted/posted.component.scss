@@ -197,22 +197,6 @@
   }
 }
 
-// Package Sidebar Styles
-.package-sidebar {
-  background: #fff;
-  border-left: 1px solid var(--kt-border-color);
-  padding: 0 0.5rem;
-  width: 100%;
-  .card {
-    box-shadow: 0 0 20px rgba(76, 87, 125, 0.02);
-  }
-}
-.w-35{
-    width: 35%; 
-}
-.w-65{
-    width: 65%; 
-}   
 .min-h-220px{
   min-height: 210px;
 }
@@ -249,52 +233,6 @@
     &:hover:not(.radio-active) {
       color: #3b82f6;
     }
-  }
-}
-
-// Dropzone Styles
-.dropzone-container {
-  border: 2px dashed #e4e6ef;
-  border-radius: 0.475rem;
-  padding: 1rem;
-  transition: all 0.3s ease;
-  
-  &.dropzone-active {
-    transform: scale(1.02);
-    border-color: var(--kt-primary);
-    background-color: var(--kt-primary-light);
-  }
-}
-
-.dropzone-placeholder {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-}
-
-// Package Item Styles
-.package-item-card {
-  padding: 1rem;
-  background-color: var(--kt-gray-100);
-  border-radius: 0.475rem;
-  margin-bottom: 0.5rem;
-  transition: transform 0.2s;
-  animation: slideIn 0.3s ease-out;
-
-  &:hover {
-    transform: translateX(5px);
-  }
-}
-
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateX(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
   }
 }
 
@@ -368,15 +306,6 @@
     &:hover {
       background-color: #f5f8fa;
     }
-  }
-}
-
-// Make the layout more responsive
-@media (max-width: 992px) {
-  .package-sidebar {
-    border-left: none;
-    border-top: 1px solid var(--kt-border-color);
-    margin-top: 2rem;
   }
 }
 
@@ -463,49 +392,8 @@
   }
 }
 
-// Add these styles to your component's SCSS file
-.responsive-layout {
-  display: flex;
-  gap: 1rem;
-  
-  @media (max-width: 991px) {
-    flex-direction: column;
-  }
-
-  .table-column {
-    transition: width 0.3s ease;
-    
-    @media (min-width: 992px) {
-      &.w-65 {
-        width: 65%;
-      }
-      &.w-100 {
-        width: 100%;
-      }
-    }
-  }
-
-  .package-sidebar {
-    @media (min-width: 992px) {
-      width: 35%;
-    }
-    
-    @media (max-width: 991px) {
-      width: 100%;
-    }
-  }
-}
-
 // Additional mobile optimizations
 @media (max-width: 991px) {
-  .package-sidebar {
-    margin-top: 1rem;
-    
-    .card {
-      margin-bottom: 1rem;
-    }
-  }
-  
   .table-responsive {
     margin-bottom: 1rem;
   }

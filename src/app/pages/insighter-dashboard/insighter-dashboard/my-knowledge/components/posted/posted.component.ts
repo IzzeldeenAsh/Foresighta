@@ -1,59 +1,16 @@
-import { Component, OnInit, HostListener, Injector } from '@angular/core';
+import { Component, OnInit, Injector } from '@angular/core';
 import { Router } from '@angular/router';
 import { KnowledgeService, Knowledge } from 'src/app/_fake/services/knowledge/knowledge.service';
-import { KnowldegePackegesService } from 'src/app/_fake/services/knowldege-packages/knowldege-packeges.service';
-import { DialogService } from 'primeng/dynamicdialog';
-import { trigger, state, style, animate, transition } from '@angular/animations';
 import Swal from 'sweetalert2';
-import { switchMap } from 'rxjs';
 import { BaseComponent } from 'src/app/modules/base.component';
-
-interface PackageData {
-  packageName: string;
-  knowledge_ids: number[];
-  discount: number;
-}
 
 @Component({
   selector: 'app-posted',
   templateUrl: './posted.component.html',
-  styleUrls: ['./posted.component.scss'],
-  providers: [DialogService],
-  animations: [
-    trigger('slideInOut', [
-      state('void', style({
-        transform: 'translateX(100%)',
-        opacity: 0
-      })),
-      state('*', style({
-        transform: 'translateX(0)',
-        opacity: 1
-      })),
-      transition(':enter', [
-        animate('300ms ease-out')
-      ]),
-      transition(':leave', [
-        animate('300ms ease-in')
-      ])
-    ]),
-    trigger('columnResize', [
-      transition('* => *', [
-        animate('300ms ease-out')
-      ])
-    ])
-  ]
+  styleUrls: ['./posted.component.scss']
 })
 export class PostedComponent extends BaseComponent implements OnInit {
   knowledges: Knowledge[] = [];
-  packages: Knowledge[] = [];
-  showPackageBuilder = false;
-  showDialog = false;
-  isSmallScreen = false;
-  discount: number = 0;
-  packageName: string = '';
-  draggedItem: Knowledge | null = null;
-  allKnowledges: Knowledge[] = [];
-  selectedKnowledge: Knowledge | null = null;
   loading: boolean = false;
   currentPage: number = 1;
   totalPages: number = 1;
@@ -68,38 +25,13 @@ export class PostedComponent extends BaseComponent implements OnInit {
   constructor(
     injector: Injector,
     private knowledgeService: KnowledgeService,
-    private router: Router,
-    private knowldegePackegesService: KnowldegePackegesService,
-    private dialogService: DialogService
+    private router: Router
   ) {
     super(injector);
   }
 
-  @HostListener('window:resize', ['$event'])
-  onResize(event: any) {
-    this.checkScreenSize();
-  }
-
   ngOnInit(): void {
     this.loadPage(1);
-    this.loadAllKnowledges();
-    this.checkScreenSize();
-  }
-
-  checkScreenSize() {
-    this.isSmallScreen = window.innerWidth < 992;
-    if (this.isSmallScreen && this.showPackageBuilder) {
-      this.showDialog = true;
-      this.showPackageBuilder = false;
-    }
-  }
-
-  loadAllKnowledges() {
-    this.knowledgeService.getListKnowledge().subscribe(
-      (knowledges) => {
-        this.allKnowledges = knowledges.data.filter(k => k.status === 'published');
-      }
-    );
   }
 
   // Filter knowledges by type
@@ -229,8 +161,7 @@ export class PostedComponent extends BaseComponent implements OnInit {
       if (result.isConfirmed) {
         this.knowledgeService.deleteKnowledge(knowledge.id).subscribe(
           () => {
-            this.packages = this.packages.filter(pkg => pkg.id !== knowledge.id);
-            this.knowledges = this.knowledges.filter(k => k.id !== knowledge.id);
+                    this.knowledges = this.knowledges.filter(k => k.id !== knowledge.id);
             this.totalItems--;
             
             // Check if current page is now empty and we're not on the first page
@@ -265,52 +196,6 @@ export class PostedComponent extends BaseComponent implements OnInit {
 
   editKnowledge(knowledgeId: number): void {
     this.router.navigate(['/app/edit-knowledge/stepper', knowledgeId]);
-  }
-
-  onDragStart(event: DragEvent, knowledge: Knowledge): void {
-    this.draggedItem = knowledge;
-    if (event.dataTransfer) {
-      event.dataTransfer.setData('text', knowledge.id.toString());
-      event.dataTransfer.effectAllowed = 'move';
-    }
-  }
-
-  onDragEnd(event: DragEvent): void {
-    this.draggedItem = null;
-  }
-
-  togglePackageBuilder(): void {
-    this.showPackageBuilder = !this.showPackageBuilder;
-    
-    if (this.isSmallScreen && this.showPackageBuilder) {
-      this.showDialog = true;
-      this.showPackageBuilder = false;
-    }
-  }
-
-  onKnowledgeSelect(knowledge: any): void {
-    // Handle both direct Knowledge objects and Event objects from the template
-    if (knowledge && knowledge.id) {
-      // If a direct Knowledge object is passed
-      this.selectedKnowledge = knowledge;
-    } else if (knowledge && knowledge.target) {
-      // If an Event object is passed (from the template)
-      console.log('Event received, expected Knowledge object');
-      // You might need to extract the actual knowledge data from the event
-      // depending on how your component structure works
-    }
-  }
-
-  showEmittedPackage(data: any): void {
-    console.log('Package data:', data);
-  }
-
-  hideDialog(): void {
-    this.showDialog = false;
-  }
-
-  createPackage(): void {
-    // Implementation...
   }
 
   unpublishKnowledge(knowledgeId: number): void {
@@ -351,93 +236,5 @@ export class PostedComponent extends BaseComponent implements OnInit {
         );
       }
     });
-  }
-
-  savePackage(packageData: PackageData) {
-    if (!packageData.packageName.trim()) {
-      Swal.fire({
-        title: this.lang === 'ar' ? 'خطأ' : 'Error',
-        text: this.lang === 'ar' ? 'اسم الحزمة مطلوب' : 'Package name is required',
-        icon: 'error',
-        confirmButtonText: this.lang === 'ar' ? 'حسناً' : 'OK',
-        customClass: {
-          popup: 'text-center',
-          title: 'text-center',
-          htmlContainer: 'text-center',
-          confirmButton: 'text-center'
-        }
-      });
-      this.loading = false;
-      return;
-    }
-
-    if (packageData.knowledge_ids.length === 0) {
-      Swal.fire({
-        title: this.lang === 'ar' ? 'خطأ' : 'Error',
-        text: this.lang === 'ar' ? 'يرجى إضافة معرفة واحدة على الأقل إلى الحزمة' : 'Please add at least one knowledge to the package',
-        icon: 'error',
-        confirmButtonText: this.lang === 'ar' ? 'حسناً' : 'OK',
-        customClass: {
-          popup: 'text-center',
-          title: 'text-center',
-          htmlContainer: 'text-center',
-          confirmButton: 'text-center'
-        }
-      });
-      this.loading = false;
-      return;
-    }
-
-    this.loading = true;
-    this.knowldegePackegesService.createPackage(packageData.packageName.trim()).pipe(
-      switchMap((response: any) => {
-        const libraryPackageId = response.data.library_package_id;
-        return this.knowldegePackegesService.syncPackageKnowledge(
-          libraryPackageId,
-          packageData.knowledge_ids,
-          packageData.discount
-        );
-      })
-    ).subscribe(
-      () => {
-        Swal.fire({
-          title: this.lang === 'ar' ? 'نجح' : 'Success',
-          text: this.lang === 'ar' ? 'تم حفظ الحزمة بنجاح' : 'Package saved successfully',
-          icon: 'success',
-          confirmButtonText: this.lang === 'ar' ? 'حسناً' : 'OK',
-          customClass: {
-            popup: 'text-center',
-            title: 'text-center',
-            htmlContainer: 'text-center',
-            confirmButton: 'text-center'
-          }
-        }).then(() => {
-          this.togglePackageBuilder();
-        });
-      },
-      (error) => {
-        console.error('Error saving package:', error);
-        Swal.fire({
-          title: this.lang === 'ar' ? 'خطأ' : 'Error',
-          text: error.error?.message || (this.lang === 'ar' ? 'فشل حفظ الحزمة' : 'Failed to save package'),
-          icon: 'error',
-          confirmButtonText: this.lang === 'ar' ? 'حسناً' : 'OK',
-          customClass: {
-            popup: 'text-center',
-            title: 'text-center',
-            htmlContainer: 'text-center',
-            confirmButton: 'text-center'
-          }
-        });
-      }
-    ).add(() => {
-      this.loading = false;
-    });
-  }
-
-  private resetPackageBuilder() {
-    this.packages = [];
-    this.packageName = '';
-    this.discount = 0;
   }
 }
