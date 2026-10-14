@@ -1,3 +1,4 @@
+import { ProjectParty } from '../project-phase2/project-party.model';
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { BehaviorSubject, Observable, throwError } from 'rxjs';
@@ -182,6 +183,7 @@ export interface ProjectOffer {
   contract?: ProjectContract | null;
   offer?: ProjectOfferDetails | null;
   project: {
+    client?: ProjectParty | null;
     uuid?: string | null;
     title: string;
     type: ProjectOfferType;
@@ -715,6 +717,7 @@ export class ProjectOffersService {
       contract,
       offer: this.mapOfferDetails(match?.offer ?? project?.offer ?? null),
       project: {
+        client: project?.client ?? null,
         uuid: project?.uuid ?? '',
         title: project?.title ?? '',
         type: project?.type ?? '',

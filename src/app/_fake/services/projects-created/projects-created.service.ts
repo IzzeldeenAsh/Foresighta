@@ -1,3 +1,4 @@
+import { ProjectParty } from '../project-phase2/project-party.model';
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { BehaviorSubject, Observable, throwError } from 'rxjs';
@@ -150,6 +151,7 @@ export interface CreatedProjectScope {
 }
 
 export interface CreatedProject {
+  insighter?: ProjectParty | null;
   uuid: string;
   title: string;
   type: CreatedProjectType;
@@ -760,6 +762,7 @@ export class ProjectsCreatedService {
     const projectServices = mapProjectServices(p?.project_services);
 
     return {
+      insighter: p?.insighter ?? null,
       uuid: p?.uuid ?? '',
       title: p?.title ?? '',
       type: p?.type ?? '',

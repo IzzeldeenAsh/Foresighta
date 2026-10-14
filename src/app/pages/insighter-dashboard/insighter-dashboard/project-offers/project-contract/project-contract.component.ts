@@ -11,6 +11,7 @@ import {
 } from 'src/app/_fake/services/project-offers/project-offers.service';
 import { BaseComponent } from 'src/app/modules/base.component';
 import { ProjectScheduleFields } from 'src/app/_fake/services/project-phase2/project-phase2.model';
+import { ProjectParty } from 'src/app/_fake/services/project-phase2/project-party.model';
 
 @Component({
   selector: 'app-insighter-project-contract',
@@ -21,6 +22,7 @@ export class ProjectContractComponent extends BaseComponent implements OnInit {
   contractUuid = '';
   contract: ProjectContract | null = null;
   projectSchedule: ProjectScheduleFields | null = null;
+  client: ProjectParty | null = null;
   contractHtml: SafeHtml | null = null;
   filePreviewUrl: SafeResourceUrl | null = null;
   isLoadingContract = false;
@@ -46,6 +48,7 @@ export class ProjectContractComponent extends BaseComponent implements OnInit {
           this.returnUrl = query.get('returnUrl') || '/app/insighter-dashboard/project-offers';
           this.contractUuid = params.get('contractUuid') || '';
           this.projectSchedule = null;
+          this.client = null;
           if (this.contractUuid) this.loadContract();
 
           const projectUuid = query.get('projectUuid');
@@ -54,18 +57,21 @@ export class ProjectContractComponent extends BaseComponent implements OnInit {
 
           return this.projectOffersService.getInsighterProjectDetails(projectUuid).pipe(
             map(project => {
-              // Only show dates from the project belonging to this contract.
+              // Only show details from the project belonging to this contract.
               const projectContractUuid = project.contract_uuid
                 || project.project.contract_uuid || project.offer?.contract_uuid;
-              return projectContractUuid === contractUuid ? project.project.schedule : null;
+              return projectContractUuid === contractUuid ? project.project : null;
             }),
-            // Schedule details are supplementary; their failure must not block signing.
+            // Project details are supplementary; their failure must not block signing.
             catchError(() => of(null)),
           );
         }),
         takeUntil(this.unsubscribe$),
       )
-      .subscribe(schedule => { this.projectSchedule = schedule; });
+      .subscribe(project => {
+        this.projectSchedule = project?.schedule ?? null;
+        this.client = project?.client ?? null;
+      });
   }
 
   goBack(): void {

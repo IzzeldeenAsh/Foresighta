@@ -15,275 +15,287 @@
     </div>
   </div>
 
-  <ng-container *ngIf="project?.schedule as schedule">
-    <app-project-dates
-      *ngIf="schedule.planned_start_date || schedule.planned_close_date"
-      [startDate]="schedule.started_at || schedule.planned_start_date"
-      [endDate]="schedule.closed_at || schedule.planned_close_date"
-      [actualStart]="!!schedule.started_at" [actualEnd]="!!schedule.closed_at" [durationDays]="schedule.duration_days"
-      [lang]="lang">
-    </app-project-dates>
-  </ng-container>
+  <div class="contract-layout" [class.contract-layout--single]="!project?.insighter">
+    <div class="contract-layout__main">
+      <ng-container *ngIf="project?.schedule as schedule">
+        <app-project-dates
+          *ngIf="schedule.planned_start_date || schedule.planned_close_date"
+          [startDate]="schedule.started_at || schedule.planned_start_date"
+          [endDate]="schedule.closed_at || schedule.planned_close_date"
+          [actualStart]="!!schedule.started_at" [actualEnd]="!!schedule.closed_at" [durationDays]="schedule.duration_days"
+          [lang]="lang">
+        </app-project-dates>
+      </ng-container>
 
-  <div *ngIf="errorMessage && !contractUuid" class="alert alert-warning pcn-alert">
-    {{ errorMessage }}
-  </div>
-
-  <ng-container *ngIf="contractUuid">
-    <section *ngIf="!isContractSigned" class="pcn-choice">
-      <div class="pcn-choice__intro">
-        <span>{{ lang === 'ar' ? 'اختر طريقة العقد' : 'Choose contract type' }}</span>
-        <h3>{{ lang === 'ar' ? 'هل تريد استخدام عقد المنصة الافتراضي أم رفع عقد مخصص؟' : 'Use the platform default contract or upload a custom one?' }}</h3>
+      <div *ngIf="errorMessage && !contractUuid" class="alert alert-warning pcn-alert">
+        {{ errorMessage }}
       </div>
 
-      <div class="pcn-option-grid">
-        <button
-          type="button"
-          class="pcn-option pcn-option--default"
-          [class.is-active]="selectedMode === 'default'"
-          (click)="selectMode('default')">
-          <span class="pcn-option__icon pcn-option__icon--image">
-            <img
-              src="https://res.cloudinary.com/dsiku9ipv/image/upload/v1779632604/agreement_13888040_3_qjj4dt.png"
-              alt=""
-              aria-hidden="true" />
-          </span>
-          <span class="pcn-option__copy">
-            <strong>{{ lang === 'ar' ? 'عقد المنصة' : 'Platform Contract' }}</strong>
-            <small>{{ lang === 'ar' ? 'اقرأ الاتفاقية الحالية ثم وقّع إلكترونياً.' : 'Read the current agreement, then sign electronically.' }}</small>
-          </span>
-          <span class="pcn-option__check" *ngIf="selectedMode === 'default'">
-            <i class="ki-solid ki-check fs-3"></i>
-          </span>
-        </button>
+      <ng-container *ngIf="contractUuid">
+        <section *ngIf="!isContractSigned" class="pcn-choice">
+          <div class="pcn-choice__intro">
+            <span>{{ lang === 'ar' ? 'اختر طريقة العقد' : 'Choose contract type' }}</span>
+            <h3>{{ lang === 'ar' ? 'هل تريد استخدام عقد المنصة الافتراضي أم رفع عقد مخصص؟' : 'Use the platform default contract or upload a custom one?' }}</h3>
+          </div>
 
-        <button
-          type="button"
-          class="pcn-option pcn-option--custom"
-          [class.is-active]="selectedMode === 'custom'"
-          (click)="selectMode('custom')">
-          <span class="pcn-option__icon pcn-option__icon--image">
-            <img
-              src="https://res.cloudinary.com/dsiku9ipv/image/upload/v1779632657/agreement_13888040_4_wtfd69.png"
-              alt=""
-              aria-hidden="true" />
-          </span>
-          <span class="pcn-option__copy">
-            <strong>{{ lang === 'ar' ? 'عقد مخصص' : 'Custom Contract' }}</strong>
-            <small>{{ lang === 'ar' ? 'ارفع ملف العقد الخاص بهذا المشروع.' : 'Upload a contract file for this project.' }}</small>
-          </span>
-          <span class="pcn-option__check pcn-option__check--green" *ngIf="selectedMode === 'custom'">
-            <i class="ki-solid ki-check fs-3"></i>
-          </span>
-        </button>
-      </div>
-    </section>
+          <div class="pcn-option-grid">
+            <button
+              type="button"
+              class="pcn-option pcn-option--default"
+              [class.is-active]="selectedMode === 'default'"
+              (click)="selectMode('default')">
+              <span class="pcn-option__icon pcn-option__icon--image">
+                <img
+                  src="https://res.cloudinary.com/dsiku9ipv/image/upload/v1779632604/agreement_13888040_3_qjj4dt.png"
+                  alt=""
+                  aria-hidden="true" />
+              </span>
+              <span class="pcn-option__copy">
+                <strong>{{ lang === 'ar' ? 'عقد المنصة' : 'Platform Contract' }}</strong>
+                <small>{{ lang === 'ar' ? 'اقرأ الاتفاقية الحالية ثم وقّع إلكترونياً.' : 'Read the current agreement, then sign electronically.' }}</small>
+              </span>
+              <span class="pcn-option__check" *ngIf="selectedMode === 'default'">
+                <i class="ki-solid ki-check fs-3"></i>
+              </span>
+            </button>
 
-    <section *ngIf="selectedMode === 'default' && !hasPreparedStandardContract" class="pcn-contract-panel pcn-prepare-panel">
-      <div class="pcn-panel-head">
-        <div>
-          <span>{{ lang === 'ar' ? 'إعداد عقد المنصة' : 'Prepare Platform Contract' }}</span>
-          <h4>{{ lang === 'ar' ? 'اختر لغة العقد وبلد المحكمة' : 'Select contract language and court country' }}</h4>
-        </div>
-      </div>
+            <button
+              type="button"
+              class="pcn-option pcn-option--custom"
+              [class.is-active]="selectedMode === 'custom'"
+              (click)="selectMode('custom')">
+              <span class="pcn-option__icon pcn-option__icon--image">
+                <img
+                  src="https://res.cloudinary.com/dsiku9ipv/image/upload/v1779632657/agreement_13888040_4_wtfd69.png"
+                  alt=""
+                  aria-hidden="true" />
+              </span>
+              <span class="pcn-option__copy">
+                <strong>{{ lang === 'ar' ? 'عقد مخصص' : 'Custom Contract' }}</strong>
+                <small>{{ lang === 'ar' ? 'ارفع ملف العقد الخاص بهذا المشروع.' : 'Upload a contract file for this project.' }}</small>
+              </span>
+              <span class="pcn-option__check pcn-option__check--green" *ngIf="selectedMode === 'custom'">
+                <i class="ki-solid ki-check fs-3"></i>
+              </span>
+            </button>
+          </div>
+        </section>
 
-      <div class="pcn-prepare-steps">
-        <div class="pcn-prepare-step">
-          <span class="pcn-step-index">1</span>
-          <div class="pcn-step-body">
-            <label class="form-label required">
-              {{ lang === 'ar' ? 'لغة العقد' : 'Contract Language' }}
-            </label>
-
-            <div class="pcn-language-grid" role="group">
-              <button
-                *ngFor="let option of contractLanguageOptions"
-                type="button"
-                class="pcn-language-option"
-                [class.is-active]="contractLanguage === option.value"
-                (click)="selectContractLanguage(option.value)">
-                <span class="pcn-language-option__code">{{ option.value }}</span>
-                <span>{{ lang === 'ar' ? option.arLabel : option.label }}</span>
-                <i *ngIf="contractLanguage === option.value" class="ki-solid ki-check fs-5"></i>
-              </button>
+        <section *ngIf="selectedMode === 'default' && !hasPreparedStandardContract" class="pcn-contract-panel pcn-prepare-panel">
+          <div class="pcn-panel-head">
+            <div>
+              <span>{{ lang === 'ar' ? 'إعداد عقد المنصة' : 'Prepare Platform Contract' }}</span>
+              <h4>{{ lang === 'ar' ? 'اختر لغة العقد وبلد المحكمة' : 'Select contract language and court country' }}</h4>
             </div>
           </div>
-        </div>
 
-        <div *ngIf="contractLanguage" class="pcn-prepare-step">
-          <span class="pcn-step-index">2</span>
-          <div class="pcn-step-body">
-            <label class="form-label required">
-              {{ lang === 'ar' ? 'بلد المحكمة' : 'Court Country' }}
-            </label>
+          <div class="pcn-prepare-steps">
+            <div class="pcn-prepare-step">
+              <span class="pcn-step-index">1</span>
+              <div class="pcn-step-body">
+                <label class="form-label required">
+                  {{ lang === 'ar' ? 'لغة العقد' : 'Contract Language' }}
+                </label>
 
-            <app-country-dropdown
-              [countries]="courtCountries"
-              [(ngModel)]="selectedCourtCountryId"
-              name="courtCountry"
-              [placeholder]="lang === 'ar' ? 'اختر بلد المحكمة' : 'Select court country'"
-              [searchPlaceholder]="lang === 'ar' ? 'ابحث عن بلد...' : 'Search countries...'"
-              [enableSearch]="true"
-              [showClear]="true"
-              [lang]="lang"
-              [isInvalid]="false"
-              (countrySelected)="onCourtCountrySelected($event)"
-              (countryCleared)="onCourtCountryCleared()">
-            </app-country-dropdown>
+                <div class="pcn-language-grid" role="group">
+                  <button
+                    *ngFor="let option of contractLanguageOptions"
+                    type="button"
+                    class="pcn-language-option"
+                    [class.is-active]="contractLanguage === option.value"
+                    (click)="selectContractLanguage(option.value)">
+                    <span class="pcn-language-option__code">{{ option.value }}</span>
+                    <span>{{ lang === 'ar' ? option.arLabel : option.label }}</span>
+                    <i *ngIf="contractLanguage === option.value" class="ki-solid ki-check fs-5"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
 
-            <div *ngIf="isLoadingCountries" class="pcn-inline-loading">
-              <span class="spinner-border spinner-border-sm"></span>
-              {{ lang === 'ar' ? 'جاري تحميل البلدان...' : 'Loading countries...' }}
+            <div *ngIf="contractLanguage" class="pcn-prepare-step">
+              <span class="pcn-step-index">2</span>
+              <div class="pcn-step-body">
+                <label class="form-label required">
+                  {{ lang === 'ar' ? 'بلد المحكمة' : 'Court Country' }}
+                </label>
+
+                <app-country-dropdown
+                  [countries]="courtCountries"
+                  [(ngModel)]="selectedCourtCountryId"
+                  name="courtCountry"
+                  [placeholder]="lang === 'ar' ? 'اختر بلد المحكمة' : 'Select court country'"
+                  [searchPlaceholder]="lang === 'ar' ? 'ابحث عن بلد...' : 'Search countries...'"
+                  [enableSearch]="true"
+                  [showClear]="true"
+                  [lang]="lang"
+                  [isInvalid]="false"
+                  (countrySelected)="onCourtCountrySelected($event)"
+                  (countryCleared)="onCourtCountryCleared()">
+                </app-country-dropdown>
+
+                <div *ngIf="isLoadingCountries" class="pcn-inline-loading">
+                  <span class="spinner-border spinner-border-sm"></span>
+                  {{ lang === 'ar' ? 'جاري تحميل البلدان...' : 'Loading countries...' }}
+                </div>
+              </div>
             </div>
           </div>
+
+          <div *ngIf="contractLanguage && selectedCourtCountryId" class="pcn-prepare-actions">
+            <button
+              type="button"
+              class="btn btn-info"
+              [disabled]="!canPrepareStandardContract"
+              (click)="prepareStandardContract()">
+              <span *ngIf="isPreparingContract" class="spinner-border spinner-border-sm me-2"></span>
+              <i *ngIf="!isPreparingContract" class="ki-outline ki-document fs-6 me-1"></i>
+              {{
+                isPreparingContract
+                  ? (lang === 'ar' ? 'جاري إنشاء العقد...' : 'Generating contract...')
+                  : (lang === 'ar' ? 'إنشاء العقد' : 'Generate Contract')
+              }}
+            </button>
+          </div>
+        </section>
+
+        <section *ngIf="selectedMode === 'default' && hasPreparedStandardContract" class="pcn-contract-panel">
+          <div class="pcn-panel-head">
+            <div>
+              <span>{{ lang === 'ar' ? 'عقد المنصة' : 'Platform Contract' }}</span>
+              <h4>{{ contractDisplayName }}</h4>
+            </div>
+            <div class="pcn-contract-meta">
+              <small *ngIf="selectedContractLanguageLabel">{{ selectedContractLanguageLabel }}</small>
+              <small *ngIf="selectedCourtCountryName">{{ selectedCourtCountryName }}</small>
+            </div>
+          </div>
+
+          <div *ngIf="isLoadingContract" class="pcn-loading">
+            <span class="spinner-border spinner-border-sm"></span>
+            {{ lang === 'ar' ? 'جاري تحميل العقد...' : 'Loading contract...' }}
+          </div>
+
+          <div
+            *ngIf="!isLoadingContract && contractHtml"
+            #agreementContent
+            class="pcn-agreement"
+            (scroll)="onAgreementScroll()"
+            [innerHTML]="contractHtml">
+          </div>
+
+          <div class="pcn-footer">
+            <span class="pcn-read-note" [class.is-ready]="canSignDefault || isContractSigned">
+              <i class="ki-outline" [ngClass]="(canSignDefault || isContractSigned) ? 'ki-check-circle' : 'ki-information-5'"></i>
+              {{
+                isContractSigned
+                  ? (lang === 'ar' ? 'تم توقيع العقد من طرفك.' : 'You have signed this contract.')
+                  : canSignDefault
+                  ? (lang === 'ar' ? 'يمكنك توقيع العقد الآن.' : 'You can sign the contract now.')
+                  : (lang === 'ar' ? 'مرّر إلى نهاية العقد لتفعيل زر التوقيع.' : 'Scroll to the end of the contract to enable signing.')
+              }}
+            </span>
+
+            <button
+              type="button"
+              class="btn"
+              [ngClass]="isContractSigned ? 'btn-outline btn-outline-success pcn-signed-btn' : 'btn-info'"
+              [disabled]="isContractSigned || !canSignDefault || isSubmitting"
+              (click)="signDefaultContract()">
+              <i class="ki-outline fs-6 me-1" [ngClass]="isContractSigned ? 'ki-check' : 'ki-pencil'"></i>
+              {{
+                isContractSigned
+                  ? (lang === 'ar' ? 'تم التوقيع' : 'Signed')
+                  : isSubmitting
+                    ? (lang === 'ar' ? 'جاري التوقيع...' : 'Signing...')
+                    : (lang === 'ar' ? 'توقيع العقد' : 'Sign Contract')
+              }}
+            </button>
+          </div>
+        </section>
+
+        <section *ngIf="selectedMode === 'custom'" class="pcn-contract-panel">
+          <div class="pcn-panel-head">
+            <div>
+              <span>{{ lang === 'ar' ? 'عقد مخصص' : 'Custom Contract' }}</span>
+              <h4>
+                {{
+                  isContractSigned
+                    ? (lang === 'ar' ? 'تم توقيع العقد المخصص' : 'Custom contract signed')
+                    : (lang === 'ar' ? 'ارفع ملف العقد للتوقيع' : 'Upload the contract file to sign')
+                }}
+              </h4>
+            </div>
+          </div>
+
+          <label *ngIf="!isContractSigned" class="pcn-upload">
+            <input
+              type="file"
+              accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
+              (change)="onFileSelected($event)" />
+            <span class="pcn-upload__icon" [class.pcn-upload__icon--file]="selectedFile">
+              <img
+                *ngIf="selectedFileIcon; else uploadIcon"
+                [src]="selectedFileIcon"
+                [alt]="selectedFile?.name || 'file'" />
+              <ng-template #uploadIcon>
+                <i class="ki-outline ki-file-up fs-1"></i>
+              </ng-template>
+            </span>
+            <span class="pcn-upload__copy">
+              <strong>
+                {{ selectedFile?.name || (lang === 'ar' ? 'اختر ملف العقد' : 'Choose contract file') }}
+              </strong>
+              <small>{{ lang === 'ar' ? 'PDF أو Word أو صورة' : 'PDF, Word, or image file' }}</small>
+            </span>
+          </label>
+
+          <div class="pcn-footer">
+            <span class="pcn-read-note" [class.is-ready]="isContractSigned">
+              <i class="ki-outline" [ngClass]="isContractSigned ? 'ki-check-circle' : 'ki-information-5'"></i>
+              {{
+                isContractSigned
+                  ? (lang === 'ar' ? 'تم توقيع العقد من طرفك.' : 'You have signed this contract.')
+                  : (lang === 'ar' ? 'سيتم إرسال الملف مع توقيعك.' : 'The file will be submitted with your signature.')
+              }}
+            </span>
+
+            <button
+              type="button"
+              class="btn"
+              [ngClass]="isContractSigned ? 'btn-outline btn-outline-success pcn-signed-btn' : 'btn-info'"
+              [disabled]="isContractSigned || !canSubmitCustom"
+              (click)="signCustomContract()">
+              <i class="ki-outline fs-6 me-1" [ngClass]="isContractSigned ? 'ki-check' : 'ki-pencil'"></i>
+              {{
+                isContractSigned
+                  ? (lang === 'ar' ? 'تم التوقيع' : 'Signed')
+                  : isSubmitting
+                    ? (lang === 'ar' ? 'جاري التوقيع...' : 'Signing...')
+                    : (lang === 'ar' ? 'توقيع ورفع العقد' : 'Sign & Upload Contract')
+              }}
+            </button>
+          </div>
+        </section>
+
+        <div *ngIf="errorMessage" class="alert alert-danger pcn-alert">{{ errorMessage }}</div>
+        <div *ngIf="successMessage" class="pcn-success-alert" role="status">
+          <span class="pcn-success-alert__icon">
+            <i class="ki-solid ki-check fs-4"></i>
+          </span>
+          <span class="pcn-success-alert__copy">
+            <strong>{{ lang === 'ar' ? 'نجاح' : 'Success' }}</strong>
+            <span>{{ successMessage }}</span>
+          </span>
         </div>
-      </div>
-
-      <div *ngIf="contractLanguage && selectedCourtCountryId" class="pcn-prepare-actions">
-        <button
-          type="button"
-          class="btn btn-info"
-          [disabled]="!canPrepareStandardContract"
-          (click)="prepareStandardContract()">
-          <span *ngIf="isPreparingContract" class="spinner-border spinner-border-sm me-2"></span>
-          <i *ngIf="!isPreparingContract" class="ki-outline ki-document fs-6 me-1"></i>
-          {{
-            isPreparingContract
-              ? (lang === 'ar' ? 'جاري إنشاء العقد...' : 'Generating contract...')
-              : (lang === 'ar' ? 'إنشاء العقد' : 'Generate Contract')
-          }}
-        </button>
-      </div>
-    </section>
-
-    <section *ngIf="selectedMode === 'default' && hasPreparedStandardContract" class="pcn-contract-panel">
-      <div class="pcn-panel-head">
-        <div>
-          <span>{{ lang === 'ar' ? 'عقد المنصة' : 'Platform Contract' }}</span>
-          <h4>{{ contractDisplayName }}</h4>
-        </div>
-        <div class="pcn-contract-meta">
-          <small *ngIf="selectedContractLanguageLabel">{{ selectedContractLanguageLabel }}</small>
-          <small *ngIf="selectedCourtCountryName">{{ selectedCourtCountryName }}</small>
-        </div>
-      </div>
-
-      <div *ngIf="isLoadingContract" class="pcn-loading">
-        <span class="spinner-border spinner-border-sm"></span>
-        {{ lang === 'ar' ? 'جاري تحميل العقد...' : 'Loading contract...' }}
-      </div>
-
-      <div
-        *ngIf="!isLoadingContract && contractHtml"
-        #agreementContent
-        class="pcn-agreement"
-        (scroll)="onAgreementScroll()"
-        [innerHTML]="contractHtml">
-      </div>
-
-      <div class="pcn-footer">
-        <span class="pcn-read-note" [class.is-ready]="canSignDefault || isContractSigned">
-          <i class="ki-outline" [ngClass]="(canSignDefault || isContractSigned) ? 'ki-check-circle' : 'ki-information-5'"></i>
-          {{
-            isContractSigned
-              ? (lang === 'ar' ? 'تم توقيع العقد من طرفك.' : 'You have signed this contract.')
-              : canSignDefault
-              ? (lang === 'ar' ? 'يمكنك توقيع العقد الآن.' : 'You can sign the contract now.')
-              : (lang === 'ar' ? 'مرّر إلى نهاية العقد لتفعيل زر التوقيع.' : 'Scroll to the end of the contract to enable signing.')
-          }}
-        </span>
-
-        <button
-          type="button"
-          class="btn"
-          [ngClass]="isContractSigned ? 'btn-outline btn-outline-success pcn-signed-btn' : 'btn-info'"
-          [disabled]="isContractSigned || !canSignDefault || isSubmitting"
-          (click)="signDefaultContract()">
-          <i class="ki-outline fs-6 me-1" [ngClass]="isContractSigned ? 'ki-check' : 'ki-pencil'"></i>
-          {{
-            isContractSigned
-              ? (lang === 'ar' ? 'تم التوقيع' : 'Signed')
-              : isSubmitting
-                ? (lang === 'ar' ? 'جاري التوقيع...' : 'Signing...')
-                : (lang === 'ar' ? 'توقيع العقد' : 'Sign Contract')
-          }}
-        </button>
-      </div>
-    </section>
-
-    <section *ngIf="selectedMode === 'custom'" class="pcn-contract-panel">
-      <div class="pcn-panel-head">
-        <div>
-          <span>{{ lang === 'ar' ? 'عقد مخصص' : 'Custom Contract' }}</span>
-          <h4>
-            {{
-              isContractSigned
-                ? (lang === 'ar' ? 'تم توقيع العقد المخصص' : 'Custom contract signed')
-                : (lang === 'ar' ? 'ارفع ملف العقد للتوقيع' : 'Upload the contract file to sign')
-            }}
-          </h4>
-        </div>
-      </div>
-
-      <label *ngIf="!isContractSigned" class="pcn-upload">
-        <input
-          type="file"
-          accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
-          (change)="onFileSelected($event)" />
-        <span class="pcn-upload__icon" [class.pcn-upload__icon--file]="selectedFile">
-          <img
-            *ngIf="selectedFileIcon; else uploadIcon"
-            [src]="selectedFileIcon"
-            [alt]="selectedFile?.name || 'file'" />
-          <ng-template #uploadIcon>
-            <i class="ki-outline ki-file-up fs-1"></i>
-          </ng-template>
-        </span>
-        <span class="pcn-upload__copy">
-          <strong>
-            {{ selectedFile?.name || (lang === 'ar' ? 'اختر ملف العقد' : 'Choose contract file') }}
-          </strong>
-          <small>{{ lang === 'ar' ? 'PDF أو Word أو صورة' : 'PDF, Word, or image file' }}</small>
-        </span>
-      </label>
-
-      <div class="pcn-footer">
-        <span class="pcn-read-note" [class.is-ready]="isContractSigned">
-          <i class="ki-outline" [ngClass]="isContractSigned ? 'ki-check-circle' : 'ki-information-5'"></i>
-          {{
-            isContractSigned
-              ? (lang === 'ar' ? 'تم توقيع العقد من طرفك.' : 'You have signed this contract.')
-              : (lang === 'ar' ? 'سيتم إرسال الملف مع توقيعك.' : 'The file will be submitted with your signature.')
-          }}
-        </span>
-
-        <button
-          type="button"
-          class="btn"
-          [ngClass]="isContractSigned ? 'btn-outline btn-outline-success pcn-signed-btn' : 'btn-info'"
-          [disabled]="isContractSigned || !canSubmitCustom"
-          (click)="signCustomContract()">
-          <i class="ki-outline fs-6 me-1" [ngClass]="isContractSigned ? 'ki-check' : 'ki-pencil'"></i>
-          {{
-            isContractSigned
-              ? (lang === 'ar' ? 'تم التوقيع' : 'Signed')
-              : isSubmitting
-                ? (lang === 'ar' ? 'جاري التوقيع...' : 'Signing...')
-                : (lang === 'ar' ? 'توقيع ورفع العقد' : 'Sign & Upload Contract')
-          }}
-        </button>
-      </div>
-    </section>
-
-    <div *ngIf="errorMessage" class="alert alert-danger pcn-alert">{{ errorMessage }}</div>
-    <div *ngIf="successMessage" class="pcn-success-alert" role="status">
-      <span class="pcn-success-alert__icon">
-        <i class="ki-solid ki-check fs-4"></i>
-      </span>
-      <span class="pcn-success-alert__copy">
-        <strong>{{ lang === 'ar' ? 'نجاح' : 'Success' }}</strong>
-        <span>{{ successMessage }}</span>
-      </span>
+      </ng-container>
     </div>
-  </ng-container>
+    <aside *ngIf="project?.insighter as party" class="contract-layout__aside">
+      <app-contract-party-card
+        [party]="party"
+        role="insighter"
+        [lang]="lang"
+        [signed]="contract ? contract.insighter_sign_at : null">
+      </app-contract-party-card>
+    </aside>
+  </div>
 </div>

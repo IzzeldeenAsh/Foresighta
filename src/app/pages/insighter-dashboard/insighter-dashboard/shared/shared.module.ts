@@ -1,3 +1,4 @@
+import { ContractPartyCardComponent } from './contract-party-card.component';
 import { ProjectDatesComponent } from './project-dates/project-dates.component';
 import { ProjectServicesComponent } from './project-services/project-services.component';
 import { NgModule } from '@angular/core';
@@ -13,6 +14,7 @@ import { DashboardNavIconComponent } from 'src/app/reusable-components/dashboard
 
 @NgModule({
   declarations: [
+    ContractPartyCardComponent,
     ProjectDatesComponent,
     ProjectServicesComponent,
     PageHeaderComponent,
@@ -28,6 +30,7 @@ import { DashboardNavIconComponent } from 'src/app/reusable-components/dashboard
     DashboardNavIconComponent
   ],
   exports: [
+    ContractPartyCardComponent,
     ProjectDatesComponent,
     ProjectServicesComponent,
     PageHeaderComponent,

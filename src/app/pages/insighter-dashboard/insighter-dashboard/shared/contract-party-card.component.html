@@ -1,0 +1,40 @@
+<section class="party-card" [attr.aria-label]="roleLabel" [attr.dir]="lang === 'ar' ? 'rtl' : 'ltr'">
+  <h2 class="party-card__heading">
+    {{ role === 'insighter' ? (lang === 'ar' ? 'معلومات الخبير' : 'Insighter details') : (lang === 'ar' ? 'معلومات العميل' : 'Client details') }}
+  </h2>
+  <a
+    *ngIf="profileUrl as url; else plainIdentity"
+    class="party-card__identity party-card__identity--link"
+    [href]="url"
+    target="_blank"
+    rel="noopener noreferrer"
+    [attr.aria-label]="displayName + (lang === 'ar' ? ' — عرض الملف الشخصي في علامة تبويب جديدة' : ' — View profile in a new tab')">
+    <ng-container *ngTemplateOutlet="identityContent"></ng-container>
+  </a>
+  <ng-template #plainIdentity>
+    <div class="party-card__identity">
+      <ng-container *ngTemplateOutlet="identityContent"></ng-container>
+    </div>
+  </ng-template>
+  <ng-template #identityContent>
+    <div class="party-card__avatar">
+      <img
+        *ngIf="party.profile_photo_url && failedPhotoUrl !== party.profile_photo_url; else initialsAvatar"
+        [src]="party.profile_photo_url"
+        [alt]="displayName"
+        (error)="failedPhotoUrl = party.profile_photo_url" />
+      <ng-template #initialsAvatar><span aria-hidden="true">{{ initials }}</span></ng-template>
+    </div>
+    <div class="party-card__copy">
+      <h3>{{ displayName }} <i *ngIf="profileUrl" class="ki-outline ki-arrow-top-right party-card__profile-icon" aria-hidden="true"></i></h3>
+      <span class="badge" [ngClass]="role === 'insighter' ? 'badge-light-success' : 'badge-light-info'">{{ roleLabel }}</span>
+    </div>
+  </ng-template>
+  <div *ngIf="signed !== null" class="party-card__signature">
+    <span>{{ lang === 'ar' ? 'توقيع العقد' : 'Contract signature' }}</span>
+    <strong class="badge" [ngClass]="signed ? 'badge-light-success' : 'badge-light-warning'">
+      <i class="ki-outline" [ngClass]="signed ? 'ki-check-circle' : 'ki-time'" aria-hidden="true"></i>
+      {{ signed ? (lang === 'ar' ? 'تم التوقيع' : 'Signed') : (lang === 'ar' ? 'بانتظار التوقيع' : 'Pending signature') }}
+    </strong>
+  </div>
+</section>

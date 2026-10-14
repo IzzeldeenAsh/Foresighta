@@ -1,0 +1,21 @@
+:host { container-type: inline-size; }
+
+.contract-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  align-items: start;
+  gap: 24px;
+
+  &__main { display: flex; flex-direction: column; gap: 22px; min-width: 0; }
+  &__aside { position: sticky; top: 24px; min-width: 0; }
+
+  &--single { grid-template-columns: minmax(0, 1fr); }
+}
+
+@container (max-width: 900px) {
+  .contract-layout {
+    grid-template-columns: minmax(0, 1fr);
+
+    &__aside { position: static; grid-row: 1; }
+  }
+}
