@@ -1,3 +1,4 @@
+import { RequirementOwnership } from './project-requirements.model';
 /**
  * Project phase-2 shapes shared by the client ("projects created") and
  * insighter ("project offers" / "on work projects") dashboards.
@@ -31,7 +32,7 @@ export interface ProjectServiceRef {
   slug: string | null;
 }
 
-export interface ProjectDeliverable {
+export interface ProjectDeliverable extends RequirementOwnership {
   id: number;
   title: string;
   position: number;
@@ -45,7 +46,7 @@ export interface ProjectDeliverable {
   service_name: string | null;
 }
 
-export interface ProjectPhaseScope {
+export interface ProjectPhaseScope extends RequirementOwnership {
   scope: string | null;
   description?: string | null;
   project_service_id?: number | null;
@@ -62,6 +63,7 @@ export interface ProjectServiceDetails {
   title: string | null;
   service: ProjectServiceRef | null;
   prompt_ai: string | null;
+  ai_intake?: { requirement_summary: string | null } | null;
   scopes: ProjectPhaseScope[];
   components: Array<Record<string, any>>;
   addons: Array<Record<string, any>>;
@@ -145,6 +147,9 @@ export function mapDeliverable(raw: any, serviceName: string | null = null): Pro
 
   return {
     id,
+    filled_by_role: raw.filled_by_role,
+    filled_by_user_id: raw.filled_by_user_id,
+    source_project_proposal_offer_id: raw.source_project_proposal_offer_id,
     title: toStringOrNull(raw.title) ?? '',
     position: toNumberOrNull(raw.position) ?? 0,
     period_days: toNumberOrNull(raw.period_days) ?? 0,
@@ -194,6 +199,9 @@ export function mapProjectServices(list: any): ProjectServiceDetails[] {
         title: toStringOrNull(item.title),
         service,
         prompt_ai: toStringOrNull(item.prompt_ai),
+        ai_intake: item.ai_intake && typeof item.ai_intake === 'object'
+          ? { requirement_summary: toStringOrNull(item.ai_intake.requirement_summary) }
+          : null,
         scopes: Array.isArray(item.scopes) ? item.scopes : [],
         components,
         addons: Array.isArray(item.addons) ? item.addons : [],

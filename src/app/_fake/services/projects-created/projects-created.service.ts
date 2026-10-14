@@ -1,3 +1,4 @@
+import { OfferScope, OfferComponent } from '../project-phase2/project-requirements.model';
 import { ProjectParty } from '../project-phase2/project-party.model';
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
@@ -152,6 +153,7 @@ export interface CreatedProjectScope {
 
 export interface CreatedProject {
   insighter?: ProjectParty | null;
+  definition_mode?: 'simple' | 'advanced';
   uuid: string;
   title: string;
   type: CreatedProjectType;
@@ -173,6 +175,7 @@ export interface CreatedProject {
   budget_min: number | null;
   budget_max: number | null;
   last_proposal_deadline?: string | null;
+  created_at?: string | null;
   schedule: ProjectScheduleFields;
   /** Project-level and service-level components merged (deliverables excluded). */
   components: CreatedProjectBlock[];
@@ -219,6 +222,8 @@ export interface CreatedProjectInvitedInsighter {
 }
 
 export interface CreatedProjectSubmittedOffer {
+  offer_scopes?: OfferScope[];
+  offer_components?: OfferComponent[];
   uuid: string;
   price_type: ProjectPriceType | string | null;
   proposed_price: string | number | null;
@@ -765,6 +770,7 @@ export class ProjectsCreatedService {
       insighter: p?.insighter ?? null,
       uuid: p?.uuid ?? '',
       title: p?.title ?? '',
+      definition_mode: p?.definition_mode === 'simple' ? 'simple' : 'advanced',
       type: p?.type ?? '',
       stage: p?.stage ?? null,
       language: p?.language ?? null,
@@ -784,6 +790,7 @@ export class ProjectsCreatedService {
       budget_min: p?.budget_min ?? null,
       budget_max: p?.budget_max ?? null,
       last_proposal_deadline: p?.last_proposal_deadline ?? null,
+      created_at: p?.created_at ?? null,
       schedule: mapProjectSchedule(p),
       components: this.sanitizeBlocks(mergeComponents(p?.components, projectServices)),
       addons: this.sanitizeBlocks([
@@ -814,6 +821,8 @@ export class ProjectsCreatedService {
 
     return {
       uuid: this.stringifyValue(offer?.uuid),
+      offer_scopes: Array.isArray(offer?.offer_scopes) ? offer.offer_scopes : [],
+      offer_components: Array.isArray(offer?.offer_components) ? offer.offer_components : [],
       price_type: offer?.price_type ?? null,
       proposed_price: offer?.proposed_price ?? null,
       payment_plan: offer?.payment_plan ?? null,

@@ -1,0 +1,59 @@
+<section class="offer-overview" [attr.dir]="ar ? 'rtl' : 'ltr'" [attr.aria-label]="context === 'client' ? (ar ? 'العرض المقدم' : 'Submitted offer') : (ar ? 'عرضك المرسل' : 'Your submitted offer')">
+  <header class="offer-overview__summary">
+    <h2>{{ context === 'client' ? (ar ? 'العرض المقدم' : 'Submitted offer') : (ar ? 'عرضك المرسل' : 'Your submitted offer') }}</h2>
+    <div class="offer-overview__terms">
+      <div class="offer-overview__price"><strong>{{ price() }}</strong><span>USD</span></div>
+      <div class="offer-overview__basis">{{ pricingSummary }}</div>
+      <div class="offer-overview__status">
+        <span class="badge" [ngClass]="statusClass"><i class="pi pi-clock" *ngIf="offer.status === 'pending'" aria-hidden="true"></i>{{ offer.status === 'pending' ? (ar ? 'بانتظار المراجعة' : 'Pending review') : statusLabel }}</span>
+        <small *ngIf="offer.status === 'pending'">{{ context === 'client' ? (ar ? 'بانتظار مراجعتك' : 'Awaiting your review') : (ar ? 'بانتظار رد العميل' : 'Awaiting client response') }}</small>
+      </div>
+    </div>
+  </header>
+
+  <section class="offer-overview__letter">
+    <h3>{{ ar ? 'خطاب العرض' : 'Cover letter' }}</h3>
+    <p>{{ offer.cover_letter || (ar ? 'لا توجد رسالة مرفقة بالعرض.' : 'No cover letter was included.') }}</p>
+  </section>
+
+  <ng-content></ng-content>
+
+  <section class="offer-overview__requirements" *ngIf="groups.length">
+    <h3>{{ ar ? 'نطاق الخدمات والمخرجات المقترحة' : 'Proposed service scope and deliverables' }}</h3>
+    <article class="offer-service" *ngFor="let group of groups; trackBy: trackService">
+      <span class="offer-service__number" aria-hidden="true">{{ group.position }}</span>
+      <div class="offer-service__scope">
+        <span class="offer-overview__label">{{ group.id === null ? (ar ? 'المشروع' : 'Project') : (ar ? 'الخدمة' : 'Service') + ' ' + group.position }}</span>
+        <h4>{{ group.name }}</h4>
+        <div class="offer-service__scope-item" *ngFor="let scope of group.scopes">
+          <p class="offer-service__scope-name">{{ scope.scope }}</p>
+          <p *ngIf="scope.description">{{ scope.description }}</p>
+          <ul *ngIf="scope.children?.length"><li *ngFor="let child of scope.children">{{ child.scope }}<p *ngIf="child.description">{{ child.description }}</p></li></ul>
+        </div>
+      </div>
+      <div class="offer-service__deliverables">
+        <div class="offer-deliverable" *ngFor="let deliverable of group.deliverables">
+          <div class="offer-deliverable__content">
+            <span class="offer-overview__label">{{ ar ? 'المخرج' : 'Deliverable' }}</span>
+            <h4>{{ deliverable.title }}</h4>
+            <p class="offer-deliverable__meta"><i class="pi pi-file" aria-hidden="true"></i><span *ngIf="deliverable.report_type?.length">{{ deliverable.report_type?.join(', ')?.toUpperCase() }}<span aria-hidden="true"> · </span></span><span>{{ method(deliverable.way?.selected) }}</span></p>
+            <p *ngIf="deliverable.way?.address">{{ deliverable.way?.address }}</p>
+          </div>
+          <div class="offer-deliverable__date">
+            <span class="offer-overview__label">{{ ar ? 'موعد التسليم' : 'Due date' }}</span>
+            <strong><i class="pi pi-calendar" aria-hidden="true"></i>{{ dueDate(deliverable) || period(deliverable.period_days) }}</strong>
+            <p *ngIf="dueDate(deliverable)">{{ dayLabel(deliverable.period_days) }}</p>
+          </div>
+        </div>
+        <p *ngIf="!group.deliverables.length" class="offer-service__empty">{{ ar ? 'لم تُحدَّد مخرجات لهذه الخدمة.' : 'No deliverables defined for this service.' }}</p>
+      </div>
+    </article>
+  </section>
+
+  <app-offer-requirements *ngIf="otherComponents.length" [components]="otherComponents" [services]="services" [lang]="lang"></app-offer-requirements>
+
+  <section class="offer-overview__payments" *ngIf="offer.installments.length">
+    <h3>{{ ar ? 'خطة الدفع' : 'Payment plan' }}</h3>
+    <app-offer-installments presentation="timeline" [installments]="offer.installments" [total]="offer.proposed_price" [lang]="lang"></app-offer-installments>
+  </section>
+</section>

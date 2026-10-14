@@ -1,8 +1,11 @@
+import { MissingOfferRequirements, OfferRequirementDraft, appendRequirementFormData, mapMissingOfferRequirements, offerRequirementsAreComplete } from 'src/app/_fake/services/project-phase2/project-requirements.model';
 import { Component, Injector, OnDestroy, OnInit, QueryList, ViewChildren } from '@angular/core';
+import { CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
 import { NgModel } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { takeUntil } from 'rxjs/operators';
 import { BaseComponent } from 'src/app/modules/base.component';
+import { OfferRequirementsEditorComponent } from '../../shared/offer-requirements-editor.component';
 import {
   InsighterProjectAccountSettings,
   ProjectOffer,
@@ -32,8 +35,32 @@ export interface InstallmentDraft {
   due_type: InstallmentDueType;
   period_days: number | null;
   project_service_deliverable_id: number | null;
+  deliverable_key?: string | null;
   isProjectEnd?: boolean;
 }
+
+interface PaymentDeliverable {
+  reference: number | string;
+  title: string;
+  period_days: number | null;
+  date: string | null;
+}
+
+export type ProposalTab = 'cover' | 'scope' | 'deliverables' | 'pricing' | 'payment';
+
+interface ProposalTabItem {
+  key: ProposalTab;
+  label: { en: string; ar: string };
+  icon: string;
+}
+
+const PROPOSAL_TABS: ProposalTabItem[] = [
+  { key: 'cover', label: { en: 'Cover letter', ar: 'الرسالة التعريفية' }, icon: 'ki-document' },
+  { key: 'scope', label: { en: 'Scope of work', ar: 'نطاق العمل' }, icon: 'ki-questionnaire-tablet' },
+  { key: 'deliverables', label: { en: 'Deliverables', ar: 'المخرجات' }, icon: 'ki-cube-2' },
+  { key: 'pricing', label: { en: 'Pricing', ar: 'التسعير' }, icon: 'ki-price-tag' },
+  { key: 'payment', label: { en: 'Payment schedule', ar: 'جدول الدفعات' }, icon: 'ki-calendar' },
+];
 
 @Component({
   selector: 'app-send-proposal',
@@ -42,8 +69,48 @@ export interface InstallmentDraft {
 })
 export class SendProposalComponent extends BaseComponent implements OnInit, OnDestroy {
   @ViewChildren(NgModel) private formModels!: QueryList<NgModel>;
+  @ViewChildren(OfferRequirementsEditorComponent) private requirementEditors!: QueryList<OfferRequirementsEditorComponent>;
 
   proposal: ProjectOffer | null = null;
+  scopeDraft: OfferRequirementDraft = { offer_scopes: [], offer_components: [] };
+  deliverablesDraft: OfferRequirementDraft = { offer_scopes: [], offer_components: [] };
+  private requirementSource?: MissingOfferRequirements;
+  private requirementsBySection = { scope: mapMissingOfferRequirements(null), deliverables: mapMissingOfferRequirements(null) };
+
+  /** Stable input references keep both editors' answers intact across tab changes. */
+  private get splitRequirements() {
+    const source = this.proposal?.missing_offer_requirements;
+    if (source !== this.requirementSource) {
+      this.requirementSource = source;
+      const missing = mapMissingOfferRequirements(source);
+      const isDeliverable = (item: MissingOfferRequirements['service_components'][number]) => item.component.slug === 'deliverable-stage';
+      this.requirementsBySection = {
+        scope: {
+          scopes: missing.scopes,
+          project_components: missing.project_components.filter(item => !isDeliverable(item)),
+          service_components: missing.service_components.filter(item => !isDeliverable(item)),
+        },
+        deliverables: {
+          scopes: [],
+          project_components: missing.project_components.filter(isDeliverable),
+          service_components: missing.service_components.filter(isDeliverable),
+        },
+      };
+    }
+    return this.requirementsBySection;
+  }
+  get scopeRequirements(): MissingOfferRequirements { return this.splitRequirements.scope; }
+  get deliverablesRequirements(): MissingOfferRequirements { return this.splitRequirements.deliverables; }
+  get requirementDraft(): OfferRequirementDraft {
+    return {
+      offer_scopes: this.scopeDraft.offer_scopes,
+      offer_components: [...this.scopeDraft.offer_components, ...this.deliverablesDraft.offer_components],
+    };
+  }
+  get scopeRequirementsValid(): boolean { return offerRequirementsAreComplete(this.scopeRequirements, this.scopeDraft); }
+  get deliverablesRequirementsValid(): boolean { return offerRequirementsAreComplete(this.deliverablesRequirements, this.deliverablesDraft); }
+  get requirementsValid(): boolean { return this.scopeRequirementsValid && this.deliverablesRequirementsValid; }
+  hasAttemptedTab(tab: ProposalTab): boolean { return this.submitAttempted || this.attemptedTabs.has(tab); }
 
   /** Route param — project UUID used to load details from /insighter/project/show. */
   proposalUuid: string | null = null;
@@ -69,9 +136,94 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
   private installmentsTouched = false;
   private installmentKey = 0;
   private submitAttempted = false;
+  private attemptedTabs = new Set<ProposalTab>();
+
+  activeTab: ProposalTab = 'cover';
+
+  /** Show each requirement tab only when the backend requests its fields. */
+  get tabs(): ProposalTabItem[] {
+    const scope = this.scopeRequirements, deliverables = this.deliverablesRequirements;
+    const hasScope = !!(scope.scopes.length || scope.project_components.length || scope.service_components.length);
+    const hasDeliverables = !!(deliverables.project_components.length || deliverables.service_components.length);
+    return PROPOSAL_TABS.filter(tab => (tab.key !== 'scope' || hasScope) && (tab.key !== 'deliverables' || hasDeliverables));
+  }
+
+  get nextTab(): ProposalTabItem | null {
+    const tabs = this.tabs;
+    return tabs[tabs.findIndex(tab => tab.key === this.activeTab) + 1] ?? null;
+  }
+
+  selectTab(tab: ProposalTab, focus = false): boolean {
+    const keys = this.tabs.map(item => item.key);
+    const targetIndex = keys.indexOf(tab);
+    if (targetIndex < 0) return false;
+    if (targetIndex > keys.indexOf(this.activeTab)) {
+      const blockingTab = keys.slice(0, targetIndex).find(key => this.isTabInvalid(key));
+      if (blockingTab) {
+        this.activeTab = blockingTab;
+        this.attemptedTabs.add(blockingTab);
+        this.revealValidationErrors();
+        return false;
+      }
+    }
+    this.activeTab = tab;
+    setTimeout(() => {
+      if (focus) document.getElementById(`sp-tab-${tab}`)?.focus();
+      this.revealActiveTab();
+    }, 0);
+    return true;
+  }
+
+  /** On narrow screens the tab strip scrolls; keep the active tab centred in it. */
+  private revealActiveTab(): void {
+    const tabEl = document.getElementById(`sp-tab-${this.activeTab}`);
+    const strip = tabEl?.parentElement;
+    if (!tabEl || !strip || strip.scrollWidth <= strip.clientWidth) return;
+    const tabRect = tabEl.getBoundingClientRect();
+    const stripRect = strip.getBoundingClientRect();
+    const delta = (tabRect.left + tabRect.width / 2) - (stripRect.left + stripRect.width / 2);
+    strip.scrollBy({ left: delta, behavior: 'smooth' });
+  }
+
+  onTabKeydown(event: KeyboardEvent): void {
+    const keys = this.tabs.map(tab => tab.key);
+    const index = keys.indexOf(this.activeTab);
+    const forward = this.lang === 'ar' ? 'ArrowLeft' : 'ArrowRight';
+    const backward = this.lang === 'ar' ? 'ArrowRight' : 'ArrowLeft';
+    let next = -1;
+    if (event.key === forward) next = (index + 1) % keys.length;
+    else if (event.key === backward) next = (index - 1 + keys.length) % keys.length;
+    else if (event.key === 'Home') next = 0;
+    else if (event.key === 'End') next = keys.length - 1;
+    if (next < 0) return;
+    event.preventDefault();
+    this.selectTab(keys[next], true);
+  }
+
+  goToNextTab(): void {
+    const next = this.nextTab;
+    if (!next) return;
+    if (this.selectTab(next.key)) window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  private isTabInvalid(tab: ProposalTab): boolean {
+    const invalid: Record<ProposalTab, boolean> = {
+      cover: this.isCoverLetterInvalid(),
+      scope: !this.scopeRequirementsValid,
+      deliverables: !this.deliverablesRequirementsValid,
+      pricing: this.isPricingInvalid(),
+      payment: this.isPaymentPlanInvalid(),
+    };
+    return invalid[tab];
+  }
+
+  /** First tab, in tab order, that currently blocks submission. */
+  private firstInvalidTab(): ProposalTab | null {
+    return this.tabs.find(tab => this.isTabInvalid(tab.key))?.key ?? null;
+  }
 
   get showInstallmentErrors(): boolean {
-    return this.submitAttempted || this.installmentsTouched;
+    return this.hasAttemptedTab('payment') || this.installmentsTouched;
   }
 
   get priceTypeLabel(): string {
@@ -182,6 +334,47 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
     return this.proposal?.project?.deliverables ?? [];
   }
 
+  /** Persisted client deliverables use IDs; offer deliverables keep their frontend keys. */
+  get paymentDeliverables(): PaymentDeliverable[] {
+    const existing = this.deliverables.map(deliverable => ({ ...deliverable, reference: deliverable.id }));
+    const drafted: PaymentDeliverable[] = [];
+    this.deliverablesDraft.offer_components.forEach(component => {
+      (component.value?.deliverables ?? []).forEach((deliverable: any, index: number) => {
+        if (deliverable.key) drafted.push({
+          reference: deliverable.key,
+          title: deliverable.title?.trim() || `${this.lang === 'ar' ? 'مخرج' : 'Deliverable'} ${index + 1}`,
+          period_days: deliverable.period_days ?? null,
+          date: null,
+        });
+      });
+    });
+    return [...existing, ...drafted];
+  }
+
+  installmentDeliverableReference(item: InstallmentDraft): number | string | null {
+    return item.project_service_deliverable_id ?? item.deliverable_key ?? null;
+  }
+
+  selectInstallmentDeliverable(item: InstallmentDraft, reference: number | string | null): void {
+    item.project_service_deliverable_id = typeof reference === 'number' ? reference : null;
+    item.deliverable_key = typeof reference === 'string' ? reference : null;
+    this.installmentsTouched = true;
+  }
+
+  private linkedDeliverable(item: InstallmentDraft): PaymentDeliverable | undefined {
+    return this.paymentDeliverables.find(deliverable => deliverable.reference === this.installmentDeliverableReference(item));
+  }
+
+  onDeliverablesDraftChanged(draft: OfferRequirementDraft): void {
+    this.deliverablesDraft = draft;
+    this.installments.forEach(item => {
+      // A removed deliverable must be chosen again, without silently moving its payment.
+      if (item.deliverable_key && !this.linkedDeliverable(item)) {
+        this.selectInstallmentDeliverable(item, null);
+      }
+    });
+  }
+
   get lastDeliverable(): ProjectDeliverable | null {
     const list = this.deliverables;
     return list.length ? list[list.length - 1] : null;
@@ -243,29 +436,36 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
     ];
   }
 
+  dropInstallment(event: CdkDragDrop<InstallmentDraft[]>): void {
+    this.moveInstallment(event.previousIndex, event.currentIndex - event.previousIndex);
+  }
+
+  moveInstallment(index: number, offset: number): void {
+    const target = index + offset;
+    if (target < 0 || target >= this.installments.length || target === index) return;
+    this.installmentsTouched = true;
+    const reordered = [...this.installments];
+    moveItemInArray(reordered, index, target);
+    this.installments = reordered;
+  }
+
   removeInstallment(key: number): void {
     if (this.installments.length <= 2) return;
     this.installmentsTouched = true;
     this.installments = this.installments.filter(item => item.key !== key);
   }
 
-  getAvailableDeliverables(item: InstallmentDraft): ProjectDeliverable[] {
-    const selectedIds = new Set(this.installments
+  getAvailableDeliverables(item: InstallmentDraft): PaymentDeliverable[] {
+    const selectedReferences = new Set(this.installments
       .filter(other => other.key !== item.key && other.due_type === 'deliverable')
-      .map(other => other.project_service_deliverable_id));
-    return this.deliverables.filter(deliverable => !selectedIds.has(deliverable.id));
+      .map(other => this.installmentDeliverableReference(other)));
+    return this.paymentDeliverables.filter(deliverable => !selectedReferences.has(deliverable.reference));
   }
 
   onInstallmentChanged(item: InstallmentDraft): void {
     this.installmentsTouched = true;
     if (item.isProjectEnd) {
       item.period_days = this.durationDays;
-    }
-    if (item.due_type === 'deliverable') {
-      const available = this.getAvailableDeliverables(item);
-      if (!available.some(deliverable => deliverable.id === item.project_service_deliverable_id)) {
-        item.project_service_deliverable_id = available[0]?.id ?? null;
-      }
     }
   }
 
@@ -283,6 +483,12 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
     if ((item.due_type === type && !item.isProjectEnd) || this.isDueTypeDisabled(item, type)) return;
     item.isProjectEnd = false;
     item.due_type = type;
+    if (type === 'deliverable') {
+      const available = this.getAvailableDeliverables(item);
+      if (!available.some(deliverable => deliverable.reference === this.installmentDeliverableReference(item))) {
+        this.selectInstallmentDeliverable(item, available[0]?.reference ?? null);
+      }
+    }
     this.onInstallmentChanged(item);
   }
 
@@ -307,7 +513,7 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
   installmentDate(item: InstallmentDraft): string | null {
     if (item.due_type === 'date') return this.dateForDays(item.period_days);
     if (item.due_type === 'deliverable') {
-      const deliverable = this.deliverables.find(d => d.id === item.project_service_deliverable_id);
+      const deliverable = this.linkedDeliverable(item);
       return deliverable?.date ?? this.dateForDays(deliverable?.period_days);
     }
     return null;
@@ -327,7 +533,7 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
       errors.push(ar ? 'حدد عدد الأيام من بدء المشروع.' : 'Enter the number of days from the project start.');
     }
     const paymentDays = item.due_type === 'deliverable'
-      ? this.deliverables.find(deliverable => deliverable.id === item.project_service_deliverable_id)?.period_days
+      ? this.linkedDeliverable(item)?.period_days
       : item.due_type === 'date' ? item.period_days : null;
     if (this.durationDays !== null && paymentDays !== null && paymentDays !== undefined
       && Number(paymentDays) > this.durationDays) {
@@ -335,8 +541,12 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
         ? `لا يمكن أن تتجاوز مدة استحقاق الدفعة مدة المشروع (${this.durationDays} يومًا).`
         : `Payment duration cannot exceed the project duration (${this.durationDays} days).`);
     }
-    if (item.due_type === 'deliverable' && !item.project_service_deliverable_id) {
+    if (item.due_type === 'deliverable' && !this.linkedDeliverable(item)) {
       errors.push(ar ? 'اختر المخرج المرتبط.' : 'Pick the linked deliverable.');
+    }
+    if (item.due_type === 'deliverable' && this.linkedDeliverable(item)
+      && !this.getAvailableDeliverables(item).some(deliverable => deliverable.reference === this.installmentDeliverableReference(item))) {
+      errors.push(ar ? 'هذا المخرج مرتبط بدفعة أخرى.' : 'This deliverable is already linked to another payment.');
     }
     return errors;
   }
@@ -369,6 +579,7 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
       due_type: 'date',
       period_days: 0,
       project_service_deliverable_id: null,
+      deliverable_key: null,
       ...partial,
     };
   }
@@ -383,7 +594,7 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
   }
 
   private defaultPartialInstallments(): InstallmentDraft[] {
-    const firstDeliverable = this.deliverables[0] ?? null;
+    const firstDeliverable = this.paymentDeliverables[0] ?? null;
     return [
       this.createInstallment({
         title: this.lang === 'ar' ? 'دفعة توقيع العقد' : 'Contract payment',
@@ -396,7 +607,8 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
         percentage: 70,
         due_type: firstDeliverable ? 'deliverable' : 'date',
         period_days: firstDeliverable ? firstDeliverable.period_days : (this.durationDays ?? 0),
-        project_service_deliverable_id: firstDeliverable?.id ?? null,
+        project_service_deliverable_id: typeof firstDeliverable?.reference === 'number' ? firstDeliverable.reference : null,
+        deliverable_key: typeof firstDeliverable?.reference === 'string' ? firstDeliverable.reference : null,
       }),
     ];
   }
@@ -448,12 +660,14 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
     return this.lang === 'ar' ? meta.labelAr : meta.labelEn;
   }
 
+  /** Insighter-side status of this proposal match (not the client's project status). */
   getStatusBadgeClass(status: string | null | undefined): string {
     switch ((status || '').toLowerCase()) {
-      case 'invited': return 'badge-light-primary';
-      case 'submitted': return 'badge-light-primary';
-      case 'closed': return 'badge-light-success';
-      case 'cancelled': return 'badge-light-danger';
+      case 'pending': return 'badge-light-warning';
+      case 'viewed': return 'badge-light-info';
+      case 'interested':
+      case 'offered': return 'badge-light-success';
+      case 'not_interested':
       case 'expired': return 'badge-light-danger';
       default: return 'badge-light-info';
     }
@@ -461,15 +675,16 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
 
   getStatusLabel(status: string | null | undefined): string {
     const labels: Record<string, { en: string; ar: string }> = {
-      invited: { en: 'Invited', ar: 'مدعو' },
-      submitted: { en: 'Submitted', ar: 'مُرسل' },
-      closed: { en: 'Closed', ar: 'مغلق' },
-      cancelled: { en: 'Cancelled', ar: 'ملغي' },
+      pending: { en: 'Pending', ar: 'قيد الانتظار' },
+      viewed: { en: 'Viewed', ar: 'تمت المشاهدة' },
+      interested: { en: 'Interested', ar: 'مهتم' },
+      offered: { en: 'Offered', ar: 'تم تقديم العرض' },
+      not_interested: { en: 'Not Interested', ar: 'غير مهتم' },
       expired: { en: 'Expired', ar: 'منتهي' },
     };
     const key = (status || '').toLowerCase();
     const match = labels[key];
-    if (!match) return status || '-';
+    if (!match) return status ? this.humanizeValue(status) : '-';
     return this.lang === 'ar' ? match.ar : match.en;
   }
 
@@ -741,7 +956,7 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
 
   shouldShowFieldError(model: NgModel | null | undefined, invalidByValue: boolean = false): boolean {
     return !!(
-      (model?.touched || model?.dirty)
+      (this.hasAttemptedTab(this.activeTab) || model?.touched || model?.dirty)
       && (model?.invalid || invalidByValue)
     );
   }
@@ -771,8 +986,12 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
       if (item.due_type === 'date') {
         formData.append(`${prefix}[period_days]`, `${Math.max(0, Math.round(Number(item.period_days) || 0))}`);
       }
-      if (item.due_type === 'deliverable' && item.project_service_deliverable_id) {
-        formData.append(`${prefix}[project_service_deliverable_id]`, `${item.project_service_deliverable_id}`);
+      if (item.due_type === 'deliverable') {
+        if (item.project_service_deliverable_id) {
+          formData.append(`${prefix}[project_service_deliverable_id]`, `${item.project_service_deliverable_id}`);
+        } else if (item.deliverable_key) {
+          formData.append(`${prefix}[deliverable_key]`, item.deliverable_key);
+        }
       }
     });
 
@@ -782,11 +1001,14 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
       formData.append(`files[${index}]`, file, file.name);
     });
 
+    appendRequirementFormData(formData, 'offer_scopes', this.requirementDraft.offer_scopes.map(scope => ({ project_service_id: scope.project_service_id, scope: scope.scope.trim(), description: scope.description?.trim(), subscopes: (scope.subscopes ?? []).map(child => ({ scope: child.scope.trim(), description: child.description?.trim() })) })));
+    appendRequirementFormData(formData, 'offer_components', this.requirementDraft.offer_components.map(component => ({ project_service_id: component.project_service_id, component_id: component.component_id, value: component.value })));
     return formData;
   }
 
   private isProposalFormInvalid(): boolean {
-    return this.isCoverLetterInvalid()
+    return !this.requirementsValid || !this.proposal
+      || this.isCoverLetterInvalid()
       || this.isPricingInvalid()
       || this.isPaymentPlanInvalid();
   }
@@ -798,14 +1020,31 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
       model.control.markAsDirty();
       model.control.updateValueAndValidity();
     });
-    setTimeout(() => this.scrollToFirstInvalidField(), 0);
+    const invalidTab = this.firstInvalidTab();
+    if (invalidTab) this.activeTab = invalidTab;
+    this.revealValidationErrors();
+  }
+
+  private revealValidationErrors(): void {
+    setTimeout(() => {
+      this.requirementEditors?.forEach(editor => {
+        if (editor.section === this.activeTab) editor.revealFirstIncompleteRow();
+      });
+      this.revealActiveTab();
+      // Wait for the reopened accordion's fields to render before focusing one.
+      setTimeout(() => this.scrollToFirstInvalidField(), 0);
+    }, 0);
   }
 
   private scrollToFirstInvalidField(): void {
-    const firstInvalid = document.querySelector<HTMLElement>(
-      '.sp-input.is-invalid, .sp-input-group.is-invalid, .sp-installments__total.is-invalid'
-    );
+    const panel = document.getElementById(`sp-panel-${this.activeTab}`);
+    const firstInvalid = panel?.querySelector<HTMLElement>(
+      '.sp-input.is-invalid, .sp-input-group.is-invalid, .sp-pay-card.is-invalid, .sp-installments__total.is-invalid, .sw-input.is-invalid, .sw-pill.is-invalid'
+    ) ?? panel?.querySelector<HTMLElement>('.sw-row.is-error .sw-row__toggle');
     firstInvalid?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    const control = firstInvalid?.matches('input, textarea, select, button')
+      ? firstInvalid : firstInvalid?.querySelector<HTMLElement>('input, textarea, select, button');
+    control?.focus({ preventScroll: true });
   }
 
   private loadAll(uuid: string): void {
@@ -814,6 +1053,9 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
       .subscribe({
         next: (proposal) => {
           this.proposal = proposal;
+          this.scopeDraft = { offer_scopes: [], offer_components: [] };
+          this.deliverablesDraft = { offer_scopes: [], offer_components: [] };
+          if (!this.tabs.some(tab => tab.key === this.activeTab)) this.activeTab = 'cover';
           if (!this.installmentsTouched) {
             this.installments = this.paymentPlan === 'full'
               ? [this.defaultFullInstallment()]

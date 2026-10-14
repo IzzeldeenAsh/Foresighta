@@ -7,6 +7,7 @@ import { SendProposalComponent } from './send-proposal/send-proposal.component';
 import { ProjectContractComponent } from './project-contract/project-contract.component';
 import { TranslationModule } from 'src/app/modules/i18n';
 import { FormsModule } from '@angular/forms';
+import { DragDropModule } from '@angular/cdk/drag-drop';
 import { ProgressBarModule } from 'primeng/progressbar';
 import { PaginatorModule } from 'primeng/paginator';
 import { SidebarModule } from 'primeng/sidebar';
@@ -42,6 +43,7 @@ const routes: Routes = [
     RouterModule.forChild(routes),
     TranslationModule,
     FormsModule,
+    DragDropModule,
     ProgressBarModule,
     PaginatorModule,
     SidebarModule,

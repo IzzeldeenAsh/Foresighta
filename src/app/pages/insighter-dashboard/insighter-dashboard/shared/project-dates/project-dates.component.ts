@@ -24,7 +24,7 @@ import { Component, Input, OnChanges } from '@angular/core';
     </div>`,
   styles: [`
     :host{display:block;flex:1 1 100%;min-width:0;margin-top:4px;padding-top:16px;border-top:1px solid #eaecf0;container-type:inline-size}
-    .tl{display:flex;align-items:flex-end;gap:14px;max-width:100%}
+    .tl{display:flex;align-items:flex-end;gap:14px;max-width:min(100%,600px)}
     .side{display:flex;flex-direction:column;gap:6px;flex-shrink:0}
     .label{font-size:12px;font-weight:500;color:#667085;padding-inline-start:4px}
     .pill{display:inline-flex;align-items:center;gap:8px;height:34px;padding:0 14px;border-radius:999px;font-size:13px;font-weight:600;color:#0b1220;white-space:nowrap}

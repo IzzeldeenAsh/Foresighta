@@ -80,8 +80,9 @@
               <span>{{ lang === 'ar' ? 'المشروع' : 'Project' }}</span>
             </span>
           </th>
-          <th class="min-w-170px">{{ lang === 'ar' ? 'النوع' : 'Type' }}</th>
+          <th class="min-w-170px">{{ lang === 'ar' ? 'نوع المشروع' : 'Project type' }}</th>
           <th class="min-w-180px">{{ lang === 'ar' ? 'الخدمة' : 'Service' }}</th>
+          <th class="min-w-130px">{{ lang === 'ar' ? 'النوع' : 'Type' }}</th>
           <th class="min-w-150px">{{ lang === 'ar' ? 'موعد التسليم' : 'Deadline' }}</th>
           <th class="min-w-220px">{{ lang === 'ar' ? 'التوقيع' : 'Signature' }}</th>
           <th class="w-150px">{{ lang === 'ar' ? 'التفاصيل' : 'Details' }}</th>
@@ -122,6 +123,8 @@
             </div>
             <ng-template #emptyService>-</ng-template>
           </td>
+
+          <td><app-definition-mode-badge [mode]="project.project.definition_mode" [lang]="lang"></app-definition-mode-badge></td>
 
           <td class="text-gray-800 fw-semibold">{{ getDeadlineLabel(project) }}</td>
 
@@ -173,6 +176,7 @@
               </span>
               <span class="po-mobile-table__copy">
                 <span class="po-mobile-table__title">{{ project.project.title }}</span>
+                <app-definition-mode-badge [mode]="project.project.definition_mode" [lang]="lang"></app-definition-mode-badge>
                 <span class="po-mobile-table__summary">{{ getSummary(project) }}</span>
               </span>
               <i class="ki-outline po-mobile-table__chevron"
@@ -241,6 +245,7 @@
           <i class="ki-outline ki-briefcase fs-5"></i>
         </span>
         <span class="po-card__service-text">{{ project.project.service?.name }}</span>
+        <app-definition-mode-badge class="ms-auto" [mode]="project.project.definition_mode" [lang]="lang"></app-definition-mode-badge>
       </div>
     </div>
 
@@ -394,6 +399,14 @@
                   <div class="po-fact__body">
                     <div class="po-fact__label">{{ lang === 'ar' ? 'نوع المشروع' : 'Project Type' }}</div>
                     <div class="po-fact__value">{{ getTypeLabel(project.project.type) }}</div>
+                  </div>
+                </div>
+
+                <div class="po-fact po-fact--slate">
+                  <i class="ki-outline ki-element-11 fs-4"></i>
+                  <div class="po-fact__body">
+                    <div class="po-fact__label">{{ lang === 'ar' ? 'النوع' : 'Type' }}</div>
+                    <div class="po-fact__value">{{ project.project.definition_mode === 'simple' ? (lang === 'ar' ? 'أساسي' : 'Basic') : (lang === 'ar' ? 'متقدم' : 'Advanced') }}</div>
                   </div>
                 </div>
 
@@ -1212,6 +1225,10 @@
                   <tr>
                     <th scope="row">{{ lang === 'ar' ? 'نوع المشروع' : 'Project Type' }}</th>
                     <td>{{ getTypeLabel(project.project.type) }}</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">{{ lang === 'ar' ? 'النوع' : 'Type' }}</th>
+                    <td><app-definition-mode-badge [mode]="project.project.definition_mode" [lang]="lang"></app-definition-mode-badge></td>
                   </tr>
                   <tr>
                     <th scope="row">{{ lang === 'ar' ? 'البدء المخطط' : 'Planned start' }}</th>

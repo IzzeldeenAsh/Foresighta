@@ -1,4 +1,4 @@
-<ol class="oi-list" *ngIf="installments.length; else empty">
+<ol class="oi-list" [class.oi-list--timeline]="presentation === 'timeline'" *ngIf="installments.length; else empty">
   <li class="oi-item" *ngFor="let item of installments; let i = index; trackBy: trackByPosition">
     <span class="oi-item__index" aria-hidden="true">{{ i + 1 }}</span>
     <div class="oi-item__body">

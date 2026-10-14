@@ -121,6 +121,14 @@
               </div>
             </div>
 
+            <div class="pd-fact pd-fact--slate">
+              <i class="ki-outline ki-element-11 fs-4"></i>
+              <div class="pd-fact__body">
+                <div class="pd-fact__label">{{ lang === 'ar' ? 'النوع' : 'Type' }}</div>
+                <div class="pd-fact__value">{{ p.definition_mode === 'simple' ? (lang === 'ar' ? 'أساسي' : 'Basic') : (lang === 'ar' ? 'متقدم' : 'Advanced') }}</div>
+              </div>
+            </div>
+
             <div class="pd-fact pd-fact--green" *ngIf="p.phase">
               <i class="ki-outline ki-chart-pie-simple fs-4"></i>
               <div class="pd-fact__body">
@@ -1567,10 +1575,10 @@
            appendTo="body"
            [modal]="true"
            [dismissible]="true"
-           [blockScroll]="false"
+           [blockScroll]="true"
            [baseZIndex]="1300"
            [showCloseIcon]="false"
-           [style]="{ width: '66vw', maxWidth: '1180px' }"
+           [style]="{ width: '86vw', maxWidth: '1280px' }"
            styleClass="pd-proposal-drawer"
            (onHide)="closeProposalDrawer()">
   <ng-container *ngIf="selectedInvite as invite">
@@ -1580,8 +1588,8 @@
           <button type="button"
                   class="pd-iconbtn"
                   (click)="closeProposalDrawer()"
-                  [attr.aria-label]="lang === 'ar' ? 'رجوع' : 'Back'">
-            <i class="ki-outline fs-3" [ngClass]="getBackIcon()"></i>
+                  [attr.aria-label]="lang === 'ar' ? 'إغلاق العرض' : 'Close offer'">
+            <i class="pi pi-times" aria-hidden="true"></i>
           </button>
         </div>
 
@@ -1595,9 +1603,7 @@
                     : (lang === 'ar' ? 'عرض مقدم' : 'Submitted Offer')
                 }}
               </span>
-              <span class="badge" [ngClass]="getOfferStatusBadgeClass(invite)">
-                {{ getOfferStatusLabel(invite) }}
-              </span>
+
             </div>
 
             <div class="pd-proposal-drawer__person">
@@ -1623,48 +1629,13 @@
             </div>
           </div>
 
-          <section class="pd-proposal-drawer__section">
-            <div class="pd-section__head">
-              <h6 class="pd-section__title">{{ lang === 'ar' ? 'الرسالة التعريفية' : 'Cover Letter' }}</h6>
-              <span class="pd-section__eyebrow">{{ lang === 'ar' ? 'محتوى العرض' : 'Offer Note' }}</span>
-            </div>
-            <div class="pd-proposal-drawer__letter">
-              {{ invite.offer?.cover_letter || (lang === 'ar' ? 'لا توجد رسالة مرفقة.' : 'No cover letter provided.') }}
-            </div>
-          </section>
-
-          <section class="pd-proposal-drawer__section">
-            <div class="pd-section__head">
-              <h6 class="pd-section__title">{{ lang === 'ar' ? 'تفاصيل التسعير' : 'Commercial Details' }}</h6>
-              <span class="pd-section__eyebrow">{{ lang === 'ar' ? 'سعر ومدة' : 'Price & Time' }}</span>
-            </div>
-
-            <div class="pd-proposal-drawer__stats">
-              <div class="pd-proposal-drawer__stat pd-proposal-drawer__stat--price">
-                <span class="pd-proposal-drawer__stat-icon">
-                  <i class="ki-outline ki-dollar fs-4"></i>
-                </span>
-                <span class="pd-proposal-drawer__stat-copy">
-                  <span class="pd-proposal-drawer__stat-label">{{ lang === 'ar' ? 'سعر العرض' : 'Offer Price' }}</span>
-                  <span class="pd-proposal-drawer__stat-value">{{ formatPrice(invite.offer?.proposed_price) }}</span>
-                </span>
-              </div>
-              <div class="pd-proposal-drawer__stat pd-proposal-drawer__stat--hours">
-                <span class="pd-proposal-drawer__stat-icon">
-                  <i class="ki-outline ki-time fs-4"></i>
-                </span>
-                <span class="pd-proposal-drawer__stat-copy">
-                  <span class="pd-proposal-drawer__stat-label">{{ lang === 'ar' ? 'أساس التسعير' : 'Pricing basis' }}</span>
-                  <span class="pd-proposal-drawer__stat-value">{{ getPricingSummary(invite.offer) }}</span>
-                </span>
-              </div>
-            </div>
-
-            <div class="mt-4" *ngIf="invite.offer?.installments?.length">
-              <div class="fw-semibold text-gray-800 fs-7 mb-2">{{ lang === 'ar' ? 'جدول الدفعات' : 'Payment schedule' }}</div>
-              <app-offer-installments [installments]="invite.offer?.installments ?? []" [total]="invite.offer?.proposed_price ?? null" [lang]="lang"></app-offer-installments>
-            </div>
-          </section>
+          <app-offer-overview *ngIf="invite.offer as submittedOffer" context="client"
+            [offer]="submittedOffer" [services]="project?.project_services ?? []" [lang]="lang"
+            [baseDate]="project?.schedule?.started_at || project?.schedule?.planned_start_date || null"
+            [statusLabel]="getOfferStatusLabel(invite)"
+            [statusClass]="getOfferStatusBadgeClass(invite)"
+            [pricingSummary]="getPricingSummary(submittedOffer)">
+          </app-offer-overview>
         </div>
       </div>
 

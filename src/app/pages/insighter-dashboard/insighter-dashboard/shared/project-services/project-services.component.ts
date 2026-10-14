@@ -18,7 +18,12 @@ const METHOD_COLORS: Record<string, [string, string]> = {
     <section *ngFor="let service of services" class="service-card">
       <header class="service-head"><span>{{ ar ? 'الخدمة' : 'Service' }} {{ service.position }}</span><h3>{{ service.title || service.service?.name }}</h3></header>
 
-      <div *ngIf="service.prompt_ai" class="block">
+      <div *ngIf="service.ai_intake?.requirement_summary as summary" class="block">
+        <div class="label">{{ ar ? 'ملخص المتطلبات' : 'Requirement Summary' }}</div>
+        <p class="prompt" dir="auto">{{ summary }}</p>
+      </div>
+
+      <div *ngIf="!service.ai_intake?.requirement_summary && service.prompt_ai" class="block">
         <div class="label">{{ ar ? 'وصف الخدمة' : 'Service description' }}</div>
         <p class="prompt">{{ service.prompt_ai }}</p>
       </div>
@@ -28,14 +33,14 @@ const METHOD_COLORS: Record<string, [string, string]> = {
         <div class="scopes">
           <ng-container *ngFor="let scope of service.scopes">
             <div class="scope">
-              <strong>{{ scope.scope }}</strong>
+              <strong>{{ scope.scope }}</strong><span class="owner" *ngIf="scope.filled_by_role">{{ ownerLabel(scope.filled_by_role) }}</span>
               <p *ngIf="scope.description">{{ scope.description }}</p>
               <div *ngIf="scope.files?.length" class="files">
                 <button *ngFor="let file of scope.files" type="button" class="file" (click)="openFile.emit(file)"><i class="ki-outline ki-paper-clip"></i>{{ file.name || (ar ? 'مرفق' : 'Attachment') }}</button>
               </div>
             </div>
             <div *ngFor="let child of scope.children" class="child">
-              <span>{{ child.scope }}</span>
+              <span>{{ child.scope }}</span><span class="owner" *ngIf="child.filled_by_role">{{ ownerLabel(child.filled_by_role) }}</span>
               <p *ngIf="child.description">{{ child.description }}</p>
               <div *ngIf="child.files?.length" class="files">
                 <button *ngFor="let file of child.files" type="button" class="file" (click)="openFile.emit(file)"><i class="ki-outline ki-paper-clip"></i>{{ file.name || (ar ? 'مرفق' : 'Attachment') }}</button>
@@ -47,11 +52,11 @@ const METHOD_COLORS: Record<string, [string, string]> = {
 
       <div class="facts" *ngIf="component(service, 'data-sources-expected') || component(service, 'target-market')">
         <div *ngIf="component(service, 'data-sources-expected') as sources">
-          <div class="label">{{ ar ? 'مصادر البيانات' : 'Data sources' }}</div>
+          <div class="label">{{ ar ? 'مصادر البيانات' : 'Data sources' }} <span class="owner" *ngIf="owner(service, 'data-sources-expected') as role">{{ ownerLabel(role) }}</span></div>
           <div class="value">{{ label(sources) }}</div>
         </div>
         <div *ngIf="component(service, 'target-market') as market">
-          <div class="label">{{ ar ? 'السوق المستهدف' : 'Target market' }}</div>
+          <div class="label">{{ ar ? 'السوق المستهدف' : 'Target market' }} <span class="owner" *ngIf="owner(service, 'target-market') as role">{{ ownerLabel(role) }}</span></div>
           <div class="chips"><span *ngFor="let item of market.objects" class="chip">{{ item.name }}</span></div>
         </div>
       </div>
@@ -94,7 +99,7 @@ const METHOD_COLORS: Record<string, [string, string]> = {
 `,
   styles: [`
     :host{display:block;container-type:inline-size}
-    .service-card{min-width:0}
+    .owner{display:inline-flex;padding:2px 8px;margin-inline-start:8px;border-radius:999px;background:#f0f9ff;color:#0369a1;font-size:11px;font-weight:500}.service-card{min-width:0}
     .service-card+.service-card{margin-top:28px;padding-top:28px;border-top:1px solid #e2e8f0}
     .service-head span{font-size:12px;font-weight:500;color:#64748b}
     .service-head h3{font-size:18px;font-weight:600;color:#0f172a;margin:4px 0 0}
@@ -148,6 +153,8 @@ export class ProjectServicesComponent {
   @Input() lang = 'en';
   @Output() openFile = new EventEmitter<any>();
   get ar(): boolean { return this.lang === 'ar'; }
+  ownerLabel(role: string): string { return role === 'insighter' ? (this.ar ? 'حدده الإنسايتر' : 'Defined by Insighter') : (this.ar ? 'حدده العميل' : 'Defined by Client'); }
+  owner(service: ProjectServiceDetails, key: string): string | null { return service.components.find(block => key in block)?.['filled_by_role'] ?? null; }
   component(service: ProjectServiceDetails, key: string): any { return service.components.find(block => key in block)?.[key]; }
   // Relative due periods remain sortable before the backend calculates dates.
   timeline(service: ProjectServiceDetails): ProjectDeliverable[] {

@@ -924,6 +924,15 @@
 }
 
 
+// Below sm the content row stacks (flex-column); margin-inline:auto would stop the
+// cross-axis stretch and shrink the area to its content, collapsing pages that use
+// container queries (zero intrinsic width) such as send-proposal.
+@media screen and (max-width: 575.98px) {
+  .main-content-area {
+    width: 100%;
+  }
+}
+
 @media screen and (max-width: 574px)  {
   .responsive-cont {
     padding-top: 24px;

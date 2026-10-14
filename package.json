@@ -14,7 +14,8 @@
     "build:ssr": "node --max-old-space-size=8192 node_modules/.bin/ng build && node --max-old-space-size=8192 node_modules/.bin/ng run demo1:server",
     "prerender": "ng run demo1:prerender",
     "build:prod": "node --max-old-space-size=8192 node_modules/.bin/ng build --configuration production",
-    "build:stage": "node --max-old-space-size=8192 node_modules/.bin/ng build --configuration staging"
+    "build:stage": "node --max-old-space-size=8192 node_modules/.bin/ng build --configuration staging",
+    "test:project-requirements": "ng test --watch=false --browsers=ChromeHeadless --main=src/test-project-requirements.ts --ts-config=tsconfig.project-requirements-spec.json --include=src/app/pages/insighter-dashboard/insighter-dashboard/shared/offer-requirements-editor.component.spec.ts"
   },
   "private": true,
   "dependencies": {

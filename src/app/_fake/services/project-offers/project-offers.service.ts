@@ -1,3 +1,4 @@
+import { DefinitionMode, MissingOfferRequirements, OfferScope, OfferComponent, mapMissingOfferRequirements } from '../project-phase2/project-requirements.model';
 import { ProjectParty } from '../project-phase2/project-party.model';
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
@@ -140,6 +141,8 @@ export interface ProjectOfferProposalSummary {
 }
 
 export interface ProjectOfferDetails {
+  offer_scopes?: OfferScope[];
+  offer_components?: OfferComponent[];
   uuid: string;
   price_type: ProjectPriceType | string | null;
   proposed_price: string | number | null;
@@ -158,6 +161,7 @@ export interface ProjectOfferDetails {
 }
 
 export interface ProjectOffer {
+  missing_offer_requirements?: MissingOfferRequirements;
   /** Project UUID — routing/details identifier (GET /insighter/project/show/{uuid}). */
   uuid: string;
   /** Backward-compatible status. Prefer proposal_status/project_status in new UI. */
@@ -186,6 +190,7 @@ export interface ProjectOffer {
     client?: ProjectParty | null;
     uuid?: string | null;
     title: string;
+    definition_mode?: DefinitionMode;
     type: ProjectOfferType;
     language: string | null;
     service: ProjectOfferService | null;
@@ -701,6 +706,7 @@ export class ProjectOffersService {
 
     return {
       uuid: project?.uuid ?? '',
+      missing_offer_requirements: mapMissingOfferRequirements(project?.missing_offer_requirements),
       status: projectStatus ?? proposalStatus,
       action_status: match?.action_status ?? proposal?.action_status ?? null,
       project_status: projectStatus,
@@ -720,6 +726,7 @@ export class ProjectOffersService {
         client: project?.client ?? null,
         uuid: project?.uuid ?? '',
         title: project?.title ?? '',
+        definition_mode: project?.definition_mode === 'simple' ? 'simple' : 'advanced',
         type: project?.type ?? '',
         language: project?.language ?? null,
         service: project?.service ?? null,

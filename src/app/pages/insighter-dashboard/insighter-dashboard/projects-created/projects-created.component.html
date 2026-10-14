@@ -119,8 +119,9 @@
               <span>{{ lang === 'ar' ? 'المشروع' : 'Project' }}</span>
             </span>
           </th>
-          <th class="min-w-170px">{{ lang === 'ar' ? 'النوع' : 'Type' }}</th>
+          <th class="min-w-170px">{{ lang === 'ar' ? 'نوع المشروع' : 'Project type' }}</th>
           <th class="min-w-180px">{{ lang === 'ar' ? 'الخدمة' : 'Service' }}</th>
+          <th class="min-w-130px">{{ lang === 'ar' ? 'النوع' : 'Type' }}</th>
           <th class="min-w-150px">{{ lang === 'ar' ? 'الإغلاق المخطط' : 'Planned close' }}</th>
           <th class="min-w-180px" *ngIf="hasProjectStatus()">{{ lang === 'ar' ? 'الحالة' : 'Status' }}</th>
           <th class="w-120px"></th>
@@ -172,6 +173,8 @@
             <ng-template #emptyService>-</ng-template>
           </td>
 
+          <td><app-definition-mode-badge [mode]="project.definition_mode" [lang]="lang"></app-definition-mode-badge></td>
+
           <td class="text-gray-800 fw-semibold">{{ formatDate(project.schedule.closed_at || project.schedule.planned_close_date) }}</td>
 
           <td *ngIf="hasProjectStatus()" class="text-nowrap">
@@ -222,6 +225,7 @@
                    [alt]="lang === 'ar' ? 'أيقونة المشروع' : 'Project icon'">
               <div class="pc-mobile-table__copy">
                 <span class="pc-mobile-table__title">{{ project.title }}</span>
+                <app-definition-mode-badge [mode]="project.definition_mode" [lang]="lang"></app-definition-mode-badge>
                 <span class="pc-mobile-table__summary">{{ getSummary(project) }}</span>
               </div>
               <i class="ki-outline pc-mobile-table__chevron"
@@ -285,6 +289,7 @@
     <div class="pc-card__service" *ngIf="project.service?.name">
       <span class="pc-service-icon"><i class="ki-outline ki-briefcase fs-5"></i></span>
       <span class="pc-card__service-text">{{ project.service?.name }}</span>
+      <app-definition-mode-badge class="ms-auto" [mode]="project.definition_mode" [lang]="lang"></app-definition-mode-badge>
     </div>
 
     <div class="pc-card__footer">

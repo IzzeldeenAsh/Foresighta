@@ -95,6 +95,7 @@
             </span>
           </th>
           <th class="min-w-180px">{{ lang === 'ar' ? 'الخدمة' : 'Service' }}</th>
+          <th class="min-w-130px">{{ lang === 'ar' ? 'النوع' : 'Type' }}</th>
           <th class="min-w-150px">{{ lang === 'ar' ? 'الموعد النهائي' : 'Deadline' }}</th>
           <th class="min-w-200px">{{ lang === 'ar' ? 'الحالة' : 'Status' }}</th>
           <th class="w-100px"></th>
@@ -148,6 +149,8 @@
             </div>
             <ng-template #emptyService>-</ng-template>
           </td>
+
+          <td><app-definition-mode-badge [mode]="offer.project.definition_mode" [lang]="lang"></app-definition-mode-badge></td>
 
           <td class="text-gray-800 fw-semibold">{{ getDeadlineLabel(offer) }}</td>
 
@@ -204,6 +207,7 @@
                   </span>
                   {{ offer.project.title }}
                 </span>
+                <app-definition-mode-badge [mode]="offer.project.definition_mode" [lang]="lang"></app-definition-mode-badge>
                 <span *ngIf="isOpenActiveProject(offer)" class="po-active-marker">
                   <span class="po-active-marker__dot"></span>
                   {{ lang === 'ar' ? 'مشروع نشط' : 'Active Project' }}
@@ -263,6 +267,7 @@
           <i class="ki-outline ki-briefcase fs-5"></i>
         </span>
         <span class="po-card__service-text">{{ offer.project.service?.name }}</span>
+        <app-definition-mode-badge class="ms-auto" [mode]="offer.project.definition_mode" [lang]="lang"></app-definition-mode-badge>
       </div>
     </div>
 
@@ -396,7 +401,7 @@
 </div>
 
 <ng-template #offerDetailsContent let-offer>
-    <div class="po-drawer__wrap">
+    <div class="po-drawer__wrap" [class.po-drawer__wrap--offer]="activeDrawerTab === 'offer'">
       <div class="po-drawer__main">
         <div class="po-drawer__topbar">
           <button type="button" class="po-iconbtn" (click)="closeDrawer()"
@@ -461,6 +466,14 @@
               </div>
             </div>
 
+            <div class="po-fact po-fact--slate">
+              <i class="ki-outline ki-element-11 fs-4"></i>
+              <div class="po-fact__body">
+                <div class="po-fact__label">{{ lang === 'ar' ? 'النوع' : 'Type' }}</div>
+                <div class="po-fact__value">{{ offer.project.definition_mode === 'simple' ? (lang === 'ar' ? 'أساسي' : 'Basic') : (lang === 'ar' ? 'متقدم' : 'Advanced') }}</div>
+              </div>
+            </div>
+
             <div class="po-fact po-fact--green" *ngIf="offer.project.phase">
               <i class="ki-outline ki-chart-pie-simple fs-4"></i>
               <div class="po-fact__body">
@@ -503,6 +516,36 @@
               </div>
             </div>
           </section>
+
+          <ng-container *ngIf="offer.missing_offer_requirements as missing">
+            <details open class="po-section po-section--accordion po-section--requirements" *ngIf="!offer.offer && (missing.scopes.length || missing.project_components.length || missing.service_components.length)">
+              <summary class="po-section__head po-section__summary">
+                <span class="po-section__title-icon" aria-hidden="true"><i class="pi pi-list-check"></i></span>
+                <h6 class="po-section__title">{{ lang === 'ar' ? 'متطلبات عرضك' : 'Offer Requirements' }}</h6>
+                <span class="po-section__eyebrow">{{ lang === 'ar' ? 'مطلوب منك' : 'To complete' }}</span>
+                <span class="po-section__chevron" aria-hidden="true">
+                  <i class="pi pi-chevron-down"></i>
+                </span>
+              </summary>
+              <div class="po-req">
+                <p class="po-req__intro">{{ lang === 'ar' ? 'المتطلبات المحددة من العميل للقراءة فقط. أكمل العناصر التالية عند إرسال عرضك.' : 'Client-defined requirements are read-only. Complete the following items when sending your offer.' }}</p>
+                <div class="po-req__groups">
+                  <section class="po-req__group" *ngFor="let group of missingRequirementGroups(offer); trackBy: trackByRequirementGroup">
+                    <header class="po-req__group-head">
+                      <span class="po-req__group-title">{{ group.title }}</span>
+                      <span class="po-req__count">{{ group.items.length }}</span>
+                    </header>
+                    <ul class="po-req__list">
+                      <li class="po-req__item" *ngFor="let item of group.items">
+                        <span class="po-req__mark" aria-hidden="true"></span>
+                        <span class="po-req__name">{{ item }}</span>
+                      </li>
+                    </ul>
+                  </section>
+                </div>
+              </div>
+            </details>
+          </ng-container>
 
           <details class="po-section po-section--accordion po-section--services" *ngIf="(offer.project.project_services || []).length">
             <summary class="po-section__head po-section__summary">
@@ -885,45 +928,12 @@
             </ng-container>
 
             <ng-container *ngSwitchCase="'offer'">
-              <details class="po-section po-section--accordion po-offer-detail" *ngIf="offer.offer as submittedOffer">
-                <summary class="po-section__head po-section__summary">
-                  <span class="po-section__title-icon" aria-hidden="true"><i class="pi pi-briefcase"></i></span>
-                  <h6 class="po-section__title">{{ lang === 'ar' ? 'تفاصيل عرضي' : 'My Offer Details' }}</h6>
-                  <span class="po-section__eyebrow">{{ lang === 'ar' ? 'العرض المرسل' : 'Submitted Offer' }}</span>
-                  <span class="po-section__chevron" aria-hidden="true">
-                    <i class="pi pi-chevron-down"></i>
-                  </span>
-                </summary>
-
-                <div class="po-detail-card po-detail-card--offer mt-4">
-                  <div class="po-detail-card__header">
-                    <span class="po-detail-card__icon">
-                      <i class="ki-outline ki-note-2 fs-4"></i>
-                    </span>
-                    <div class="po-detail-card__copy">
-                      <div class="po-detail-card__title">{{ lang === 'ar' ? 'خطاب العرض' : 'Cover Letter' }}</div>
-                      <div class="po-detail-card__subtitle">
-                        {{ lang === 'ar' ? 'النص الذي تم إرساله مع عرضك.' : 'The message sent with your offer.' }}
-                      </div>
-                    </div>
-                  </div>
-                  <div class="po-detail-card__body">
-                    <p class="po-section__text mb-0">{{ submittedOffer.cover_letter || '-' }}</p>
-                  </div>
-                </div>
-
-                <div class="po-detail-card po-detail-card--offer mt-4">
-                  <div class="po-detail-card__header">
-                    <span class="po-detail-card__icon">
-                      <i class="ki-outline ki-status fs-4"></i>
-                    </span>
-                    <div class="po-detail-card__copy">
-                      <div class="po-detail-card__title">{{ lang === 'ar' ? 'حالة العرض' : 'Offer Status' }}</div>
-                      <div class="po-detail-card__subtitle">{{ getOfferStatusLabel(submittedOffer.status) }}</div>
-                    </div>
-                  </div>
-                </div>
-
+              <app-offer-overview *ngIf="offer.offer as submittedOffer"
+                [offer]="submittedOffer" [services]="offer.project.project_services" [lang]="lang"
+                [baseDate]="offer.project.schedule.started_at || offer.project.schedule.planned_start_date"
+                [statusLabel]="getOfferStatusLabel(submittedOffer.status)"
+                [statusClass]="getOfferStatusBadgeClass(submittedOffer.status)"
+                [pricingSummary]="getPricingSummary(submittedOffer)">
                 <div class="po-document-group mt-4" *ngIf="getOfferFiles(offer).length">
                   <div class="po-document-group__head">
                     <span class="po-document-group__icon po-document-group__icon--offer"><i class="ki-outline ki-paper-clip fs-5"></i></span>
@@ -953,31 +963,7 @@
                   </div>
                 </div>
 
-                <div class="po-offer-summary-grid mt-4">
-                  <div class="po-offer-summary-card po-offer-summary-card--price">
-                    <span class="po-offer-summary-card__icon">
-                      <i class="ki-outline ki-dollar fs-4"></i>
-                    </span>
-                    <span class="po-offer-summary-card__copy">
-                      <span class="po-offer-summary-card__label">{{ lang === 'ar' ? 'السعر المقترح' : 'Proposed Price' }}</span>
-                      <span class="po-offer-summary-card__value">${{ formatMoney(submittedOffer.proposed_price) }}</span>
-                    </span>
-                  </div>
-                  <div class="po-offer-summary-card po-offer-summary-card--hours">
-                    <span class="po-offer-summary-card__icon">
-                      <i class="ki-outline ki-time fs-4"></i>
-                    </span>
-                    <span class="po-offer-summary-card__copy">
-                      <span class="po-offer-summary-card__label">{{ lang === 'ar' ? 'أساس التسعير' : 'Pricing basis' }}</span>
-                      <span class="po-offer-summary-card__value">{{ getPricingSummary(submittedOffer) }}</span>
-                    </span>
-                  </div>
-                </div>
-                <div class="mt-4" *ngIf="submittedOffer.installments?.length">
-                  <div class="fw-semibold text-gray-800 fs-7 mb-2">{{ lang === 'ar' ? 'جدول الدفعات' : 'Payment schedule' }}</div>
-                  <app-offer-installments [installments]="submittedOffer.installments" [total]="submittedOffer.proposed_price" [lang]="lang"></app-offer-installments>
-                </div>
-              </details>
+              </app-offer-overview>
             </ng-container>
           </ng-container>
         </div>
@@ -1075,6 +1061,10 @@
                       {{ getStatusLabel(offer) }}
                     </span>
                   </td>
+                </tr>
+                <tr>
+                  <th scope="row">{{ lang === 'ar' ? 'النوع' : 'Type' }}</th>
+                  <td><app-definition-mode-badge [mode]="offer.project.definition_mode" [lang]="lang"></app-definition-mode-badge></td>
                 </tr>
                 <tr>
                   <th scope="row">{{ lang === 'ar' ? 'الخدمة' : 'Service' }}</th>

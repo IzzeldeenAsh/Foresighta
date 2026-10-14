@@ -1,0 +1,56 @@
+:host { display: block; min-width: 0; container: offer-overview / inline-size; }
+.offer-overview {
+  padding: 24px 28px 32px; border: 1px solid #e5e9f0; border-radius: 10px; color: #1e2129; background: #fff;
+  h2, h3, h4, p { margin: 0; }
+  h2 { font-size: 14px; font-weight: 600; }
+  h3 { font-size: 16px; font-weight: 650; line-height: 1.5; }
+  h4 { font-size: 14px; font-weight: 650; line-height: 1.5; overflow-wrap: anywhere; }
+  p { font-size: 13px; line-height: 1.65; color: #5e6278; overflow-wrap: anywhere; white-space: pre-line; }
+  &__summary { padding: 24px; border-radius: 8px; background: #f7f9fc; }
+  &__terms { display: flex; align-items: center; flex-wrap: wrap; gap: 24px; margin-top: 20px; }
+  &__price { display: flex; align-items: baseline; gap: 10px; font-variant-numeric: tabular-nums; strong { font-size: 42px; font-weight: 700; letter-spacing: -1.5px; line-height: 1.15; } span { color: #7e8299; font-size: 15px; font-weight: 600; } }
+  &__basis { padding-inline: 24px; border-inline: 1px solid #e2e7ef; font-size: 16px; font-weight: 600; max-width: 45%; overflow-wrap: anywhere; }
+  &__status { display: flex; flex-direction: column; align-items: center; gap: 7px; .badge { display: inline-flex; gap: 8px; align-items: center; padding: 8px 12px; border-radius: 8px; font-size: 12px; font-weight: 600; } .badge-light-warning { background: #fff3d6; color: #9a5a00; } small { font-size: 11px; color: #5e6278; } }
+  &__letter { padding: 32px 4px; p { margin-top: 12px; font-size: 14px; } }
+  &__requirements, &__payments { padding: 28px 4px 0; border-top: 1px solid #e5e9f0; > h3 { margin-bottom: 24px; } }
+  &__label { display: block; margin-bottom: 4px; font-size: 10px; line-height: 1.5; font-weight: 500; text-transform: uppercase; letter-spacing: .035em; color: #5e6278; }
+  &__payments { margin-top: 16px; }
+}
+.offer-service {
+  display: grid; grid-template-columns: 34px minmax(0, .9fr) minmax(0, 1.4fr); align-items: start; gap: 20px; padding: 24px 0;
+  &:first-of-type { padding-top: 0; }
+  & + & { border-top: 1px solid #e5e9f0; }
+  &__number { display: inline-flex; justify-content: center; align-items: center; width: 34px; height: 34px; background: #edf4ff; color: #3b82f6; border-radius: 50%; font-size: 14px; font-weight: 600; }
+  &__scope-item { margin-top: 8px; }
+  &__scope-name { color: #5e6278; }
+  ul { margin: 4px 0 0; padding-inline-start: 16px; font-size: 13px; color: #5e6278; }
+  &__deliverables { border-inline-start: 1px solid #e5e9f0; padding-inline-start: 20px; min-width: 0; }
+  &__empty { padding-top: 12px; }
+}
+.offer-deliverable {
+  display: grid; grid-template-columns: minmax(0, 1fr) 130px; gap: 16px;
+  & + & { border-top: 1px solid #e5e9f0; margin-top: 24px; padding-top: 24px; }
+  &__meta { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px; margin-top: 6px !important; .pi { color: #3b82f6; margin-inline-end: 4px; font-size: 13px; } }
+  &__date { border-inline-start: 1px solid #e5e9f0; padding-inline-start: 16px; strong { display: flex; align-items: baseline; gap: 8px; font-size: 13px; line-height: 1.5; .pi { color: #3b82f6; } } p { padding-inline-start: 21px; font-size: 12px; margin-top: 4px; } }
+}
+@media (max-width: 1199px) {
+  .offer-overview__terms { gap: 14px; }
+  .offer-overview__basis { padding-inline: 16px; }
+  .offer-deliverable { grid-template-columns: minmax(0, 1fr); gap: 10px; &__date { border: 0; padding: 0; } }
+}
+@media (max-width: 575px) {
+  .offer-overview { padding: 16px; &__summary { padding: 18px; } &__letter { padding-block: 24px; } &__requirements, &__payments { padding-top: 24px; > h3 { margin-bottom: 20px; } } &__terms { gap: 16px; } &__price strong { font-size: 36px; } &__basis { padding-inline: 12px; font-size: 14px; max-width: none; border-inline-end: 0; } &__status { align-items: flex-start; flex-basis: 100%; } }
+  .offer-service { grid-template-columns: 30px minmax(0, 1fr); gap: 12px; &__number { width: 30px; height: 30px; } &__deliverables { grid-column: 2; border: 0; padding: 0; } }
+  .offer-deliverable { grid-template-columns: minmax(0, 1fr); }
+}
+
+@container offer-overview (max-width: 680px) {
+  .offer-deliverable { grid-template-columns: minmax(0, 1fr); gap: 10px; &__date { border: 0; padding: 0; } }
+  .offer-overview__terms { gap: 14px; }
+  .offer-overview__basis { padding-inline: 16px; }
+}
+
+@container offer-overview (max-width: 420px) {
+  .offer-service { grid-template-columns: 30px minmax(0, 1fr); gap: 12px; &__deliverables { grid-column: 2; border: 0; padding: 0; } }
+  .offer-overview__status { align-items: flex-start; flex-basis: 100%; }
+}

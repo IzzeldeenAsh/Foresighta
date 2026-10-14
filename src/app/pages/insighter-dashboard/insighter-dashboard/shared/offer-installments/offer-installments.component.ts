@@ -20,9 +20,10 @@ export class OfferInstallmentsComponent {
   @Input() total: number | string | null = null;
   @Input() lang: 'en' | 'ar' | string = 'en';
   @Input() showStatus = false;
+  @Input() presentation: 'list' | 'timeline' = 'list';
 
   amountFor(item: ProjectInstallment): number | null {
-    if (item.amount !== null) return item.amount;
+    if (item.amount !== null && item.amount !== undefined) return item.amount;
     const total = Number(this.total);
     if (!isFinite(total) || total <= 0) return null;
     return Number(((total * item.percentage) / 100).toFixed(2));

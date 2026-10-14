@@ -720,6 +720,7 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
       .subscribe({
         next: () => {
           this.updateOfferStatus(invite, 'awarded');
+          if (this.project?.uuid) this.loadProject(this.project.uuid);
           this.showSuccess(
             this.lang === 'ar' ? 'تمت ترسية العرض' : 'Offer awarded',
             this.lang === 'ar'
@@ -886,22 +887,28 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
     const deadline = this.getSubmittedOfferDeadlineDate();
     if (!deadline) return 0;
 
-    const remainingRatio = Math.max(
-      0,
-      Math.min(1, this.getSubmittedOfferRemainingMs() / this.defaultOfferDeadlineWindowMs)
-    );
+    const remainingRatio = this.getSubmittedOfferRemainingRatio();
 
     return remainingRatio <= 0 ? 0 : Math.max(6, Math.min(100, Math.round(remainingRatio * 100)));
+  }
+
+  /** Share of the offer window still left, where the window runs from project creation to the deadline. */
+  private getSubmittedOfferRemainingRatio(): number {
+    const deadline = this.getSubmittedOfferDeadlineDate();
+    if (!deadline) return 0;
+
+    const createdTime = this.getDateTime(this.project?.created_at);
+    const windowMs = createdTime > 0 && createdTime < deadline.getTime()
+      ? deadline.getTime() - createdTime
+      : this.defaultOfferDeadlineWindowMs;
+
+    return Math.max(0, Math.min(1, this.getSubmittedOfferRemainingMs() / windowMs));
   }
 
   getSubmittedOfferTimerClass(): string {
     if (!this.getSubmittedOfferDeadlineDate()) return 'pd-offer-timer--neutral';
 
-    const remainingRatio = Math.max(
-      0,
-      Math.min(1, this.getSubmittedOfferRemainingMs() / this.defaultOfferDeadlineWindowMs)
-    );
-    const elapsedRatio = 1 - remainingRatio;
+    const elapsedRatio = 1 - this.getSubmittedOfferRemainingRatio();
 
     if (elapsedRatio >= 1) return 'pd-offer-timer--expired';
     if (elapsedRatio < 1 / 3) return 'pd-offer-timer--healthy';
@@ -2401,6 +2408,11 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
       if (item && Object.prototype.hasOwnProperty.call(item, key)) return item[key];
     }
     return null;
+  }
+
+  getComponentOwner(key: string): string | null {
+    const role = this.project?.components.find(item => key in item)?.['filled_by_role'];
+    return role === 'insighter' ? (this.lang === 'ar' ? 'حدده الإنسايتر' : 'Defined by Insighter') : role === 'client' ? (this.lang === 'ar' ? 'حدده العميل' : 'Defined by Client') : null;
   }
 
   getAddon(key: string): any | null {

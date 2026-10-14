@@ -1646,7 +1646,7 @@
   height: 100dvh !important;
   max-width: 100vw;
   max-height: 100dvh !important;
-  width: min(1180px, 66vw) !important;
+  width: min(1280px, 86vw) !important;
   z-index: 1305 !important;
 
   .p-sidebar-header {
@@ -1660,7 +1660,7 @@
   }
 
   @media (max-width: 1399px) {
-    width: 74vw !important;
+    width: 92vw !important;
   }
 
   @media (max-width: 1199px) {
@@ -1672,12 +1672,14 @@
 
 .pd-proposal-drawer__wrap {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 340px;
+  grid-template-columns: minmax(0, 1fr) 280px;
   height: 100%;
   background: var(--pd-surface);
 
   @media (max-width: 991px) {
-    grid-template-columns: minmax(0, 1fr);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
   }
 }
 
@@ -1687,25 +1689,31 @@
   min-width: 0;
   overflow: hidden;
   border-inline-end: 1px solid var(--pd-border);
+
+  @media (max-width: 991px) { flex: 0 0 auto; overflow: visible; border: 0; }
 }
 
 .pd-proposal-drawer__topbar {
-  padding: 22px 28px 0;
+  display: flex;
+  justify-content: flex-end;
+  padding: 16px 24px 0;
+  @media (max-width: 991px) { position: sticky; top: 0; z-index: 2; background: #fff; padding-block-end: 8px; }
 }
 
 .pd-proposal-drawer__body {
   flex: 1 1 auto;
   overflow-y: auto;
-  padding: 18px 38px 48px;
+  padding: 12px 24px 32px;
+
+  @media (max-width: 991px) { overflow: visible; flex: 0 0 auto; }
 
   @media (max-width: 767px) {
-    padding: 14px 20px 28px;
+    padding: 14px 20px calc(180px + env(safe-area-inset-bottom));
   }
 }
 
 .pd-proposal-drawer__hero {
-  padding-bottom: 28px;
-  border-bottom: 1px solid var(--pd-border);
+  padding-bottom: 20px;
 }
 
 .pd-proposal-drawer__eyebrow {
@@ -1714,7 +1722,7 @@
   justify-content: space-between;
   gap: 8px;
   flex-wrap: wrap;
-  margin-bottom: 18px;
+  margin-bottom: 12px;
 }
 
 .pd-proposal-drawer__pill {
@@ -1738,8 +1746,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 62px;
-  height: 62px;
+  width: 52px;
+  height: 52px;
   flex-shrink: 0;
   border-radius: 18px;
   background: linear-gradient(180deg, #ebf5ff 0%, #dfefff 100%);
@@ -1771,7 +1779,7 @@
 .pd-proposal-drawer__title {
   margin: 0;
   color: #0b1220;
-  font-size: 28px;
+  font-size: 24px;
   font-weight: 700;
   line-height: 1.2;
   letter-spacing: -0.02em;
@@ -1918,12 +1926,14 @@
 .pd-proposal-drawer__aside {
   overflow-y: auto;
   background: var(--pd-surface-muted);
+  @media (max-width: 991px) { overflow: visible; flex: 0 0 auto; border-top: 1px solid var(--pd-border); }
 }
 
 .pd-proposal-drawer__aside-card {
   position: sticky;
   top: 0;
   padding: 24px;
+  @media (max-width: 991px) { position: static; padding: 24px 20px; }
 }
 
 .pd-proposal-drawer__aside-title {

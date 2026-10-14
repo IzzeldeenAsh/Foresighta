@@ -1,4 +1,8 @@
+import { OfferOverviewComponent } from './offer-overview.component';
 import { ContractPartyCardComponent } from './contract-party-card.component';
+import { DefinitionModeBadgeComponent } from './definition-mode-badge.component';
+import { OfferRequirementsComponent } from './offer-requirements.component';
+import { OfferRequirementsEditorComponent } from './offer-requirements-editor.component';
 import { ProjectDatesComponent } from './project-dates/project-dates.component';
 import { ProjectServicesComponent } from './project-services/project-services.component';
 import { NgModule } from '@angular/core';
@@ -15,6 +19,10 @@ import { DashboardNavIconComponent } from 'src/app/reusable-components/dashboard
 @NgModule({
   declarations: [
     ContractPartyCardComponent,
+    DefinitionModeBadgeComponent,
+    OfferOverviewComponent,
+    OfferRequirementsComponent,
+    OfferRequirementsEditorComponent,
     ProjectDatesComponent,
     ProjectServicesComponent,
     PageHeaderComponent,
@@ -31,6 +39,10 @@ import { DashboardNavIconComponent } from 'src/app/reusable-components/dashboard
   ],
   exports: [
     ContractPartyCardComponent,
+    DefinitionModeBadgeComponent,
+    OfferOverviewComponent,
+    OfferRequirementsComponent,
+    OfferRequirementsEditorComponent,
     ProjectDatesComponent,
     ProjectServicesComponent,
     PageHeaderComponent,

@@ -29,10 +29,13 @@
           <span *ngIf="p.proposal_no">
             {{ lang === 'ar' ? 'رقم المقترح' : 'Proposal' }} <b>{{ p.proposal_no }}</b>
           </span>
+          <span *ngIf="p.project?.definition_mode">
+            {{ lang === 'ar' ? 'النوع' : 'Type' }} <b>{{ p.project?.definition_mode === 'simple' ? (lang === 'ar' ? 'أساسي' : 'Basic') : (lang === 'ar' ? 'متقدم' : 'Advanced') }}</b>
+          </span>
         </div>
       </div>
       <div class="sp-phead__actions">
-        <span *ngIf="p.status" class="badge" [ngClass]="getStatusBadgeClass(p.status)">{{ getStatusLabel(p.status) }}</span>
+        <span *ngIf="p.action_status" class="badge" [ngClass]="getStatusBadgeClass(p.action_status)">{{ getStatusLabel(p.action_status) }}</span>
         <button type="button" class="btn btn-sm btn-light" (click)="openDetailsDrawer()">
           <i class="ki-outline ki-eye fs-5"></i>
           {{ lang === 'ar' ? 'عرض تفاصيل المشروع' : 'View project details' }}
@@ -40,9 +43,23 @@
       </div>
     </header>
 
-    <div class="sp-sections">
+    <!-- Tabs, active section and footer share one card -->
+    <div class="sp-shell">
+    <!-- Section tabs -->
+    <div class="sp-tabs" role="tablist" [attr.aria-label]="lang === 'ar' ? 'أقسام العرض' : 'Proposal sections'" (keydown)="onTabKeydown($event)">
+      <button type="button" role="tab" class="sp-tab" *ngFor="let tab of tabs"
+        [id]="'sp-tab-' + tab.key" [ngClass]="'sp-tab--' + tab.key"
+        [class.is-active]="activeTab === tab.key" [attr.aria-selected]="activeTab === tab.key"
+        [attr.aria-controls]="'sp-panel-' + tab.key" [attr.tabindex]="activeTab === tab.key ? 0 : -1"
+        (click)="selectTab(tab.key)">
+        <span class="sp-tab__mark"><i class="ki-outline" [ngClass]="tab.icon"></i></span>
+        {{ lang === 'ar' ? tab.label.ar : tab.label.en }}
+      </button>
+    </div>
 
+    <div class="sp-sections">
       <!-- 1. Cover letter -->
+      <div class="sp-panel" role="tabpanel" id="sp-panel-cover" aria-labelledby="sp-tab-cover" [hidden]="activeTab !== 'cover'">
       <section class="sp-sec sp-sec--cover">
         <header class="sp-sec__head">
           <span class="sp-sec__mark"><i class="ki-outline ki-document"></i></span>
@@ -115,7 +132,21 @@
         </div>
       </section>
 
-      <!-- 2. Pricing -->
+      </div>
+
+      <!-- 2. Scope of work: requirements the client left for the insighter -->
+      <div class="sp-panel" role="tabpanel" id="sp-panel-scope" aria-labelledby="sp-tab-scope" [hidden]="activeTab !== 'scope'">
+      <app-offer-requirements-editor [requirements]="scopeRequirements" [services]="p.project.project_services" [lang]="lang" [attempted]="hasAttemptedTab('scope')" (draftChange)="scopeDraft = $event"></app-offer-requirements-editor>
+
+      </div>
+
+      <!-- Deliverables have their own editor; both drafts are merged into one offer. -->
+      <div class="sp-panel" role="tabpanel" id="sp-panel-deliverables" aria-labelledby="sp-tab-deliverables" [hidden]="activeTab !== 'deliverables'">
+        <app-offer-requirements-editor section="deliverables" [requirements]="deliverablesRequirements" [services]="p.project.project_services" [plannedStartDate]="plannedStartDate" [durationDays]="durationDays" [lang]="lang" [attempted]="hasAttemptedTab('deliverables')" (draftChange)="onDeliverablesDraftChanged($event)"></app-offer-requirements-editor>
+      </div>
+
+      <!-- 3. Pricing -->
+      <div class="sp-panel" role="tabpanel" id="sp-panel-pricing" aria-labelledby="sp-tab-pricing" [hidden]="activeTab !== 'pricing'">
       <section class="sp-sec sp-sec--pricing">
         <header class="sp-sec__head">
           <span class="sp-sec__mark"><i class="ki-outline ki-price-tag"></i></span>
@@ -228,16 +259,13 @@
               {{ lang === 'ar' ? 'السعر مطلوب.' : 'Price is required.' }}
             </div>
           </div>
-
-          <div class="sp-totalbar">
-            <span class="sp-totalbar__label">{{ lang === 'ar' ? 'إجمالي العرض' : 'Offer total' }}</span>
-            <span class="sp-totalbar__calc" *ngIf="priceBreakdown">{{ priceBreakdown }}</span>
-            <span class="sp-totalbar__value">{{ formatPrice(totalPrice) }}</span>
-          </div>
         </div>
       </section>
 
-      <!-- 3. Payment schedule -->
+      </div>
+
+      <!-- 4. Payment schedule -->
+      <div class="sp-panel" role="tabpanel" id="sp-panel-payment" aria-labelledby="sp-tab-payment" [hidden]="activeTab !== 'payment'">
       <section class="sp-sec sp-sec--payment">
         <header class="sp-sec__head">
           <span class="sp-sec__mark"><i class="ki-outline ki-calendar"></i></span>
@@ -283,15 +311,6 @@
           <div class="sp-sub">
             <h3 class="sp-sub__title" id="sp-payment-plan-label">{{ lang === 'ar' ? 'كيف سيدفع العميل؟' : 'How will the client pay?' }}</h3>
             <div class="sp-radios sp-radios--2" role="radiogroup" aria-labelledby="sp-payment-plan-label">
-              <button type="button" role="radio" class="sp-rcard" [class.is-active]="paymentPlan === 'full'"
-                [attr.aria-checked]="paymentPlan === 'full'" (click)="setPaymentPlan('full')">
-                <span class="sp-rcard__radio"></span>
-                <span class="sp-rcard__icon"><i class="ki-outline ki-wallet"></i></span>
-                <span class="sp-rcard__text">
-                  <b>{{ lang === 'ar' ? 'دفعة واحدة' : 'Full payment' }}</b>
-                  <span>{{ lang === 'ar' ? 'يدفع العميل 100% في دفعة واحدة.' : 'The client pays 100% in one payment.' }}</span>
-                </span>
-              </button>
               <button type="button" role="radio" class="sp-rcard" [class.is-active]="paymentPlan === 'partial'"
                 [attr.aria-checked]="paymentPlan === 'partial'" (click)="setPaymentPlan('partial')">
                 <span class="sp-rcard__radio"></span>
@@ -299,6 +318,15 @@
                 <span class="sp-rcard__text">
                   <b>{{ lang === 'ar' ? 'على دفعات' : 'Installments' }}</b>
                   <span>{{ lang === 'ar' ? 'قسّم الإجمالي على توقيع العقد أو مدد من بدء المشروع أو مخرجات.' : 'Split the total across signing, durations after project start or deliverables.' }}</span>
+                </span>
+              </button>
+              <button type="button" role="radio" class="sp-rcard" [class.is-active]="paymentPlan === 'full'"
+                [attr.aria-checked]="paymentPlan === 'full'" (click)="setPaymentPlan('full')">
+                <span class="sp-rcard__radio"></span>
+                <span class="sp-rcard__icon"><i class="ki-outline ki-wallet"></i></span>
+                <span class="sp-rcard__text">
+                  <b>{{ lang === 'ar' ? 'دفعة واحدة' : 'Full payment' }}</b>
+                  <span>{{ lang === 'ar' ? 'يدفع العميل 100% في دفعة واحدة.' : 'The client pays 100% in one payment.' }}</span>
                 </span>
               </button>
             </div>
@@ -309,12 +337,20 @@
             <h3 class="sp-sub__title">
               {{ paymentPlan === 'full' ? (lang === 'ar' ? 'الدفعة' : 'Payment') : (lang === 'ar' ? 'الدفعات' : 'Installments') }}
             </h3>
-            <ol class="sp-timeline">
-              <li class="sp-timeline__item" *ngFor="let item of installments; let i = index; trackBy: trackByInstallment">
+            <ol class="sp-timeline" cdkDropList [cdkDropListDisabled]="paymentPlan !== 'partial'" (cdkDropListDropped)="dropInstallment($event)">
+              <li class="sp-timeline__item" cdkDrag cdkDragLockAxis="y" [cdkDragDisabled]="paymentPlan !== 'partial'"
+                *ngFor="let item of installments; let i = index; let first = first; let last = last; trackBy: trackByInstallment">
                 <div class="sp-timeline__rail"><span class="sp-timeline__dot">{{ i + 1 }}</span></div>
 
                 <div class="sp-pay-card" [class.is-invalid]="showInstallmentErrors && getInstallmentErrors(item).length">
                   <div class="sp-pay-card__head">
+                    <div class="sp-pay-card__order" *ngIf="paymentPlan === 'partial' && installments.length > 1">
+                      <button type="button" class="sp-pay-card__move" [disabled]="first" (click)="moveInstallment(i, -1)"
+                        [attr.aria-label]="lang === 'ar' ? 'نقل للأعلى' : 'Move up'"><i class="pi pi-chevron-up"></i></button>
+                      <span class="sp-pay-card__grip" cdkDragHandle [attr.aria-label]="lang === 'ar' ? 'اسحب لإعادة الترتيب' : 'Drag to reorder'"><i class="pi pi-arrows-v"></i></span>
+                      <button type="button" class="sp-pay-card__move" [disabled]="last" (click)="moveInstallment(i, 1)"
+                        [attr.aria-label]="lang === 'ar' ? 'نقل للأسفل' : 'Move down'"><i class="pi pi-chevron-down"></i></button>
+                    </div>
                     <label class="sp-pay-field sp-pay-card__heading">
                       <span>{{ lang === 'ar' ? 'عنوان الدفعة' : 'Payment title' }}</span>
                       <input class="sp-input" [name]="'installment-title-' + item.key" [(ngModel)]="item.title"
@@ -391,8 +427,8 @@
                       <span>{{ lang === 'ar' ? 'المخرج المرتبط' : 'Linked deliverable' }}</span>
                       <p-dropdown panelStyleClass="sp-deliverable-panel" styleClass="sp-deliverable-select" [style]="{ width: '100%' }"
                         [inputId]="'installment-deliverable-' + item.key" [name]="'installment-deliverable-' + item.key"
-                        [options]="getAvailableDeliverables(item)" optionLabel="title" optionValue="id" appendTo="body"
-                        [(ngModel)]="item.project_service_deliverable_id" (ngModelChange)="onInstallmentChanged(item)">
+                        [options]="getAvailableDeliverables(item)" optionLabel="title" optionValue="reference" appendTo="body"
+                        [ngModel]="installmentDeliverableReference(item)" (ngModelChange)="selectInstallmentDeliverable(item, $event)">
                         <ng-template pTemplate="selectedItem" let-deliverable>
                           {{ deliverable.title }} · {{ periodLabel(deliverable.period_days) }}
                         </ng-template>
@@ -424,6 +460,7 @@
           </div>
         </div>
       </section>
+      </div>
     </div>
 
     <!-- Offer total + actions -->
@@ -437,6 +474,10 @@
         <button type="button" class="btn btn-light" [disabled]="isSubmitting" (click)="goBack()">
           {{ lang === 'ar' ? 'إلغاء' : 'Cancel' }}
         </button>
+        <button type="button" class="btn btn-light-info" *ngIf="nextTab as next" (click)="goToNextTab()">
+          {{ lang === 'ar' ? 'التالي:' : 'Next:' }} {{ lang === 'ar' ? next.label.ar : next.label.en }}
+          <i class="ki-outline fs-5" [ngClass]="lang === 'ar' ? 'ki-arrow-left' : 'ki-arrow-right'"></i>
+        </button>
         <button type="button" class="btn btn-info" [disabled]="isSubmitting" (click)="submitProposal()">
           <i class="ki-outline ki-send fs-5" *ngIf="!isSubmitting"></i>
           {{ isSubmitting
@@ -445,6 +486,7 @@
         </button>
       </div>
     </footer>
+    </div>
   </ng-container>
 </div>
 
@@ -531,8 +573,8 @@
                   <ng-container *ngTemplateOutlet="typeIcon; context:{ $implicit: p.project?.type }"></ng-container>
                   <span class="po-type__label">{{ getTypeLabel(p.project?.type) }}</span>
                 </div>
-                <span *ngIf="p.status" class="badge" [ngClass]="getStatusBadgeClass(p.status)">
-                  {{ getStatusLabel(p.status) }}
+                <span *ngIf="p.action_status" class="badge" [ngClass]="getStatusBadgeClass(p.action_status)">
+                  {{ getStatusLabel(p.action_status) }}
                 </span>
               </div>
 
@@ -572,6 +614,16 @@
               </div>
             </div>
           </div>
+
+          <ng-container *ngFor="let service of p.project.project_services">
+            <section class="po-section" *ngIf="service.ai_intake?.requirement_summary as summary">
+              <div class="po-section__heading">
+                <h6 class="po-section__title">{{ lang === 'ar' ? 'ملخص المتطلبات' : 'Requirement Summary' }}</h6>
+                <span class="po-section__eyebrow">{{ service.title || service.service?.name }}</span>
+              </div>
+              <p class="po-section__text" dir="auto" style="white-space: pre-line; overflow-wrap: anywhere">{{ summary }}</p>
+            </section>
+          </ng-container>
 
           <section class="po-section" *ngIf="p.project?.service_prompt || p.project?.description">
             <p class="po-section__text" *ngIf="p.project?.service_prompt">{{ p.project?.service_prompt }}</p>
@@ -667,6 +719,14 @@
               <div class="po-fact__body">
                 <div class="po-fact__label">{{ lang === 'ar' ? 'نوع المشروع' : 'Project Type' }}</div>
                 <div class="po-fact__value">{{ getTypeLabel(p.project?.type) }}</div>
+              </div>
+            </div>
+
+            <div class="po-fact po-fact--slate">
+              <i class="ki-outline ki-element-11 fs-4"></i>
+              <div class="po-fact__body">
+                <div class="po-fact__label">{{ lang === 'ar' ? 'النوع' : 'Type' }}</div>
+                <div class="po-fact__value">{{ p.project?.definition_mode === 'simple' ? (lang === 'ar' ? 'أساسي' : 'Basic') : (lang === 'ar' ? 'متقدم' : 'Advanced') }}</div>
               </div>
             </div>
 
@@ -876,11 +936,15 @@
           <div class="po-aside-table-wrap">
             <table class="po-aside-table">
               <tbody>
-                <tr *ngIf="p.status">
+                <tr *ngIf="p.action_status">
                   <th scope="row">{{ lang === 'ar' ? 'الحالة' : 'Status' }}</th>
                   <td>
-                    <span class="badge" [ngClass]="getStatusBadgeClass(p.status)">{{ getStatusLabel(p.status) }}</span>
+                    <span class="badge" [ngClass]="getStatusBadgeClass(p.action_status)">{{ getStatusLabel(p.action_status) }}</span>
                   </td>
+                </tr>
+                <tr>
+                  <th scope="row">{{ lang === 'ar' ? 'النوع' : 'Type' }}</th>
+                  <td><app-definition-mode-badge [mode]="p.project?.definition_mode" [lang]="lang"></app-definition-mode-badge></td>
                 </tr>
                 <tr>
                   <th scope="row">{{ lang === 'ar' ? 'الخدمة' : 'Service' }}</th>

@@ -1247,6 +1247,36 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
   }
 
   // Helpers to extract nested component/addon blocks by key
+  missingServiceName(offer: ProjectOffer, projectServiceId: number | null): string {
+    const service = offer.project.project_services.find(item => item.id === projectServiceId);
+    return service ? `${this.lang === 'ar' ? 'الخدمة' : 'Service'} ${service.position}: ${service.title || service.service?.name || ''}` : (this.lang === 'ar' ? 'الخدمة' : 'Service');
+  }
+
+  private missingGroupsCache = new WeakMap<object, { title: string; items: string[] }[]>();
+
+  // Outstanding offer requirements grouped by owner: project-level first, then one group per service.
+  missingRequirementGroups(offer: ProjectOffer): { title: string; items: string[] }[] {
+    const missing = offer.missing_offer_requirements;
+    if (!missing) return [];
+    const cached = this.missingGroupsCache.get(missing);
+    if (cached) return cached;
+    const ar = this.lang === 'ar';
+    const groups: { title: string; items: string[] }[] = [];
+    const projectItems = (missing.project_components || []).map(req => req.component.name);
+    if (projectItems.length) groups.push({ title: ar ? 'متطلبات المشروع' : 'Project requirements', items: projectItems });
+    const services = [...(offer.project.project_services || [])].sort((a, b) => a.position - b.position);
+    for (const service of services) {
+      const items = [
+        ...(missing.scopes || []).filter(req => req.project_service_id === service.id).map(() => (ar ? 'نطاق الخدمة' : 'Service scope')),
+        ...(missing.service_components || []).filter(req => req.project_service_id === service.id).map(req => req.component.name),
+      ];
+      if (items.length) groups.push({ title: this.missingServiceName(offer, service.id), items });
+    }
+    this.missingGroupsCache.set(missing, groups);
+    return groups;
+  }
+  trackByRequirementGroup = (_: number, group: { title: string }) => group.title;
+
   getComponent(offer: ProjectOffer | null, key: string): any | null {
     if (!offer) return null;
     const list = offer.project?.components || [];
