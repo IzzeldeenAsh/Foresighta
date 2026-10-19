@@ -136,6 +136,18 @@ describe('Offer requirement completion', () => {
     expect(editor.deliverableErrors(deliverable)).toEqual([]);
     expect(editor.isDone(editor.rows[rowIndex])).toBeTrue();
   });
+  it('enters due dates in days, weeks or months and saves them as days', () => {
+    const req = editor.componentRequirements.find(req => req.component.slug === 'deliverable-stage')!;
+    const deliverable = editor.componentDraft(req).value.deliverables[0];
+    editor.setDay(deliverable, 14);
+    expect(editor.dueUnit(deliverable)).toBe('weeks'); expect(editor.dueAmount(deliverable)).toBe(2); expect(editor.dueLabel(deliverable)).toBe('2 Weeks');
+    editor.setDueUnit(deliverable, 'months');
+    expect(deliverable.period_days).toBe(30); expect(editor.dueLabel(deliverable)).toBe('1 Month');
+    editor.stepDue(deliverable, 1); expect(deliverable.period_days).toBe(60);
+    editor.setDueUnit(deliverable, 'days'); editor.setDueAmount(deliverable, 45);
+    expect(deliverable.period_days).toBe(45); expect(editor.dueLabel(deliverable)).toBe('45 Days');
+    editor.setDueAmount(deliverable, null); expect(deliverable.period_days).toBeNull();
+  });
   it('uses the same completion rule for saved deliverables, progress and validation when days arrive as text', async () => {
     const req = editor.missing.service_components[0];
     fixture.componentRef.setInput('section', 'deliverables');

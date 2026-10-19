@@ -79,7 +79,7 @@
               {{ lang === 'ar' ? 'العرض الفني' : 'Technical proposal' }}
             </h2>
             <p class="sp-sec__desc">
-              {{ editMode ? (lang === 'ar' ? 'حدّث شرح منهجيتك ومرفقاتك، أو اقترح مدة أطول للمشروع.' : 'Update your approach and attachments, or suggest a longer project duration.') : (lang === 'ar' ? 'اشرح منهجيتك وكيف ستنفّذ هذا المشروع.' : 'Explain your methodology and how you’ll deliver this project.') }}
+              {{ editMode ? (lang === 'ar' ? 'حدّث شرح منهجيتك ومرفقاتك.' : 'Update your approach and attachments.') : (lang === 'ar' ? 'اشرح منهجيتك وكيف ستنفّذ هذا المشروع.' : 'Explain your methodology and how you’ll deliver this project.') }}
             </p>
           </div>
         </header>
@@ -166,47 +166,6 @@
               </div>
             </div>
             <div class="sp-field__hint sp-field__hint--danger" role="alert" *ngFor="let error of attachmentErrors">{{ error }}</div>
-          </div>
-
-          <!-- Suggested project duration: a proposal the client applies by awarding this offer -->
-          <div class="sp-field sp-duration" *ngIf="durationDays !== null">
-            <span class="sp-field__label">
-              {{ lang === 'ar' ? 'مدة المشروع' : 'Project duration' }}
-              <span class="sp-field__optional" *ngIf="!durationLocked">{{ lang === 'ar' ? 'اختياري' : 'Optional' }}</span>
-            </span>
-            <div class="sp-duration__row">
-              <div class="sp-duration__fact">
-                <span>{{ lang === 'ar' ? 'مدة العميل' : 'Client’s duration' }}</span>
-                <b>{{ durationDays }} {{ lang === 'ar' ? 'يوم' : 'days' }}</b>
-                <small *ngIf="plannedCloseDate">{{ lang === 'ar' ? 'ينتهي في' : 'Ends' }} {{ formatDate(plannedCloseDate) }}</small>
-              </div>
-              <ng-container *ngIf="!durationLocked; else durationLockedNote">
-                <div class="sp-duration__suggest" *ngIf="durationSuggestOpen; else suggestButton">
-                  <label class="sp-duration__label" for="sp-suggested-duration">{{ lang === 'ar' ? 'المدة التي تقترحها' : 'Your suggested duration' }}</label>
-                  <div class="sp-input-group sp-input-group--narrow" [class.is-invalid]="!!suggestedDurationError">
-                    <input id="sp-suggested-duration" class="sp-input" type="number" inputmode="numeric" step="1" [min]="minimumSuggestedDays"
-                      name="suggestedDurationDays" [ngModel]="suggestedDurationDays" (ngModelChange)="setSuggestedDuration($event)" />
-                    <span class="sp-input-group__suffix">{{ lang === 'ar' ? 'يوم' : 'days' }}</span>
-                  </div>
-                  <small *ngIf="suggestedCloseDate && !suggestedDurationError">{{ lang === 'ar' ? 'ينتهي في' : 'Ends' }} {{ formatDate(suggestedCloseDate) }}</small>
-                  <button type="button" class="sp-duration__clear" (click)="clearSuggestedDuration()">{{ lang === 'ar' ? 'الإبقاء على مدة العميل' : 'Keep the client’s duration' }}</button>
-                </div>
-                <ng-template #suggestButton>
-                  <button type="button" class="sp-duration__add" (click)="openSuggestedDuration()">
-                    <i class="ki-outline ki-time"></i>{{ lang === 'ar' ? 'اقترح مدة أطول' : 'Suggest a longer duration' }}
-                  </button>
-                </ng-template>
-              </ng-container>
-              <ng-template #durationLockedNote>
-                <p class="sp-field__hint sp-duration__locked">{{ lang === 'ar' ? 'لا يمكن تغيير المدة المقترحة بعد ترسية العرض.' : 'The suggested duration cannot change after the offer is awarded.' }}</p>
-              </ng-template>
-            </div>
-            <div class="sp-field__hint sp-field__hint--danger" role="alert" *ngIf="suggestedDurationError">{{ suggestedDurationError }}</div>
-            <div class="sp-field__hint" *ngIf="!durationLocked">
-              {{ lang === 'ar'
-              ? 'يرى العميل المدة المقترحة مع عرضك، ولا تُطبَّق على المشروع إلا إذا رسّى العرض عليك.'
-              : 'The client sees the suggestion with your offer. It only becomes the project duration if they award your offer.' }}
-            </div>
           </div>
         </div>
       </section>
@@ -767,24 +726,44 @@
 </div>
 
 <ng-template #durationCallout>
-  <div class="sp-duration-callout" *ngIf="durationOverflowDays !== null" [class.is-invalid]="hasAttemptedTab('deliverables')" role="status">
-    <i class="ki-outline ki-time" aria-hidden="true"></i>
+  <!-- A deliverable is due after the project ends: the offer must suggest a longer duration -->
+  <div class="sp-duration-callout sp-duration-callout--action" *ngIf="durationOverflowDays !== null" [class.is-invalid]="hasAttemptedTab('deliverables')" role="alert">
+    <span class="sp-duration-callout__icon" aria-hidden="true"><i class="ki-outline ki-information-5"></i></span>
     <div class="sp-duration-callout__copy">
-      <strong>{{ lang === 'ar' ? 'تمتد مخرجاتك حتى اليوم ' + durationOverflowDays : 'Your deliverables run to day ' + durationOverflowDays }}</strong>
-      <span>{{ suggestedDurationDays !== null
-        ? (lang === 'ar' ? 'وهذا بعد المدة التي اقترحتها (' + suggestedDurationDays + ' يومًا).' : 'That is past the ' + suggestedDurationDays + ' days you suggested.')
-        : (lang === 'ar' ? 'وهذا بعد نهاية المشروع (' + durationDays + ' يومًا).' : 'That is after the project ends on day ' + durationDays + '.') }}
-        {{ lang === 'ar' ? 'اقترح على العميل مدة ' + durationOverflowDays + ' يومًا ليوافق عليها عند ترسية عرضك.' : 'Suggest a project duration of ' + durationOverflowDays + ' days so the client can approve the extra time when they award your offer.' }}</span>
+      <strong>{{ lang === 'ar' ? 'مخرجاتك تحتاج وقتًا أطول من مدة المشروع' : 'Your deliverables need more time than the project allows' }}</strong>
+      <p>{{ lang === 'ar'
+        ? 'آخر مخرج مستحق في اليوم ' + durationOverflowDays + '، بينما ينتهي المشروع في اليوم ' + effectiveDurationDays + '. اقترح تمديد المشروع إلى ' + durationOverflowDays + ' يومًا.'
+        : 'Your latest deliverable is due on day ' + durationOverflowDays + ', but the project ends on day ' + effectiveDurationDays + '. Suggest extending the project to ' + durationOverflowDays + ' days.' }}</p>
+      <p class="sp-duration-callout__hint">{{ lang === 'ar' ? 'يرى العميل الاقتراح مع عرضك، ولا تتغير مدة المشروع إلا إذا رسّى العرض عليك.' : 'The client sees the suggestion with your offer. The project duration only changes if they award your offer.' }}</p>
     </div>
-    <button type="button" class="btn btn-sm btn-warning" (click)="suggestDurationForDeliverables()">{{ lang === 'ar' ? 'اقترح ' + durationOverflowDays + ' يومًا' : 'Suggest ' + durationOverflowDays + ' days' }}</button>
+    <button type="button" class="btn btn-sm sp-duration-callout__btn" (click)="suggestDurationForDeliverables()">{{ lang === 'ar' ? 'اقترح ' + durationOverflowDays + ' يومًا' : 'Suggest ' + durationOverflowDays + ' days' }}</button>
   </div>
-  <div class="sp-duration-callout sp-duration-callout--info" *ngIf="durationOverflowDays === null && suggestedDurationDays !== null && !durationLocked" role="status">
-    <i class="ki-outline ki-information-2" aria-hidden="true"></i>
+
+  <!-- The offer suggests a longer duration: show it next to the client's -->
+  <div class="sp-duration-callout" *ngIf="durationOverflowDays === null && suggestedDurationDays !== null && !durationLocked" role="status">
+    <span class="sp-duration-callout__icon" aria-hidden="true"><i class="ki-outline ki-time"></i></span>
     <div class="sp-duration-callout__copy">
-      <strong>{{ lang === 'ar' ? 'يقترح عرضك مدة ' + suggestedDurationDays + ' يومًا للمشروع' : 'Your offer suggests a project duration of ' + suggestedDurationDays + ' days' }}</strong>
-      <span>{{ lang === 'ar' ? 'مدة العميل ' + durationDays + ' يومًا، وتتغير فقط إذا رسّى عرضك.' : 'The client’s duration is ' + durationDays + ' days. It changes only if they award your offer.' }}</span>
+      <strong>{{ lang === 'ar' ? 'تقترح على العميل تمديد مدة المشروع' : 'You’re suggesting a longer project duration' }}</strong>
+      <div class="sp-duration-callout__compare">
+        <span class="sp-duration-callout__value">
+          <small>{{ lang === 'ar' ? 'مدة العميل' : 'Client’s duration' }}</small>
+          <b>{{ durationDays }} {{ lang === 'ar' ? 'يوم' : 'days' }}</b>
+          <small *ngIf="plannedCloseDate">{{ lang === 'ar' ? 'ينتهي' : 'Ends' }} {{ formatDate(plannedCloseDate) }}</small>
+        </span>
+        <i class="ki-outline sp-duration-callout__arrow" [ngClass]="lang === 'ar' ? 'ki-arrow-left' : 'ki-arrow-right'" aria-hidden="true"></i>
+        <span class="sp-duration-callout__value is-suggested">
+          <small>{{ lang === 'ar' ? 'المدة التي تقترحها' : 'Your suggestion' }}</small>
+          <b>{{ suggestedDurationDays }} {{ lang === 'ar' ? 'يوم' : 'days' }}</b>
+          <small *ngIf="suggestedCloseDate">{{ lang === 'ar' ? 'ينتهي' : 'Ends' }} {{ formatDate(suggestedCloseDate) }}</small>
+        </span>
+      </div>
+      <p class="sp-duration-callout__hint">
+        {{ suggestionNeeded
+          ? (lang === 'ar' ? 'يرى العميل الاقتراح مع عرضك، ولا تتغير مدة المشروع إلا إذا رسّى العرض عليك.' : 'The client sees the suggestion with your offer. The project duration only changes if they award your offer.')
+          : (lang === 'ar' ? 'لم يعد أي من مخرجاتك يحتاج هذا الوقت الإضافي.' : 'None of your deliverables needs the extra time anymore.') }}
+      </p>
     </div>
-    <button type="button" class="sp-duration-callout__link" (click)="onTabClick('cover')">{{ lang === 'ar' ? 'تعديل' : 'Change' }}</button>
+    <button type="button" class="btn btn-sm sp-duration-callout__btn sp-duration-callout__btn--ghost" *ngIf="!suggestionNeeded" (click)="clearSuggestedDuration()">{{ lang === 'ar' ? 'إزالة الاقتراح' : 'Remove suggestion' }}</button>
   </div>
 </ng-template>
 

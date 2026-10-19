@@ -867,6 +867,11 @@ button.sw-tag.is-checked {
     font-weight: 600;
     color: var(--sw-ink-300);
 
+    &--due {
+      color: var(--sw-ink-500);
+      font-weight: 500;
+    }
+
     &--warn {
       color: #B45309;
       font-weight: 500;
@@ -927,16 +932,14 @@ button.sw-tag.is-checked {
     border-color: var(--sw-danger);
   }
 
+  // A due day after the project's duration (and not covered by a suggested one)
   &.is-past-end {
-    border-color: #FCD34D;
+    border-color: #FDA29B;
   }
 
-  &__flag {
-    padding: 2px 8px;
-    border-radius: 999px;
-    background: #FFFBEB;
-    color: #B45309;
-    font-size: 11.5px;
+  &__badge {
+    padding: 3px 8px;
+    font-size: 11px;
     font-weight: 600;
   }
 
@@ -969,31 +972,43 @@ button.sw-tag.is-checked {
 .ki-outline.is-violet { color: #7C3AED; }
 .ki-outline.is-amber { color: #D97706; }
 
-.sw-quick {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
+// Due date unit: days, weeks or months (segmented toggle)
+.sw-units {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 2px;
   margin-top: 8px;
+  padding: 3px;
+  border: 1px solid var(--sw-border);
+  border-radius: 10px;
+  background: var(--sw-surface-muted);
 
   &__btn {
-    padding: 4px 10px;
-    border: 1px solid var(--sw-border);
-    border-radius: 999px;
-    background: var(--sw-surface);
+    height: 30px;
+    padding: 0 8px;
+    border: 0;
+    border-radius: 7px;
+    background: transparent;
     font: inherit;
-    font-size: 12px;
+    font-size: 12.5px;
     font-weight: 600;
     color: var(--sw-ink-500);
     cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease;
 
-    &:hover {
-      background: var(--sw-surface-muted);
+    &:hover:not(.is-selected) {
+      color: var(--sw-ink-900);
+    }
+
+    &:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 3px var(--sw-focus);
     }
 
     &.is-selected {
-      border-color: var(--sw-accent-line);
-      background: var(--sw-accent-soft);
+      background: var(--sw-surface);
       color: var(--sw-accent-ink);
+      box-shadow: 0 0 0 1px var(--sw-accent-line);
     }
   }
 }

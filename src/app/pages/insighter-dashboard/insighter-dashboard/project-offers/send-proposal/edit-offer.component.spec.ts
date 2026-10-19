@@ -188,12 +188,14 @@ describe('Edit offer wizard', () => {
     expect(component.effectiveDurationDays).toBe(45);
     expect(component.editPatch.suggested_duration_days).toBe(45);
   });
-  it('only accepts a suggestion longer than the project duration', () => {
-    component.openSuggestedDuration();
-    expect(component.suggestedDurationDays).toBe(31);
+  it('only keeps a suggestion longer than the project duration, and drops it once no deliverable needs it', () => {
     component.setSuggestedDuration(30); expect(component.suggestedDurationError).toContain('30');
-    component.setSuggestedDuration(null); expect(component.suggestedDurationError).toBeTruthy();
-    component.clearSuggestedDuration(); expect(component.suggestedDurationError).toBeNull();
+    const deliverable = component.deliverablesDraft.offer_components[0].value.deliverables[0];
+    deliverable.period_days = 40; component.suggestDurationForDeliverables();
+    expect(component.suggestedDurationDays).toBe(40); expect(component.suggestedDurationError).toBeNull(); expect(component.suggestionNeeded).toBeTrue();
+    deliverable.period_days = 20;
+    expect(component.suggestionNeeded).toBeFalse(); expect(component.durationOverflowDays).toBeNull();
+    component.clearSuggestedDuration();
     expect(component.editPatch).toEqual({});
   });
   it('resends a saved suggestion with other changes and withdraws it with the project duration', () => {

@@ -170,42 +170,44 @@
                           aria-haspopup="dialog" [attr.aria-expanded]="isMenuOpen(key)" [attr.aria-label]="ar ? 'موعد التسليم' : 'Due date'">
                           <i class="ki-outline ki-calendar sw-pill__icon"></i>
                           <ng-container *ngIf="deliverable.period_days !== null; else duePlaceholder">
-                            <span>{{ dayLabel(deliverable.period_days) }}</span>
+                            <span>{{ dueLabel(deliverable) }}</span>
                             <span class="sw-pill__muted" *ngIf="plannedStartDate">· {{ dueDate(deliverable.period_days) }}</span>
-                            <span class="sw-pill__flag" *ngIf="isPastEnd(deliverable.period_days)">{{ ar ? 'بعد نهاية المشروع' : 'After project end' }}</span>
+                            <span class="badge badge-light-danger sw-pill__badge" *ngIf="isPastEnd(deliverable.period_days)">{{ ar ? 'تجاوز المدة' : 'Duration exceeded' }}</span>
                           </ng-container>
                           <ng-template #duePlaceholder><span class="sw-pill__placeholder">{{ ar ? 'اختر موعد التسليم' : 'Choose due date' }}</span></ng-template>
                           <i class="ki-outline ki-down sw-pill__chev"></i>
                         </button>
                         <div class="sw-menu__panel sw-menu__panel--due" *ngIf="isMenuOpen(key)" (click)="$event.stopPropagation()">
                           <p class="sw-menu__title">{{ ar ? 'موعد التسليم' : 'Due' }}</p>
-                          <div class="sw-quick">
-                            <button type="button" class="sw-quick__btn" *ngFor="let day of quickDays"
-                              [class.is-selected]="deliverable.period_days === day" (click)="setDay(deliverable, day)">
-                              {{ quickDayLabel(day) }}
-                            </button>
+                          <div class="sw-units" role="radiogroup" [attr.aria-label]="ar ? 'وحدة المدة' : 'Duration unit'">
+                            <button type="button" class="sw-units__btn" role="radio" *ngFor="let unit of dueUnits"
+                              [class.is-selected]="dueUnit(deliverable) === unit" [attr.aria-checked]="dueUnit(deliverable) === unit"
+                              (click)="setDueUnit(deliverable, unit)">{{ dueUnitLabel(unit) }}</button>
                           </div>
                           <div class="sw-stepper-row">
                             <div class="sw-stepper">
-                              <button type="button" class="sw-stepper__btn" [disabled]="deliverable.period_days === null || deliverable.period_days <= 0"
-                                (click)="setDay(deliverable, deliverable.period_days - 1)" [attr.aria-label]="ar ? 'يوم أبكر' : 'One day earlier'">
+                              <button type="button" class="sw-stepper__btn" [disabled]="!dueAmount(deliverable)"
+                                (click)="stepDue(deliverable, -1)" [attr.aria-label]="ar ? 'أبكر' : 'Earlier'">
                                 <i class="ki-outline ki-minus"></i>
                               </button>
                               <input type="number" inputmode="numeric" min="0" class="sw-stepper__input"
-                                [attr.max]="maxDay" [ngModel]="deliverable.period_days" (ngModelChange)="setDay(deliverable, $event)" placeholder="—"
-                                [attr.aria-label]="ar ? 'عدد الأيام من بدء المشروع' : 'Days from project start'" />
-                              <button type="button" class="sw-stepper__btn" [disabled]="deliverable.period_days !== null && deliverable.period_days >= maxDay"
-                                (click)="setDay(deliverable, (deliverable.period_days ?? 0) + 1)" [attr.aria-label]="ar ? 'يوم لاحق' : 'One day later'">
+                                [attr.max]="maxDueAmount(deliverable)" [ngModel]="dueAmount(deliverable)" (ngModelChange)="setDueAmount(deliverable, $event)" placeholder="—"
+                                [attr.aria-label]="dueUnitHint(dueUnit(deliverable))" />
+                              <button type="button" class="sw-stepper__btn" [disabled]="!canStepDueUp(deliverable)"
+                                (click)="stepDue(deliverable, 1)" [attr.aria-label]="ar ? 'لاحقًا' : 'Later'">
                                 <i class="ki-outline ki-plus"></i>
                               </button>
                             </div>
-                            <span class="sw-menu__hint">{{ ar ? 'يوم بعد البدء' : 'days after start' }}</span>
+                            <span class="sw-menu__hint">{{ dueUnitHint(dueUnit(deliverable)) }}</span>
                           </div>
+                          <p class="sw-menu__note sw-menu__note--due" *ngIf="deliverable.period_days !== null && (dueUnit(deliverable) !== 'days' || plannedStartDate)">
+                            <ng-container *ngIf="dueUnit(deliverable) !== 'days'">{{ ar ? '= ' + deliverable.period_days + ' يومًا' : '= ' + deliverable.period_days + ' days' }}</ng-container><ng-container *ngIf="dueUnit(deliverable) !== 'days' && plannedStartDate"> · </ng-container><ng-container *ngIf="plannedStartDate">{{ ar ? 'التسليم في' : 'Due' }} {{ dueDate(deliverable.period_days, { year: 'numeric', month: 'short', day: 'numeric' }) }}</ng-container>
+                          </p>
                           <p class="sw-menu__note" *ngIf="plannedStartDate && durationDays !== null">
                             {{ ar ? 'ينتهي المشروع في' : 'Project ends' }} {{ dueDate(durationDays, { year: 'numeric', month: 'short', day: 'numeric' }) }}
                           </p>
                           <p class="sw-menu__note sw-menu__note--warn" *ngIf="allowPastEnd && durationDays !== null">
-                            {{ ar ? 'يمكنك اختيار موعد بعد نهاية المشروع، وسيقترح عرضك مدة أطول للمشروع.' : 'You can pick a day after the project ends; your offer will then suggest a longer project duration.' }}
+                            {{ ar ? 'يمكنك اختيار موعد بعد نهاية المشروع، وسيقترح عرضك مدة أطول للمشروع.' : 'You can pick a date after the project ends; your offer will then suggest a longer project duration.' }}
                           </p>
                         </div>
                       </div>

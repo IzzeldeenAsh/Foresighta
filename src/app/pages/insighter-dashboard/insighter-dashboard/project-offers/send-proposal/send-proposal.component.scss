@@ -2758,90 +2758,6 @@
   }
 }
 
-.sp-duration {
-  padding-top: 22px;
-  border-top: 1px solid var(--sp-rule);
-
-  &__row {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: stretch;
-    gap: 12px;
-  }
-
-  &__fact,
-  &__suggest {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    min-width: 0;
-    padding: 12px 16px;
-    border: 1px solid var(--sp-rule);
-    border-radius: 10px;
-    background: var(--sp-surface-muted);
-
-    > span,
-    small { font-size: 12.5px; color: var(--sp-ink-400); }
-    b { font-size: 15px; font-weight: 600; color: var(--sp-ink-900); }
-  }
-
-  &__fact { min-width: 170px; }
-
-  &__suggest {
-    flex: 1 1 260px;
-    border-color: var(--sp-border);
-    background: var(--sp-surface);
-
-    .sp-input-group { max-width: 220px; }
-  }
-
-  &__label {
-    margin: 0;
-    font-size: 12.5px;
-    font-weight: 500;
-    color: var(--sp-ink-500);
-  }
-
-  &__clear {
-    align-self: flex-start;
-    padding: 0;
-    border: 0;
-    background: none;
-    font: inherit;
-    font-size: 12.5px;
-    font-weight: 600;
-    color: var(--sp-ink-500);
-    cursor: pointer;
-
-    &:hover { color: var(--sp-ink-900); text-decoration: underline; }
-  }
-
-  &__add {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    align-self: center;
-    height: 40px;
-    padding: 0 16px;
-    border: 1px dashed var(--sp-border-strong);
-    border-radius: 10px;
-    background: var(--sp-surface);
-    font: inherit;
-    font-size: 13.5px;
-    font-weight: 600;
-    color: var(--sp-ink-700);
-    cursor: pointer;
-
-    i { font-size: 17px; color: var(--sp-ink-500); }
-    &:hover { border-color: var(--sp-primary); color: var(--sp-primary); i { color: inherit; } }
-  }
-
-  &__locked {
-    align-self: center;
-    margin: 0;
-  }
-}
-
 .sp-facts__item--suggested {
   background: #FFFBEB;
 
@@ -2849,61 +2765,115 @@
 }
 .sp-facts__item b small { font-size: 12.5px; font-weight: 500; color: var(--sp-ink-500); }
 
-// Deliverables step: a due day past the project end asks for a longer duration
+// Deliverables step: the suggested project duration, in warning colours.
+// Orange asks for an action (a deliverable runs past the end); amber shows the suggestion in place.
 .sp-duration-callout {
+  --dc-bg: #FFFBEB;
+  --dc-line: #FDE68A;
+  --dc-ink: #78350F;
+  --dc-text: #92400E;
+  --dc-accent: #D97706;
+  --dc-accent-soft: #FEF3C7;
+
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 14px;
   margin-top: 16px;
-  padding: 14px 16px;
-  border: 1px solid #FCD34D;
+  padding: 16px 18px;
+  border: 1px solid var(--dc-line);
   border-radius: 12px;
-  background: #FFFBEB;
-  color: #92400E;
+  background: var(--dc-bg);
+  color: var(--dc-text);
 
-  > i { flex-shrink: 0; font-size: 22px; color: #B45309; }
+  &--action {
+    --dc-bg: #FFF7ED;
+    --dc-line: #FDBA74;
+    --dc-ink: #7C2D12;
+    --dc-text: #9A3412;
+    --dc-accent: #EA580C;
+    --dc-accent-soft: #FFEDD5;
+  }
+
+  &.is-invalid { border-color: var(--dc-accent); box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.14); }
+
+  &__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: var(--dc-accent-soft);
+    color: var(--dc-accent);
+
+    i { font-size: 20px; color: inherit; }
+  }
 
   &__copy {
     display: flex;
     flex: 1;
     flex-direction: column;
-    gap: 2px;
+    gap: 6px;
     min-width: 0;
 
-    strong { font-size: 14px; font-weight: 600; color: #78350F; }
-    span { font-size: 13px; line-height: 1.55; }
+    strong { font-size: 14.5px; font-weight: 600; line-height: 1.4; color: var(--dc-ink); }
+    p { margin: 0; font-size: 13.5px; line-height: 1.55; color: var(--dc-text); }
   }
 
-  .btn { flex-shrink: 0; }
+  &__hint { font-size: 12.5px !important; opacity: 0.85; }
 
-  &.is-invalid { border-color: var(--sp-danger); box-shadow: 0 0 0 3px rgba(217, 33, 78, 0.10); }
-
-  &--info {
-    border-color: var(--sp-border);
-    background: var(--sp-surface-muted);
-    color: var(--sp-ink-500);
-
-    > i { color: var(--sp-primary); }
-    .sp-duration-callout__copy strong { color: var(--sp-ink-900); }
+  &__compare {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    margin: 4px 0 2px;
   }
 
-  &__link {
+  &__value {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 140px;
+    padding: 10px 14px;
+    border: 1px solid var(--dc-line);
+    border-radius: 10px;
+    background: #fff;
+
+    small { font-size: 12px; color: var(--sp-ink-500); }
+    b { font-size: 16px; font-weight: 600; color: var(--sp-ink-900); font-variant-numeric: tabular-nums; }
+
+    &.is-suggested {
+      border-color: var(--dc-accent);
+      background: var(--dc-accent-soft);
+
+      b { color: var(--dc-ink); }
+    }
+  }
+
+  &__arrow { font-size: 18px; color: var(--dc-accent); }
+
+  &__btn {
     flex-shrink: 0;
-    padding: 0;
-    border: 0;
-    background: none;
-    font: inherit;
-    font-size: 13px;
+    align-self: center;
+    border: 1px solid var(--dc-accent) !important;
+    background: var(--dc-accent) !important;
+    color: #fff !important;
     font-weight: 600;
-    color: var(--sp-primary);
-    cursor: pointer;
 
-    &:hover { text-decoration: underline; }
+    &:hover { filter: brightness(0.95); }
+
+    &--ghost {
+      background: #fff !important;
+      color: var(--dc-ink) !important;
+      border-color: var(--dc-line) !important;
+    }
   }
 
   @container sp-page (max-width: 560px) {
     flex-wrap: wrap;
-    .btn { width: 100%; }
+    .sp-duration-callout__btn { width: 100%; }
   }
 }
 

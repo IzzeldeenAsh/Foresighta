@@ -16,6 +16,9 @@ interface ServiceScopeState { catalogId: number | null; options: ScopeOption[]; 
 const MAX_DELIVERABLES = 10;
 /** Upper bound for a due day when deliverables may run past the project end (about ten years). */
 const MAX_DUE_DAY = 3650;
+/** A due date is entered in days, weeks or months and always saved as days (a month counts as 30). */
+export type DueUnit = 'days' | 'weeks' | 'months';
+const DUE_UNIT_DAYS: Record<DueUnit, number> = { days: 1, weeks: 7, months: 30 };
 const REPORT_TYPES = [
   { value: 'pdf', en: 'PDF Report', ar: 'ملف PDF', icon: 'https://res.cloudinary.com/dsiku9ipv/image/upload/v1781525110/pdf_136522_urotaw.png' },
   { value: 'docx', en: 'Word Document', ar: 'مستند Word', icon: 'https://res.cloudinary.com/dsiku9ipv/image/upload/v1781104177/Microsoft_Office_Word__2025_present_1_sywxfd.png' },
@@ -326,14 +329,59 @@ export class OfferRequirementsEditorComponent implements OnChanges {
     deliverable.period_days = value === null || value === '' ? null : Math.min(this.maxDay, Math.max(0, Math.round(Number(value)) || 0));
     this.emit();
   }
-  get quickDays(): number[] {
-    const presets = [7, 14, 30, 60].filter(day => day < (this.durationDays ?? this.maxDay));
-    return this.durationDays !== null ? [...presets, this.durationDays] : presets;
+  readonly dueUnits: DueUnit[] = ['days', 'weeks', 'months'];
+  /** The unit picked per deliverable row; kept outside the draft so it never reaches the API. */
+  private dueUnitByRow = new WeakMap<object, DueUnit>();
+  /** The picked unit, or the largest whole unit that fits a saved due day. */
+  dueUnit(deliverable: any): DueUnit {
+    const picked = this.dueUnitByRow.get(deliverable);
+    if (picked) return picked;
+    const days = Number(deliverable?.period_days);
+    if (days > 0 && days % DUE_UNIT_DAYS.months === 0) return 'months';
+    if (days > 0 && days % DUE_UNIT_DAYS.weeks === 0) return 'weeks';
+    return 'days';
   }
-  quickDayLabel(day: number): string {
-    if (this.durationDays !== null && day === this.durationDays) return this.ar ? 'نهاية المشروع' : 'At the end';
-    const labels: Record<number, [string, string]> = { 7: ['1 week', 'أسبوع'], 14: ['2 weeks', 'أسبوعان'], 30: ['1 month', 'شهر'], 60: ['2 months', 'شهران'] };
-    return labels[day][this.ar ? 1 : 0];
+  /** Switching the unit keeps the due date as close as the new unit allows, never moving a later date to the start day. */
+  setDueUnit(deliverable: any, unit: DueUnit): void {
+    this.dueUnitByRow.set(deliverable, unit);
+    const days = deliverable?.period_days;
+    if (days === null || days === undefined || days === '') return;
+    const amount = Number(days) > 0 ? Math.max(1, Math.round(Number(days) / DUE_UNIT_DAYS[unit])) : 0;
+    this.setDay(deliverable, amount * DUE_UNIT_DAYS[unit]);
+  }
+  dueAmount(deliverable: any): number | null {
+    const days = deliverable?.period_days;
+    if (days === null || days === undefined || days === '') return null;
+    return Math.round(Number(days) / DUE_UNIT_DAYS[this.dueUnit(deliverable)]);
+  }
+  setDueAmount(deliverable: any, value: number | string | null): void {
+    if (value === null || value === '') { this.setDay(deliverable, null); return; }
+    this.setDay(deliverable, Math.max(0, Math.round(Number(value)) || 0) * DUE_UNIT_DAYS[this.dueUnit(deliverable)]);
+  }
+  stepDue(deliverable: any, delta: number): void {
+    this.setDueAmount(deliverable, Math.max(0, (this.dueAmount(deliverable) ?? 0) + delta));
+  }
+  canStepDueUp(deliverable: any): boolean {
+    return ((this.dueAmount(deliverable) ?? 0) + 1) * DUE_UNIT_DAYS[this.dueUnit(deliverable)] <= this.maxDay;
+  }
+  maxDueAmount(deliverable: any): number { return Math.floor(this.maxDay / DUE_UNIT_DAYS[this.dueUnit(deliverable)]); }
+  dueUnitLabel(unit: DueUnit): string {
+    return { days: this.ar ? 'أيام' : 'Days', weeks: this.ar ? 'أسابيع' : 'Weeks', months: this.ar ? 'أشهر' : 'Months' }[unit];
+  }
+  dueUnitHint(unit: DueUnit): string {
+    if (this.ar) return { days: 'يوم بعد البدء', weeks: 'أسبوع بعد البدء', months: 'شهر بعد البدء' }[unit];
+    return `${unit} after start`;
+  }
+  /** Pill text in the row's own unit, e.g. "2 Weeks"; falls back to days when the day count is not a whole unit. */
+  dueLabel(deliverable: any): string {
+    const days = Number(deliverable.period_days), unit = this.dueUnit(deliverable), size = DUE_UNIT_DAYS[unit];
+    if (unit === 'days' || days === 0 || days % size !== 0) return this.dayLabel(days);
+    const count = days / size;
+    if (this.ar) {
+      const [one, two, few, many] = unit === 'weeks' ? ['أسبوع', 'أسبوعين', 'أسابيع', 'أسبوعًا'] : ['شهر', 'شهرين', 'أشهر', 'شهرًا'];
+      return count === 1 ? `بعد ${one}` : count === 2 ? `بعد ${two}` : count <= 10 ? `بعد ${count} ${few}` : `بعد ${count} ${many}`;
+    }
+    return `${count} ${unit === 'weeks' ? (count === 1 ? 'Week' : 'Weeks') : (count === 1 ? 'Month' : 'Months')}`;
   }
   dayLabel(days: number): string {
     if (this.ar) return days === 0 ? 'يوم البدء' : days === 1 ? 'بعد يوم' : days === 2 ? 'بعد يومين' : days <= 10 ? `بعد ${days} أيام` : `بعد ${days} يومًا`;

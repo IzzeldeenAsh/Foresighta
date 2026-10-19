@@ -148,8 +148,6 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
   attachmentErrors: string[] = [];
   /** A longer project duration the insighter proposes (null keeps the client's duration). */
   suggestedDurationDays: number | null = null;
-  /** The duration field is open; it stays open while the insighter clears it to retype. */
-  durationSuggestOpen = false;
   paymentPlan: ProjectPaymentPlan = 'partial';
   installments: InstallmentDraft[] = [];
   /** Set once the insighter edits the plan, so project data no longer reseeds it. */
@@ -242,9 +240,9 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
 
   private isTabInvalid(tab: ProposalTab): boolean {
     const invalid: Record<ProposalTab, boolean> = {
-      cover: !(this.editMode && this.editLocked) && (this.isCoverLetterInvalid() || !!this.suggestedDurationError || this.attachmentErrors.length > 0),
+      cover: !(this.editMode && this.editLocked) && (this.isCoverLetterInvalid() || this.attachmentErrors.length > 0),
       scope: !this.scopeRequirementsValid,
-      deliverables: !this.deliverablesRequirementsValid || !!this.durationOverflowDays,
+      deliverables: !this.deliverablesRequirementsValid || !!this.durationOverflowDays || !!this.suggestedDurationError,
       pricing: this.editMode && this.editCommercialLocked ? false : this.isPricingInvalid(),
       payment: this.editMode && this.editCommercialLocked ? false : this.isPaymentPlanInvalid(),
       summary: false,
@@ -392,15 +390,15 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
     return longest > end ? longest : null;
   }
 
-  /** Smallest duration the insighter may suggest: past the client's duration and long enough for every deliverable. */
-  get minimumSuggestedDays(): number {
-    return Math.max((this.durationDays ?? 0) + 1, this.longestDeliverableDays ?? 0, 1);
+  /** Whether any of the insighter's deliverables is due after the client's duration. */
+  get suggestionNeeded(): boolean {
+    const longest = this.longestDeliverableDays;
+    return longest !== null && this.durationDays !== null && longest > this.durationDays;
   }
 
   get suggestedDurationError(): string | null {
     const days = this.suggestedDurationDays, ar = this.lang === 'ar';
-    if (this.durationLocked || !this.durationSuggestOpen) return null;
-    if (days === null) return ar ? 'أدخل عدد الأيام، أو أبقِ على مدة العميل.' : 'Enter the number of days, or keep the client’s duration.';
+    if (days === null || this.durationLocked) return null;
     if (!Number.isInteger(Number(days)) || Number(days) < 1) return ar ? 'أدخل عدد أيام صحيحًا.' : 'Enter a whole number of days.';
     if (this.durationDays !== null && Number(days) <= this.durationDays)
       return ar ? `يجب أن تكون المدة المقترحة أكثر من مدة المشروع الحالية (${this.durationDays} يومًا).` : `Suggest more than the current project duration (${this.durationDays} days).`;
@@ -414,22 +412,13 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
     this.installments.filter(item => item.isProjectEnd).forEach(item => item.period_days = this.effectiveDurationDays);
   }
 
-  openSuggestedDuration(): void {
-    this.durationSuggestOpen = true;
-    this.setSuggestedDuration(this.minimumSuggestedDays);
-    setTimeout(() => document.getElementById('sp-suggested-duration')?.focus(), 0);
-  }
-
   /** Deliverables tab: extend the suggestion so the latest deliverable fits. */
   suggestDurationForDeliverables(): void {
     const days = this.durationOverflowDays;
-    if (days === null) return;
-    this.durationSuggestOpen = true;
-    this.setSuggestedDuration(days);
+    if (days !== null) this.setSuggestedDuration(days);
   }
 
   clearSuggestedDuration(): void {
-    this.durationSuggestOpen = false;
     this.setSuggestedDuration(null);
   }
 
@@ -999,7 +988,6 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
         this.retainedAttachmentUuids = (record.offer?.files ?? []).map(file => file.uuid).filter(Boolean);
         this.selectedAttachments = []; this.attachmentErrors = [];
         this.suggestedDurationDays = offerDurationSuggestion(record.offer, record.project.schedule?.duration_days);
-        this.durationSuggestOpen = this.suggestedDurationDays !== null;
         this.priceType = terms.price_type as ProjectPriceType; this.fixedPrice = terms.fixed_price;
         this.hourlyRate = terms.hourly_rate ?? null; this.estimatedHours = terms.estimated_hours ?? null;
         this.dailyRate = terms.daily_rate ?? null; this.estimatedDays = terms.estimated_days ?? null;
