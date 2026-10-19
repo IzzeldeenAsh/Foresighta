@@ -139,8 +139,14 @@
             <ng-container *ngIf="!(editMode && editLocked)">
               <label class="sp-file-upload" for="sp-attachments">
                 <i class="ki-outline ki-plus"></i>
-                <span class="sp-file-upload__text">
-                  {{ editMode ? (lang === 'ar' ? 'أضف ملفات جديدة' : 'Add new files') : (lang === 'ar' ? 'اختر الملفات المرفقة' : 'Choose files to attach') }}
+                <span class="sp-file-upload__copy">
+                  <span class="sp-file-upload__text">
+                    {{ editMode ? (lang === 'ar' ? 'أضف ملفات جديدة' : 'Add new files') : (lang === 'ar' ? 'اختر الملفات المرفقة' : 'Choose files to attach') }}
+                  </span>
+                  <span class="sp-file-upload__suggest">{{ lang === 'ar' ? 'مقترحات للإرفاق:' : 'Suggested to attach:' }}</span>
+                  <span class="sp-file-upload__tags">
+                    <span class="sp-file-upload__tag" *ngFor="let item of suggestedAttachments">{{ lang === 'ar' ? item.ar : item.en }}</span>
+                  </span>
                 </span>
                 <span class="sp-file-upload__hint">
                   {{ lang === 'ar' ? 'PDF · ملفات Office · صور حتى 50MB' : 'PDF, Office files, images · up to 50 MB' }}

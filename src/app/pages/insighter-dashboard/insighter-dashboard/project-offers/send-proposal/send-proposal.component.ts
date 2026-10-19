@@ -141,6 +141,14 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
   coverLetter: string = '';
   readonly coverLetterMaxLength = COVER_LETTER_MAX_LENGTH;
   readonly attachmentAccept = OFFER_FILE_EXTENSIONS.map(extension => `.${extension}`).join(',');
+  /** Documents that usually strengthen an offer, shown as hints on the upload box. */
+  readonly suggestedAttachments = [
+    { en: 'Company profile', ar: 'الملف التعريفي للشركة' },
+    { en: 'Methodology', ar: 'المنهجية' },
+    { en: 'Team structure', ar: 'هيكل الفريق' },
+    { en: 'Previous work', ar: 'الأعمال السابقة' },
+    { en: 'Management plan', ar: 'خطة الإدارة' },
+  ];
   /** New files to upload with the offer. */
   selectedAttachments: File[] = [];
   /** Edit mode: existing offer files the insighter keeps. */

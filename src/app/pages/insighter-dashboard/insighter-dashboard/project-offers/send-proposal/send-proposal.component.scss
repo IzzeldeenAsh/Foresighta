@@ -817,17 +817,54 @@
     font-size: 20px;
   }
 
-  &__text {
+  &__copy {
+    display: flex;
     flex: 1;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  &__text {
     font-size: 14px;
     font-weight: 600;
     color: #1D4ED8;
   }
 
+  &__suggest {
+    font-size: 12px;
+    font-weight: 500;
+    color: #3B82F6;
+  }
+
+  // Hints only: what an offer usually attaches, not a checklist
+  &__tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  &__tag {
+    padding: 3px 9px;
+    border: 1px solid #BFDBFE;
+    border-radius: 999px;
+    background: #fff;
+    font-size: 12px;
+    font-weight: 500;
+    color: #1E40AF;
+  }
+
   &__hint {
+    align-self: flex-start;
     font-size: 12.5px;
     color: #3B82F6;
     white-space: nowrap;
+  }
+
+  @container sp-page (max-width: 560px) {
+    flex-wrap: wrap;
+
+    .sp-file-upload__hint { white-space: normal; }
   }
 }
 
