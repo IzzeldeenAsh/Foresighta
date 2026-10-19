@@ -1645,6 +1645,45 @@
             [statusLabel]="getOfferStatusLabel(invite)"
             [statusClass]="getOfferStatusBadgeClass(invite)"
             [pricingSummary]="getOfferPaymentSummary(submittedOffer)">
+          <section class="pd-proposal-files pd-proposal-files--inline" *ngIf="getOfferFiles(invite).length">
+            <div class="pd-proposal-files__head">
+              <h3>{{ lang === 'ar' ? 'مرفقات العرض' : 'Offer attachments' }}</h3>
+              <span>{{ getOfferFiles(invite).length }} {{ lang === 'ar' ? 'ملف' : (getOfferFiles(invite).length === 1 ? 'file' : 'files') }}</span>
+            </div>
+            <div class="pd-proposal-files__grid">
+              <button type="button"
+                      class="pd-proposal-files__item"
+                      *ngFor="let file of getOfferFiles(invite); trackBy: trackByFile"
+                      [disabled]="isOpeningFile(file)"
+                      (click)="openProjectFile(file)">
+                <span class="pd-proposal-files__iconbox">
+                  <img class="pd-proposal-files__icon"
+                       [src]="getFileTypeIconPath(getProjectFileExtension(file))"
+                       [alt]="getProjectFileExtension(file) || 'file'"
+                       loading="lazy"
+                       (error)="onFileIconLoadError($event)">
+                </span>
+                <span class="pd-proposal-files__copy">
+                  <span class="pd-proposal-files__name">
+                    {{ isOpeningFile(file) ? (lang === 'ar' ? 'جارٍ الفتح...' : 'Opening...') : getProjectFileName(file) }}
+                  </span>
+                  <span class="pd-proposal-files__meta">
+                    <ng-container *ngIf="getProjectFileUploader(file)">
+                      {{ getProjectFileUploader(file) }}
+                    </ng-container>
+                    <ng-container *ngIf="getProjectFileUploadDate(file)">
+                      <span class="pd-proposal-files__dot" *ngIf="getProjectFileUploader(file)"></span>
+                      {{ getProjectFileUploadDate(file) }}
+                    </ng-container>
+                  </span>
+                </span>
+                <span class="pd-proposal-files__action">
+                  <i class="ki-outline"
+                     [ngClass]="isOpeningFile(file) ? 'ki-loading' : 'ki-file-down'"></i>
+                </span>
+              </button>
+            </div>
+          </section>
           </app-offer-overview>
         </div>
       </div>
@@ -1753,43 +1792,6 @@
             </table>
           </div>
 
-          <div class="pd-proposal-files" *ngIf="getOfferFiles(invite).length">
-            <div class="pd-proposal-files__title">
-              {{ lang === 'ar' ? 'ملفات العرض' : 'Offer Files' }}
-            </div>
-
-            <button type="button"
-                    class="pd-proposal-files__item"
-                    *ngFor="let file of getOfferFiles(invite); trackBy: trackByFile"
-                    [disabled]="isOpeningFile(file)"
-                    (click)="openProjectFile(file)">
-              <span class="pd-proposal-files__iconbox">
-                <img class="pd-proposal-files__icon"
-                     [src]="getFileTypeIconPath(getProjectFileExtension(file))"
-                     [alt]="getProjectFileExtension(file) || 'file'"
-                     loading="lazy"
-                     (error)="onFileIconLoadError($event)">
-              </span>
-              <span class="pd-proposal-files__copy">
-                <span class="pd-proposal-files__name">
-                  {{ isOpeningFile(file) ? (lang === 'ar' ? 'جارٍ الفتح...' : 'Opening...') : getProjectFileName(file) }}
-                </span>
-                <span class="pd-proposal-files__meta">
-                  <ng-container *ngIf="getProjectFileUploader(file)">
-                    {{ getProjectFileUploader(file) }}
-                  </ng-container>
-                  <ng-container *ngIf="getProjectFileUploadDate(file)">
-                    <span class="pd-proposal-files__dot" *ngIf="getProjectFileUploader(file)"></span>
-                    {{ getProjectFileUploadDate(file) }}
-                  </ng-container>
-                </span>
-              </span>
-              <span class="pd-proposal-files__action">
-                <i class="ki-outline"
-                   [ngClass]="isOpeningFile(file) ? 'ki-loading' : 'ki-file-down'"></i>
-              </span>
-            </button>
-          </div>
         </div>
       </aside>
     </div>

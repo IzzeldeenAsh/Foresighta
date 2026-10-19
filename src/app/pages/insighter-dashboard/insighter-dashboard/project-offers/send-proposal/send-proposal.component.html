@@ -722,8 +722,8 @@
         <button type="button" class="btn btn-info" *ngIf="editMode ? (!editLocked && activeTab === 'review') : activeTab === 'summary'" [disabled]="isSubmitting || (editMode && (!editDirty || editStale))" (click)="submitProposal()">
           <i class="ki-outline ki-send fs-5" *ngIf="!isSubmitting"></i>
           {{ isSubmitting
-          ? (editMode ? (lang === 'ar' ? 'جارٍ الحفظ…' : 'Saving…') : (lang === 'ar' ? 'جارٍ الإرسال...' : 'Submitting...'))
-          : (editMode ? (lang === 'ar' ? 'حفظ التعديلات' : 'Save changes') : (lang === 'ar' ? 'إرسال العرض' : 'Submit proposal')) }}
+          ? (editMode ? (lang === 'ar' ? 'جارٍ الإرسال…' : 'Submitting…') : (lang === 'ar' ? 'جارٍ الإرسال...' : 'Submitting...'))
+          : (editMode ? (lang === 'ar' ? 'إرسال' : 'Submit') : (lang === 'ar' ? 'إرسال العرض' : 'Submit proposal')) }}
         </button>
       </div>
     </footer>

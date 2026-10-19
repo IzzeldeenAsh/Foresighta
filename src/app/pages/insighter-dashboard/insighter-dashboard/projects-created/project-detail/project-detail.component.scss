@@ -2016,6 +2016,54 @@
   margin-top: 20px;
 }
 
+// In the offer drawer the files sit under the cover letter, as part of the technical offer
+.pd-proposal-files--inline {
+  gap: 14px;
+  margin: -8px 4px 32px;
+
+  .pd-proposal-files__item {
+    min-height: 72px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: #fff;
+
+    &:hover:not(:disabled) {
+      border-color: #9cc7ff;
+      background: #f8fbff;
+      box-shadow: none;
+      transform: none;
+    }
+  }
+
+  .pd-proposal-files__iconbox {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    box-shadow: inset 0 0 0 1px #e2e8f0;
+  }
+
+  .pd-proposal-files__icon {
+    width: 28px;
+    height: 28px;
+  }
+}
+
+.pd-proposal-files__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+
+  h3 { margin: 0; font-size: 16px; font-weight: 650; line-height: 1.5; color: #1e2129; }
+  span { font-size: 13px; color: #5e6278; }
+}
+
+.pd-proposal-files__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 10px;
+}
+
 .pd-proposal-files__title {
   color: #5b6478;
   font-size: 12px;

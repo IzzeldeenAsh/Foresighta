@@ -24,6 +24,9 @@
     <p>{{ offer.cover_letter || (ar ? 'لا توجد رسالة مرفقة بالعرض.' : 'No cover letter was included.') }}</p>
   </section>
 
+  <!-- Offer attachments and other parent content sit right under the cover letter -->
+  <ng-content></ng-content>
+
   <section class="offer-overview__duration" *ngIf="suggestedDurationDays !== null">
     <span class="offer-overview__duration-icon" aria-hidden="true"><i class="pi pi-clock"></i></span>
     <div>
@@ -35,7 +38,6 @@
     </div>
   </section>
 
-  <ng-content></ng-content>
 
   <section class="offer-overview__requirements" *ngIf="groups.length">
     <h3>{{ ar ? 'نطاق الخدمات والمخرجات المقترحة' : 'Proposed service scope and deliverables' }}</h3>
