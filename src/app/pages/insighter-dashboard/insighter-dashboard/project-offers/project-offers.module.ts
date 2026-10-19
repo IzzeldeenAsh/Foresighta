@@ -1,3 +1,4 @@
+import { PendingChangesGuard } from 'src/app/guards/pending-changes.guard';
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Routes } from '@angular/router';
@@ -19,16 +20,24 @@ import { InsighterDashboardSharedModule } from '../shared/shared.module';
 const routes: Routes = [
   {
     path: '',
+    canDeactivate: [PendingChangesGuard],
     component: ProjectOffersComponent,
     pathMatch: 'full'
   },
   {
     path: 'details/:uuid',
+    canDeactivate: [PendingChangesGuard],
     component: ProjectOfferDetailsComponent
   },
   {
     path: 'contract/:contractUuid',
     component: ProjectContractComponent
+  },
+  {
+    path: 'edit-offer/:uuid',
+    component: SendProposalComponent,
+    data: { editOffer: true },
+    canDeactivate: [PendingChangesGuard]
   },
   {
     path: 'send-proposal/:uuid',

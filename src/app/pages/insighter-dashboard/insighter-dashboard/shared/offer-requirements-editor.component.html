@@ -1,11 +1,12 @@
 <section class="sw" *ngIf="hasRequirements" [attr.dir]="ar ? 'rtl' : 'ltr'">
-  <header class="sw__head">
+  <header class="sw__head" *ngIf="showHeading">
     <span class="sw__mark"><i class="ki-outline" [ngClass]="section === 'deliverables' ? 'ki-cube-2' : 'ki-questionnaire-tablet'"></i></span>
     <div class="sw__copy">
       <h2 class="sw__title">
         {{ section === 'deliverables' ? (ar ? 'المخرجات' : 'Deliverables') : (ar ? 'نطاق العمل' : 'Scope of work') }}
+        <span *ngIf="readOnly" class="sw-readonly-badge">{{ ar ? 'للعرض فقط' : 'Read-only' }}</span>
       </h2>
-      <p class="sw__desc">
+      <p class="sw__desc" *ngIf="!readOnly">
         {{ section === 'deliverables'
         ? (ar ? 'حدد المخرجات وموعدها وصيغتها وطريقة تسليمها لكل خدمة ليراجعها العميل مع عرضك.' : 'Define each service’s deliverables, timing, formats and delivery method for the client to review with your offer.')
         : ar
@@ -13,7 +14,7 @@
         : 'Choose what you’ll cover for each service. The client reviews it with your offer. Requirements the client already set in project details are read-only.' }}
       </p>
     </div>
-    <div class="sw__progress" role="status">
+    <div class="sw__progress" role="status" *ngIf="!readOnly">
       <span class="sw__progress-text">
         <b>{{ doneCount }} {{ ar ? 'من' : 'of' }} {{ rows.length }}</b> {{ ar ? 'مكتملة' : 'defined' }}
       </span>
@@ -27,8 +28,8 @@
     <div class="sw-row" *ngFor="let row of rows; let r = index"
       [class.is-open]="isOpen(row)" [class.is-done]="isDone(row)" [class.is-error]="attempted && !isDone(row)">
       <h3 class="sw-row__heading">
-        <button type="button" class="sw-row__toggle" [id]="section + '-sw-toggle-' + r" [attr.aria-expanded]="isOpen(row)"
-          [attr.aria-controls]="section + '-sw-panel-' + r" (click)="toggle(row, r)">
+        <button type="button" class="sw-row__toggle" [id]="controlPrefix + '-sw-toggle-' + r" [attr.aria-expanded]="isOpen(row)"
+          [attr.aria-controls]="controlPrefix + '-sw-panel-' + r" (click)="toggle(row, r)">
           <span class="sw-row__num">
             <i *ngIf="isDone(row); else rowNumber" class="ki-outline ki-check"></i>
             <ng-template #rowNumber>{{ r + 1 }}</ng-template>
@@ -37,20 +38,21 @@
             <span class="sw-row__name">{{ rowName(row) }}</span>
             <span class="sw-row__context">{{ rowContext(row) }}</span>
           </span>
-          <span class="sw-chip" [ngClass]="isDone(row) ? 'sw-chip--done' : attempted ? 'sw-chip--error' : 'sw-chip--todo'">
+          <span *ngIf="readOnly" class="sw-readonly-badge">{{ ar ? 'للعرض فقط' : 'Read-only' }}</span>
+          <span *ngIf="!readOnly" class="sw-chip" [ngClass]="isDone(row) ? 'sw-chip--done' : attempted ? 'sw-chip--error' : 'sw-chip--todo'">
             {{ isDone(row) ? (ar ? 'مكتمل' : 'Done') : attempted ? (ar ? 'ناقص' : 'Missing') : (ar ? 'بحاجة للتحديد' : 'To define') }}
           </span>
           <i class="ki-outline ki-down sw-row__chev"></i>
         </button>
       </h3>
 
-      <div class="sw-row__panel" [id]="section + '-sw-panel-' + r" *ngIf="isOpen(row)">
+      <fieldset class="sw-row__panel sw-fields" [disabled]="readOnly" [id]="controlPrefix + '-sw-panel-' + r" *ngIf="isOpen(row)">
         <!-- Service scope: pick from the service's scope list, like the client project wizard -->
         <ng-container *ngIf="row.scope as req">
           <ng-container *ngIf="scopeState[req.project_service_id] as state">
             <div class="sw-pick">
               <div class="sw-pick__head">
-                <span class="sw-label">{{ ar ? 'اختر النطاقات' : 'Choose scopes' }}</span>
+                <span class="sw-label">{{ ar ? 'النطاقات المقترحة' : 'Suggested scopes' }}</span>
                 <button type="button" class="sw-link" *ngIf="state.options.length" (click)="toggleAllScopes(req.project_service_id)">
                   {{ allScopesPicked(req.project_service_id) ? (ar ? 'إلغاء تحديد الكل' : 'Deselect all') : (ar ? 'تحديد الكل' : 'Select all') }}
                 </button>
@@ -62,14 +64,14 @@
               </p>
 
               <div class="sw-options" role="group" [attr.aria-label]="ar ? 'نطاقات الخدمة' : 'Service scopes'">
-                <label class="sw-option" *ngFor="let option of state.options" [class.is-checked]="isPicked(req.project_service_id, option)">
+                <label class="sw-option" *ngFor="let option of availableScopeOptions(req.project_service_id)" [class.is-checked]="isPicked(req.project_service_id, option)">
                   <input type="checkbox" [checked]="isPicked(req.project_service_id, option)" (change)="toggleScope(req.project_service_id, option)" />
                   <span class="sw-option__name">{{ option.name }}</span>
                 </label>
 
                 <div class="sw-option is-checked" *ngFor="let pick of customPicks(req.project_service_id)">
                   <span class="sw-option__mark" aria-hidden="true"><i class="ki-outline ki-check"></i></span>
-                  <span class="sw-option__name">{{ pick.name }}</span>
+                  <span class="sw-option__name" *ngIf="!revisionMode">{{ pick.name }}</span><input *ngIf="revisionMode" class="sw-option__input" [(ngModel)]="pick.name" (ngModelChange)="syncScopes()" maxlength="255" [attr.aria-label]="ar ? 'عنوان النطاق' : 'Scope title'" />
                   <button type="button" class="sw-option__remove" (click)="removeScopePick(req.project_service_id, pick)"
                     [attr.aria-label]="ar ? 'إزالة النطاق' : 'Remove scope'">
                     <i class="ki-outline ki-cross"></i>
@@ -89,7 +91,7 @@
                     [attr.aria-label]="ar ? 'إلغاء' : 'Cancel'"><i class="ki-outline ki-cross"></i></button>
                 </div>
 
-                <button type="button" class="sw-option sw-option--add" (click)="startCustomScope(req.project_service_id)">
+                <button type="button" class="sw-option sw-option--add" *ngIf="!readOnly" (click)="startCustomScope(req.project_service_id)">
                   <i class="ki-outline ki-plus"></i>{{ ar ? 'إضافة نطاق' : 'Add scope' }}
                 </button>
               </div>
@@ -107,6 +109,7 @@
                     {{ allChildrenPicked(pick) ? (ar ? 'إلغاء تحديد الكل' : 'Clear') : (ar ? 'تحديد الكل' : 'Select all') }}
                   </button>
                 </div>
+                <label *ngIf="revisionMode || (readOnly && pick.description)" class="sw-revision-description">{{ ar ? 'وصف النطاق (اختياري)' : 'Scope description (optional)' }}<textarea class="sw-input" rows="2" maxlength="2500" [(ngModel)]="pick.description" (ngModelChange)="syncScopes()"></textarea></label>
                 <p class="sw-hint" *ngIf="!pick.children.length && !pick.customChildren.length">
                   {{ ar ? 'سيتم تضمين هذا النطاق بالكامل. أضف نطاقات فرعية إذا أردت تفاصيل أكثر.' : 'This whole scope will be included. Add sub-scopes if you want to be more specific.' }}
                 </p>
@@ -115,8 +118,8 @@
                     [attr.aria-pressed]="isChildPicked(pick, child)" (click)="toggleChild(pick, child)">
                     <i class="ki-outline" [ngClass]="isChildPicked(pick, child) ? 'ki-check' : 'ki-plus'"></i>{{ child.name }}
                   </button>
-                  <span class="sw-tag is-checked" *ngFor="let name of pick.customChildren; let k = index">
-                    <i class="ki-outline ki-check"></i>{{ name }}
+                  <span class="sw-tag is-checked" *ngFor="let name of pick.customChildren; let k = index; trackBy: trackChildIndex">
+                    <i class="ki-outline ki-check"></i><ng-container *ngIf="!revisionMode">{{ name }}</ng-container><input *ngIf="revisionMode" class="sw-tag__input" [ngModel]="name" (ngModelChange)="renameCustomChild(pick, k, $event)" maxlength="255" [attr.aria-label]="ar ? 'عنوان النطاق الفرعي' : 'Subscope title'" />
                     <button type="button" class="sw-tag__remove" (click)="removeCustomChild(pick, k)"
                       [attr.aria-label]="ar ? 'حذف النطاق الفرعي' : 'Remove sub-scope'"><i class="ki-outline ki-cross"></i></button>
                   </span>
@@ -128,7 +131,7 @@
                       (blur)="commitCustomChild(req.project_service_id, pick)"
                       [placeholder]="ar ? 'اسم النطاق الفرعي…' : 'Sub-scope name…'" />
                   </span>
-                  <button type="button" class="sw-tag sw-tag--add" (click)="startCustomChild(req.project_service_id, pick)">
+                  <button type="button" class="sw-tag sw-tag--add" *ngIf="!readOnly" (click)="startCustomChild(req.project_service_id, pick)">
                     <i class="ki-outline ki-plus"></i>{{ ar ? 'إضافة نطاق فرعي' : 'Add sub-scope' }}
                   </button>
                 </div>
@@ -145,29 +148,31 @@
                 <ul class="sw-dlv-list">
                   <li class="sw-dlv" *ngFor="let deliverable of list; let j = index">
                     <div class="sw-dlv__head">
-                      <label class="sw-dlv__label" [for]="section + '-deliverable-title-' + r + '-' + j">
+                      <label class="sw-dlv__label" [for]="controlPrefix + '-deliverable-title-' + r + '-' + j">
                         {{ list.length > 1
                           ? (ar ? 'اسم المخرج ' + (j + 1) : 'Deliverable ' + (j + 1) + ' name')
                           : (ar ? 'اسم المخرج' : 'Deliverable name') }}
                       </label>
-                      <button type="button" class="sw-dlv__remove" *ngIf="list.length > 1"
+                      <button type="button" class="sw-dlv__remove" *ngIf="revisionMode || list.length > 1" [disabled]="isDeliverableLinked(req, deliverable)"
                         (click)="removeDeliverable(req, j)" [attr.aria-label]="ar ? 'حذف المخرج' : 'Remove deliverable'">
                         <i class="ki-outline ki-trash"></i>
                       </button>
                     </div>
-                    <input [id]="section + '-deliverable-title-' + r + '-' + j" class="sw-input sw-dlv__title" maxlength="120"
+                    <p class="sw-hint" *ngIf="isDeliverableLinked(req, deliverable)">{{ ar ? 'مرتبط بدفعة. احذف الدفعة المرتبطة واحفظ أولاً لإتاحة حذف المخرج.' : 'Linked to a payment. Remove the linked installment and save first to delete this deliverable.' }}</p>
+                    <input [id]="controlPrefix + '-deliverable-title-' + r + '-' + j" class="sw-input sw-dlv__title" maxlength="120"
                       [class.is-invalid]="showError(deliverable.title)" [(ngModel)]="deliverable.title" (ngModelChange)="emit()"
                       [placeholder]="ar ? 'مثال: تقرير تحليل السوق' : 'e.g. Market analysis report'" required />
 
                     <div class="sw-pills">
                       <!-- Due date -->
                       <div class="sw-menu" *ngIf="r + '-' + j + '-due' as key">
-                        <button type="button" class="sw-pill" [class.is-invalid]="attempted && deliverable.period_days === null" [class.is-open]="isMenuOpen(key)" (click)="toggleMenu(key, $event)"
+                        <button type="button" class="sw-pill" [class.is-invalid]="attempted && deliverable.period_days === null" [class.is-past-end]="isPastEnd(deliverable.period_days)" [class.is-open]="isMenuOpen(key)" (click)="toggleMenu(key, $event)"
                           aria-haspopup="dialog" [attr.aria-expanded]="isMenuOpen(key)" [attr.aria-label]="ar ? 'موعد التسليم' : 'Due date'">
                           <i class="ki-outline ki-calendar sw-pill__icon"></i>
                           <ng-container *ngIf="deliverable.period_days !== null; else duePlaceholder">
                             <span>{{ dayLabel(deliverable.period_days) }}</span>
                             <span class="sw-pill__muted" *ngIf="plannedStartDate">· {{ dueDate(deliverable.period_days) }}</span>
+                            <span class="sw-pill__flag" *ngIf="isPastEnd(deliverable.period_days)">{{ ar ? 'بعد نهاية المشروع' : 'After project end' }}</span>
                           </ng-container>
                           <ng-template #duePlaceholder><span class="sw-pill__placeholder">{{ ar ? 'اختر موعد التسليم' : 'Choose due date' }}</span></ng-template>
                           <i class="ki-outline ki-down sw-pill__chev"></i>
@@ -187,7 +192,7 @@
                                 <i class="ki-outline ki-minus"></i>
                               </button>
                               <input type="number" inputmode="numeric" min="0" class="sw-stepper__input"
-                                [attr.max]="durationDays" [ngModel]="deliverable.period_days" (ngModelChange)="setDay(deliverable, $event)" placeholder="—"
+                                [attr.max]="maxDay" [ngModel]="deliverable.period_days" (ngModelChange)="setDay(deliverable, $event)" placeholder="—"
                                 [attr.aria-label]="ar ? 'عدد الأيام من بدء المشروع' : 'Days from project start'" />
                               <button type="button" class="sw-stepper__btn" [disabled]="deliverable.period_days !== null && deliverable.period_days >= maxDay"
                                 (click)="setDay(deliverable, (deliverable.period_days ?? 0) + 1)" [attr.aria-label]="ar ? 'يوم لاحق' : 'One day later'">
@@ -198,6 +203,9 @@
                           </div>
                           <p class="sw-menu__note" *ngIf="plannedStartDate && durationDays !== null">
                             {{ ar ? 'ينتهي المشروع في' : 'Project ends' }} {{ dueDate(durationDays, { year: 'numeric', month: 'short', day: 'numeric' }) }}
+                          </p>
+                          <p class="sw-menu__note sw-menu__note--warn" *ngIf="allowPastEnd && durationDays !== null">
+                            {{ ar ? 'يمكنك اختيار موعد بعد نهاية المشروع، وسيقترح عرضك مدة أطول للمشروع.' : 'You can pick a day after the project ends; your offer will then suggest a longer project duration.' }}
                           </p>
                         </div>
                       </div>
@@ -262,7 +270,7 @@
                     <p class="sw-error" *ngFor="let message of deliverableErrors(deliverable)" role="alert">{{ message }}</p>
                   </li>
                 </ul>
-                <button type="button" class="sw-add-link" *ngIf="list.length < maxDeliverables" (click)="addDeliverable(req)">
+                <button type="button" class="sw-add-link" *ngIf="!readOnly && list.length < maxDeliverables" (click)="addDeliverable(req)">
                   <i class="ki-outline ki-plus"></i>{{ ar ? 'إضافة مخرج آخر' : 'Add another deliverable' }}
                 </button>
               </ng-container>
@@ -319,11 +327,13 @@
             </div>
           </ng-container>
         </ng-container>
-      </div>
+      </fieldset>
     </div>
   </div>
 
   <p *ngIf="attempted && !complete" class="sw-error" role="alert">
-    {{ ar ? 'أكمل جميع النطاقات والمتطلبات المطلوبة قبل إرسال العرض.' : 'Complete all required scopes and requirements before submitting your offer.' }}
+    {{ section === 'deliverables'
+      ? (ar ? 'أكمل حقول المخرجات المطلوبة للمتابعة.' : 'Complete the required deliverable fields to continue.')
+      : (ar ? 'أكمل النطاقات والمتطلبات المطلوبة للمتابعة.' : 'Complete the required scopes and requirements to continue.') }}
   </p>
 </section>

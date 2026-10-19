@@ -2,6 +2,7 @@ import { Component, Input, OnChanges } from '@angular/core';
 import { ProjectOfferDetails } from 'src/app/_fake/services/project-offers/project-offers.service';
 import { OfferComponent } from 'src/app/_fake/services/project-phase2/project-requirements.model';
 import { ProjectDeliverable, ProjectServiceDetails, addDaysToDate, deliverableWayLabel, periodDaysLabel } from 'src/app/_fake/services/project-phase2/project-phase2.model';
+import { offerDurationSuggestion } from 'src/app/_fake/services/agreement-revisions/agreement-revisions.model';
 
 interface OverviewDeliverable {
   title: string;
@@ -29,7 +30,9 @@ interface ServiceGroup {
   styleUrls: ['./offer-overview.component.scss'],
 })
 export class OfferOverviewComponent implements OnChanges {
-  @Input({ required: true }) offer!: Pick<ProjectOfferDetails, 'proposed_price' | 'cover_letter' | 'status' | 'installments' | 'offer_scopes' | 'offer_components'>;
+  @Input({ required: true }) offer!: Pick<ProjectOfferDetails, 'proposed_price' | 'cover_letter' | 'status' | 'installments' | 'offer_scopes' | 'offer_components' | 'suggested_duration_days'>;
+  /** The project's current duration, so a longer suggestion in the offer can be shown next to it. */
+  @Input() projectDurationDays: number | null = null;
   @Input() context: 'insighter' | 'client' = 'insighter';
   @Input() services: ProjectServiceDetails[] = [];
   @Input() baseDate: string | null = null;
@@ -83,5 +86,16 @@ export class OfferOverviewComponent implements OnChanges {
   }
   period(days: number | null): string { return periodDaysLabel(days, this.lang); }
   method(value?: string | null): string { return deliverableWayLabel(value, this.lang); }
+  wayIcon(value?: string | null): string {
+    return value === 'session' ? 'pi-video' : value === 'physical_workshop' ? 'pi-map-marker' : 'pi-desktop';
+  }
   trackService(_: number, group: ServiceGroup): number | null { return group.id; }
+  get suggestedDurationDays(): number | null { return offerDurationSuggestion(this.offer, this.projectDurationDays); }
+  get suggestedEndDate(): string {
+    const days = this.suggestedDurationDays;
+    const date = days === null ? null : addDaysToDate(this.baseDate, days);
+    if (!date) return '';
+    const [year, month, day] = date.slice(0, 10).split('-').map(Number);
+    return new Date(year, month - 1, day).toLocaleDateString(this.ar ? 'ar' : 'en-US', { day: 'numeric', month: 'short', year: 'numeric' });
+  }
 }

@@ -80,6 +80,7 @@ export interface ProjectInstallment {
   /** Calculated planned date (Y-m-d). */
   date: string | null;
   project_service_deliverable_id: number | null;
+  project_proposal_offer_deliverable_id?: number | null;
   deliverable: { id: number; title: string; period_days: number | null; date: string | null } | null;
   /** Order installments only. */
   amount: number | null;
@@ -241,6 +242,7 @@ export function mapInstallment(raw: any): ProjectInstallment | null {
     period_days: toNumberOrNull(raw.period_days),
     date: dateOnly(raw.calculated_date ?? raw.date),
     project_service_deliverable_id: toNumberOrNull(raw.project_service_deliverable_id),
+    project_proposal_offer_deliverable_id: toNumberOrNull(raw.project_proposal_offer_deliverable_id),
     deliverable: deliverable
       ? {
           id: toNumberOrNull(deliverable.id) ?? 0,
@@ -304,6 +306,19 @@ export function priceTypeLabel(type: string | null | undefined, lang: string): s
   const label = labels[type || ''];
   if (!label) return type || '-';
   return lang === 'ar' ? label.ar : label.en;
+}
+
+/** Payment type of an offer: "Installments" for a partial plan (or several installments), otherwise "Full payment". */
+export function paymentPlanLabel(offer: { payment_plan?: string | null; installments?: unknown[] | null } | null | undefined, lang: string): string {
+  const installments = offer?.payment_plan === 'partial' || (offer?.installments?.length ?? 0) > 1;
+  if (lang === 'ar') return installments ? 'دفعات' : 'دفعة كاملة';
+  return installments ? 'Installments' : 'Full payment';
+}
+
+/** Offer basis line: payment type (full / installments) instead of "Fixed price"; hourly/daily keep their rate breakdown. */
+export function offerPaymentSummary(offer: any, lang: string): string {
+  const payment = paymentPlanLabel(offer, lang);
+  return offer.price_type === 'hourly' || offer.price_type === 'daily' ? `${offerPricingSummary(offer, lang)} · ${payment}` : payment;
 }
 
 export function dueTypeLabel(type: string | null | undefined, lang: string): string {

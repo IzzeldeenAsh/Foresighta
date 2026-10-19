@@ -1,4 +1,5 @@
-import { Component, Injector, OnInit } from '@angular/core';
+import { AgreementRevisionsComponent } from '../shared/agreement-revisions/agreement-revisions.component';
+import { ViewChild, Component, Injector, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { BehaviorSubject, forkJoin, Observable, of } from 'rxjs';
 import { catchError, finalize, map, shareReplay, takeUntil } from 'rxjs/operators';
@@ -25,7 +26,7 @@ import { BaseComponent } from 'src/app/modules/base.component';
 import { offerPricingSummary } from 'src/app/_fake/services/project-phase2/project-phase2.model';
 
 type ViewMode = 'grid' | 'list';
-export type DrawerTab = 'overview' | 'documents' | 'reviews' | 'discussion';
+export type DrawerTab = 'revisions' | 'overview' | 'documents' | 'reviews' | 'discussion';
 
 interface ProjectFileTypeOption {
   value: ProjectFileUploadType;
@@ -136,6 +137,9 @@ function deliverableIdFromKey(key: string | null | undefined): number | null {
   ],
 })
 export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
+  @ViewChild(AgreementRevisionsComponent) agreementWorkspace?: AgreementRevisionsComponent;
+  canDeactivate() { return this.agreementWorkspace?.canDeactivate() ?? true; }
+
   isLoading$: Observable<boolean>;
   isDetailsPage = false;
   projects: ProjectOffer[] = [];
@@ -200,6 +204,7 @@ export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
     { value: 'documents', labelEn: 'Shared Documents', labelAr: 'المستندات', iconClass: 'ki-document' },
     { value: 'reviews', labelEn: 'Review Request', labelAr: 'طلب المراجعة', iconClass: 'ki-check-square' },
     { value: 'discussion', labelEn: 'Discussion', labelAr: 'النقاش', iconClass: 'ki-messages' },
+    { value: 'revisions', labelEn: 'Changes Revisions', labelAr: 'سجل التعديلات', iconClass: 'ki-time' },
   ];
   private readonly generalFileTypeOptions: ProjectFileTypeOption[] = [
     { value: 'samples', labelEn: 'Samples', labelAr: 'عينات' },
@@ -288,6 +293,13 @@ export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
     }
 
     this.router.navigate(['/app/insighter-dashboard/on-work-projects/details', projectUuid]);
+  }
+
+  onAgreementRefreshed(project: ProjectOffer): void {
+    this.selectedProject = project;
+    this.replaceProjectInList(project);
+    this.setEmbeddedContractDetails(project);
+    this.loadInsighterTimeline(this.getProjectUuid(project));
   }
 
   selectProject(project: ProjectOffer): void {
@@ -1395,6 +1407,9 @@ export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
       day: 'numeric',
     });
   }
+
+  /** Lowers a Revisions tab badge after a revision is marked seen. */
+  lowerCount(count?: number | null): number { return Math.max(0, (Number(count) || 0) - 1); }
 
   trackByProject(index: number, project: ProjectOffer): string {
     return project.uuid || this.getContractUuid(project) || `${index}`;

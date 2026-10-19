@@ -1,3 +1,7 @@
+<div *ngIf="agreementChanged" class="alert alert-warning d-flex align-items-center gap-3" role="alert">
+  <span>{{ lang === 'ar' ? 'تغيّرت تفاصيل الاتفاق. حدّث معاينة العقد قبل المتابعة.' : 'The agreement has changed. Refresh the contract preview before continuing.' }}</span>
+  <button type="button" class="btn btn-sm btn-light" (click)="refreshAgreementContract()">{{ lang === 'ar' ? 'تحديث المعاينة' : 'Refresh preview' }}</button>
+</div>
 <div class="pcn-shell" [attr.dir]="lang === 'ar' ? 'rtl' : 'ltr'">
   <p-progressBar
     *ngIf="isLoadingProject"
@@ -199,7 +203,7 @@
               type="button"
               class="btn"
               [ngClass]="isContractSigned ? 'btn-outline btn-outline-success pcn-signed-btn' : 'btn-info'"
-              [disabled]="isContractSigned || !canSignDefault || isSubmitting"
+              [disabled]="agreementChanged || contract?.requires_prepare || isContractSigned || !canSignDefault || isSubmitting"
               (click)="signDefaultContract()">
               <i class="ki-outline fs-6 me-1" [ngClass]="isContractSigned ? 'ki-check' : 'ki-pencil'"></i>
               {{
@@ -263,7 +267,7 @@
               type="button"
               class="btn"
               [ngClass]="isContractSigned ? 'btn-outline btn-outline-success pcn-signed-btn' : 'btn-info'"
-              [disabled]="isContractSigned || !canSubmitCustom"
+              [disabled]="agreementChanged || isContractSigned || !canSubmitCustom"
               (click)="signCustomContract()">
               <i class="ki-outline fs-6 me-1" [ngClass]="isContractSigned ? 'ki-check' : 'ki-pencil'"></i>
               {{

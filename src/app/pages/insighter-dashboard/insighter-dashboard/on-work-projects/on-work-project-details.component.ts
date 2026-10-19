@@ -14,7 +14,7 @@ import { DrawerTab, OnWorkProjectsComponent } from './on-work-projects.component
 })
 export class OnWorkProjectDetailsComponent extends OnWorkProjectsComponent implements OnInit {
   private readonly detailTabParam = 'tab';
-  private readonly detailTabValues: DrawerTab[] = ['overview', 'documents', 'reviews', 'discussion'];
+  private readonly detailTabValues: DrawerTab[] = ['revisions', 'overview', 'documents', 'reviews', 'discussion'];
 
   constructor(
     injector: Injector,

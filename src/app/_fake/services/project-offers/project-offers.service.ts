@@ -152,6 +152,8 @@ export interface ProjectOfferDetails {
   estimated_hours: string | number | null;
   daily_rate: string | number | null;
   estimated_days: string | number | null;
+  /** Longer project duration the insighter proposes; applied to the project only when this offer is awarded. */
+  suggested_duration_days?: number | null;
   fixed_price: string | number | null;
   cover_letter: string | null;
   status: string | null;
@@ -161,6 +163,9 @@ export interface ProjectOfferDetails {
 }
 
 export interface ProjectOffer {
+  order?: any;
+  /** Agreement revisions the insighter has not opened yet. */
+  unseen_agreement_revisions_count?: number;
   missing_offer_requirements?: MissingOfferRequirements;
   /** Project UUID — routing/details identifier (GET /insighter/project/show/{uuid}). */
   uuid: string;
@@ -705,6 +710,8 @@ export class ProjectOffersService {
     const projectServices = mapProjectServices(project?.project_services);
 
     return {
+      order: (project as any)?.order ?? null,
+      unseen_agreement_revisions_count: Number((project as any)?.unseen_agreement_revisions_count) || 0,
       uuid: project?.uuid ?? '',
       missing_offer_requirements: mapMissingOfferRequirements(project?.missing_offer_requirements),
       status: projectStatus ?? proposalStatus,
@@ -775,6 +782,7 @@ export class ProjectOffersService {
       estimated_hours: offer?.estimated_hours ?? null,
       daily_rate: offer?.daily_rate ?? null,
       estimated_days: offer?.estimated_days ?? null,
+      suggested_duration_days: offer?.suggested_duration_days == null ? null : Number(offer.suggested_duration_days),
       fixed_price: offer?.fixed_price ?? null,
       cover_letter: offer?.cover_letter ?? null,
       status: offer?.status ?? null,

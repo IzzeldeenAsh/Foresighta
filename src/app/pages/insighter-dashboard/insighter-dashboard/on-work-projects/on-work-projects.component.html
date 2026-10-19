@@ -363,6 +363,7 @@
                 [ngClass]="tab.iconClass"
                 aria-hidden="true"></i>
               <span>{{ lang === 'ar' ? tab.labelAr : tab.labelEn }}</span>
+              <span class="po-tab-badge" *ngIf="tab.value === 'revisions' && (project.unseen_agreement_revisions_count || 0) > 0" [attr.aria-label]="lang === 'ar' ? 'مراجعات غير مقروءة' : 'Unseen revisions'">{{ project.unseen_agreement_revisions_count }}</span>
               <ng-container *ngIf="tab.value === 'documents'">
                 <ng-container *ngIf="unreadDocumentsCount$ | async as unreadDocumentsCount">
                   <span
@@ -387,6 +388,7 @@
           </div>
 
           <ng-container [ngSwitch]="activeDrawerTab">
+            <app-agreement-revisions *ngSwitchCase="'revisions'" [record]="project" role="insighter" [lang]="lang" [proposalContext]="false" (revisionSeen)="project.unseen_agreement_revisions_count = lowerCount(project.unseen_agreement_revisions_count)" (refreshed)="onAgreementRefreshed($event)"></app-agreement-revisions>
             <div *ngSwitchCase="'overview'" class="po-tab-panel">
               <section class="po-section" *ngIf="project.project.service_prompt || project.project.description">
                 <p class="po-section__text" *ngIf="project.project.service_prompt">{{ project.project.service_prompt }}</p>

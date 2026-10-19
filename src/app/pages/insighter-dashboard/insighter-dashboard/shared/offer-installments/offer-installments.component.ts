@@ -20,13 +20,23 @@ export class OfferInstallmentsComponent {
   @Input() total: number | string | null = null;
   @Input() lang: 'en' | 'ar' | string = 'en';
   @Input() showStatus = false;
-  @Input() presentation: 'list' | 'timeline' = 'list';
+  @Input() presentation: 'list' | 'ledger' = 'list';
 
   amountFor(item: ProjectInstallment): number | null {
     if (item.amount !== null && item.amount !== undefined) return item.amount;
     const total = Number(this.total);
     if (!isFinite(total) || total <= 0) return null;
     return Number(((total * item.percentage) / 100).toFixed(2));
+  }
+
+  percentTotal(): number {
+    return Number(this.installments.reduce((sum, item) => sum + Number(item.percentage || 0), 0).toFixed(2));
+  }
+
+  amountTotal(): number | null {
+    const amounts = this.installments.map(item => this.amountFor(item));
+    if (amounts.some(value => value === null)) return null;
+    return Number((amounts as number[]).reduce((sum, value) => sum + value, 0).toFixed(2));
   }
 
   dueLabel(item: ProjectInstallment): string {

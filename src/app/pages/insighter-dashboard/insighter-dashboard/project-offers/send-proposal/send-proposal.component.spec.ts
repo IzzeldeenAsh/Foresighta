@@ -157,7 +157,7 @@ describe('Proposal payment duration', () => {
 
   it('separates deliverables from scope fields and keeps editor inputs stable between tabs', () => {
     component.proposal!.missing_offer_requirements = missingRequirements();
-    expect(component.tabs.map(tab => tab.key)).toEqual(['cover', 'scope', 'deliverables', 'pricing', 'payment']);
+    expect(component.tabs.map(tab => tab.key)).toEqual(['cover', 'scope', 'deliverables', 'pricing', 'payment', 'summary']);
     const scopeInput = component.scopeRequirements, deliverablesInput = component.deliverablesRequirements;
     expect(scopeInput.service_components).toEqual([]);
     expect(scopeInput.project_components.map(item => item.component_id)).toEqual([3]);
@@ -173,10 +173,10 @@ describe('Proposal payment duration', () => {
 
   it('shows the deliverables tab for deliverables-only requests and hides empty requirement tabs', () => {
     component.proposal!.missing_offer_requirements = { ...missingRequirements(), scopes: [], project_components: [] };
-    expect(component.tabs.map(tab => tab.key)).toEqual(['cover', 'deliverables', 'pricing', 'payment']);
+    expect(component.tabs.map(tab => tab.key)).toEqual(['cover', 'deliverables', 'pricing', 'payment', 'summary']);
     expect(component.nextTab?.key).toBe('deliverables');
     component.proposal!.missing_offer_requirements = undefined;
-    expect(component.tabs.map(tab => tab.key)).toEqual(['cover', 'pricing', 'payment']);
+    expect(component.tabs.map(tab => tab.key)).toEqual(['cover', 'pricing', 'payment', 'summary']);
     expect(component.requirementsValid).toBeTrue();
   });
 
@@ -267,12 +267,8 @@ describe('Proposal payment duration', () => {
     tick();
   }));
 
-  it('guards direct and keyboard navigation to later steps while allowing backward navigation', fakeAsync(() => {
+  it('guards direct navigation to later steps while allowing backward navigation', fakeAsync(() => {
     component.selectTab('payment');
-    expect(component.activeTab).toBe('cover');
-    const event = new KeyboardEvent('keydown', { key: 'End', cancelable: true });
-    component.onTabKeydown(event);
-    expect(event.defaultPrevented).toBeTrue();
     expect(component.activeTab).toBe('cover');
     component.coverLetter = 'My approach';
     component.selectTab('payment');
@@ -286,6 +282,24 @@ describe('Proposal payment duration', () => {
     component.selectTab('pricing');
     component.goToNextTab();
     expect(component.activeTab).toBe('cover');
+    tick();
+  }));
+
+  it('hides the offer total until pricing has a value and ends on the financial summary', fakeAsync(() => {
+    component.fixedPrice = 100;
+    expect(component.showOfferTotal).toBeFalse();
+    component.coverLetter = 'My approach';
+    component.selectTab('pricing');
+    expect(component.showOfferTotal).toBeTrue();
+    component.fixedPrice = 0;
+    expect(component.showOfferTotal).toBeFalse();
+    component.fixedPrice = 100;
+    component.selectTab('summary');
+    expect(component.activeTab).toBe('summary');
+    expect(component.nextTab).toBeNull();
+    expect(component.summaryScheduleRows.reduce((sum, row) => sum + row.amount, 0)).toBe(100);
+    component.goToPreviousTab();
+    expect(component.activeTab).toBe('payment');
     tick();
   }));
 });

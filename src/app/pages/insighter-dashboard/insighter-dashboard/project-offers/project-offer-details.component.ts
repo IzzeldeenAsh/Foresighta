@@ -11,7 +11,7 @@ import { DrawerTab, ProjectOffersComponent } from './project-offers.component';
 })
 export class ProjectOfferDetailsComponent extends ProjectOffersComponent implements OnInit {
   private readonly detailTabParam = 'tab';
-  private readonly detailTabValues: DrawerTab[] = ['overview', 'documents', 'discussion', 'offer'];
+  private readonly detailTabValues: DrawerTab[] = ['revisions', 'overview', 'documents', 'discussion', 'offer'];
 
   constructor(
     injector: Injector,

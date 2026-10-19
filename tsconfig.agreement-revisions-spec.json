@@ -1,0 +1,6 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": { "outDir": "./out-tsc/agreement-revisions", "types": ["jasmine"] },
+  "files": ["src/test-agreement-revisions.ts", "src/polyfills.ts"],
+  "include": ["src/**/*.d.ts"]
+}

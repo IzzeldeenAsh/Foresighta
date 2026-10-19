@@ -29,6 +29,26 @@ describe('Offer requirement completion', () => {
     http.expectOne(req => req.url.endsWith('/common/setting/service/scope/12') && !req.params.has('definition_mode')).flush({ data: catalog });
     await fixture.whenStable();
   });
+  it('keeps the create-offer deliverable controls disabled while allowing read-only sections to expand', async () => {
+    fixture.componentRef.setInput('readOnly', true);
+    fixture.componentRef.setInput('section', 'deliverables');
+    fixture.componentRef.setInput('requirements', { scopes: [], project_components: [], service_components: [
+      { project_service_id: 44, component_id: 6, component: { id: 6, name: 'Deliverables', slug: 'deliverable-stage' }, ownership_level: 'project_service', required_in_offer: false },
+    ] });
+    fixture.componentRef.setInput('initialDraft', { offer_scopes: [], offer_components: [
+      { project_service_id: 44, component_id: 6, value: { deliverables: [{ title: 'Market analysis report', period_days: 7, report_type: ['pdf'], way: { selected: 'on_platform' } }] } },
+    ] });
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const element: HTMLElement = fixture.nativeElement;
+    expect((element.querySelector('.sw-dlv__title') as HTMLInputElement).value).toBe('Market analysis report');
+    expect(element.querySelector('.sw-dlv__title')!.matches(':disabled')).toBeTrue();
+    element.querySelectorAll('.sw-pill').forEach(pill => expect(pill.matches(':disabled')).toBeTrue());
+    const toggle = element.querySelector('.sw-row__toggle') as HTMLButtonElement;
+    expect(toggle.disabled).toBeFalse();
+    toggle.click(); fixture.detectChanges();
+    expect(element.querySelector('.sw-row__panel')).toBeNull();
+  });
   it('requires each service instance even when both reference the same catalog service', () => {
     expect(editor.complete).toBeFalse();
     editor.toggleScope(44, editor.scopeState[44].options[0]);
@@ -116,6 +136,32 @@ describe('Offer requirement completion', () => {
     expect(editor.deliverableErrors(deliverable)).toEqual([]);
     expect(editor.isDone(editor.rows[rowIndex])).toBeTrue();
   });
+  it('uses the same completion rule for saved deliverables, progress and validation when days arrive as text', async () => {
+    const req = editor.missing.service_components[0];
+    fixture.componentRef.setInput('section', 'deliverables');
+    fixture.componentRef.setInput('revisionMode', true);
+    fixture.componentRef.setInput('attempted', true);
+    fixture.componentRef.setInput('requirements', { scopes: [], project_components: [], service_components: [req] });
+    fixture.componentRef.setInput('initialDraft', { offer_scopes: [], offer_components: [{ project_service_id: req.project_service_id, component_id: req.component_id, value: { deliverables: [
+      { title: 'Report', period_days: '7', report_type: ['pdf'], way: { selected: 'on_platform' } },
+      { title: 'Workbook', period_days: '14', report_type: ['xlsx'], way: { selected: 'on_platform' } },
+    ] } }] });
+    fixture.detectChanges(); await fixture.whenStable();
+    expect(editor.complete).toBeTrue(); expect(editor.doneCount).toBe(1);
+    expect(fixture.nativeElement.querySelector('.sw-error')).toBeNull();
+    const deliverable = editor.draft.offer_components[0].value.deliverables[0];
+    deliverable.title = ''; fixture.detectChanges();
+    expect(editor.complete).toBeFalse(); expect(editor.doneCount).toBe(0);
+    expect(fixture.nativeElement.textContent).toContain('Enter a name for this deliverable.');
+    expect(fixture.nativeElement.textContent).toContain('Complete the required deliverable fields to continue.');
+    expect(fixture.nativeElement.textContent).not.toContain('before submitting your offer');
+    deliverable.title = 'Report'; deliverable.period_days = 'invalid'; fixture.detectChanges();
+    expect(editor.complete).toBeFalse(); expect(editor.doneCount).toBe(0);
+    expect(fixture.nativeElement.textContent).toContain('Enter a whole number of days, zero or greater.');
+    deliverable.period_days = '7'; fixture.detectChanges();
+    expect(editor.complete).toBeTrue(); expect(editor.doneCount).toBe(1);
+    expect(fixture.nativeElement.querySelector('.sw-error')).toBeNull();
+  });
   it('reopens the first missing section after repeated failed navigation', () => {
     editor.attempted = true;
     editor.revealFirstIncompleteRow();
@@ -146,4 +192,46 @@ describe('Offer requirement completion', () => {
     appendRequirementFormData(form, 'offer_components', editor.draft.offer_components);
     expect(form.get('offer_components[1][value][deliverables][0][key]')).toBe(second.key);
   });
+  it('prefills revision scopes and preserves parent and child IDs across title edits', async () => {
+    const initial = { offer_scopes: [{ id: 101, project_service_id: 44, scope: 'Existing scope', description: null, subscopes: [{ id: 102, scope: 'Existing child', description: null }] }], offer_components: [] };
+    fixture.componentRef.setInput('revisionMode', true);
+    fixture.componentRef.setInput('initialDraft', initial);
+    fixture.componentRef.setInput('requirements', { scopes: [{ project_service_id: 44, required_in_offer: false }], project_components: [], service_components: [] });
+    fixture.detectChanges(); await fixture.whenStable();
+    expect(editor.draft.offer_scopes).toEqual(initial.offer_scopes);
+    const pick = editor.scopeState[44].picks[0];
+    pick.name = 'Renamed scope'; editor.syncScopes();
+    editor.renameCustomChild(pick, 0, 'Renamed child');
+    expect(editor.draft.offer_scopes[0].id).toBe(101);
+    expect(editor.draft.offer_scopes[0].subscopes![0]).toEqual(jasmine.objectContaining({ id: 102, scope: 'Renamed child' }));
+    expect(initial.offer_scopes[0].scope).toBe('Existing scope');
+    editor.removeScopePick(44, pick);
+    expect(editor.draft.offer_scopes).toEqual([]);
+    expect(editor.complete).toBeTrue();
+  });
+  it('keeps original-offer payment links separate from project deliverables with the same ID', () => {
+    const requirement = editor.missing.service_components[0];
+    editor.offerDeliverableServiceIds = new Set([requirement.project_service_id!]);
+    editor.linkedDeliverableIds = new Set([88]);
+    expect(editor.isDeliverableLinked(requirement, { id: 88 })).toBeFalse();
+    editor.linkedOfferDeliverableIds = new Set([88]);
+    expect(editor.isDeliverableLinked(requirement, { id: 88 })).toBeTrue();
+    editor.offerDeliverableServiceIds = new Set(); editor.linkedDeliverableIds = new Set();
+    expect(editor.isDeliverableLinked(requirement, { id: 88 })).toBeFalse();
+  });
+  it('guards linked deliverable deletion in the wizard handler and keeps saved IDs', async () => {
+    const requirement = editor.missing.service_components[0];
+    fixture.componentRef.setInput('revisionMode', true);
+    fixture.componentRef.setInput('linkedDeliverableIds', new Set([88]));
+    fixture.componentRef.setInput('initialDraft', { offer_scopes: [], offer_components: [{ component_id: requirement.component_id, project_service_id: requirement.project_service_id, value: { deliverables: [{ id: 88, title: 'Linked report', period_days: 20, report_type: ['pdf'], way: { selected: 'on_platform' } }] } }] });
+    fixture.componentRef.setInput('requirements', { scopes: [], project_components: [], service_components: [requirement] });
+    fixture.detectChanges(); await fixture.whenStable();
+    editor.removeDeliverable(editor.missing.service_components[0], 0);
+    expect(editor.draft.offer_components[0].value.deliverables[0].id).toBe(88);
+    fixture.componentRef.setInput('linkedDeliverableIds', new Set()); fixture.detectChanges();
+    editor.removeDeliverable(editor.missing.service_components[0], 0);
+    expect(editor.draft.offer_components[0].value.deliverables).toEqual([]);
+    expect(editor.complete).toBeTrue();
+  });
+
 });

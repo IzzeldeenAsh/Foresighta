@@ -1,3 +1,4 @@
+import { AgreementRevisionsService } from 'src/app/_fake/services/agreement-revisions/agreement-revisions.service';
 import { Component, Injector, OnInit } from '@angular/core';
 import { DomSanitizer, SafeHtml, SafeResourceUrl } from '@angular/platform-browser';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -24,6 +25,7 @@ export class ProjectContractComponent extends BaseComponent implements OnInit {
   projectSchedule: ProjectScheduleFields | null = null;
   client: ProjectParty | null = null;
   contractHtml: SafeHtml | null = null;
+  agreementChanged = false;
   filePreviewUrl: SafeResourceUrl | null = null;
   isLoadingContract = false;
   isSigning = false;
@@ -42,6 +44,12 @@ export class ProjectContractComponent extends BaseComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.injector.get(AgreementRevisionsService).changed$.pipe(takeUntil(this.unsubscribe$)).subscribe(event => {
+      if (event.projectUuid !== this.route.snapshot.queryParamMap.get('projectUuid')) return;
+      this.agreementChanged = true;
+      this.contractHtml = null;
+      this.filePreviewUrl = null;
+    });
     combineLatest([this.route.paramMap, this.route.queryParamMap])
       .pipe(
         switchMap(([params, query]) => {
@@ -80,12 +88,12 @@ export class ProjectContractComponent extends BaseComponent implements OnInit {
 
   async signContract(): Promise<void> {
     const contractUuid = this.getActiveContractUuid();
-    if (!contractUuid || this.isSigning || !this.contract?.user_sign_at || this.contract.insighter_sign_at || this.contract.status !== 'awaiting_insighter_signature') {
+    if (this.agreementChanged || this.contract?.requires_prepare || !contractUuid || this.isSigning || !this.contract?.user_sign_at || this.contract.insighter_sign_at || this.contract.status !== 'awaiting_insighter_signature') {
       return;
     }
 
     const confirmed = await this.confirmSignContract();
-    if (!confirmed) return;
+    if (!confirmed || this.agreementChanged || this.contract?.requires_prepare) return;
 
     this.isSigning = true;
     this.errorMessage = '';
@@ -202,6 +210,8 @@ export class ProjectContractComponent extends BaseComponent implements OnInit {
     if (url) window.open(url, '_blank', 'noopener,noreferrer');
   }
 
+  refreshAgreementContract(): void { this.agreementChanged = false; this.loadContract(); }
+
   private loadContract(): void {
     this.isLoadingContract = true;
     this.errorMessage = '';
@@ -222,6 +232,10 @@ export class ProjectContractComponent extends BaseComponent implements OnInit {
             this.contractUuid = contract.uuid;
           }
 
+          if (contract.requires_prepare && !contract.is_attach_type) {
+            this.errorMessage = this.lang === 'ar' ? 'يجب على العميل تحديث معاينة العقد قبل التوقيع.' : 'The Client needs to prepare the updated contract before signing.';
+            return;
+          }
           if (!contract.user_sign_at) return;
 
           if (contract.is_attach_type) {

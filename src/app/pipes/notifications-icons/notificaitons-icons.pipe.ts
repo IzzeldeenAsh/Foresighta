@@ -19,6 +19,8 @@ export class NotificationsIconsPipe implements PipeTransform {
     }
 
     switch (type) {
+      case 'project_agreement_revision':
+        return 'duotune/art/art005.svg';
       case 'sale': // used as sub_type for order notifications
         return 'duotune/finance/Knlg010.svg';
       case 'deactivate_company':

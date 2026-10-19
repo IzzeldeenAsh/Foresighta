@@ -1,4 +1,5 @@
-import { Component, Injector, OnDestroy, OnInit } from '@angular/core';
+import { AgreementRevisionsComponent } from '../shared/agreement-revisions/agreement-revisions.component';
+import { ViewChild, Component, Injector, OnDestroy, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { Observable } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
@@ -16,10 +17,12 @@ import {
   ProjectOfferStatistics,
   ProjectOfferType,
 } from 'src/app/_fake/services/project-offers/project-offers.service';
-import { offerPricingSummary } from 'src/app/_fake/services/project-phase2/project-phase2.model';
+import { offerPaymentSummary } from 'src/app/_fake/services/project-phase2/project-phase2.model';
+import { insighterCanEditOffer } from 'src/app/_fake/services/agreement-revisions/agreement-revisions.model';
+import { ProfileService } from 'src/app/_fake/services/get-profile/get-profile.service';
 
 type ViewMode = 'grid' | 'list';
-export type DrawerTab = 'overview' | 'documents' | 'offer' | 'discussion';
+export type DrawerTab = 'revisions' | 'overview' | 'documents' | 'offer' | 'discussion';
 /** Virtual chip value — awarded projects are filtered by stage, not action_status. */
 export const ACTIVE_PROJECTS_FILTER = 'active_projects';
 type StatusChipValue = ProjectOfferActionStatus | typeof ACTIVE_PROJECTS_FILTER;
@@ -50,6 +53,10 @@ interface DrawerTabOption {
   styleUrl: './project-offers.component.scss'
 })
 export class ProjectOffersComponent extends BaseComponent implements OnInit, OnDestroy {
+  @ViewChild(AgreementRevisionsComponent) agreementWorkspace?: AgreementRevisionsComponent;
+  private currentUserId: number | null = null;
+  canDeactivate() { return this.agreementWorkspace?.canDeactivate() ?? true; }
+
   isLoading$: Observable<boolean>;
 
   isDetailsPage = false;
@@ -108,6 +115,7 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
     { value: 'documents', labelEn: 'Shared Documents', labelAr: 'المستندات', iconClass: 'ki-document' },
     { value: 'discussion', labelEn: 'Discussion', labelAr: 'النقاش', iconClass: 'ki-messages' },
     { value: 'offer', labelEn: 'Offer', labelAr: 'العرض', iconClass: 'ki-dollar' },
+    { value: 'revisions', labelEn: 'Changes Revisions', labelAr: 'سجل التعديلات', iconClass: 'ki-time' },
   ];
 
   constructor(
@@ -117,6 +125,10 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
   ) {
     super(injector);
     this.isLoading$ = this.projectOffersService.isLoading$;
+    const profile = injector.get(ProfileService);
+    profile.currentUser$.pipe(takeUntil(this.unsubscribe$))
+      .subscribe(user => this.currentUserId = user?.id ? Number(user.id) : null);
+    profile.getProfile().pipe(takeUntil(this.unsubscribe$)).subscribe({ error: () => {} });
   }
 
   ngOnInit(): void {
@@ -526,6 +538,9 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
       })
       .filter((row): row is { label: string; status: string } => !!row);
   }
+
+  /** Lowers a Revisions tab badge after a revision is marked seen. */
+  lowerCount(count?: number | null): number { return Math.max(0, (Number(count) || 0) - 1); }
 
   trackByProposalStatusRow(index: number, row: { label: string; status: string }): string {
     return `${row.status}-${row.label}-${index}`;
@@ -1080,8 +1095,8 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
     });
   }
 
-  getPricingSummary(offer: any): string {
-    return offerPricingSummary(offer, this.lang);
+  getOfferPaymentSummary(offer: any): string {
+    return offerPaymentSummary(offer, this.lang);
   }
 
 
@@ -1100,6 +1115,16 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
       minimumFractionDigits: 0,
       maximumFractionDigits: 2,
     })}%`;
+  }
+
+  canEditOffer(offer: ProjectOffer | null | undefined): boolean {
+    return insighterCanEditOffer(offer, this.currentUserId);
+  }
+
+  onEditOffer(offer: ProjectOffer): void {
+    const projectUuid = offer.project?.uuid;
+    if (!projectUuid) return;
+    this.router.navigate(['/app/insighter-dashboard/project-offers/edit-offer', projectUuid], { queryParams: { from: 'offers' } });
   }
 
   onSendProposal(): void {

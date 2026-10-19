@@ -1,0 +1,233 @@
+<section class="agreement" [attr.dir]="lang === 'ar' ? 'rtl' : 'ltr'">
+  <header class="agreement__header" *ngIf="showEditAction && canEdit && role === 'insighter'">
+    <button type="button" class="primary" *ngIf="showEditAction && canEdit && role === 'insighter'" [disabled]="preparing" (click)="startEditing()"><i class="pi pi-pencil" aria-hidden="true"></i> {{ preparing ? text('Refreshing…', 'جارٍ التحديث…') : (role === 'insighter' ? text('Edit offer', 'تعديل العرض') : text('Edit agreement', 'تعديل الاتفاق')) }}</button>
+  </header>
+  <div class="notice" *ngIf="locked"><i class="pi pi-lock" aria-hidden="true"></i><span>{{ text('This agreement is locked. Revisions remain available for reference after the first signature.', 'هذا الاتفاق مقفل. يبقى سجل المراجعات متاحاً بعد أول توقيع.') }}</span></div>
+  <label class="context" *ngIf="role === 'client' && matches.length > 1">{{ text('Agreement with', 'الاتفاق مع') }}<select [ngModel]="matchUuid" (ngModelChange)="matchUuid = $event; changeMatch()"><option value="">{{ text('Choose an Insighter', 'اختر الخبير') }}</option><option *ngFor="let match of matches; trackBy: trackMatch" [value]="match.uuid">{{ match.insighter?.name || text('Insighter', 'الخبير') }}</option></select></label>
+  <div class="notice success" role="status" *ngIf="success">{{ success }}</div>
+  <div class="notice warning" role="status" *ngIf="stale && !editorVisible">{{ text('The agreement has changed. Refresh to view the latest details.', 'تغيّر الاتفاق. حدّث الصفحة لعرض أحدث التفاصيل.') }} <button type="button" (click)="refreshDetails()">{{ text('Refresh details', 'تحديث التفاصيل') }}</button></div>
+  <div class="notice error" role="alert" *ngIf="error">{{ error }} <button type="button" (click)="load()">{{ text('Retry', 'إعادة المحاولة') }}</button></div>
+  <div class="empty" *ngIf="!contextUuid"><i class="pi pi-history" aria-hidden="true"></i><h3>{{ text('Choose an agreement to see its history', 'اختر اتفاقاً لعرض سجله') }}</h3><p>{{ role === 'client' ? text('Revisions belong to a specific invitation. Select an Insighter above when available.', 'المراجعات مرتبطة بدعوة محددة. اختر الخبير أعلاه عند توفره.') : text('Revision history becomes available once an offer has been submitted.', 'يصبح سجل المراجعات متاحاً بعد تقديم العرض.') }}</p></div>
+  <div class="loading" role="status" *ngIf="loading && !revisions.length"><span></span><span></span><span></span>{{ text('Loading revisions…', 'جارٍ تحميل المراجعات…') }}</div>
+  <div class="empty" *ngIf="contextUuid && !loading && !error && !revisions.length"><i class="pi pi-history" aria-hidden="true"></i><h3>{{ text('The story starts here', 'هنا يبدأ سجل التغييرات') }}</h3><p>{{ text('No revisions yet. Saved changes will appear here for both parties.', 'لا توجد مراجعات بعد. ستظهر التغييرات المحفوظة هنا للطرفين.') }}</p></div>
+  <p class="rv-unseen" role="status" *ngIf="unseenCount > 0">{{ unseenCount === 1 ? text('1 new revision', 'مراجعة جديدة واحدة') : text(unseenCount + ' new revisions', unseenCount + ' مراجعات جديدة') }}</p>
+  <div class="rv-list" role="list" *ngIf="revisions.length">
+    <div role="listitem" *ngFor="let revision of revisions; let first = first">
+      <button type="button" class="rv-row" [class.is-unseen]="revision.is_seen === false" (click)="openRevision(revision.id)">
+        <span class="rv-row__mark" [ngClass]="'tone-' + typeMeta(revision.changed_target_types[0] || '').tone" aria-hidden="true"><i class="ki-outline" [ngClass]="typeMeta(revision.changed_target_types[0] || '').icon"></i></span>
+        <span class="rv-row__body">
+          <span class="rv-row__title">{{ text('Revision', 'المراجعة') }} #{{ revision.revision_number }}<ng-container *ngIf="revisionTitle(revision)"> · {{ revisionTitle(revision) }}</ng-container><span class="badge" *ngIf="first">{{ text('Latest', 'الأحدث') }}</span><span class="badge is-new" *ngIf="revision.is_seen === false">{{ text('New', 'جديد') }}</span><span class="badge is-shared" *ngIf="shared(revision)">{{ text('All invited Insighters', 'لجميع الخبراء المدعوين') }}</span></span>
+          <span class="rv-row__meta"><span class="rv-avatar" aria-hidden="true"><img *ngIf="revision.changed_by_user?.profile_photo_url; else rowInitials" [src]="revision.changed_by_user?.profile_photo_url" alt="" loading="lazy" /><ng-template #rowInitials>{{ initials(revision.changed_by_user?.name) }}</ng-template></span>{{ revision.changed_by_user?.name || label(revision.changed_by_role) }} · {{ label(revision.changed_by_role) }} · {{ revision.created_at | date:'medium' }} · {{ revision.items_count }} {{ revision.items_count === 1 ? text('change', 'تغيير') : text('changes', 'تغييرات') }}</span>
+          <span class="rv-row__note" *ngIf="revision.user_note">“{{ revision.user_note }}”</span>
+        </span>
+        <i class="ki-outline rv-row__chevron" [ngClass]="lang === 'ar' ? 'ki-left' : 'ki-right'" aria-hidden="true"></i>
+      </button>
+    </div>
+  </div>
+  <button type="button" class="load-more" *ngIf="page < lastPage && page > 0" [disabled]="loading" (click)="load(true)">{{ loading ? text('Loading…', 'جارٍ التحميل…') : text('Load earlier revisions', 'تحميل المراجعات السابقة') }}</button>
+</section>
+
+<p-dialog [(visible)]="detailVisible" [modal]="true" [baseZIndex]="1300" [draggable]="false" [resizable]="false" [showHeader]="false" styleClass="rv-dialog" [style]="{width: '640px', maxWidth: '96vw'}" appendTo="body">
+  <div class="rv-sheet" [attr.dir]="lang === 'ar' ? 'rtl' : 'ltr'">
+    <header class="rv-sheet__header">
+      <div class="rv-sheet__heading">
+        <h2>{{ detail ? text('Revision', 'المراجعة') + ' #' + detail.revision_number : text('Revision details', 'تفاصيل المراجعة') }}</h2>
+        <div class="rv-sheet__meta" *ngIf="detail as revision">
+          <span class="rv-sheet__avatar" aria-hidden="true"><img *ngIf="revision.changed_by_user?.profile_photo_url; else detailInitials" [src]="revision.changed_by_user?.profile_photo_url" alt="" /><ng-template #detailInitials>{{ initials(revision.changed_by_user?.name) }}</ng-template></span>
+          <span class="rv-sheet__author">{{ revision.changed_by_user?.name || label(revision.changed_by_role) }}</span>
+          <span class="rv-sheet__muted">{{ label(revision.changed_by_role) }} · {{ revision.created_at | date:'MMM d, y' }} · {{ revision.created_at | date:'h:mm a' }}</span>
+        </div>
+      </div>
+      <button type="button" class="rv-sheet__close" [attr.aria-label]="text('Close', 'إغلاق')" (click)="detailVisible = false">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M3.5 3.5l9 9M12.5 3.5l-9 9"></path></svg>
+      </button>
+    </header>
+    <p class="rv-sheet__status" role="status" *ngIf="detailLoading">{{ text('Loading changes…', 'جارٍ تحميل التغييرات…') }}</p>
+    <div class="rv-sheet__status is-error" role="alert" *ngIf="detailError">{{ detailError }} <button type="button" (click)="retryDetail()">{{ text('Retry', 'إعادة المحاولة') }}</button></div>
+    <ng-container *ngIf="detail as revision">
+      <blockquote class="rv-sheet__aside is-note" *ngIf="revision.user_note">{{ revision.user_note }}</blockquote>
+      <div class="rv-item" *ngFor="let item of detailItems(revision)">
+        <section class="rv-item__changes" *ngIf="item.target_type === 'offer_cover_letter'; else nonCoverItem">
+          <div class="rv-item__head"><h3>{{ item.target_label || label(item.target_type) }}</h3><span>{{ label(item.action) }}</span></div>
+          <div class="rv-text">
+            <div class="rv-text__side is-before"><span>{{ text('Before', 'قبل') }}</span><p>{{ coverLetter(item.before_value) || '—' }}</p></div>
+            <div class="rv-text__side"><span>{{ text('After', 'بعد') }}</span><p>{{ coverLetter(item.after_value) || '—' }}</p></div>
+          </div>
+        </section>
+        <ng-template #nonCoverItem>
+        <section class="rv-item__changes" *ngIf="installmentDiff(item) as diff; else genericItem">
+          <div class="rv-item__head">
+            <h3>{{ item.target_label || text('Payment schedule', 'جدول الدفعات') }}</h3>
+            <span *ngIf="diff.summary">{{ diff.summary }}</span>
+          </div>
+          <div class="rv-pay__bars" aria-hidden="true">
+            <ng-container *ngFor="let bar of diff.bars">
+              <span class="rv-pay__bar-label">{{ bar.label }}</span>
+              <div class="rv-pay__bar">
+                <span class="rv-pay__seg" *ngFor="let segment of bar.segments" [ngClass]="'is-' + segment.status" [style.flex-grow]="segment.share" [title]="segment.hint">{{ segment.share >= 8 ? segment.share + '%' : '' }}</span>
+                <span class="rv-pay__empty" *ngIf="!bar.segments.length">{{ text('No payments', 'لا توجد دفعات') }}</span>
+              </div>
+            </ng-container>
+          </div>
+          <div class="rv-pay" role="table" [attr.aria-label]="text('Payment schedule changes', 'تغييرات جدول الدفعات')">
+            <div class="rv-pay__row rv-pay__row--head" role="row">
+              <span role="columnheader"><span class="rv-visually-hidden">{{ text('Status', 'الحالة') }}</span></span>
+              <span role="columnheader">{{ text('Payment', 'الدفعة') }}</span>
+              <span role="columnheader" class="rv-pay__share">{{ text('Share', 'النسبة') }}</span>
+              <span role="columnheader" class="rv-pay__due">{{ text('Due', 'الاستحقاق') }}</span>
+            </div>
+            <div class="rv-pay__row" role="row" *ngFor="let row of diff.rows" [ngClass]="'is-' + row.status">
+              <span role="cell" class="rv-pay__mark"><span aria-hidden="true">{{ row.mark }}</span><span class="rv-visually-hidden">{{ row.statusLabel }}</span></span>
+              <span role="cell" class="rv-pay__title"><s *ngIf="row.title.was">{{ row.title.was }}</s><span>{{ row.order }}. {{ row.title.text }}</span></span>
+              <span role="cell" class="rv-pay__share"><s *ngIf="row.share.was">{{ row.share.was }}</s><span>{{ row.share.text }}</span></span>
+              <span role="cell" class="rv-pay__due"><s *ngIf="row.due.was">{{ row.due.was }}</s><span>{{ row.due.text }}</span></span>
+            </div>
+          </div>
+          <p class="rv-pay__total" [class.is-off]="!diff.totalOk">{{ text('Total after this revision', 'الإجمالي بعد هذه المراجعة') }}: {{ diff.total }}%</p>
+        </section>
+        <ng-template #genericItem>
+        <ng-container *ngIf="table(item) as t">
+          <section class="rv-item__changes">
+            <div class="rv-item__head">
+              <h3>{{ item.target_label || label(item.target_type) }}<ng-container *ngIf="item.project_service?.title"> · {{ item.project_service?.title }}</ng-container></h3>
+              <span *ngIf="item.action === 'updated' && t.rows.length">{{ fieldCount(t.rows.length, true) }}</span>
+              <span class="rv-item__tag" *ngIf="item.action !== 'updated'" [class.is-removed]="item.action === 'deleted'">{{ label(item.action) }}</span>
+            </div>
+            <table class="rv-table" *ngIf="t.rows.length">
+              <thead>
+                <tr>
+                  <th class="rv-col-field">{{ text('Field', 'الحقل') }}</th>
+                  <th [class.rv-col-narrow]="t.hasDelta" [class.rv-col-wide]="!t.hasDelta">{{ text('Before', 'قبل') }}</th>
+                  <th [class.rv-col-narrow]="t.hasDelta">{{ text('After', 'بعد') }}</th>
+                  <th class="rv-col-delta" *ngIf="t.hasDelta">{{ text('Change', 'الفرق') }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let row of t.rows">
+                  <td>{{ row.label }}</td>
+                  <td class="rv-before">{{ row.before }}</td>
+                  <td class="rv-after">{{ row.after }}</td>
+                  <td class="rv-col-delta rv-delta" *ngIf="t.hasDelta">{{ row.delta }}</td>
+                </tr>
+              </tbody>
+            </table>
+            <p class="rv-item__summary" *ngIf="item.action === 'updated' && !t.rows.length">{{ changeSummary(item, item.after_value) }}</p>
+            <p class="rv-item__summary" *ngIf="item.action === 'created'">{{ changeSummary(item, item.after_value) }}</p>
+            <p class="rv-item__summary" *ngIf="item.action === 'deleted'"><s>{{ changeSummary(item, item.before_value) }}</s></p>
+            <p class="rv-item__note" *ngIf="item.target_type === 'offer_duration_days' && durationNote(item)">{{ durationNote(item) }}</p>
+          </section>
+          <section class="rv-record" *ngIf="t.showRecord">
+            <button type="button" class="rv-record__toggle" [attr.aria-expanded]="expandedItems.has(item)" (click)="toggleRecord(item)">
+              <span class="rv-record__label"><span>{{ text('Full record', 'السجل الكامل') }}</span><span class="rv-sheet__muted">{{ fieldCount(t.record.length) }}</span></span>
+              <span class="rv-record__action">{{ expandedItems.has(item) ? text('Hide', 'إخفاء') : text('Show', 'عرض') }}
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" [class.is-open]="expandedItems.has(item)"><path d="M4 6l4 4 4-4"></path></svg>
+              </span>
+            </button>
+            <table class="rv-table rv-table--record" *ngIf="expandedItems.has(item)">
+              <thead>
+                <tr>
+                  <th class="rv-col-field">{{ text('Field', 'الحقل') }}</th>
+                  <th class="rv-col-wide" *ngIf="t.hasBefore">{{ text('Before', 'قبل') }}</th>
+                  <th *ngIf="t.hasAfter">{{ text('After', 'بعد') }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let row of t.record" [class.is-same]="item.action === 'updated' && !row.changed">
+                  <td><span class="rv-field"><span class="rv-dot" *ngIf="row.changed" aria-hidden="true"></span>{{ row.label }}<span class="rv-visually-hidden" *ngIf="row.changed"> ({{ text('changed', 'تغيّر') }})</span></span></td>
+                  <td [class.rv-before]="row.changed" *ngIf="t.hasBefore">{{ row.before }}</td>
+                  <td [class.rv-after]="row.changed" *ngIf="t.hasAfter">{{ row.after }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </section>
+        </ng-container>
+        </ng-template>
+        </ng-template>
+      </div>
+      <ng-container *ngIf="attachmentChanges(revision) as files">
+      <div class="rv-item" *ngIf="files.length">
+        <section class="rv-item__changes">
+          <div class="rv-item__head"><h3>{{ text('Offer attachments', 'مرفقات العرض') }}</h3></div>
+          <ul class="rv-files">
+            <li *ngFor="let file of files" [ngClass]="file.action === 'deleted' ? 'is-removed' : 'is-added'">
+              <span class="rv-files__mark" aria-hidden="true">{{ file.action === 'deleted' ? '−' : '+' }}</span>
+              <span class="rv-files__name"><s *ngIf="file.action === 'deleted'; else addedName">{{ file.name }}</s><ng-template #addedName>{{ file.name }}</ng-template><small *ngIf="file.size">{{ file.size }}</small></span>
+              <span class="rv-files__state">{{ file.action === 'deleted' ? text('Removed', 'حُذف') : text('Added', 'أُضيف') }}</span>
+              <button type="button" class="rv-files__open" *ngIf="file.active" [disabled]="openingFileUuid === file.uuid" (click)="openAttachment(file)">{{ openingFileUuid === file.uuid ? text('Opening…', 'جارٍ الفتح…') : text('Open', 'فتح') }}</button>
+            </li>
+          </ul>
+        </section>
+      </div>
+      </ng-container>
+    </ng-container>
+  </div>
+</p-dialog>
+
+<p-dialog [(visible)]="editorVisible" [modal]="true" [baseZIndex]="1300" [closable]="false" [closeOnEscape]="false" [draggable]="false" [resizable]="false" [style]="{width: '960px', maxWidth: '96vw'}" [header]="text('Edit agreement', 'تعديل الاتفاق')" appendTo="body">
+  <div class="agreement editor" [attr.dir]="lang === 'ar' ? 'rtl' : 'ltr'">
+    <p class="intro">{{ text('Review your changes, then save them as one revision. The other party will be notified.', 'راجع تغييراتك ثم احفظها كمراجعة واحدة. سيتم إشعار الطرف الآخر.') }}</p>
+    <div class="notice warning" *ngIf="stale" role="alert">{{ text('New changes are available. Close this draft and refresh the agreement before saving.', 'توجد تغييرات جديدة. أغلق المسودة وحدّث الاتفاق قبل الحفظ.') }}</div>
+    <fieldset [disabled]="saving || stale">
+      <section class="service" *ngIf="projectComponents.length">
+        <header class="service__header"><i class="pi pi-sliders-h" aria-hidden="true"></i><h3>{{ text('Project requirements', 'متطلبات المشروع') }}</h3><span class="owner editable">{{ text('Yours to edit', 'يمكنك تعديلها') }}</span></header>
+        <ng-container *ngFor="let component of projectComponents"><ng-container *ngTemplateOutlet="componentEditor; context: { $implicit: component }"></ng-container></ng-container>
+      </section>
+      <section class="service" *ngFor="let group of groups; let gi = index">
+        <header class="service__header"><span class="service__number">{{ gi + 1 }}</span><h3>{{ group.title }}</h3></header>
+        <ng-container *ngIf="serviceComponents(group.id) as owned">
+          <ng-container *ngIf="owned.length">
+            <div class="section-heading"><h4>{{ text('Requirements', 'المتطلبات') }}</h4><span class="owner editable">{{ text('Yours to edit', 'يمكنك تعديلها') }}</span></div>
+            <ng-container *ngFor="let component of owned"><ng-container *ngTemplateOutlet="componentEditor; context: { $implicit: component }"></ng-container></ng-container>
+          </ng-container>
+        </ng-container>
+        <div class="section-heading"><h4>{{ text('Scopes', 'النطاقات') }}</h4><span class="owner" [class.editable]="group.editScopes">{{ group.editScopes ? text('Yours to edit', 'يمكنك تعديلها') : text('Read only', 'للعرض فقط') }}</span></div>
+        <ng-container *ngIf="group.editScopes; else readonlyScopes">
+          <div class="entry" *ngFor="let scope of group.scopes; let si = index">
+            <div class="entry__heading"><strong>{{ text('Scope', 'النطاق') }} {{ si + 1 }}</strong><button class="remove" type="button" (click)="group.scopes.splice(si, 1)">{{ text('Remove scope', 'حذف النطاق') }}</button></div>
+            <label>{{ text('Title', 'العنوان') }}<input [(ngModel)]="scope.scope" maxlength="255" required></label>
+            <label>{{ text('Description (optional)', 'الوصف (اختياري)') }}<textarea [(ngModel)]="scope.description" maxlength="2500" rows="2"></textarea></label>
+            <div class="subscope" *ngFor="let child of scope.subscopes; let ci = index"><div class="entry__heading"><strong>{{ text('Subscope', 'النطاق الفرعي') }} {{ ci + 1 }}</strong><button class="remove" type="button" (click)="scope.subscopes.splice(ci, 1)">{{ text('Remove', 'حذف') }}</button></div><label>{{ text('Title', 'العنوان') }}<input [(ngModel)]="child.scope" maxlength="255" required></label><label>{{ text('Description (optional)', 'الوصف (اختياري)') }}<textarea [(ngModel)]="child.description" maxlength="2500" rows="2"></textarea></label></div>
+            <button type="button" class="add" (click)="addSubscope(scope)">+ {{ text('Add subscope', 'إضافة نطاق فرعي') }}</button>
+          </div>
+          <button type="button" class="add" (click)="addScope(group)">+ {{ text('Add scope', 'إضافة نطاق') }}</button>
+        </ng-container>
+        <ng-template #readonlyScopes><div class="readonly" *ngFor="let scope of group.scopes"><strong>{{ scope.scope }}</strong><p>{{ scope.description }}</p><div *ngFor="let child of scope.subscopes">↳ {{ child.scope }}</div></div><p class="muted" *ngIf="!group.scopes.length">{{ text('No scopes with editable ownership information.', 'لا توجد نطاقات ببيانات ملكية تسمح بالتعديل.') }}</p></ng-template>
+        <div class="section-heading"><h4>{{ text('Deliverables', 'المخرجات') }}</h4><span class="owner" [class.editable]="group.editDeliverables">{{ group.editDeliverables ? text('Yours to edit', 'يمكنك تعديلها') : text('Read only', 'للعرض فقط') }}</span></div>
+        <ng-container *ngIf="group.editDeliverables; else readonlyDeliverables">
+          <div class="entry" *ngFor="let item of group.deliverables; let di = index">
+            <div class="entry__heading"><strong>{{ text('Deliverable', 'المخرج') }} {{ di + 1 }}</strong><button class="remove" type="button" [disabled]="item.id && linkedIds.has(item.id)" (click)="removeDeliverable(group, di)">{{ text('Remove', 'حذف') }}</button></div>
+            <div class="linked" *ngIf="item.id && linkedIds.has(item.id)"><i class="pi pi-link" aria-hidden="true"></i>{{ text('Linked to a payment. The Insighter must remove the linked installment and save first.', 'مرتبط بدفعة. يجب أن يحذف الخبير الدفعة المرتبطة ويحفظ أولاً.') }}</div>
+            <label>{{ text('Title', 'العنوان') }}<input [(ngModel)]="item.title" maxlength="255" required></label>
+            <div class="field-grid"><label>{{ text('Days after project start', 'أيام بعد بدء المشروع') }}<input type="number" min="0" step="1" [(ngModel)]="item.period_days" required></label><label>{{ text('File formats (comma separated)', 'صيغ الملفات (مفصولة بفواصل)') }}<input [ngModel]="item.report_type.join(', ')" (ngModelChange)="setFormats(item, $event)" placeholder="pdf, pptx"></label><label>{{ text('Delivery method', 'طريقة التسليم') }}<select [(ngModel)]="item.way.selected"><option [ngValue]="null">{{ text('Not specified', 'غير محدد') }}</option><option value="on_platform">{{ label('on_platform') }}</option><option value="session">{{ label('session') }}</option><option value="physical_workshop">{{ label('physical_workshop') }}</option><option *ngIf="item.way.selected && !['on_platform','session','physical_workshop'].includes(item.way.selected)" [value]="item.way.selected">{{ item.way.selected }}</option></select></label><label *ngIf="item.way.selected === 'physical_workshop'">{{ text('Workshop address', 'عنوان الورشة') }}<input [(ngModel)]="item.way.address" maxlength="255" required></label></div>
+          </div>
+          <button type="button" class="add" (click)="addDeliverable(group)">+ {{ text('Add deliverable', 'إضافة مخرج') }}</button>
+        </ng-container>
+        <ng-template #readonlyDeliverables><div class="readonly" *ngFor="let item of group.deliverables"><strong>{{ item.title }}</strong><span>{{ item.period_days }} {{ text('days after start', 'أيام بعد البدء') }}</span></div><p class="muted" *ngIf="!group.deliverables.length">{{ text('No deliverables with editable ownership information.', 'لا توجد مخرجات ببيانات ملكية تسمح بالتعديل.') }}</p></ng-template>
+      </section>
+      <section class="service" *ngIf="commercial as terms">
+        <header class="service__header"><i class="pi pi-wallet" aria-hidden="true"></i><h3>{{ text('Price & payment schedule', 'السعر وجدول الدفعات') }}</h3><span class="owner editable">{{ text('Insighter only', 'للخبير فقط') }}</span></header>
+        <div class="field-grid"><label>{{ text('Pricing basis', 'طريقة التسعير') }}<select [(ngModel)]="terms.price_type"><option value="fixed">{{ label('fixed') }}</option><option value="hourly">{{ label('hourly') }}</option><option value="daily">{{ label('daily') }}</option></select></label><label *ngIf="terms.price_type === 'fixed'">{{ text('Fixed price (USD)', 'السعر الثابت (USD)') }}<input type="number" min="0" step="0.01" [(ngModel)]="terms.fixed_price"></label><ng-container *ngIf="terms.price_type === 'hourly'"><label>{{ text('Hourly rate (USD)', 'السعر بالساعة (USD)') }}<input type="number" min="0" step="0.01" [(ngModel)]="terms.hourly_rate"></label><label>{{ text('Estimated hours', 'الساعات المتوقعة') }}<input type="number" min="1" step="1" [(ngModel)]="terms.estimated_hours"></label></ng-container><ng-container *ngIf="terms.price_type === 'daily'"><label>{{ text('Daily rate (USD)', 'السعر اليومي (USD)') }}<input type="number" min="0" step="0.01" [(ngModel)]="terms.daily_rate"></label><label>{{ text('Estimated days', 'الأيام المتوقعة') }}<input type="number" min="1" step="1" [(ngModel)]="terms.estimated_days"></label></ng-container><label>{{ text('Payment plan', 'خطة الدفع') }}<select [(ngModel)]="terms.payment_plan"><option value="full">{{ label('full') }}</option><option value="partial">{{ label('partial') }}</option></select></label></div>
+        <div class="section-heading"><h4>{{ text('Installments', 'الدفعات') }}</h4><span class="percentage" [class.complete]="totalPercentage === 100">{{ totalPercentage | number:'1.0-4' }}% / 100%</span></div>
+        <div class="entry" *ngFor="let item of terms.installments; let ii = index"><div class="entry__heading"><strong>{{ text('Payment', 'الدفعة') }} {{ ii + 1 }}</strong><button type="button" class="remove" (click)="terms.installments.splice(ii, 1)">{{ text('Remove payment', 'حذف الدفعة') }}</button></div><label>{{ text('Title', 'العنوان') }}<input [(ngModel)]="item.title" maxlength="255"></label><div class="field-grid"><label>{{ text('Percentage', 'النسبة') }}<input type="number" min="1" max="100" step="0.01" [(ngModel)]="item.percentage"></label><label>{{ text('Due', 'الاستحقاق') }}<select [(ngModel)]="item.due_type" (ngModelChange)="changeDueType(item)"><option value="contract">{{ label('contract') }}</option><option value="date">{{ label('date') }}</option><option value="deliverable">{{ text('On delivery', 'عند التسليم') }}</option></select></label><label *ngIf="item.due_type === 'date'">{{ text('Days after project start', 'أيام بعد بدء المشروع') }}<input type="number" min="0" step="1" [(ngModel)]="item.period_days"></label><label *ngIf="item.due_type === 'deliverable' && !item.project_proposal_offer_deliverable_id">{{ text('Linked deliverable', 'المخرج المرتبط') }}<select [(ngModel)]="item.project_service_deliverable_id"><option [ngValue]="undefined">{{ text('Choose a deliverable', 'اختر المخرج') }}</option><option *ngFor="let deliverable of savedDeliverables" [ngValue]="deliverable.id">{{ deliverable.title }}</option></select></label><p class="muted" *ngIf="item.project_proposal_offer_deliverable_id">{{ text('Linked to a deliverable submitted with this offer.', 'مرتبطة بمخرج مقدّم مع هذا العرض.') }}</p></div></div>
+        <button type="button" class="add" (click)="addInstallment()">+ {{ text('Add payment', 'إضافة دفعة') }}</button><p class="muted">{{ text('Save new deliverables before linking payments to them.', 'احفظ المخرجات الجديدة قبل ربط الدفعات بها.') }}</p>
+      </section>
+      <ng-template #componentEditor let-component>
+        <div class="entry" [ngSwitch]="component.slug">
+          <ng-container *ngSwitchCase="'target-market'">
+            <strong>{{ component.name }}</strong>
+            <div class="field-grid">
+              <label>{{ text('Market type', 'نوع السوق') }}<select [(ngModel)]="component.value.type" (ngModelChange)="changeMarketType(component)"><option value="country">{{ text('Countries', 'الدول') }}</option><option value="region">{{ text('Regions', 'المناطق') }}</option><option value="economic">{{ text('Economic blocs', 'التكتلات الاقتصادية') }}</option></select></label>
+              <label>{{ text('Target markets', 'الأسواق المستهدفة') }}<select multiple class="multi" [(ngModel)]="component.value.ids"><option *ngFor="let option of marketOptions[component.value.type] || []" [ngValue]="option.id">{{ option.name }}</option></select></label>
+            </div>
+            <p class="muted" *ngIf="!marketOptions[component.value.type] && !marketError">{{ text('Loading markets…', 'جارٍ تحميل الأسواق…') }}</p>
+            <p class="muted" *ngIf="marketError">{{ marketError }} <button type="button" class="add" (click)="loadMarkets(component.value.type)">{{ text('Retry', 'إعادة المحاولة') }}</button></p>
+          </ng-container>
+          <label *ngSwitchCase="'data-sources-expected'">{{ component.name }}<select [(ngModel)]="component.value"><option value="">{{ text('Choose', 'اختر') }}</option><option value="primary_data">{{ text('Primary data', 'بيانات أولية') }}</option><option value="secondary_data">{{ text('Secondary data', 'بيانات ثانوية') }}</option><option value="both">{{ text('Both', 'كلاهما') }}</option><option value="does_not_matter">{{ text('No preference', 'لا تفضيل') }}</option></select></label>
+        </div>
+      </ng-template>
+      <label class="note">{{ text('Note for the other party (optional)', 'ملاحظة للطرف الآخر (اختياري)') }}<textarea [(ngModel)]="note" maxlength="1000" rows="3" [placeholder]="text('Explain why these changes help the project…', 'وضّح سبب هذه التغييرات…')"></textarea><small>{{ note.length }} / 1000</small></label>
+    </fieldset>
+    <div class="notice error" role="alert" *ngIf="formError">{{ formError }}</div><ul class="notice error" role="alert" *ngIf="validationErrors.length"><li *ngFor="let message of validationErrors">{{ message }}</li></ul>
+  </div>
+  <ng-template pTemplate="footer"><div class="agreement editor-footer" [attr.dir]="lang === 'ar' ? 'rtl' : 'ltr'"><ng-container *ngIf="!confirmDiscard; else discard"><span class="muted">{{ dirty ? text('Unsaved changes · one revision', 'تغييرات غير محفوظة · مراجعة واحدة') : text('No changes yet', 'لا توجد تغييرات بعد') }}</span><button type="button" [disabled]="saving" (click)="cancel()">{{ text('Cancel', 'إلغاء') }}</button><button type="button" class="primary" [disabled]="saving || !dirty || locked || stale" (click)="save()">{{ saving ? text('Saving…', 'جارٍ الحفظ…') : text('Save revision', 'حفظ المراجعة') }}</button></ng-container><ng-template #discard><span>{{ text('Discard your unsaved changes?', 'تجاهل التغييرات غير المحفوظة؟') }}</span><button type="button" (click)="confirmDiscard = false">{{ text('Keep editing', 'متابعة التعديل') }}</button><button type="button" class="remove" (click)="editorVisible = false; confirmDiscard = false">{{ text('Discard changes', 'تجاهل التغييرات') }}</button></ng-template></div></ng-template>
+</p-dialog>

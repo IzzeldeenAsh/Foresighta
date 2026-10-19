@@ -1,4 +1,40 @@
-<ol class="oi-list" [class.oi-list--timeline]="presentation === 'timeline'" *ngIf="installments.length; else empty">
+<div class="oi-ledger" role="table" [attr.aria-label]="lang === 'ar' ? 'خطة الدفع' : 'Payment plan'" *ngIf="presentation === 'ledger' && installments.length; else listView">
+  <div class="oi-ledger__row oi-ledger__row--head" role="row">
+    <span role="columnheader">#</span>
+    <span role="columnheader">{{ lang === 'ar' ? 'الدفعة' : 'Payment' }}</span>
+    <span role="columnheader">{{ lang === 'ar' ? 'الاستحقاق' : 'Due' }}</span>
+    <span role="columnheader" class="oi-ledger__end">{{ lang === 'ar' ? 'المبلغ' : 'Amount' }}</span>
+  </div>
+  <div class="oi-ledger__row" role="row" *ngFor="let item of installments; let i = index; trackBy: trackByPosition">
+    <span class="oi-ledger__index" role="cell">{{ i + 1 }}</span>
+    <div class="oi-ledger__payment" role="cell">
+      <strong>{{ item.title || (lang === 'ar' ? 'دفعة' : 'Payment') }}</strong>
+      <span class="badge" *ngIf="showStatus && item.status" [ngClass]="statusClass(item.status)">{{ statusLabel(item.status) }}</span>
+    </div>
+    <div class="oi-ledger__due" role="cell">
+      <ng-container [ngSwitch]="item.due_type">
+        <span *ngSwitchCase="'contract'" class="oi-ledger__chip"><i class="pi pi-file-check" aria-hidden="true"></i>{{ dueLabel(item) }}</span>
+        <ng-container *ngSwitchCase="'deliverable'">
+          <span class="oi-ledger__chip oi-ledger__chip--deliverable"><span class="oi-ledger__deliverable">{{ lang === 'ar' ? 'مخرج' : 'Deliverable' }}</span>{{ item.deliverable?.title || dueLabel(item) }}</span>
+          <small>{{ lang === 'ar' ? 'عند التسليم' : 'On delivery' }}<ng-container *ngIf="item.date"> · {{ formatDate(item.date) }}</ng-container></small>
+        </ng-container>
+        <ng-container *ngSwitchDefault>
+          <span class="oi-ledger__chip"><i class="pi pi-clock" aria-hidden="true"></i>{{ dueLabel(item) }}</span>
+          <small *ngIf="item.date">{{ formatDate(item.date) }}</small>
+        </ng-container>
+      </ng-container>
+    </div>
+    <div class="oi-ledger__money" role="cell"><strong>{{ formatPrice(amountFor(item)) }}</strong><span>{{ item.percentage }}%</span></div>
+  </div>
+  <div class="oi-ledger__row oi-ledger__row--total" role="row">
+    <span role="cell"></span>
+    <strong role="cell">{{ lang === 'ar' ? 'الإجمالي' : 'Total' }}</strong>
+    <span role="cell" class="oi-ledger__muted">{{ percentTotal() }}% {{ lang === 'ar' ? 'مخصصة' : 'allocated' }}</span>
+    <strong role="cell" class="oi-ledger__end">{{ formatPrice(amountTotal()) }}</strong>
+  </div>
+</div>
+<ng-template #listView>
+<ol class="oi-list" *ngIf="installments.length; else empty">
   <li class="oi-item" *ngFor="let item of installments; let i = index; trackBy: trackByPosition">
     <span class="oi-item__index" aria-hidden="true">{{ i + 1 }}</span>
     <div class="oi-item__body">
@@ -19,6 +55,7 @@
     </div>
   </li>
 </ol>
+</ng-template>
 <ng-template #empty>
   <p class="oi-empty">{{ lang === 'ar' ? 'لا توجد دفعات.' : 'No installments.' }}</p>
 </ng-template>

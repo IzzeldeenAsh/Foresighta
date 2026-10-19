@@ -1,3 +1,4 @@
+import { AgreementRevisionsService } from 'src/app/_fake/services/agreement-revisions/agreement-revisions.service';
 import { Component, ElementRef, Injector, OnInit, ViewChild } from '@angular/core';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -29,6 +30,7 @@ export class ProjectContractComponent extends BaseComponent implements OnInit {
   contractUuid = '';
   selectedMode: ClientContractMode | null = null;
   contractHtml: SafeHtml | null = null;
+  agreementChanged = false;
   contractLanguage: ContractLanguage | null = null;
   readonly contractLanguageOptions: Array<{ label: string; value: ContractLanguage; arLabel: string }> = [
     { label: 'English', value: 'en', arLabel: 'الإنجليزية' },
@@ -60,6 +62,12 @@ export class ProjectContractComponent extends BaseComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.injector.get(AgreementRevisionsService).changed$.pipe(takeUntil(this.unsubscribe$)).subscribe(event => {
+      if (event.projectUuid !== this.projectUuid) return;
+      this.agreementChanged = true;
+      this.contractHtml = null;
+      this.canSignDefault = false;
+    });
     this.route.paramMap
       .pipe(takeUntil(this.unsubscribe$))
       .subscribe(params => {
@@ -138,6 +146,7 @@ export class ProjectContractComponent extends BaseComponent implements OnInit {
       .subscribe({
         next: contract => {
           this.hasLoadedFullContract = true;
+          this.agreementChanged = false;
           this.applyContractState(contract);
           if (!this.contractHtml) {
             this.errorMessage = this.lang === 'ar'
@@ -163,9 +172,9 @@ export class ProjectContractComponent extends BaseComponent implements OnInit {
   }
 
   async signDefaultContract(): Promise<void> {
-    if (!this.contractUuid || !this.contractHtml || !this.canSignDefault || this.isSubmitting || this.isContractSigned) return;
+    if (this.agreementChanged || this.contract?.requires_prepare || !this.contractUuid || !this.contractHtml || !this.canSignDefault || this.isSubmitting || this.isContractSigned) return;
     const confirmed = await this.confirmSignContract();
-    if (!confirmed) return;
+    if (!confirmed || this.agreementChanged) return;
 
     const formData = new FormData();
     formData.append('is_attach_type', '0');
@@ -175,7 +184,7 @@ export class ProjectContractComponent extends BaseComponent implements OnInit {
   }
 
   async signCustomContract(): Promise<void> {
-    if (!this.contractUuid || this.isSubmitting || this.isContractSigned) return;
+    if (this.agreementChanged || !this.contractUuid || this.isSubmitting || this.isContractSigned) return;
     if (!this.selectedFile) {
       this.errorMessage = this.lang === 'ar'
         ? 'يرجى رفع ملف العقد المخصص.'
@@ -184,7 +193,7 @@ export class ProjectContractComponent extends BaseComponent implements OnInit {
     }
 
     const confirmed = await this.confirmSignContract();
-    if (!confirmed) return;
+    if (!confirmed || this.agreementChanged) return;
 
     const formData = new FormData();
     formData.append('is_attach_type', '1');
@@ -301,13 +310,21 @@ export class ProjectContractComponent extends BaseComponent implements OnInit {
       });
   }
 
+  refreshAgreementContract(): void { this.loadContractState(); }
+
   private loadContractState(): void {
     this.projectsCreatedService.getProjectContract(this.contractUuid)
       .pipe(takeUntil(this.unsubscribe$))
       .subscribe({
         next: contract => {
           this.hasLoadedFullContract = true;
+          this.agreementChanged = false;
           this.applyContractState(contract);
+          if (contract.requires_prepare && !contract.is_attach_type && !contract.user_sign_at && !contract.insighter_sign_at) {
+            this.selectedMode = 'default';
+            this.ensureCountriesLoaded();
+            if (this.contractLanguage && this.selectedCourtCountryId) this.prepareStandardContract();
+          }
         },
         error: err => {
           if (!this.contract) {
@@ -430,7 +447,7 @@ export class ProjectContractComponent extends BaseComponent implements OnInit {
   }
 
   private applyPreparedContractView(contract: CreatedProjectContract | null): boolean {
-    if (!contract || contract.is_attach_type) {
+    if (!contract || contract.is_attach_type || contract.requires_prepare || this.agreementChanged) {
       this.contractHtml = null;
       this.canSignDefault = false;
       return false;

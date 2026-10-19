@@ -1,3 +1,4 @@
+import { AgreementRevisionsService } from 'src/app/_fake/services/agreement-revisions/agreement-revisions.service';
 import { Component, OnInit, OnDestroy, ElementRef, ViewChild, HostListener, Renderer2, NgZone, ChangeDetectorRef } from '@angular/core';
 import { trigger, transition, style, animate } from '@angular/animations';
 import { MenuItem } from 'primeng/api';
@@ -78,6 +79,7 @@ export class PrimengHeaderComponent implements OnInit, OnDestroy {
   private breakpointSubscription: Subscription;
   private profileSubscription: Subscription;
   private profileUpdateSubscription: Subscription;
+  private revisionSeenSubscription?: Subscription;
   private wasInAddKnowledgeWizard: boolean = false;
 
   // User profile data
@@ -183,6 +185,7 @@ export class PrimengHeaderComponent implements OnInit, OnDestroy {
   }
 
   constructor(
+    private agreementRevisions: AgreementRevisionsService,
     private breakpointObserver: BreakpointObserver,
     private profileService: ProfileService,
     private router: Router,
@@ -242,6 +245,14 @@ export class PrimengHeaderComponent implements OnInit, OnDestroy {
           this.initPusher(userId, token, this.lang || 'en');
         }
       }
+    });
+
+    // Opening a revision marks its bell notification read on the backend; refresh the count.
+    this.revisionSeenSubscription = this.agreementRevisions.seen$.subscribe(() => {
+      this.notificationService.getNotifications(this.lang || 'en').subscribe(notifications => {
+        this.notifications = notifications;
+        this.notificationCount = notifications.filter(n => !n.read_at).length;
+      });
     });
 
     // React to profile refreshes (e.g. after wizard submit) and update header/menu immediately
@@ -380,6 +391,7 @@ export class PrimengHeaderComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    this.revisionSeenSubscription?.unsubscribe();
     // Clean up subscriptions to prevent memory leaks
     if (this.breakpointSubscription) {
       this.breakpointSubscription.unsubscribe();
@@ -676,6 +688,12 @@ export class PrimengHeaderComponent implements OnInit, OnDestroy {
 
     // Find the notification by ID
     const notification = this.notifications.find(n => n.id === notificationId);
+    if (notification?.sub_type === 'project_agreement_revision') {
+      // The inner notification view already marked this read and resolves the project relationship.
+      this.notificationCount = this.notifications.filter(n => !n.read_at).length;
+      return;
+    }
+
 
     // Mark notification as read
     this.notificationService.markAsRead(notificationId, this.lang).subscribe({
@@ -916,6 +934,7 @@ export class PrimengHeaderComponent implements OnInit, OnDestroy {
         'requests.action',
         'requests',
         // Project notifications
+        'project.agreement.revision',
         'project.proposal.offer',
         'project.match.invited',
         'project.client.closed',
@@ -941,6 +960,7 @@ export class PrimengHeaderComponent implements OnInit, OnDestroy {
           // Pusher callbacks can run outside Angular's zone -> UI won't update unless we re-enter.
           this.ngZone.run(() => {
             const mapped = this.mapEventToNotification(data, evt);
+            if (evt === 'project.agreement.revision') this.agreementRevisions.changed$.next({ projectUuid: data?.param, revisionId: data?.revision_id });
             // Prepend to local list
             this.notifications = [mapped, ...this.notifications];
             // Update unread count (new events are unread)
@@ -974,6 +994,8 @@ export class PrimengHeaderComponent implements OnInit, OnDestroy {
       tap: data?.tap,
       category: data?.category,
       event_name: eventName,
+      revision_id: data?.revision_id,
+      revision_number: data?.revision_number,
     };
   }
 }

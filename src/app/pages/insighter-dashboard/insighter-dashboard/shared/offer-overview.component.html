@@ -1,6 +1,9 @@
 <section class="offer-overview" [attr.dir]="ar ? 'rtl' : 'ltr'" [attr.aria-label]="context === 'client' ? (ar ? 'العرض المقدم' : 'Submitted offer') : (ar ? 'عرضك المرسل' : 'Your submitted offer')">
   <header class="offer-overview__summary">
-    <h2>{{ context === 'client' ? (ar ? 'العرض المقدم' : 'Submitted offer') : (ar ? 'عرضك المرسل' : 'Your submitted offer') }}</h2>
+    <div class="offer-overview__heading">
+      <h2>{{ context === 'client' ? (ar ? 'العرض المقدم' : 'Submitted offer') : (ar ? 'عرضك المرسل' : 'Your submitted offer') }}</h2>
+      <ng-content select="[offerActions]"></ng-content>
+    </div>
     <div class="offer-overview__terms">
       <div class="offer-overview__price"><strong>{{ price() }}</strong><span>USD</span></div>
       <div class="offer-overview__basis">{{ pricingSummary }}</div>
@@ -11,9 +14,25 @@
     </div>
   </header>
 
+  <div class="offer-overview__part">
+    <span class="offer-overview__part-icon" aria-hidden="true"><i class="pi pi-file"></i></span>
+    <h2>{{ ar ? 'العرض الفني' : 'Technical offer' }}</h2>
+  </div>
+
   <section class="offer-overview__letter">
     <h3>{{ ar ? 'خطاب العرض' : 'Cover letter' }}</h3>
     <p>{{ offer.cover_letter || (ar ? 'لا توجد رسالة مرفقة بالعرض.' : 'No cover letter was included.') }}</p>
+  </section>
+
+  <section class="offer-overview__duration" *ngIf="suggestedDurationDays !== null">
+    <span class="offer-overview__duration-icon" aria-hidden="true"><i class="pi pi-clock"></i></span>
+    <div>
+      <h3>{{ ar ? 'مدة المشروع المقترحة' : 'Suggested project duration' }}</h3>
+      <p><strong>{{ suggestedDurationDays }} {{ ar ? 'يوم' : 'days' }}</strong> · {{ ar ? 'بدلاً من' : 'instead of' }} {{ projectDurationDays }} {{ ar ? 'يوم' : 'days' }}<ng-container *ngIf="suggestedEndDate"> · {{ ar ? 'ينتهي في' : 'ends' }} {{ suggestedEndDate }}</ng-container></p>
+      <small>{{ context === 'client'
+        ? (ar ? 'ترسية هذا العرض ستجعل مدة المشروع ' + suggestedDurationDays + ' يومًا.' : 'Awarding this offer will set the project duration to ' + suggestedDurationDays + ' days.')
+        : (ar ? 'تُطبَّق على المشروع فقط إذا رسّى العميل عرضك.' : 'Applies to the project only if the client awards your offer.') }}</small>
+    </div>
   </section>
 
   <ng-content></ng-content>
@@ -23,21 +42,28 @@
     <article class="offer-service" *ngFor="let group of groups; trackBy: trackService">
       <span class="offer-service__number" aria-hidden="true">{{ group.position }}</span>
       <div class="offer-service__scope">
-        <span class="offer-overview__label">{{ group.id === null ? (ar ? 'المشروع' : 'Project') : (ar ? 'الخدمة' : 'Service') + ' ' + group.position }}</span>
         <h4>{{ group.name }}</h4>
-        <div class="offer-service__scope-item" *ngFor="let scope of group.scopes">
-          <p class="offer-service__scope-name">{{ scope.scope }}</p>
-          <p *ngIf="scope.description">{{ scope.description }}</p>
-          <ul *ngIf="scope.children?.length"><li *ngFor="let child of scope.children">{{ child.scope }}<p *ngIf="child.description">{{ child.description }}</p></li></ul>
+        <div class="offer-scope" *ngFor="let scope of group.scopes">
+          <p class="offer-scope__name"><span class="offer-scope__marker" aria-hidden="true"></span>{{ scope.scope }}</p>
+          <p class="offer-scope__description" *ngIf="scope.description">{{ scope.description }}</p>
+          <ul class="offer-scope__children" *ngIf="scope.children?.length">
+            <li *ngFor="let child of scope.children">{{ child.scope }}</li>
+          </ul>
+          <ng-container *ngFor="let child of scope.children">
+            <p class="offer-scope__description" *ngIf="child.description"><strong>{{ child.scope }}:</strong> {{ child.description }}</p>
+          </ng-container>
         </div>
       </div>
       <div class="offer-service__deliverables">
         <div class="offer-deliverable" *ngFor="let deliverable of group.deliverables">
           <div class="offer-deliverable__content">
-            <span class="offer-overview__label">{{ ar ? 'المخرج' : 'Deliverable' }}</span>
+            <span class="offer-deliverable__badge">{{ ar ? 'مخرج' : 'Deliverable' }}</span>
             <h4>{{ deliverable.title }}</h4>
-            <p class="offer-deliverable__meta"><i class="pi pi-file" aria-hidden="true"></i><span *ngIf="deliverable.report_type?.length">{{ deliverable.report_type?.join(', ')?.toUpperCase() }}<span aria-hidden="true"> · </span></span><span>{{ method(deliverable.way?.selected) }}</span></p>
-            <p *ngIf="deliverable.way?.address">{{ deliverable.way?.address }}</p>
+            <div class="offer-deliverable__tags">
+              <span class="offer-deliverable__format" *ngFor="let format of deliverable.report_type">{{ format | uppercase }}</span>
+              <span class="offer-deliverable__way" *ngIf="deliverable.way?.selected"><i class="pi" [ngClass]="wayIcon(deliverable.way?.selected)" aria-hidden="true"></i>{{ method(deliverable.way?.selected) }}</span>
+            </div>
+            <p class="offer-deliverable__address" *ngIf="deliverable.way?.address">{{ deliverable.way?.address }}</p>
           </div>
           <div class="offer-deliverable__date">
             <span class="offer-overview__label">{{ ar ? 'موعد التسليم' : 'Due date' }}</span>
@@ -45,15 +71,25 @@
             <p *ngIf="dueDate(deliverable)">{{ dayLabel(deliverable.period_days) }}</p>
           </div>
         </div>
-        <p *ngIf="!group.deliverables.length" class="offer-service__empty">{{ ar ? 'لم تُحدَّد مخرجات لهذه الخدمة.' : 'No deliverables defined for this service.' }}</p>
+        <p *ngIf="!group.deliverables.length" class="offer-service__empty">{{ ar ? 'لم تُحدَّد مخرجات لهذه الخدمة.' : 'No deliverables defined for this service.' }}</p>
       </div>
     </article>
   </section>
 
   <app-offer-requirements *ngIf="otherComponents.length" [components]="otherComponents" [services]="services" [lang]="lang"></app-offer-requirements>
 
-  <section class="offer-overview__payments" *ngIf="offer.installments.length">
-    <h3>{{ ar ? 'خطة الدفع' : 'Payment plan' }}</h3>
-    <app-offer-installments presentation="timeline" [installments]="offer.installments" [total]="offer.proposed_price" [lang]="lang"></app-offer-installments>
-  </section>
+  <ng-container *ngIf="offer.installments.length">
+    <div class="offer-overview__part offer-overview__part--financial">
+      <span class="offer-overview__part-icon" aria-hidden="true"><i class="pi pi-wallet"></i></span>
+      <h2>{{ ar ? 'العرض المالي' : 'Financial offer' }}</h2>
+    </div>
+
+    <section class="offer-overview__payments">
+      <div class="offer-overview__payments-head">
+        <h3>{{ ar ? 'خطة الدفع' : 'Payment plan' }}</h3>
+        <span>{{ offer.installments.length }} {{ ar ? (offer.installments.length > 10 ? 'دفعة' : 'دفعات') : (offer.installments.length === 1 ? 'installment' : 'installments') }} · <strong>{{ price() }}</strong></span>
+      </div>
+      <app-offer-installments presentation="ledger" [installments]="offer.installments" [total]="offer.proposed_price" [lang]="lang"></app-offer-installments>
+    </section>
+  </ng-container>
 </section>

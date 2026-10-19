@@ -145,6 +145,7 @@ export class NotificationsInnerComponent extends BaseComponent implements OnInit
   getNotificationTitle(alert: Notification): string | null {
     const language = this.translationService.getSelectedLanguage();
     const projectTitles: Record<string, { en: string; ar: string }> = {
+      project_agreement_revision: { en: 'Project Agreement Updated', ar: 'تم تحديث اتفاق المشروع' },
       project_offer_technical_decision: {
         en: this.isRejectedTechnicalDecision(alert)
           ? 'Project Offer Technically Rejected'
@@ -168,11 +169,25 @@ export class NotificationsInnerComponent extends BaseComponent implements OnInit
       : null;
   }
 
+  private notificationMessage(alert: Notification): string {
+    if (alert.sub_type !== 'project_agreement_revision') return (alert?.message ?? '').toString();
+    const revision = Number(alert.revision_number || alert.sub_type_value) || '';
+    const ar = this.translationService.getSelectedLanguage() === 'ar';
+    const name = (alert.changed_by?.name ?? '').trim();
+    const title = (alert.project_title ?? '').trim();
+    if (name && title) return ar
+      ? `حدّث ${name} تفاصيل اتفاق «${title}». راجع المراجعة ${revision}.`
+      : `${name} updated the agreement for “${title}”. Review revision ${revision}.`;
+    return ar
+      ? `تغيّرت تفاصيل الاتفاق. راجع المراجعة ${revision}.`
+      : `The agreement details changed. Review revision ${revision}.`;
+  }
+
   // ---- Message rendering helpers ----
   // Unread: render safe minimal HTML to preserve <b>/<strong> emphasis.
   // Read: render plain text so `fw-light` always wins and can’t be overridden.
   getUnreadMessageHtml(alert: Notification): SafeHtml {
-    const raw = (alert?.message ?? '').toString();
+    const raw = this.notificationMessage(alert);
     const cached = this.messageCache.get(alert.id);
     if (cached && cached.raw === raw) return cached.unreadHtml;
 
@@ -184,7 +199,7 @@ export class NotificationsInnerComponent extends BaseComponent implements OnInit
   }
 
   getReadMessageText(alert: Notification): string {
-    const raw = (alert?.message ?? '').toString();
+    const raw = this.notificationMessage(alert);
     const cached = this.messageCache.get(alert.id);
     if (cached && cached.raw === raw) return cached.readText;
     // Populate cache via unread getter (cheap, consistent)
@@ -467,6 +482,26 @@ export class NotificationsInnerComponent extends BaseComponent implements OnInit
     const clientBase = '/app/insighter-dashboard/projects-created';
     const offersBase = '/app/insighter-dashboard/project-offers';
 
+    if (n.event_name === 'project.agreement.revision' || n.sub_type === 'project_agreement_revision') {
+      // The backend ships the exact revision URL; follow it when it points at a dashboard page.
+      const direct = this.dashboardPath(n.url);
+      if (direct) { this.navigateTo(direct); return true; }
+      if (!param) return true;
+      const revisionQuery = `?tab=revisions&revision=${encodeURIComponent(String(n.revision_id || ''))}`;
+      if (n.recipient_role === 'client') { this.navigateTo(`${clientBase}/${param}${revisionQuery}`); return true; }
+      if (n.recipient_role === 'insighter') { this.navigateTo(`${offersBase}/details/${param}${revisionQuery}`); return true; }
+      // Resolve the recipient's relationship to this project; insighters can also be clients.
+      this.http.get<any>(`${environment.apiBaseUrl}/account/project/show/${encodeURIComponent(String(param))}`)
+        .subscribe({
+          next: () => this.navigateTo(`${clientBase}/${param}?tab=revisions&revision=${encodeURIComponent(String(n.revision_id || ''))}`),
+          error: err => {
+            if (err.status === 403 || err.status === 404) this.navigateTo(`${offersBase}/details/${param}?tab=revisions&revision=${encodeURIComponent(String(n.revision_id || ''))}`);
+            else this.showError(this.lang === 'ar' ? 'تعذر فتح المراجعة. أعد المحاولة.' : 'Could not open the revision. Please try again.');
+          },
+        });
+      return true;
+    }
+
     // 1) Precise routing by Pusher event name (realtime).
     switch (n.event_name) {
       // Insighter receives, param = project uuid.
@@ -604,6 +639,21 @@ export class NotificationsInnerComponent extends BaseComponent implements OnInit
     segments.push(String(param));
 
     return `/${segments.join('/')}`;
+  }
+
+  /** Path + query of a backend URL, only when it targets this dashboard. */
+  private dashboardPath(rawUrl?: string): string | null {
+    const raw = (rawUrl ?? '').trim();
+    if (!raw) return null;
+    try {
+      const parsed = new URL(raw, window.location.origin);
+      if (!parsed.pathname.startsWith('/app/insighter-dashboard/')) return null;
+      // Revisions happen before signing, often before an award: the insighter reviews them on the offer page.
+      const path = parsed.pathname.replace('/app/insighter-dashboard/on-work-projects/details/', '/app/insighter-dashboard/project-offers/details/');
+      return `${path}${parsed.search}`;
+    } catch {
+      return null;
+    }
   }
 
   private navigateToBackendUrl(rawUrl?: string, param?: any): boolean {

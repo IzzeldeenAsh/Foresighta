@@ -1,3 +1,4 @@
+import { PendingChangesGuard } from 'src/app/guards/pending-changes.guard';
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Routes } from '@angular/router';
@@ -26,6 +27,7 @@ const routes: Routes = [
   },
   {
     path: ':uuid',
+    canDeactivate: [PendingChangesGuard],
     component: ProjectDetailComponent,
   }
 ];

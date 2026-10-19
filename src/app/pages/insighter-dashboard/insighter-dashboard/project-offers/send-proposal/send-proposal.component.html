@@ -1,4 +1,4 @@
-<div class="sp-page">
+<div class="sp-page" [attr.dir]="lang === 'ar' ? 'rtl' : 'ltr'">
 
   <p-progressBar *ngIf="isLoading" mode="indeterminate" [style]="{ height: '3px' }">
   </p-progressBar>
@@ -19,7 +19,7 @@
         <i class="ki-outline fs-3" [ngClass]="getBackIcon()"></i>
       </button>
       <div class="sp-phead__text">
-        <span class="sp-phead__eyebrow">{{ lang === 'ar' ? 'إرسال عرض' : 'Send a proposal' }}</span>
+        <span class="sp-phead__eyebrow">{{ editMode ? (lang === 'ar' ? 'تعديل العرض' : 'Edit offer') : (lang === 'ar' ? 'إرسال عرض' : 'Send a proposal') }}</span>
         <h1 class="sp-phead__title">{{ p.project?.title || (lang === 'ar' ? 'المقترح' : 'Proposal') }}</h1>
         <div class="sp-phead__meta">
           <span *ngIf="p.project?.service?.name">{{ p.project?.service?.name }}</span>
@@ -35,6 +35,7 @@
         </div>
       </div>
       <div class="sp-phead__actions">
+        <span *ngIf="editMode && editLocked" class="sp-readonly-badge">{{ lang === 'ar' ? 'للعرض فقط' : 'Read-only' }}</span>
         <span *ngIf="p.action_status" class="badge" [ngClass]="getStatusBadgeClass(p.action_status)">{{ getStatusLabel(p.action_status) }}</span>
         <button type="button" class="btn btn-sm btn-light" (click)="openDetailsDrawer()">
           <i class="ki-outline ki-eye fs-5"></i>
@@ -43,75 +44,111 @@
       </div>
     </header>
 
-    <!-- Tabs, active section and footer share one card -->
+    <div *ngIf="editMode && editStale" class="sp-edit-notice sp-edit-notice--warning" role="alert">{{ lang === 'ar' ? 'تغيّر الاتفاق منذ فتح التعديل. ارجع لسجل المراجعات وافتح التعديل مجدداً للاطلاع على أحدث البيانات.' : 'The agreement has changed since you opened it. Return to revisions and reopen editing to load the latest details.' }}</div>
+    <div *ngIf="editError" class="sp-edit-notice sp-edit-notice--warning" role="alert">{{ editError }}</div>
+    <!-- Stepper, active step and footer share one card -->
     <div class="sp-shell">
-    <!-- Section tabs -->
-    <div class="sp-tabs" role="tablist" [attr.aria-label]="lang === 'ar' ? 'أقسام العرض' : 'Proposal sections'" (keydown)="onTabKeydown($event)">
-      <button type="button" role="tab" class="sp-tab" *ngFor="let tab of tabs"
-        [id]="'sp-tab-' + tab.key" [ngClass]="'sp-tab--' + tab.key"
-        [class.is-active]="activeTab === tab.key" [attr.aria-selected]="activeTab === tab.key"
-        [attr.aria-controls]="'sp-panel-' + tab.key" [attr.tabindex]="activeTab === tab.key ? 0 : -1"
-        (click)="selectTab(tab.key)">
-        <span class="sp-tab__mark"><i class="ki-outline" [ngClass]="tab.icon"></i></span>
-        {{ lang === 'ar' ? tab.label.ar : tab.label.en }}
-      </button>
-    </div>
+    <nav class="sp-steps" [attr.aria-label]="lang === 'ar' ? 'خطوات العرض' : 'Proposal steps'">
+      <ol class="sp-steps__list">
+        <li class="sp-step" *ngFor="let tab of tabs; let i = index" [ngClass]="'is-' + stepState(i)">
+          <button type="button" class="sp-step__btn" [id]="'sp-tab-' + tab.key"
+            [attr.aria-current]="activeTab === tab.key ? 'step' : null" (click)="onTabClick(tab.key)">
+            <span class="sp-step__dot">
+              <i *ngIf="stepState(i) === 'done'; else stepNumber" class="ki-outline ki-check"></i>
+              <ng-template #stepNumber>{{ i + 1 }}</ng-template>
+            </span>
+            <span class="sp-step__text">
+              <span class="sp-step__count">{{ lang === 'ar' ? 'الخطوة' : 'Step' }} {{ i + 1 }}</span>
+              <span class="sp-step__label">{{ lang === 'ar' ? tab.label.ar : tab.label.en }}</span>
+              <span class="sp-step__readonly" *ngIf="isEditTabReadOnly(tab.key)">{{ lang === 'ar' ? 'للعرض فقط' : 'Read-only' }}</span>
+            </span>
+          </button>
+        </li>
+      </ol>
+    </nav>
 
+    <fieldset class="sp-edit-fields" [disabled]="editMode && (isSubmitting || editStale)">
     <div class="sp-sections">
-      <!-- 1. Cover letter -->
-      <div class="sp-panel" role="tabpanel" id="sp-panel-cover" aria-labelledby="sp-tab-cover" [hidden]="activeTab !== 'cover'">
+      <!-- 1. Technical proposal -->
+      <div class="sp-panel" role="region" id="sp-panel-cover" aria-labelledby="sp-tab-cover" [hidden]="activeTab !== 'cover'">
       <section class="sp-sec sp-sec--cover">
         <header class="sp-sec__head">
           <span class="sp-sec__mark"><i class="ki-outline ki-document"></i></span>
           <div class="sp-sec__copy">
             <h2 class="sp-sec__title">
-              {{ lang === 'ar' ? 'الرسالة التعريفية' : 'Cover letter' }}
+              {{ lang === 'ar' ? 'العرض الفني' : 'Technical proposal' }}
             </h2>
             <p class="sp-sec__desc">
-              {{ lang === 'ar'
-              ? 'عرّف عن نفسك ووضّح كيف ستتعامل مع هذا المشروع.'
-              : 'Introduce yourself and explain how you’ll approach this project.' }}
+              {{ editMode ? (lang === 'ar' ? 'حدّث شرح منهجيتك ومرفقاتك، أو اقترح مدة أطول للمشروع.' : 'Update your approach and attachments, or suggest a longer project duration.') : (lang === 'ar' ? 'اشرح منهجيتك وكيف ستنفّذ هذا المشروع.' : 'Explain your methodology and how you’ll deliver this project.') }}
             </p>
           </div>
         </header>
 
         <div class="sp-card">
           <div class="sp-field">
-            <label class="sp-field__label" for="sp-cover-letter">{{ lang === 'ar' ? 'رسالتك' : 'Your message' }}</label>
+            <label class="sp-field__label" for="sp-cover-letter">{{ lang === 'ar' ? 'نص العرض الفني' : 'Technical proposal text' }} <span *ngIf="editMode && editLocked" class="sp-readonly-badge">{{ lang === 'ar' ? 'للعرض فقط' : 'Read-only' }}</span></label>
             <textarea id="sp-cover-letter" name="coverLetter" class="sp-input sp-textarea" rows="6"
-              [(ngModel)]="coverLetter" #coverLetterModel="ngModel" required
+              [(ngModel)]="coverLetter" [disabled]="editMode && editLocked" #coverLetterModel="ngModel" required [maxlength]="coverLetterMaxLength"
               [class.is-invalid]="shouldShowFieldError(coverLetterModel, isCoverLetterInvalid())"
               [placeholder]="lang === 'ar'
-                ? 'اكتب رسالتك التعريفية وكيف ستتعامل مع هذا المشروع...'
-                : 'Introduce yourself and explain how you will approach this project...'">
+                ? 'اكتب عرضك الفني: المنهجية وخطة العمل وكيف ستنفّذ هذا المشروع...'
+                : 'Write your technical proposal: methodology, work plan and how you will deliver this project...'">
             </textarea>
             <div class="sp-field__hint sp-field__hint--danger"
               *ngIf="shouldShowFieldError(coverLetterModel, isCoverLetterInvalid())">
-              {{ lang === 'ar' ? 'الرسالة التعريفية مطلوبة.' : 'Cover letter is required.' }}
+              {{ lang === 'ar' ? 'نص العرض الفني مطلوب.' : 'Technical proposal text is required.' }}
             </div>
-            <div class="sp-field__hint">
-              {{ lang === 'ar'
-              ? 'وضّح خبراتك والمنهجية التي ستتبعها للوصول لأفضل النتائج.'
-              : 'Highlight your experience and the approach you’ll take to deliver the best result.' }}
+            <div class="sp-field__meta" *ngIf="!(editMode && editLocked)">
+              <span class="sp-field__hint">
+                {{ lang === 'ar'
+                ? 'وضّح خبراتك والمنهجية التي ستتبعها للوصول لأفضل النتائج.'
+                : 'Highlight your experience and the approach you’ll take to deliver the best result.' }}
+              </span>
+              <span class="sp-field__count">{{ (coverLetter || '').length }} / {{ coverLetterMaxLength }}</span>
             </div>
           </div>
 
           <div class="sp-field">
-            <label class="sp-field__label" for="sp-attachments">
+            <span class="sp-field__label">
               {{ lang === 'ar' ? 'المرفقات' : 'Attachments' }}
-              <span class="sp-field__optional">{{ lang === 'ar' ? 'اختياري' : 'Optional' }}</span>
-            </label>
-            <label class="sp-file-upload" for="sp-attachments">
-              <i class="ki-outline ki-file-up"></i>
-              <span class="sp-file-upload__text">
-                {{ lang === 'ar' ? 'اختر الملفات المرفقة' : 'Choose files to attach' }}
-              </span>
-              <span class="sp-file-upload__hint">
-                {{ lang === 'ar' ? 'PDF · DOCX · PNG حتى 10MB' : 'PDF, DOCX, PNG · up to 10 MB each' }}
-              </span>
-            </label>
-            <input id="sp-attachments" type="file" class="sp-file-input" multiple
-              (change)="onAttachmentsSelected($event)" />
+              <span class="sp-field__optional" *ngIf="!(editMode && editLocked)">{{ lang === 'ar' ? 'اختياري' : 'Optional' }}</span>
+              <span *ngIf="editMode && editLocked" class="sp-readonly-badge">{{ lang === 'ar' ? 'للعرض فقط' : 'Read-only' }}</span>
+            </span>
+
+            <!-- Edit mode: the offer's current files; removing one only takes effect when the changes are saved -->
+            <div class="sp-attachment-list" *ngIf="editMode && existingAttachments.length">
+              <div class="sp-attachment" *ngFor="let row of existingAttachments; trackBy: trackByExistingAttachment" [class.is-removed]="!row.kept">
+                <div class="sp-attachment__meta">
+                  <i class="ki-outline ki-document fs-5"></i>
+                  <div class="sp-attachment__text">
+                    <button type="button" class="sp-attachment__open" [disabled]="!row.kept || isOpeningFile(row.file)" (click)="openProjectFile(row.file)">{{ row.file.name || getProjectFileName(row.file) }}</button>
+                    <span class="sp-attachment__size">{{ row.kept ? (lang === 'ar' ? 'مرفق حالي' : 'Current file') : (lang === 'ar' ? 'سيُحذف عند الحفظ' : 'Removed when you save') }}</span>
+                  </div>
+                </div>
+                <ng-container *ngIf="!editLocked">
+                  <button type="button" class="sp-attachment__remove" *ngIf="row.kept" (click)="toggleExistingAttachment(row.file)"
+                    [attr.aria-label]="lang === 'ar' ? 'حذف الملف' : 'Remove file'">
+                    <i class="ki-outline ki-trash fs-5"></i>
+                  </button>
+                  <button type="button" class="sp-attachment__undo" *ngIf="!row.kept" (click)="toggleExistingAttachment(row.file)">{{ lang === 'ar' ? 'تراجع' : 'Undo' }}</button>
+                </ng-container>
+              </div>
+            </div>
+            <p class="sp-field__hint" *ngIf="editMode && editLocked && !existingAttachments.length">{{ lang === 'ar' ? 'لا توجد مرفقات.' : 'No attachments.' }}</p>
+
+            <ng-container *ngIf="!(editMode && editLocked)">
+              <label class="sp-file-upload" for="sp-attachments">
+                <i class="ki-outline ki-plus"></i>
+                <span class="sp-file-upload__text">
+                  {{ editMode ? (lang === 'ar' ? 'أضف ملفات جديدة' : 'Add new files') : (lang === 'ar' ? 'اختر الملفات المرفقة' : 'Choose files to attach') }}
+                </span>
+                <span class="sp-file-upload__hint">
+                  {{ lang === 'ar' ? 'PDF · ملفات Office · صور حتى 50MB' : 'PDF, Office files, images · up to 50 MB' }}
+                </span>
+              </label>
+              <input id="sp-attachments" type="file" class="sp-file-input" multiple [accept]="attachmentAccept"
+                (change)="onAttachmentsSelected($event)" />
+            </ng-container>
 
             <div class="sp-attachment-list" *ngIf="selectedAttachments.length">
               <div class="sp-attachment" *ngFor="let file of selectedAttachments; let i = index">
@@ -119,7 +156,7 @@
                   <i class="ki-outline ki-file fs-5"></i>
                   <div class="sp-attachment__text">
                     <span class="sp-attachment__name">{{ file.name }}</span>
-                    <span class="sp-attachment__size">{{ formatFileSize(file) }}</span>
+                    <span class="sp-attachment__size">{{ formatFileSize(file) }}<ng-container *ngIf="editMode"> · {{ lang === 'ar' ? 'جديد' : 'New' }}</ng-container></span>
                   </div>
                 </div>
                 <button type="button" class="sp-attachment__remove" (click)="removeAttachment(i)"
@@ -128,6 +165,48 @@
                 </button>
               </div>
             </div>
+            <div class="sp-field__hint sp-field__hint--danger" role="alert" *ngFor="let error of attachmentErrors">{{ error }}</div>
+          </div>
+
+          <!-- Suggested project duration: a proposal the client applies by awarding this offer -->
+          <div class="sp-field sp-duration" *ngIf="durationDays !== null">
+            <span class="sp-field__label">
+              {{ lang === 'ar' ? 'مدة المشروع' : 'Project duration' }}
+              <span class="sp-field__optional" *ngIf="!durationLocked">{{ lang === 'ar' ? 'اختياري' : 'Optional' }}</span>
+            </span>
+            <div class="sp-duration__row">
+              <div class="sp-duration__fact">
+                <span>{{ lang === 'ar' ? 'مدة العميل' : 'Client’s duration' }}</span>
+                <b>{{ durationDays }} {{ lang === 'ar' ? 'يوم' : 'days' }}</b>
+                <small *ngIf="plannedCloseDate">{{ lang === 'ar' ? 'ينتهي في' : 'Ends' }} {{ formatDate(plannedCloseDate) }}</small>
+              </div>
+              <ng-container *ngIf="!durationLocked; else durationLockedNote">
+                <div class="sp-duration__suggest" *ngIf="durationSuggestOpen; else suggestButton">
+                  <label class="sp-duration__label" for="sp-suggested-duration">{{ lang === 'ar' ? 'المدة التي تقترحها' : 'Your suggested duration' }}</label>
+                  <div class="sp-input-group sp-input-group--narrow" [class.is-invalid]="!!suggestedDurationError">
+                    <input id="sp-suggested-duration" class="sp-input" type="number" inputmode="numeric" step="1" [min]="minimumSuggestedDays"
+                      name="suggestedDurationDays" [ngModel]="suggestedDurationDays" (ngModelChange)="setSuggestedDuration($event)" />
+                    <span class="sp-input-group__suffix">{{ lang === 'ar' ? 'يوم' : 'days' }}</span>
+                  </div>
+                  <small *ngIf="suggestedCloseDate && !suggestedDurationError">{{ lang === 'ar' ? 'ينتهي في' : 'Ends' }} {{ formatDate(suggestedCloseDate) }}</small>
+                  <button type="button" class="sp-duration__clear" (click)="clearSuggestedDuration()">{{ lang === 'ar' ? 'الإبقاء على مدة العميل' : 'Keep the client’s duration' }}</button>
+                </div>
+                <ng-template #suggestButton>
+                  <button type="button" class="sp-duration__add" (click)="openSuggestedDuration()">
+                    <i class="ki-outline ki-time"></i>{{ lang === 'ar' ? 'اقترح مدة أطول' : 'Suggest a longer duration' }}
+                  </button>
+                </ng-template>
+              </ng-container>
+              <ng-template #durationLockedNote>
+                <p class="sp-field__hint sp-duration__locked">{{ lang === 'ar' ? 'لا يمكن تغيير المدة المقترحة بعد ترسية العرض.' : 'The suggested duration cannot change after the offer is awarded.' }}</p>
+              </ng-template>
+            </div>
+            <div class="sp-field__hint sp-field__hint--danger" role="alert" *ngIf="suggestedDurationError">{{ suggestedDurationError }}</div>
+            <div class="sp-field__hint" *ngIf="!durationLocked">
+              {{ lang === 'ar'
+              ? 'يرى العميل المدة المقترحة مع عرضك، ولا تُطبَّق على المشروع إلا إذا رسّى العرض عليك.'
+              : 'The client sees the suggestion with your offer. It only becomes the project duration if they award your offer.' }}
+            </div>
           </div>
         </div>
       </section>
@@ -135,19 +214,22 @@
       </div>
 
       <!-- 2. Scope of work: requirements the client left for the insighter -->
-      <div class="sp-panel" role="tabpanel" id="sp-panel-scope" aria-labelledby="sp-tab-scope" [hidden]="activeTab !== 'scope'">
-      <app-offer-requirements-editor [requirements]="scopeRequirements" [services]="p.project.project_services" [lang]="lang" [attempted]="hasAttemptedTab('scope')" (draftChange)="scopeDraft = $event"></app-offer-requirements-editor>
+      <div class="sp-panel" role="region" id="sp-panel-scope" aria-labelledby="sp-tab-scope" [hidden]="activeTab !== 'scope'">
+      <app-offer-requirements-editor [initialDraft]="editMode ? scopeSeed : undefined" [revisionMode]="editMode" [requirements]="scopeRequirements" [services]="p.project.project_services" [lang]="lang" [attempted]="hasAttemptedTab('scope')" (draftChange)="scopeDraft = $event"></app-offer-requirements-editor>
 
+        <app-offer-requirements-editor *ngIf="editMode" [readOnly]="true" [showHeading]="!scopeRequirements.scopes.length" [initialDraft]="readOnlyScopeSeed" [requirements]="readOnlyScopeRequirements" [services]="p.project.project_services" [lang]="lang"></app-offer-requirements-editor>
       </div>
 
       <!-- Deliverables have their own editor; both drafts are merged into one offer. -->
-      <div class="sp-panel" role="tabpanel" id="sp-panel-deliverables" aria-labelledby="sp-tab-deliverables" [hidden]="activeTab !== 'deliverables'">
-        <app-offer-requirements-editor section="deliverables" [requirements]="deliverablesRequirements" [services]="p.project.project_services" [plannedStartDate]="plannedStartDate" [durationDays]="durationDays" [lang]="lang" [attempted]="hasAttemptedTab('deliverables')" (draftChange)="onDeliverablesDraftChanged($event)"></app-offer-requirements-editor>
+      <div class="sp-panel" role="region" id="sp-panel-deliverables" aria-labelledby="sp-tab-deliverables" [hidden]="activeTab !== 'deliverables'">
+        <app-offer-requirements-editor section="deliverables" [initialDraft]="editMode ? deliverablesSeed : undefined" [revisionMode]="editMode" [linkedDeliverableIds]="editLinkedIds" [linkedOfferDeliverableIds]="editLinkedOfferIds" [offerDeliverableServiceIds]="editOfferDeliverableServiceIds" [requirements]="deliverablesRequirements" [services]="p.project.project_services" [plannedStartDate]="plannedStartDate" [durationDays]="effectiveDurationDays" [allowPastEnd]="!durationLocked && durationDays !== null" [lang]="lang" [attempted]="hasAttemptedTab('deliverables')" (draftChange)="onDeliverablesDraftChanged($event)"></app-offer-requirements-editor>
+        <ng-container *ngTemplateOutlet="durationCallout"></ng-container>
+        <app-offer-requirements-editor *ngIf="editMode" section="deliverables" [readOnly]="true" [showHeading]="!deliverablesRequirements.service_components.length" [initialDraft]="readOnlyDeliverablesSeed" [requirements]="readOnlyDeliverablesRequirements" [services]="p.project.project_services" [plannedStartDate]="plannedStartDate" [durationDays]="effectiveDurationDays" [lang]="lang"></app-offer-requirements-editor>
       </div>
 
       <!-- 3. Pricing -->
-      <div class="sp-panel" role="tabpanel" id="sp-panel-pricing" aria-labelledby="sp-tab-pricing" [hidden]="activeTab !== 'pricing'">
-      <section class="sp-sec sp-sec--pricing">
+      <div class="sp-panel" role="region" id="sp-panel-pricing" aria-labelledby="sp-tab-pricing" [hidden]="activeTab !== 'pricing'">
+      <fieldset class="sp-edit-fields" [disabled]="editMode && editCommercialLocked"><section class="sp-sec sp-sec--pricing">
         <header class="sp-sec__head">
           <span class="sp-sec__mark"><i class="ki-outline ki-price-tag"></i></span>
           <div class="sp-sec__copy">
@@ -260,13 +342,13 @@
             </div>
           </div>
         </div>
-      </section>
+      </section></fieldset>
 
       </div>
 
       <!-- 4. Payment schedule -->
-      <div class="sp-panel" role="tabpanel" id="sp-panel-payment" aria-labelledby="sp-tab-payment" [hidden]="activeTab !== 'payment'">
-      <section class="sp-sec sp-sec--payment">
+      <div class="sp-panel" role="region" id="sp-panel-payment" aria-labelledby="sp-tab-payment" [hidden]="activeTab !== 'payment'">
+      <fieldset class="sp-edit-fields" [disabled]="editMode && editCommercialLocked"><section class="sp-sec sp-sec--payment">
         <header class="sp-sec__head">
           <span class="sp-sec__mark"><i class="ki-outline ki-calendar"></i></span>
           <div class="sp-sec__copy">
@@ -297,6 +379,10 @@
               <div class="sp-facts__item" *ngIf="plannedCloseDate">
                 <span>{{ lang === 'ar' ? 'الإغلاق المخطط' : 'Planned close' }}</span>
                 <b>{{ formatDate(plannedCloseDate) }}</b>
+              </div>
+              <div class="sp-facts__item sp-facts__item--suggested" *ngIf="suggestedDurationDays !== null">
+                <span>{{ lang === 'ar' ? 'المدة التي تقترحها' : 'Your suggested duration' }}</span>
+                <b>{{ suggestedDurationDays }} {{ lang === 'ar' ? 'يوم' : 'days' }}<small *ngIf="suggestedCloseDate"> · {{ formatDate(suggestedCloseDate) }}</small></b>
               </div>
             </div>
             <div class="sp-deliverables" *ngIf="deliverables.length">
@@ -376,7 +462,7 @@
                     </button>
                     <button type="button" role="radio" class="sp-due-option" *ngIf="paymentPlan === 'full'"
                       [class.is-active]="item.isProjectEnd" [attr.aria-checked]="!!item.isProjectEnd"
-                      [disabled]="durationDays === null" (click)="setProjectEnd(item)">
+                      [disabled]="effectiveDurationDays === null" (click)="setProjectEnd(item)">
                       <i class="ki-outline ki-flag"></i>
                       {{ lang === 'ar' ? 'نهاية المشروع' : 'End of the project' }}
                     </button>
@@ -411,12 +497,12 @@
                     <label class="sp-pay-field" *ngIf="item.due_type === 'date'">
                       <span>{{ lang === 'ar' ? 'المدة من بدء المشروع' : 'Duration from project start' }}</span>
                       <div class="sp-input-group">
-                        <input class="sp-input" type="number" min="0" [max]="durationDays" step="1" [name]="'installment-days-' + item.key"
+                        <input class="sp-input" type="number" min="0" [max]="effectiveDurationDays" step="1" [name]="'installment-days-' + item.key"
                           [(ngModel)]="item.period_days" (ngModelChange)="onInstallmentChanged(item)" [readonly]="!!item.isProjectEnd" />
                         <span class="sp-input-group__suffix">{{ lang === 'ar' ? 'يوم' : 'days' }}</span>
                       </div>
-                      <span class="sp-field__hint" *ngIf="durationDays !== null">
-                        {{ lang === 'ar' ? 'مدة المشروع:' : 'Project duration:' }} {{ durationDays }} {{ lang === 'ar' ? 'يومًا' : 'days' }}.
+                      <span class="sp-field__hint" *ngIf="effectiveDurationDays !== null">
+                        {{ suggestedDurationDays !== null ? (lang === 'ar' ? 'مدة المشروع المقترحة:' : 'Suggested project duration:') : (lang === 'ar' ? 'مدة المشروع:' : 'Project duration:') }} {{ effectiveDurationDays }} {{ lang === 'ar' ? 'يومًا' : 'days' }}.
                         {{ item.isProjectEnd
                           ? (lang === 'ar' ? 'تم ملء مدة المشروع بالكامل تلقائيًا.' : 'The full project duration is filled in automatically.')
                           : (lang === 'ar' ? 'أدخل عدد الأيام من بدء المشروع حتى استحقاق الدفعة.' : 'Enter the number of days from project start until payment is due.') }}
@@ -459,36 +545,248 @@
             </div>
           </div>
         </div>
+      </section></fieldset>
+      </div>
+
+      <!-- 5. Financial offer summary (new offers only; edits have their own review) -->
+      <div class="sp-panel" role="region" id="sp-panel-summary" aria-labelledby="sp-tab-summary" *ngIf="!editMode" [hidden]="activeTab !== 'summary'">
+      <section class="sp-sec sp-sec--summary">
+        <header class="sp-sec__head">
+          <span class="sp-sec__mark"><i class="ki-outline ki-wallet"></i></span>
+          <div class="sp-sec__copy">
+            <h2 class="sp-sec__title">{{ lang === 'ar' ? 'ملخص العرض المالي' : 'Financial offer summary' }}</h2>
+            <p class="sp-sec__desc">{{ lang === 'ar' ? 'راجع السعر وجدول الدفعات قبل إرسال العرض.' : 'Check the price and payment schedule before you submit.' }}</p>
+          </div>
+        </header>
+
+        <div class="sp-fin">
+          <article class="sp-rv-card sp-rv-card--after">
+            <div class="sp-fin__head">
+              <span class="sp-rv-card__label">{{ lang === 'ar' ? 'إجمالي العرض' : 'Offer total' }}</span>
+              <button type="button" class="sp-fin__edit" (click)="onTabClick('pricing')">
+                <i class="ki-outline ki-pencil"></i>{{ lang === 'ar' ? 'تعديل التسعير' : 'Edit pricing' }}
+              </button>
+            </div>
+            <div class="sp-rv-card__total">{{ formatPrice(totalPrice) }}</div>
+            <span class="sp-rv-card__meta">{{ priceTypeLabel }}<ng-container *ngIf="priceBreakdown"> · {{ priceBreakdown }}</ng-container></span>
+          </article>
+
+          <div class="sp-facts">
+            <div class="sp-facts__item">
+              <span>{{ lang === 'ar' ? 'طريقة التسعير' : 'Pricing method' }}</span>
+              <b>{{ priceTypeLabel }}</b>
+            </div>
+            <div class="sp-facts__item">
+              <span>{{ lang === 'ar' ? 'خطة الدفع' : 'Payment plan' }}</span>
+              <b>{{ paymentPlan === 'full' ? (lang === 'ar' ? 'دفعة واحدة' : 'Full payment') : (lang === 'ar' ? 'على دفعات' : 'Installments') }}</b>
+            </div>
+            <div class="sp-facts__item">
+              <span>{{ lang === 'ar' ? 'عدد الدفعات' : 'Payments' }}</span>
+              <b>{{ installments.length }}</b>
+            </div>
+            <div class="sp-facts__item" *ngIf="durationDays !== null">
+              <span>{{ suggestedDurationDays !== null ? (lang === 'ar' ? 'مدة المشروع المقترحة' : 'Suggested project duration') : (lang === 'ar' ? 'مدة المشروع' : 'Project duration') }}</span>
+              <b>{{ effectiveDurationDays }} {{ lang === 'ar' ? 'يوم' : 'days' }}<small *ngIf="suggestedDurationDays !== null"> · {{ lang === 'ar' ? 'بدلاً من' : 'instead of' }} {{ durationDays }}</small></b>
+            </div>
+          </div>
+
+          <div class="sp-fin__schedule">
+            <div class="sp-fin__head">
+              <h3 class="sp-sub__title">{{ lang === 'ar' ? 'جدول الدفعات' : 'Payment schedule' }}</h3>
+              <button type="button" class="sp-fin__edit" (click)="onTabClick('payment')">
+                <i class="ki-outline ki-pencil"></i>{{ lang === 'ar' ? 'تعديل الدفعات' : 'Edit payments' }}
+              </button>
+            </div>
+            <ol class="sp-tl">
+              <li class="sp-tl__row" *ngFor="let row of summaryScheduleRows; let i = index">
+                <span class="sp-tl__when">
+                  <b>{{ row.when }}</b>
+                  <small *ngIf="row.whenSub">{{ row.whenSub }}</small>
+                </span>
+                <span class="sp-tl__dot" [class.is-upfront]="row.upfront" aria-hidden="true"></span>
+                <span class="sp-tl__copy">
+                  <strong>{{ i + 1 }}. {{ row.item.title || (lang === 'ar' ? 'دفعة' : 'Payment') }}</strong>
+                  <span class="sp-tl__trigger">
+                    <span class="sp-tl__tag" [class.is-upfront]="row.upfront">{{ row.tag }}</span>
+                    <span class="sp-tl__detail" [attr.title]="row.detail">{{ row.detail }}</span>
+                  </span>
+                </span>
+                <span class="sp-tl__value">
+                  <strong>{{ formatPrice(row.amount) }}</strong>
+                  <small>{{ row.item.percentage ?? 0 }}% · {{ row.cumulative }}% {{ lang === 'ar' ? 'حتى الآن' : 'to date' }}</small>
+                </span>
+              </li>
+            </ol>
+            <div class="sp-tl__sum">
+              <span class="sp-tl__sum-copy">
+                <strong>{{ lang === 'ar' ? 'الإجمالي' : 'Total' }}</strong>
+                <small>
+                  {{ installments.length }} {{ lang === 'ar' ? (installments.length === 1 ? 'دفعة' : 'دفعات') : (installments.length === 1 ? 'payment' : 'payments') }}<ng-container *ngIf="summaryScheduleEnd"> · {{ lang === 'ar' ? 'آخر دفعة' : 'last due' }} {{ formatDate(summaryScheduleEnd) }}</ng-container>
+                </small>
+              </span>
+              <span class="sp-tl__sum-value">
+                <strong>{{ formatPrice(totalPrice) }}</strong>
+                <small>{{ installmentsPercentTotal }}% {{ lang === 'ar' ? 'موزّعة' : 'allocated' }}</small>
+              </span>
+            </div>
+          </div>
+        </div>
       </section>
       </div>
+      <section *ngIf="editMode" class="sp-panel sp-sec sp-sec--review" id="sp-panel-review" role="region" aria-labelledby="sp-tab-review" [hidden]="activeTab !== 'review'">
+        <header class="sp-sec__head">
+          <span class="sp-sec__mark"><i class="ki-outline ki-check-circle"></i></span>
+          <div class="sp-sec__copy">
+            <h2 class="sp-sec__title">{{ lang === 'ar' ? 'مراجعة التغييرات' : 'Review your changes' }}</h2>
+            <p class="sp-sec__desc">{{ lang === 'ar' ? 'تُحفظ كل التغييرات كمراجعة واحدة ويُشعَر بها العميل.' : 'Everything below is saved as one revision and shared with the client.' }}</p>
+          </div>
+        </header>
+
+        <div class="sp-rv">
+          <p class="sp-rv-empty" *ngIf="!editDirty">{{ lang === 'ar' ? 'لم تُجرِ تغييرات بعد. ارجع إلى أي خطوة لتعديل عرضك.' : 'No changes yet. Go back to any step to update your offer.' }}</p>
+
+          <!-- Pricing and payments: current offer next to the edited one -->
+          <div class="sp-rv-compare" *ngIf="editPatch.price_type">
+            <article class="sp-rv-card sp-rv-card--before">
+              <span class="sp-rv-card__label">{{ lang === 'ar' ? 'العرض الحالي' : 'Current offer' }}</span>
+              <div class="sp-rv-card__total">{{ formatPrice(editPreviousTotal) }}</div>
+              <span class="sp-rv-card__meta">{{ editPreviousPriceType }}</span>
+              <ol class="sp-rv-list">
+                <li *ngFor="let row of editPreviousScheduleRows" [class.is-removed]="row.removed">
+                  <span class="sp-rv-list__copy"><strong>{{ row.title }}</strong><small>{{ row.due }}</small></span>
+                  <span class="sp-rv-list__value"><strong>{{ row.percentage }}%</strong><small *ngIf="!row.removed">{{ formatPrice(row.amount) }}</small><small *ngIf="row.removed" class="sp-rv-flag sp-rv-flag--removed">{{ lang === 'ar' ? 'محذوفة' : 'Removed' }}</small></span>
+                </li>
+              </ol>
+            </article>
+            <article class="sp-rv-card sp-rv-card--after">
+              <span class="sp-rv-card__label">{{ lang === 'ar' ? 'بعد التعديل' : 'After your changes' }}</span>
+              <div class="sp-rv-card__total">{{ formatPrice(totalPrice) }}</div>
+              <span class="sp-rv-card__meta">{{ priceTypeLabel }}<ng-container *ngIf="priceBreakdown"> · {{ priceBreakdown }}</ng-container></span>
+              <ol class="sp-rv-list">
+                <li *ngFor="let row of editScheduleRows">
+                  <span class="sp-rv-list__copy"><strong>{{ row.item.title }}</strong><small>{{ row.due }}</small></span>
+                  <span class="sp-rv-list__value">
+                    <strong [class.sp-rv-mark]="row.status === 'changed'" [class.sp-rv-mark--new]="row.status === 'new'">{{ row.item.percentage }}%</strong>
+                    <small *ngIf="row.status === 'same'">{{ formatPrice(row.amount) }}</small>
+                    <small *ngIf="row.status !== 'same'" class="sp-rv-flag" [class.sp-rv-flag--new]="row.status === 'new'">{{ row.status === 'new' ? (lang === 'ar' ? 'جديدة' : 'New') : (lang === 'ar' ? 'معدّلة' : 'Changed') }} · {{ formatPrice(row.amount) }}</small>
+                  </span>
+                </li>
+              </ol>
+            </article>
+          </div>
+
+          <!-- Technical proposal, attachments and suggested duration -->
+          <section class="sp-rv-block" *ngIf="editPatch.cover_letter !== undefined">
+            <h3>{{ lang === 'ar' ? 'نص العرض الفني' : 'Technical proposal text' }}</h3>
+            <div class="sp-rv-text">
+              <div class="sp-rv-text__side is-before"><span>{{ lang === 'ar' ? 'قبل' : 'Before' }}</span><p>{{ p.offer?.cover_letter || '—' }}</p></div>
+              <div class="sp-rv-text__side is-after"><span>{{ lang === 'ar' ? 'بعد' : 'After' }}</span><p>{{ editPatch.cover_letter }}</p></div>
+            </div>
+          </section>
+          <section class="sp-rv-block" *ngIf="editPatch.attachment_uuids">
+            <h3>{{ lang === 'ar' ? 'المرفقات' : 'Attachments' }}</h3>
+            <ul class="sp-rv-files">
+              <li *ngFor="let file of editRemovedAttachments" class="is-removed"><i class="ki-outline ki-minus-circle" aria-hidden="true"></i><s>{{ file.name || getProjectFileName(file) }}</s><small>{{ lang === 'ar' ? 'سيُحذف' : 'Removed' }}</small></li>
+              <li *ngFor="let file of selectedAttachments" class="is-added"><i class="ki-outline ki-plus-circle" aria-hidden="true"></i><span>{{ file.name }}</span><small>{{ lang === 'ar' ? 'جديد' : 'Added' }} · {{ formatFileSize(file) }}</small></li>
+              <li *ngFor="let row of existingAttachments" [hidden]="!row.kept" class="is-kept"><i class="ki-outline ki-document" aria-hidden="true"></i><span>{{ row.file.name || getProjectFileName(row.file) }}</span><small>{{ lang === 'ar' ? 'بدون تغيير' : 'Kept' }}</small></li>
+            </ul>
+            <p class="sp-rv-muted" *ngIf="!editPatch.attachment_uuids.length && !selectedAttachments.length">{{ lang === 'ar' ? 'حذف جميع المرفقات' : 'Remove all attachments' }}</p>
+          </section>
+          <section class="sp-rv-block" *ngIf="editDurationChanged">
+            <h3>{{ lang === 'ar' ? 'مدة المشروع المقترحة' : 'Suggested project duration' }}</h3>
+            <p class="sp-rv-duration">
+              <s>{{ editSavedSuggestion !== null ? editSavedSuggestion + (lang === 'ar' ? ' يوم' : ' days') : (lang === 'ar' ? 'مدة العميل' : 'Client’s duration') + ' (' + durationDays + (lang === 'ar' ? ' يوم' : ' days') + ')' }}</s>
+              <i class="ki-outline" [ngClass]="lang === 'ar' ? 'ki-arrow-left' : 'ki-arrow-right'" aria-hidden="true"></i>
+              <strong>{{ suggestedDurationDays !== null ? suggestedDurationDays + (lang === 'ar' ? ' يوم' : ' days') : (lang === 'ar' ? 'مدة العميل' : 'Client’s duration') + ' (' + durationDays + (lang === 'ar' ? ' يوم' : ' days') + ')' }}</strong>
+            </p>
+            <p class="sp-rv-muted">{{ lang === 'ar' ? 'تُطبَّق على المشروع فقط عند ترسية عرضك.' : 'Applies to the project only when the client awards your offer.' }}</p>
+          </section>
+
+          <!-- Scopes and deliverables after the edit -->
+          <section class="sp-rv-block" *ngFor="let group of editScopeChanges">
+            <h3>{{ lang === 'ar' ? 'النطاقات بعد التعديل' : 'Scopes after your changes' }}</h3>
+            <p class="sp-rv-muted" *ngIf="!group.items.length">{{ lang === 'ar' ? 'حذف جميع نطاقات الخدمة' : 'Remove all scopes for this service' }}</p>
+            <div class="sp-rv-items" *ngIf="group.items.length">
+              <div class="sp-rv-item" *ngFor="let item of group.items">
+                <strong>{{ item.scope }}</strong>
+                <p *ngIf="item.description">{{ item.description }}</p>
+                <ul class="sp-rv-item__tags" *ngIf="item.subscopes?.length"><li *ngFor="let child of item.subscopes">{{ child.scope }}</li></ul>
+              </div>
+            </div>
+          </section>
+          <section class="sp-rv-block" *ngFor="let group of editDeliverableChanges">
+            <h3>{{ lang === 'ar' ? 'المخرجات بعد التعديل' : 'Deliverables after your changes' }}</h3>
+            <p class="sp-rv-muted" *ngIf="!group.items.length">{{ lang === 'ar' ? 'حذف جميع مخرجات الخدمة' : 'Remove all deliverables for this service' }}</p>
+            <div class="sp-rv-items" *ngIf="group.items.length">
+              <div class="sp-rv-item" *ngFor="let item of group.items">
+                <strong>{{ item.title }}</strong>
+                <small>{{ periodLabel(item.period_days) }}<ng-container *ngIf="item.way?.selected"> · {{ wayLabel(item.way.selected) }}</ng-container><ng-container *ngIf="item.report_type?.length"> · {{ item.report_type.join(', ') }}</ng-container></small>
+              </div>
+            </div>
+          </section>
+
+          <!-- Note for the client -->
+          <div class="sp-rv-note">
+            <label for="sp-revision-note">{{ lang === 'ar' ? 'ملاحظة للعميل' : 'Note to the client' }} <span>{{ lang === 'ar' ? '(اختياري)' : '(optional)' }}</span></label>
+            <textarea id="sp-revision-note" class="sp-input sp-textarea" rows="3" maxlength="1000" [(ngModel)]="revisionNote" [placeholder]="lang === 'ar' ? 'وضّح سبب التغييرات…' : 'Tell the client why you made these changes…'"></textarea>
+          </div>
+        </div>
+      </section>
     </div>
+    </fieldset>
 
     <!-- Offer total + actions -->
     <footer class="sp-offer">
-      <div class="sp-offer__total">
+      <div class="sp-offer__total" *ngIf="showOfferTotal">
         <span class="sp-offer__label">{{ lang === 'ar' ? 'إجمالي العرض' : 'Offer total' }}</span>
         <span class="sp-offer__value">{{ formatPrice(totalPrice) }}</span>
         <span class="sp-offer__calc" *ngIf="priceBreakdown">{{ priceBreakdown }}</span>
       </div>
       <div class="sp-offer__actions">
-        <button type="button" class="btn btn-light" [disabled]="isSubmitting" (click)="goBack()">
+        <button type="button" class="btn btn-light" *ngIf="!previousTab" [disabled]="isSubmitting" (click)="goBack()">
           {{ lang === 'ar' ? 'إلغاء' : 'Cancel' }}
+        </button>
+        <button type="button" class="btn btn-light" *ngIf="previousTab" [disabled]="isSubmitting" (click)="goToPreviousTab()">
+          <i class="ki-outline fs-5" [ngClass]="lang === 'ar' ? 'ki-arrow-right' : 'ki-arrow-left'"></i>
+          {{ lang === 'ar' ? 'السابق' : 'Back' }}
         </button>
         <button type="button" class="btn btn-light-info" *ngIf="nextTab as next" (click)="goToNextTab()">
           {{ lang === 'ar' ? 'التالي:' : 'Next:' }} {{ lang === 'ar' ? next.label.ar : next.label.en }}
           <i class="ki-outline fs-5" [ngClass]="lang === 'ar' ? 'ki-arrow-left' : 'ki-arrow-right'"></i>
         </button>
-        <button type="button" class="btn btn-info" [disabled]="isSubmitting" (click)="submitProposal()">
+        <button type="button" class="btn btn-info" *ngIf="editMode ? (!editLocked && activeTab === 'review') : activeTab === 'summary'" [disabled]="isSubmitting || (editMode && (!editDirty || editStale))" (click)="submitProposal()">
           <i class="ki-outline ki-send fs-5" *ngIf="!isSubmitting"></i>
           {{ isSubmitting
-          ? (lang === 'ar' ? 'جارٍ الإرسال...' : 'Submitting...')
-          : (lang === 'ar' ? 'إرسال العرض' : 'Submit proposal') }}
+          ? (editMode ? (lang === 'ar' ? 'جارٍ الحفظ…' : 'Saving…') : (lang === 'ar' ? 'جارٍ الإرسال...' : 'Submitting...'))
+          : (editMode ? (lang === 'ar' ? 'حفظ التعديلات' : 'Save changes') : (lang === 'ar' ? 'إرسال العرض' : 'Submit proposal')) }}
         </button>
       </div>
     </footer>
     </div>
   </ng-container>
 </div>
+
+<ng-template #durationCallout>
+  <div class="sp-duration-callout" *ngIf="durationOverflowDays !== null" [class.is-invalid]="hasAttemptedTab('deliverables')" role="status">
+    <i class="ki-outline ki-time" aria-hidden="true"></i>
+    <div class="sp-duration-callout__copy">
+      <strong>{{ lang === 'ar' ? 'تمتد مخرجاتك حتى اليوم ' + durationOverflowDays : 'Your deliverables run to day ' + durationOverflowDays }}</strong>
+      <span>{{ suggestedDurationDays !== null
+        ? (lang === 'ar' ? 'وهذا بعد المدة التي اقترحتها (' + suggestedDurationDays + ' يومًا).' : 'That is past the ' + suggestedDurationDays + ' days you suggested.')
+        : (lang === 'ar' ? 'وهذا بعد نهاية المشروع (' + durationDays + ' يومًا).' : 'That is after the project ends on day ' + durationDays + '.') }}
+        {{ lang === 'ar' ? 'اقترح على العميل مدة ' + durationOverflowDays + ' يومًا ليوافق عليها عند ترسية عرضك.' : 'Suggest a project duration of ' + durationOverflowDays + ' days so the client can approve the extra time when they award your offer.' }}</span>
+    </div>
+    <button type="button" class="btn btn-sm btn-warning" (click)="suggestDurationForDeliverables()">{{ lang === 'ar' ? 'اقترح ' + durationOverflowDays + ' يومًا' : 'Suggest ' + durationOverflowDays + ' days' }}</button>
+  </div>
+  <div class="sp-duration-callout sp-duration-callout--info" *ngIf="durationOverflowDays === null && suggestedDurationDays !== null && !durationLocked" role="status">
+    <i class="ki-outline ki-information-2" aria-hidden="true"></i>
+    <div class="sp-duration-callout__copy">
+      <strong>{{ lang === 'ar' ? 'يقترح عرضك مدة ' + suggestedDurationDays + ' يومًا للمشروع' : 'Your offer suggests a project duration of ' + suggestedDurationDays + ' days' }}</strong>
+      <span>{{ lang === 'ar' ? 'مدة العميل ' + durationDays + ' يومًا، وتتغير فقط إذا رسّى عرضك.' : 'The client’s duration is ' + durationDays + ' days. It changes only if they award your offer.' }}</span>
+    </div>
+    <button type="button" class="sp-duration-callout__link" (click)="onTabClick('cover')">{{ lang === 'ar' ? 'تعديل' : 'Change' }}</button>
+  </div>
+</ng-template>
 
 <ng-template #typeIcon let-type>
   <!-- <span class="po-type__icon" [class.po-type__icon--adhoc]="type === 'ad_hoc'"

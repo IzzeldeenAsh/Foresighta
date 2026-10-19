@@ -1,4 +1,5 @@
-import { Component, Injector, OnDestroy, OnInit } from '@angular/core';
+import { AgreementRevisionsComponent } from '../../shared/agreement-revisions/agreement-revisions.component';
+import { ViewChild, Component, Injector, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { BehaviorSubject, forkJoin, Observable } from 'rxjs';
 import { finalize, map, shareReplay, switchMap, takeUntil, tap } from 'rxjs/operators';
@@ -38,9 +39,10 @@ import {
   isInstallmentStep,
   orderInstallmentIdFromStep,
 } from 'src/app/_fake/services/project-timeline/project-timeline.model';
-import { addDaysToDate, offerPricingSummary } from 'src/app/_fake/services/project-phase2/project-phase2.model';
+import { addDaysToDate, offerPaymentSummary, offerPricingSummary } from 'src/app/_fake/services/project-phase2/project-phase2.model';
+import { agreementIsLocked, editableComponents, editableScopes, offerDurationSuggestion, ownsAgreementGroup } from 'src/app/_fake/services/agreement-revisions/agreement-revisions.model';
 
-type ProjectDetailTab = 'overview' | 'documents' | 'reviews' | 'discussion';
+type ProjectDetailTab = 'revisions' | 'overview' | 'documents' | 'reviews' | 'discussion';
 type RematchWizardStep =
   | 'industry'
   | 'preferred-type'
@@ -158,6 +160,9 @@ function deliverableKey(id: number | string): string {
   styleUrl: './project-detail.component.scss'
 })
 export class ProjectDetailComponent extends BaseComponent implements OnInit, OnDestroy {
+  @ViewChild(AgreementRevisionsComponent) agreementWorkspace?: AgreementRevisionsComponent;
+  canDeactivate() { return this.agreementWorkspace?.canDeactivate() ?? true; }
+
   project: CreatedProject | null = null;
   timelineSteps: ProjectTimelineStep[] = [];
   /** Installment step the client chose to pay from the timeline. */
@@ -244,6 +249,10 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
   }
 
   ngOnInit(): void {
+    this.route.queryParamMap.pipe(takeUntil(this.unsubscribe$)).subscribe(params => {
+      const tab = params.get('tab');
+      if (['overview', 'documents', 'reviews', 'discussion', 'revisions'].includes(tab || '')) this.activeTab = tab as ProjectDetailTab;
+    });
     this.projectsCreatedService.isLoading$
       .pipe(takeUntil(this.unsubscribe$))
       .subscribe(loading => this.isLoading = loading);
@@ -296,6 +305,32 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
           this.lang === 'ar' ? 'تعذر بدء إعادة المطابقة.' : 'Failed to start rematch.'
         ),
       });
+  }
+
+  /**
+   * The client edits the agreement in the Next.js app (wizard-style summary + section pages).
+   * Shown only before the first signature, when an invitation exists and the client owns
+   * at least one editable requirement — the same rules as the agreement revisions editor.
+   */
+  /** Lowers a Revisions tab badge after a revision is marked seen. */
+  lowerCount(count?: number | null): number { return Math.max(0, (Number(count) || 0) - 1); }
+
+  get agreementEditUrl(): string | null {
+    const p = this.project;
+    const matches = (p?.invited ?? []).filter(match => !!match.agreement_match_uuid);
+    if (!p?.uuid || !matches.length) return null;
+    if (agreementIsLocked(p.contract, p.status) || (!!p.contract_uuid && !p.contract)) return null;
+    // The client may also extend the schedule (not for urgent requests) and, until an offer is awarded, the offer deadline.
+    const scheduleEditable = p.type !== 'urgent_request' && !!p.schedule?.planned_start_date && p.schedule?.duration_days != null;
+    const deadlineEditable = !!p.last_proposal_deadline && !p.offer?.uuid && p.status !== 'contracting' &&
+      !p.invited.some(match => match.offer?.status === 'awarded');
+    const editable = scheduleEditable || deadlineEditable || editableComponents(p, 'client', null).length > 0 || p.project_services.some(service =>
+      editableScopes(service, 'client', null) || ownsAgreementGroup(service.deliverables, 'client', null));
+    if (!editable) return null;
+    const awarded = matches.find(match => !!match.offer?.uuid && match.offer.uuid === p.offer?.uuid);
+    const matchUuid = awarded?.agreement_match_uuid || (matches.length === 1 ? matches[0].agreement_match_uuid : '');
+    const locale = this.lang === 'ar' ? 'ar' : 'en';
+    return `${environment.mainAppUrl}/${locale}/project/edit/${encodeURIComponent(p.uuid)}${matchUuid ? `?match=${encodeURIComponent(matchUuid)}` : ''}`;
   }
 
   get todayDateString(): string {
@@ -622,8 +657,31 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
     this.resetRematchState();
   }
 
+  onAgreementRefreshed(project: CreatedProject): void {
+    this.project = project;
+    this.loadTimeline(project.uuid);
+    this.loadSubmittedInsighters(project.uuid);
+  }
+
+  /** The Reviews tab only exists once the project has been awarded to an insighter. */
+  isProjectAwarded(project: CreatedProject | null = this.project): boolean {
+    if (!project) return false;
+    return !!project.offer?.uuid
+      || this.invitedInsighters.some(invite => invite.offer?.status === 'awarded')
+      || this.hasContractAction(project)
+      || this.isContractingStatus(project)
+      || this.isProjectWorkStatus(project);
+  }
+
+  /** Falls back to Overview when `?tab=reviews` points at a tab that is not available yet. */
+  get visibleActiveTab(): ProjectDetailTab {
+    return this.activeTab === 'reviews' && this.project && !this.isProjectAwarded() ? 'overview' : this.activeTab;
+  }
+
   setActiveTab(tab: ProjectDetailTab): void {
+    if (tab === 'reviews' && !this.isProjectAwarded()) tab = 'overview';
     this.activeTab = tab;
+    this.router.navigate([], { relativeTo: this.route, queryParams: { tab }, queryParamsHandling: 'merge', replaceUrl: true });
     if (tab === 'reviews' && this.project?.uuid) {
       this.loadProjectReviewSubmissions(this.project.uuid);
     }
@@ -712,6 +770,15 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
       return;
     }
 
+    void this.confirmAwardOffer(offerDurationSuggestion(invite?.offer, this.project?.schedule?.duration_days)).then(confirmed => {
+      if (!confirmed) return;
+      this.submitAwardOffer(invite, offerUuid);
+    });
+  }
+
+  private submitAwardOffer(invite: CreatedProjectProposalInvite | null, offerUuid: string): void {
+    if (this.offerActionUuid) return;
+
     this.offerActionUuid = offerUuid;
     this.offerActionKind = 'award';
 
@@ -724,8 +791,8 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
           this.showSuccess(
             this.lang === 'ar' ? 'تمت ترسية العرض' : 'Offer awarded',
             this.lang === 'ar'
-              ? 'تم اختيار العرض. يمكنك الآن مراجعة العقد.'
-              : 'The offer was awarded. You can now review the contract.'
+              ? 'تم اختيار العرض. يمكنك الآن مراجعة العقد، ولا يزال بإمكانك طلب تعديل قبل التوقيع.'
+              : 'The offer was awarded. You can now review the contract and still ask for a change before signing.'
           );
           this.closeProposalDrawer();
           if (this.project?.uuid) {
@@ -1397,6 +1464,32 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
           },
         });
     });
+  }
+
+  /** A suggested duration is applied by the award itself, so the confirmation says so before the client commits. */
+  private async confirmAwardOffer(suggestedDurationDays: number | null = null): Promise<boolean> {
+    const ar = this.lang === 'ar';
+    const durationNote = suggestedDurationDays === null ? '' : ar
+      ? ` يقترح هذا العرض مدة ${suggestedDurationDays} يومًا للمشروع، وترسيته ستجعل مدة المشروع ${suggestedDurationDays} يومًا.`
+      : ` This offer suggests a project duration of ${suggestedDurationDays} days. Awarding this offer will set the project duration to ${suggestedDurationDays} days.`;
+    const result = await Swal.fire({
+      title: ar ? 'تأكيد ترسية العرض' : 'Confirm award',
+      text: (ar
+        ? 'هل أنت متأكد من ترسية هذا العرض؟ لا يزال لديك فرصة لطلب تعديل على العقد قبل التوقيع.'
+        : 'Are you sure you want to award this offer? You still have a chance to ask for a change before signing the contract.') + durationNote,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: this.lang === 'ar' ? 'نعم، ترسية العرض' : 'Yes, award offer',
+      cancelButtonText: this.lang === 'ar' ? 'إلغاء' : 'Cancel',
+      reverseButtons: this.lang === 'ar',
+      buttonsStyling: false,
+      customClass: {
+        confirmButton: 'btn btn-info',
+        cancelButton: 'btn btn-light me-3',
+      },
+    });
+
+    return result.isConfirmed;
   }
 
   private async confirmCancelProject(): Promise<boolean> {
@@ -2366,6 +2459,10 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
 
   getPricingSummary(offer: CreatedProjectSubmittedOffer | null | undefined): string {
     return offer ? offerPricingSummary(offer, this.lang) : '-';
+  }
+
+  getOfferPaymentSummary(offer: CreatedProjectSubmittedOffer): string {
+    return offerPaymentSummary(offer, this.lang);
   }
 
   getFormattedValue(value: any): string {

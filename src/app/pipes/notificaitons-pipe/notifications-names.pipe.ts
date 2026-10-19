@@ -12,6 +12,7 @@ export class NotificationsNamesPipe implements PipeTransform {
 
   // 2. We change the data structure to hold both languages
   private readonly nameMap: Record<string, { en: string; ar: string }> = {
+    'project_agreement_revision': { en: 'Agreement Updated', ar: 'تم تحديث الاتفاق' },
     'activate_company': { en: 'Activate Company', ar: 'تفعيل الشركة' },
     'deactivate_company': { en: 'Deactivate Company', ar: 'إلغاء تفعيل الشركة' },
     'deactivate_company_with_delete': { en: 'Deactivate Company with Delete', ar: 'إلغاء تفعيل وحذف الشركة' },

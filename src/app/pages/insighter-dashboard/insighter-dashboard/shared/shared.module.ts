@@ -1,3 +1,5 @@
+import { AgreementRevisionsComponent } from './agreement-revisions/agreement-revisions.component';
+import { DialogModule } from 'primeng/dialog';
 import { OfferOverviewComponent } from './offer-overview.component';
 import { ContractPartyCardComponent } from './contract-party-card.component';
 import { DefinitionModeBadgeComponent } from './definition-mode-badge.component';
@@ -18,6 +20,7 @@ import { DashboardNavIconComponent } from 'src/app/reusable-components/dashboard
 
 @NgModule({
   declarations: [
+    AgreementRevisionsComponent,
     ContractPartyCardComponent,
     DefinitionModeBadgeComponent,
     OfferOverviewComponent,
@@ -32,12 +35,14 @@ import { DashboardNavIconComponent } from 'src/app/reusable-components/dashboard
     OfferInstallmentsComponent
   ],
   imports: [
+    DialogModule,
     CommonModule,
     FormsModule,
     TooltipModule,
     DashboardNavIconComponent
   ],
   exports: [
+    AgreementRevisionsComponent,
     ContractPartyCardComponent,
     DefinitionModeBadgeComponent,
     OfferOverviewComponent,

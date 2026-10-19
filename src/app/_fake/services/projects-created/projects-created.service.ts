@@ -175,6 +175,8 @@ export interface CreatedProject {
   budget_min: number | null;
   budget_max: number | null;
   last_proposal_deadline?: string | null;
+  /** Agreement revisions the client has not opened yet. */
+  unseen_agreement_revisions_count?: number;
   created_at?: string | null;
   schedule: ProjectScheduleFields;
   /** Project-level and service-level components merged (deliverables excluded). */
@@ -233,6 +235,8 @@ export interface CreatedProjectSubmittedOffer {
   estimated_hours: string | number | null;
   daily_rate: string | number | null;
   estimated_days: string | number | null;
+  /** Longer project duration the insighter proposes; awarding this offer applies it to the project. */
+  suggested_duration_days?: number | null;
   fixed_price: string | number | null;
   cover_letter: string | null;
   status: string | null;
@@ -241,6 +245,7 @@ export interface CreatedProjectSubmittedOffer {
 }
 
 export interface CreatedProjectProposalInvite {
+  agreement_match_uuid?: string;
   uuid: string;
   action_status: string | null;
   submission_status: string | null;
@@ -790,6 +795,7 @@ export class ProjectsCreatedService {
       budget_min: p?.budget_min ?? null,
       budget_max: p?.budget_max ?? null,
       last_proposal_deadline: p?.last_proposal_deadline ?? null,
+      unseen_agreement_revisions_count: Number(p?.unseen_agreement_revisions_count) || 0,
       created_at: p?.created_at ?? null,
       schedule: mapProjectSchedule(p),
       components: this.sanitizeBlocks(mergeComponents(p?.components, projectServices)),
@@ -831,6 +837,7 @@ export class ProjectsCreatedService {
       estimated_hours: offer?.estimated_hours ?? null,
       daily_rate: offer?.daily_rate ?? null,
       estimated_days: offer?.estimated_days ?? null,
+      suggested_duration_days: offer?.suggested_duration_days == null ? null : Number(offer.suggested_duration_days),
       fixed_price: offer?.fixed_price ?? null,
       cover_letter: offer?.cover_letter ?? null,
       status: offer?.status ?? null,
@@ -893,6 +900,7 @@ export class ProjectsCreatedService {
     return invited
       .map((item: any) => ({
         uuid: this.stringifyValue(item?.uuid ?? item?.id ?? item?.insighter?.uuid),
+        agreement_match_uuid: this.stringifyValue(item?.uuid ?? item?.match_uuid),
         action_status: item?.action_status ?? item?.status ?? null,
         submission_status: item?.submission_status ?? null,
         deadline_offer: item?.deadline_offer ?? null,

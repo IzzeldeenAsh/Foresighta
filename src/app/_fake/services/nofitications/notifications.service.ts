@@ -7,6 +7,13 @@ import { TranslationService } from 'src/app/modules/i18n';
 
 import { environment } from '../../../../environments/environment';
 export interface Notification {
+  revision_id?: number;
+  revision_number?: number;
+  /** Agreement revision notifications: who receives it and who made the change. */
+  recipient_role?: 'client' | 'insighter';
+  project_title?: string;
+  changed_by?: { name?: string; role?: string; profile_photo_url?: string | null };
+  changed_target_types?: string[];
   id: string;
   message: string;
   type: string;

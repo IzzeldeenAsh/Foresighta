@@ -9,11 +9,13 @@ interface RequirementRow { key: string; scope?: MissingScopeRequirement; compone
 /** A catalog scope from `common/setting/service/scope/{service}`; children are its sub-scopes. */
 interface ScopeOption { id: number; name: string; description?: string | null; children: ScopeOption[]; }
 /** A picked scope (catalog `c{id}` or custom `m{n}`) and the sub-scopes picked under it, like the client stepper. */
-interface ScopePick { key: string; name: string; description?: string | null; children: ScopeOption[]; childIds: number[]; customChildren: string[]; }
+interface ScopePick { id?: number; savedChildren?: any[]; key: string; name: string; description?: string | null; children: ScopeOption[]; childIds: number[]; customChildren: string[]; }
 interface ServiceScopeState { catalogId: number | null; options: ScopeOption[]; loading: boolean; error: boolean; picks: ScopePick[]; customCount: number; }
 
 // Deliverable card options, matching the client wizard's deliverables step (Next.js DeliverablesPlanQuestion).
 const MAX_DELIVERABLES = 10;
+/** Upper bound for a due day when deliverables may run past the project end (about ten years). */
+const MAX_DUE_DAY = 3650;
 const REPORT_TYPES = [
   { value: 'pdf', en: 'PDF Report', ar: 'ملف PDF', icon: 'https://res.cloudinary.com/dsiku9ipv/image/upload/v1781525110/pdf_136522_urotaw.png' },
   { value: 'docx', en: 'Word Document', ar: 'مستند Word', icon: 'https://res.cloudinary.com/dsiku9ipv/image/upload/v1781104177/Microsoft_Office_Word__2025_present_1_sywxfd.png' },
@@ -36,10 +38,20 @@ export class OfferRequirementsEditorComponent implements OnChanges {
   @Input() services: ProjectServiceDetails[] = [];
   @Input() lang = 'en';
   @Input() attempted = false;
+  @Input() initialDraft?: OfferRequirementDraft;
+  @Input() revisionMode = false;
+  @Input() readOnly = false;
+  @Input() showHeading = true;
+  get controlPrefix(): string { return this.section + (this.readOnly ? '-readonly' : ''); }
+  @Input() linkedDeliverableIds = new Set<number>();
+  @Input() linkedOfferDeliverableIds = new Set<number>();
+  @Input() offerDeliverableServiceIds = new Set<number>();
   @Input() section: 'scope' | 'deliverables' = 'scope';
   /** Project schedule, so deliverable due days show real dates and stay inside the duration. */
   @Input() plannedStartDate: string | null = null;
   @Input() durationDays: number | null = null;
+  /** Let due days run past `durationDays`; the offer then suggests a longer project duration. */
+  @Input() allowPastEnd = false;
   @Output() draftChange = new EventEmitter<OfferRequirementDraft>();
   @Output() validityChange = new EventEmitter<boolean>();
   missing: MissingOfferRequirements = mapMissingOfferRequirements(null);
@@ -62,7 +74,11 @@ export class OfferRequirementsEditorComponent implements OnChanges {
   get ar(): boolean { return this.lang === 'ar'; }
   get componentRequirements(): MissingComponentRequirement[] { return [...this.missing.project_components, ...this.missing.service_components]; }
   get hasRequirements(): boolean { return !!(this.missing.scopes.length || this.componentRequirements.length); }
-  get complete(): boolean { return offerRequirementsAreComplete(this.missing, this.draft); }
+  get complete(): boolean {
+    if (this.readOnly) return true;
+    if (!this.revisionMode) return offerRequirementsAreComplete(this.missing, this.draft);
+    return this.rows.every(row => this.isDone(row));
+  }
   ngOnChanges(changes: any): void {
     // On failed navigation or submission, open the first incomplete row.
     if (changes.attempted && this.attempted) {
@@ -85,8 +101,15 @@ export class OfferRequirementsEditorComponent implements OnChanges {
     this.missing.scopes.forEach(req => {
       const catalogId = this.services.find(s => s.id === req.project_service_id)?.service?.id ?? req.service?.id ?? null;
       this.scopeState[req.project_service_id] = { catalogId, options: [], loading: false, error: false, picks: [], customCount: 0 };
-      this.loadScopeCatalog(req.project_service_id);
+      if (!this.readOnly) this.loadScopeCatalog(req.project_service_id);
     });
+    if (this.initialDraft) {
+      this.draft = JSON.parse(JSON.stringify(this.initialDraft));
+      this.missing.scopes.forEach(req => {
+        const state = this.scopeState[req.project_service_id];
+        state.picks = this.scopesFor(req.project_service_id).map(scope => ({ key: `m${++state.customCount}`, id: scope.id, name: scope.scope, description: scope.description, children: [], childIds: [], savedChildren: scope.subscopes ?? scope.children ?? [], customChildren: (scope.subscopes ?? scope.children ?? []).map(child => child.scope) }));
+      });
+    }
     if (this.componentRequirements.some(req => req.component.slug === 'target-market')) this.loadMarkets('country');
     // Notify the parent after Angular has finished checking input changes.
     Promise.resolve().then(() => this.emit());
@@ -99,16 +122,30 @@ export class OfferRequirementsEditorComponent implements OnChanges {
     const position = this.services.find(s => s.id === id)?.position || this.missing.scopes.findIndex(s => s.project_service_id === id) + 1;
     return `${this.ar ? 'الخدمة' : 'Service'} ${position}`;
   }
-  rowName(row: RequirementRow): string { return row.scope ? this.serviceTitle(row.scope.project_service_id) : row.component!.component.name; }
+  rowName(row: RequirementRow): string {
+    const id = row.scope ? row.scope.project_service_id : row.component!.project_service_id;
+    return id === null ? row.component!.component.name : this.serviceTitle(id);
+  }
   rowContext(row: RequirementRow): string {
     if (row.scope) return `${this.serviceLabel(row.scope.project_service_id)} · ${this.ar ? 'نطاق الخدمة' : 'Service scope'}`;
     const id = row.component!.project_service_id;
-    return id === null ? (this.ar ? 'متطلب على مستوى المشروع' : 'Project requirement') : `${this.serviceLabel(id)} · ${this.serviceTitle(id)}`;
+    return id === null ? (this.ar ? 'متطلب على مستوى المشروع' : 'Project requirement') : `${this.serviceLabel(id)} · ${row.component!.component.name}`;
   }
   isDone(row: RequirementRow): boolean {
-    if (row.component) return requirementValueIsFilled(this.componentDraft(row.component)?.value);
-    return this.scopesFor(row.scope!.project_service_id).length > 0;
+    if (this.readOnly) return true;
+    if (row.component) {
+      const value = this.componentDraft(row.component)?.value;
+      if (this.revisionMode && row.component.component.slug === 'deliverable-stage') {
+        return Array.isArray(value?.deliverables) && value.deliverables.every((deliverable: any) => this.deliverableValidationErrors(deliverable).length === 0);
+      }
+      return requirementValueIsFilled(value);
+    }
+    const scopes = this.scopesFor(row.scope!.project_service_id);
+    if (this.revisionMode) return scopes.every(scope => !!scope.scope?.trim() && scope.scope.length <= 255 && (scope.description?.length ?? 0) <= 2500 &&
+      (scope.subscopes ?? []).every(child => !!child.scope?.trim() && (child.description?.length ?? 0) <= 2500));
+    return offerRequirementsAreComplete({ scopes: [row.scope!], project_components: [], service_components: [] }, { offer_scopes: scopes, offer_components: [] });
   }
+
   get doneCount(): number { return this.rows.filter(row => this.isDone(row)).length; }
   isOpen(row: RequirementRow): boolean { return this.openRows.has(row.key); }
   /** Accordion: opening a row collapses the others so the insighter focuses on one service at a time. */
@@ -165,6 +202,7 @@ export class OfferRequirementsEditorComponent implements OnChanges {
   }
   pick(serviceId: number, key: string): ScopePick | undefined { return this.scopeState[serviceId]?.picks.find(p => p.key === key); }
   isPicked(serviceId: number, option: ScopeOption): boolean { return !!this.pick(serviceId, `c${option.id}`); }
+  trackChildIndex(index: number): number { return index; }
   customPicks(serviceId: number): ScopePick[] { return (this.scopeState[serviceId]?.picks ?? []).filter(p => p.key.startsWith('m')); }
   /** Picked scopes in display order: catalog order first, then custom scopes in the order added. */
   orderedPicks(serviceId: number): ScopePick[] {
@@ -173,9 +211,14 @@ export class OfferRequirementsEditorComponent implements OnChanges {
     const catalog = state.options.map(o => this.pick(serviceId, `c${o.id}`)).filter((p): p is ScopePick => !!p);
     return [...catalog, ...this.customPicks(serviceId)];
   }
+  availableScopeOptions(serviceId: number): ScopeOption[] {
+    const custom = this.customPicks(serviceId).map(pick => pick.name.trim().toLowerCase());
+    return (this.scopeState[serviceId]?.options ?? []).filter(option => !custom.includes(option.name.trim().toLowerCase()));
+  }
   allScopesPicked(serviceId: number): boolean {
     const state = this.scopeState[serviceId];
-    return !!state?.options.length && state.options.every(o => this.isPicked(serviceId, o));
+    const options = this.availableScopeOptions(serviceId);
+    return !!options.length && options.every(o => this.isPicked(serviceId, o));
   }
   toggleScope(serviceId: number, option: ScopeOption): void {
     const state = this.scopeState[serviceId];
@@ -188,7 +231,7 @@ export class OfferRequirementsEditorComponent implements OnChanges {
   toggleAllScopes(serviceId: number): void {
     const state = this.scopeState[serviceId];
     if (this.allScopesPicked(serviceId)) state.picks = this.customPicks(serviceId);
-    else state.options.filter(o => !this.isPicked(serviceId, o)).forEach(o => state.picks.push({ key: `c${o.id}`, name: o.name, description: o.description, children: o.children, childIds: [], customChildren: [] }));
+    else this.availableScopeOptions(serviceId).filter(o => !this.isPicked(serviceId, o)).forEach(o => state.picks.push({ key: `c${o.id}`, name: o.name, description: o.description, children: o.children, childIds: [], customChildren: [] }));
     this.syncScopes();
   }
   isPendingScope(serviceId: number): boolean { return typeof this.pendingScope[serviceId] === 'string'; }
@@ -231,25 +274,35 @@ export class OfferRequirementsEditorComponent implements OnChanges {
     pick.customChildren = [...pick.customChildren, name];
     this.syncScopes();
   }
+  renameCustomChild(pick: ScopePick, index: number, value: string): void {
+    const saved = pick.savedChildren?.find(child => child.scope === pick.customChildren[index]);
+    if (saved) saved.scope = value;
+    pick.customChildren[index] = value;
+    this.syncScopes();
+  }
   removeCustomChild(pick: ScopePick, index: number): void {
     pick.customChildren = pick.customChildren.filter((_, i) => i !== index);
     this.syncScopes();
   }
   /** Rebuild the offer_scopes payload from the picks; the API stores scope names, not catalog ids. */
-  private syncScopes(): void {
+  syncScopes(): void {
     this.draft.offer_scopes = flatMapList(this.missing.scopes, req => this.orderedPicks(req.project_service_id).map(pick => ({
+      ...(pick.id ? { id: pick.id } : {}),
       project_service_id: req.project_service_id,
       scope: pick.name,
-      description: pick.description || '',
+      description: this.revisionMode ? pick.description ?? null : pick.description || '',
       subscopes: [
         ...pick.children.filter(c => pick.childIds.includes(c.id)).map(c => ({ scope: c.name, description: c.description || '' })),
-        ...pick.customChildren.map(name => ({ scope: name, description: '' })),
+        ...pick.customChildren.map(name => ({ ...pick.savedChildren?.find(child => child.scope === name), scope: name, description: this.revisionMode ? pick.savedChildren?.find(child => child.scope === name)?.description ?? null : pick.savedChildren?.find(child => child.scope === name)?.description || '' })),
       ],
     })));
     this.emit();
   }
   // ---- Deliverables (same card as the client wizard's deliverables step) ----
-  get maxDay(): number { return this.durationDays ?? Number.MAX_SAFE_INTEGER; }
+  get maxDay(): number { return this.allowPastEnd ? MAX_DUE_DAY : this.durationDays ?? Number.MAX_SAFE_INTEGER; }
+  isPastEnd(days: number | null | undefined): boolean {
+    return this.allowPastEnd && this.durationDays !== null && days !== null && days !== undefined && Number(days) > this.durationDays;
+  }
   /** Due day, formats and delivery method start unset; the insighter picks each one. */
   newDeliverable(): any { return { key: `frontend-deliverable-${crypto.randomUUID()}`, title: '', period_days: null, report_type: [], way: { selected: null, address: '' } }; }
   addDeliverable(req: MissingComponentRequirement): void {
@@ -259,7 +312,10 @@ export class OfferRequirementsEditorComponent implements OnChanges {
     this.focusSoon(`${this.section}-deliverable-title-${this.rows.findIndex(row => row.component === req)}-${list.length - 1}`);
     this.emit();
   }
-  removeDeliverable(req: MissingComponentRequirement, index: number): void { this.componentDraft(req).value.deliverables.splice(index, 1); this.openMenu = null; this.emit(); }
+  isDeliverableLinked(req: MissingComponentRequirement, deliverable: any): boolean {
+    return (this.offerDeliverableServiceIds.has(req.project_service_id!) ? this.linkedOfferDeliverableIds : this.linkedDeliverableIds).has(deliverable?.id);
+  }
+  removeDeliverable(req: MissingComponentRequirement, index: number): void { if (this.isDeliverableLinked(req, this.componentDraft(req).value.deliverables[index])) return; this.componentDraft(req).value.deliverables.splice(index, 1); this.openMenu = null; this.emit(); }
   toggleFormat(deliverable: any, format: string): void { deliverable.report_type = deliverable.report_type.includes(format) ? deliverable.report_type.filter((f: string) => f !== format) : [...deliverable.report_type, format]; this.emit(); }
   setWay(deliverable: any, selected: string): void {
     deliverable.way = { selected, address: selected === 'physical_workshop' ? deliverable.way.address || '' : '' };
@@ -271,7 +327,7 @@ export class OfferRequirementsEditorComponent implements OnChanges {
     this.emit();
   }
   get quickDays(): number[] {
-    const presets = [7, 14, 30, 60].filter(day => day < this.maxDay);
+    const presets = [7, 14, 30, 60].filter(day => day < (this.durationDays ?? this.maxDay));
     return this.durationDays !== null ? [...presets, this.durationDays] : presets;
   }
   quickDayLabel(day: number): string {
@@ -299,14 +355,19 @@ export class OfferRequirementsEditorComponent implements OnChanges {
   formatIcons(types: string[]): string[] { return types.map(t => REPORT_TYPES.find(type => type.value === t)?.icon).filter((src): src is string => !!src).slice(0, 3); }
   wayOption(value: string | null) { return DELIVERY_WAYS.find(way => way.value === value); }
   deliverableErrors(deliverable: any): string[] {
-    if (!this.attempted) return [];
+    return this.attempted && !this.readOnly ? this.deliverableValidationErrors(deliverable) : [];
+  }
+  private deliverableValidationErrors(deliverable: any): string[] {
     const errors: string[] = [];
     if (!deliverable.title?.trim()) errors.push(this.ar ? 'أدخل اسم المخرج.' : 'Enter a name for this deliverable.');
-    if (deliverable.period_days === null || deliverable.period_days === '') errors.push(this.ar ? 'اختر موعد التسليم.' : 'Choose when it’s due.');
-    if (!deliverable.way.selected) errors.push(this.ar ? 'اختر طريقة التسليم.' : 'Choose how it’s delivered.');
-    if (deliverable.way.selected === 'physical_workshop' && !deliverable.way.address?.trim()) errors.push(this.ar ? 'أدخل عنوان الورشة.' : 'Enter the workshop address.');
+    const days = deliverable.period_days;
+    if (days === null || days === undefined || days === '') errors.push(this.ar ? 'اختر موعد التسليم.' : 'Choose when it’s due.');
+    else if (!Number.isInteger(Number(days)) || Number(days) < 0) errors.push(this.ar ? 'أدخل عدد أيام صحيحًا يساوي صفرًا أو أكثر.' : 'Enter a whole number of days, zero or greater.');
+    if (!['on_platform', 'session', 'physical_workshop'].includes(deliverable.way?.selected)) errors.push(this.ar ? 'اختر طريقة التسليم.' : 'Choose how it’s delivered.');
+    if (deliverable.way?.selected === 'physical_workshop' && !deliverable.way.address?.trim()) errors.push(this.ar ? 'أدخل عنوان الورشة.' : 'Enter the workshop address.');
     return errors;
   }
+
   isMenuOpen(key: string): boolean { return this.openMenu === key; }
   toggleMenu(key: string, event: Event): void { event.stopPropagation(); this.openMenu = this.openMenu === key ? null : key; }
   @HostListener('document:click')

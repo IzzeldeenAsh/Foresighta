@@ -439,10 +439,12 @@
               (click)="setDrawerTab(tab.value, offer)">
               <i class="ki-outline po-drawer-tab__icon" [ngClass]="tab.iconClass" aria-hidden="true"></i>
               <span>{{ lang === 'ar' ? tab.labelAr : tab.labelEn }}</span>
+              <span class="po-tab-badge" *ngIf="tab.value === 'revisions' && offer.offer?.uuid && (offer.unseen_agreement_revisions_count || 0) > 0" [attr.aria-label]="lang === 'ar' ? 'مراجعات غير مقروءة' : 'Unseen revisions'">{{ offer.unseen_agreement_revisions_count }}</span>
             </button>
           </div>
 
           <ng-container [ngSwitch]="activeDrawerTab">
+            <app-agreement-revisions *ngSwitchCase="'revisions'" [record]="offer" role="insighter" [lang]="lang" [proposalContext]="true" [showEditAction]="false" (revisionSeen)="offer.unseen_agreement_revisions_count = lowerCount(offer.unseen_agreement_revisions_count)" (refreshed)="selectedOffer = $event"></app-agreement-revisions>
             <div *ngSwitchCase="'overview'" class="po-tab-panel">
           <section class="po-section" *ngIf="offer.project.service_prompt || offer.project.description">
             <p class="po-section__text" *ngIf="offer.project.service_prompt">{{ offer.project.service_prompt }}</p>
@@ -930,10 +932,14 @@
             <ng-container *ngSwitchCase="'offer'">
               <app-offer-overview *ngIf="offer.offer as submittedOffer"
                 [offer]="submittedOffer" [services]="offer.project.project_services" [lang]="lang"
+                [projectDurationDays]="offer.project.schedule.duration_days ?? null"
                 [baseDate]="offer.project.schedule.started_at || offer.project.schedule.planned_start_date"
                 [statusLabel]="getOfferStatusLabel(submittedOffer.status)"
                 [statusClass]="getOfferStatusBadgeClass(submittedOffer.status)"
-                [pricingSummary]="getPricingSummary(submittedOffer)">
+                [pricingSummary]="getOfferPaymentSummary(submittedOffer)">
+                <button offerActions type="button" class="btn btn-sm btn-info" *ngIf="canEditOffer(offer)" (click)="onEditOffer(offer)">
+                  <i class="ki-outline ki-pencil fs-5"></i>{{ lang === 'ar' ? 'تعديل العرض' : 'Edit offer' }}
+                </button>
                 <div class="po-document-group mt-4" *ngIf="getOfferFiles(offer).length">
                   <div class="po-document-group__head">
                     <span class="po-document-group__icon po-document-group__icon--offer"><i class="ki-outline ki-paper-clip fs-5"></i></span>

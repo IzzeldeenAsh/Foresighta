@@ -1,9 +1,15 @@
+import Swal from 'sweetalert2';
+import { forkJoin, from, Observable } from 'rxjs';
+import { ProfileService } from 'src/app/_fake/services/get-profile/get-profile.service';
+import { AgreementRevisionsService } from 'src/app/_fake/services/agreement-revisions/agreement-revisions.service';
+import { agreementIsLocked, agreementPaymentStarted, commercialDraft, CommercialDraft, COVER_LETTER_MAX_LENGTH, emptyAgreementGroups, linkedDeliverableIds, OFFER_FILE_EXTENSIONS, offerDurationSuggestion, offerFileError } from 'src/app/_fake/services/agreement-revisions/agreement-revisions.model';
+import { offerEditRequirements, offerEditPatch, offerEditFingerprint, editableOfferScopes, editableOfferDeliverables, OfferTermsDraft } from 'src/app/_fake/services/agreement-revisions/offer-edit.model';
 import { MissingOfferRequirements, OfferRequirementDraft, appendRequirementFormData, mapMissingOfferRequirements, offerRequirementsAreComplete } from 'src/app/_fake/services/project-phase2/project-requirements.model';
-import { Component, Injector, OnDestroy, OnInit, QueryList, ViewChildren } from '@angular/core';
+import { Component, HostListener, Injector, OnDestroy, OnInit, QueryList, ViewChildren } from '@angular/core';
 import { CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
 import { NgModel } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { takeUntil } from 'rxjs/operators';
+import { takeUntil, map } from 'rxjs/operators';
 import { BaseComponent } from 'src/app/modules/base.component';
 import { OfferRequirementsEditorComponent } from '../../shared/offer-requirements-editor.component';
 import {
@@ -46,7 +52,7 @@ interface PaymentDeliverable {
   date: string | null;
 }
 
-export type ProposalTab = 'cover' | 'scope' | 'deliverables' | 'pricing' | 'payment';
+export type ProposalTab = 'cover' | 'scope' | 'deliverables' | 'pricing' | 'payment' | 'summary' | 'review';
 
 interface ProposalTabItem {
   key: ProposalTab;
@@ -55,11 +61,13 @@ interface ProposalTabItem {
 }
 
 const PROPOSAL_TABS: ProposalTabItem[] = [
-  { key: 'cover', label: { en: 'Cover letter', ar: 'الرسالة التعريفية' }, icon: 'ki-document' },
+  { key: 'cover', label: { en: 'Technical proposal', ar: 'العرض الفني' }, icon: 'ki-document' },
   { key: 'scope', label: { en: 'Scope of work', ar: 'نطاق العمل' }, icon: 'ki-questionnaire-tablet' },
   { key: 'deliverables', label: { en: 'Deliverables', ar: 'المخرجات' }, icon: 'ki-cube-2' },
   { key: 'pricing', label: { en: 'Pricing', ar: 'التسعير' }, icon: 'ki-price-tag' },
   { key: 'payment', label: { en: 'Payment schedule', ar: 'جدول الدفعات' }, icon: 'ki-calendar' },
+  { key: 'summary', label: { en: 'Financial summary', ar: 'الملخص المالي' }, icon: 'ki-wallet' },
+  { key: 'review', label: { en: 'Review changes', ar: 'مراجعة التغييرات' }, icon: 'ki-check-circle' },
 ];
 
 @Component({
@@ -79,7 +87,7 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
 
   /** Stable input references keep both editors' answers intact across tab changes. */
   private get splitRequirements() {
-    const source = this.proposal?.missing_offer_requirements;
+    const source = this.editMode ? this.editRequirements : this.proposal?.missing_offer_requirements;
     if (source !== this.requirementSource) {
       this.requirementSource = source;
       const missing = mapMissingOfferRequirements(source);
@@ -107,8 +115,10 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
       offer_components: [...this.scopeDraft.offer_components, ...this.deliverablesDraft.offer_components],
     };
   }
-  get scopeRequirementsValid(): boolean { return offerRequirementsAreComplete(this.scopeRequirements, this.scopeDraft); }
-  get deliverablesRequirementsValid(): boolean { return offerRequirementsAreComplete(this.deliverablesRequirements, this.deliverablesDraft); }
+  /** Advanced projects carry the client's own scopes and deliverables, so editing the offer skips them. */
+  get editHidesRequirements(): boolean { return this.editMode && this.proposal?.project?.definition_mode !== 'simple'; }
+  get scopeRequirementsValid(): boolean { if (this.editHidesRequirements) return true; if (this.editMode) return this.editSectionValid('scope'); return offerRequirementsAreComplete(this.scopeRequirements, this.scopeDraft); }
+  get deliverablesRequirementsValid(): boolean { if (this.editHidesRequirements) return true; if (this.editMode) return this.editSectionValid('deliverables'); return offerRequirementsAreComplete(this.deliverablesRequirements, this.deliverablesDraft); }
   get requirementsValid(): boolean { return this.scopeRequirementsValid && this.deliverablesRequirementsValid; }
   hasAttemptedTab(tab: ProposalTab): boolean { return this.submitAttempted || this.attemptedTabs.has(tab); }
 
@@ -129,7 +139,17 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
   estimatedDays: number | null = null;
   fixedPrice: number | null = null;
   coverLetter: string = '';
+  readonly coverLetterMaxLength = COVER_LETTER_MAX_LENGTH;
+  readonly attachmentAccept = OFFER_FILE_EXTENSIONS.map(extension => `.${extension}`).join(',');
+  /** New files to upload with the offer. */
   selectedAttachments: File[] = [];
+  /** Edit mode: existing offer files the insighter keeps. */
+  retainedAttachmentUuids: string[] = [];
+  attachmentErrors: string[] = [];
+  /** A longer project duration the insighter proposes (null keeps the client's duration). */
+  suggestedDurationDays: number | null = null;
+  /** The duration field is open; it stays open while the insighter clears it to retype. */
+  durationSuggestOpen = false;
   paymentPlan: ProjectPaymentPlan = 'partial';
   installments: InstallmentDraft[] = [];
   /** Set once the insighter edits the plan, so project data no longer reseeds it. */
@@ -145,7 +165,20 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
     const scope = this.scopeRequirements, deliverables = this.deliverablesRequirements;
     const hasScope = !!(scope.scopes.length || scope.project_components.length || scope.service_components.length);
     const hasDeliverables = !!(deliverables.project_components.length || deliverables.service_components.length);
-    return PROPOSAL_TABS.filter(tab => (tab.key !== 'scope' || hasScope) && (tab.key !== 'deliverables' || hasDeliverables));
+    if (this.editMode) {
+      const offer = this.proposal?.offer, hidden = this.editHidesRequirements;
+      return PROPOSAL_TABS.filter(tab => ({
+        cover: true,
+        scope: !hidden && (hasScope || this.readOnlyScopes.length > 0),
+        deliverables: !hidden && (hasDeliverables || this.readOnlyDeliverables.length > 0),
+        pricing: !!offer && ['fixed_price', 'hourly_rate', 'daily_rate', 'proposed_price'].some(key => (offer as any)[key] != null),
+        payment: !!offer?.installments?.length || !!offer?.payment_plan,
+        summary: false,
+        review: !this.editLocked,
+      }[tab.key]));
+    }
+    return PROPOSAL_TABS.filter(tab => (tab.key !== 'scope' || hasScope) && (tab.key !== 'deliverables' || hasDeliverables) && tab.key !== 'review');
+
   }
 
   get nextTab(): ProposalTabItem | null {
@@ -153,7 +186,29 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
     return tabs[tabs.findIndex(tab => tab.key === this.activeTab) + 1] ?? null;
   }
 
-  selectTab(tab: ProposalTab, focus = false): boolean {
+  get previousTab(): ProposalTabItem | null {
+    const tabs = this.tabs;
+    return tabs[tabs.findIndex(tab => tab.key === this.activeTab) - 1] ?? null;
+  }
+
+  get activeStepIndex(): number {
+    return this.tabs.findIndex(tab => tab.key === this.activeTab);
+  }
+
+  /** Steps before the current one read as done; the stepper only marks progress, validation still runs on navigation. */
+  stepState(index: number): 'done' | 'active' | 'upcoming' {
+    const active = this.activeStepIndex;
+    return index < active ? 'done' : index === active ? 'active' : 'upcoming';
+  }
+
+  /** Creating an offer: the total stays hidden until the insighter reaches pricing and enters a price. */
+  get showOfferTotal(): boolean {
+    if (this.editMode) return true;
+    const pricingIndex = this.tabs.findIndex(tab => tab.key === 'pricing');
+    return this.totalPrice > 0 && pricingIndex >= 0 && this.activeStepIndex >= pricingIndex;
+  }
+
+  selectTab(tab: ProposalTab): boolean {
     const keys = this.tabs.map(item => item.key);
     const targetIndex = keys.indexOf(tab);
     if (targetIndex < 0) return false;
@@ -167,37 +222,11 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
       }
     }
     this.activeTab = tab;
-    setTimeout(() => {
-      if (focus) document.getElementById(`sp-tab-${tab}`)?.focus();
-      this.revealActiveTab();
-    }, 0);
     return true;
   }
 
-  /** On narrow screens the tab strip scrolls; keep the active tab centred in it. */
-  private revealActiveTab(): void {
-    const tabEl = document.getElementById(`sp-tab-${this.activeTab}`);
-    const strip = tabEl?.parentElement;
-    if (!tabEl || !strip || strip.scrollWidth <= strip.clientWidth) return;
-    const tabRect = tabEl.getBoundingClientRect();
-    const stripRect = strip.getBoundingClientRect();
-    const delta = (tabRect.left + tabRect.width / 2) - (stripRect.left + stripRect.width / 2);
-    strip.scrollBy({ left: delta, behavior: 'smooth' });
-  }
-
-  onTabKeydown(event: KeyboardEvent): void {
-    const keys = this.tabs.map(tab => tab.key);
-    const index = keys.indexOf(this.activeTab);
-    const forward = this.lang === 'ar' ? 'ArrowLeft' : 'ArrowRight';
-    const backward = this.lang === 'ar' ? 'ArrowRight' : 'ArrowLeft';
-    let next = -1;
-    if (event.key === forward) next = (index + 1) % keys.length;
-    else if (event.key === backward) next = (index - 1 + keys.length) % keys.length;
-    else if (event.key === 'Home') next = 0;
-    else if (event.key === 'End') next = keys.length - 1;
-    if (next < 0) return;
-    event.preventDefault();
-    this.selectTab(keys[next], true);
+  onTabClick(tab: ProposalTab): void {
+    if (this.selectTab(tab)) window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   goToNextTab(): void {
@@ -206,13 +235,20 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
     if (this.selectTab(next.key)) window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
+  goToPreviousTab(): void {
+    const previous = this.previousTab;
+    if (previous && this.selectTab(previous.key)) window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
   private isTabInvalid(tab: ProposalTab): boolean {
     const invalid: Record<ProposalTab, boolean> = {
-      cover: this.isCoverLetterInvalid(),
+      cover: !(this.editMode && this.editLocked) && (this.isCoverLetterInvalid() || !!this.suggestedDurationError || this.attachmentErrors.length > 0),
       scope: !this.scopeRequirementsValid,
-      deliverables: !this.deliverablesRequirementsValid,
-      pricing: this.isPricingInvalid(),
-      payment: this.isPaymentPlanInvalid(),
+      deliverables: !this.deliverablesRequirementsValid || !!this.durationOverflowDays,
+      pricing: this.editMode && this.editCommercialLocked ? false : this.isPricingInvalid(),
+      payment: this.editMode && this.editCommercialLocked ? false : this.isPaymentPlanInvalid(),
+      summary: false,
+      review: false,
     };
     return invalid[tab];
   }
@@ -245,9 +281,15 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
     private projectOffersService: ProjectOffersService,
   ) {
     super(injector);
+    this.revisionsApi = injector.get(AgreementRevisionsService);
+    this.profile = injector.get(ProfileService);
   }
 
   ngOnInit(): void {
+    this.editMode = !!this.route.snapshot.data['editOffer'];
+    if (this.editMode) this.revisionsApi.changed$.pipe(takeUntil(this.unsubscribe$)).subscribe(event => {
+      if (event.projectUuid === this.proposalUuid && !this.editSaved) this.editStale = true;
+    });
     this.projectOffersService.isLoading$
       .pipe(takeUntil(this.unsubscribe$))
       .subscribe(loading => this.isLoading = loading);
@@ -264,7 +306,8 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
   }
 
   goBack(): void {
-    this.router.navigate(['/app/insighter-dashboard/project-offers']);
+    if (this.editMode) this.router.navigate(this.editReturnRoute, { queryParams: { tab: 'revisions' } });
+    else this.router.navigate(['/app/insighter-dashboard/project-offers']);
   }
 
   openDetailsDrawer(): void {
@@ -284,14 +327,110 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
   onAttachmentsSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
     const files = input.files ? Array.from(input.files) : [];
+    input.value = '';
     if (!files.length) return;
 
-    this.selectedAttachments = [...this.selectedAttachments, ...files];
-    input.value = '';
+    // Rejected files never join the list, so the request only carries what the API accepts.
+    const ar = this.lang === 'ar';
+    this.attachmentErrors = files.map(file => offerFileError(file, ar)).filter((error): error is string => !!error);
+    this.selectedAttachments = [...this.selectedAttachments, ...files.filter(file => !offerFileError(file, ar))];
   }
 
   removeAttachment(index: number): void {
     this.selectedAttachments = this.selectedAttachments.filter((_, i) => i !== index);
+    this.attachmentErrors = [];
+  }
+
+  /** Edit mode: the offer's current files, each marked kept or removed. */
+  get existingAttachments(): Array<{ file: ProjectOfferFile; kept: boolean }> {
+    return (this.proposal?.offer?.files ?? []).filter(file => !!file.uuid)
+      .map(file => ({ file, kept: this.retainedAttachmentUuids.includes(file.uuid) }));
+  }
+
+  toggleExistingAttachment(file: ProjectOfferFile): void {
+    this.retainedAttachmentUuids = this.retainedAttachmentUuids.includes(file.uuid)
+      ? this.retainedAttachmentUuids.filter(uuid => uuid !== file.uuid)
+      : [...this.retainedAttachmentUuids, file.uuid];
+  }
+
+  // ---------- Suggested project duration ----------
+
+  /** Edit mode: the suggestion is fixed once the client awards the offer. */
+  get durationLocked(): boolean {
+    return this.editMode && (this.editLocked || this.proposal?.offer?.status === 'awarded');
+  }
+
+  /** The duration deliverables and payments are planned against: the suggestion when there is one. */
+  get effectiveDurationDays(): number | null {
+    return this.suggestedDurationDays ?? this.durationDays;
+  }
+
+  get suggestedCloseDate(): string | null {
+    return this.suggestedDurationDays === null ? null : this.dateForDays(this.suggestedDurationDays);
+  }
+
+  /**
+   * The latest due day across the insighter's own deliverables (drafted, or saved with the offer).
+   * Client deliverables already sit inside the client's duration, so only these can need a longer one.
+   */
+  get longestDeliverableDays(): number | null {
+    const drafted = this.deliverablesDraft.offer_components
+      .reduce<any[]>((all, component) => all.concat(component.value?.deliverables ?? []), []);
+    const offerRows = this.paymentDeliverables.filter(row => typeof row.reference === 'string');
+    const days = [...drafted, ...offerRows]
+      .map(row => row?.period_days)
+      .filter(value => value !== null && value !== undefined && value !== '')
+      .map(Number)
+      .filter(value => Number.isFinite(value));
+    return days.length ? Math.max(...days) : null;
+  }
+
+  /** The due day that runs past the planned duration, when one does. */
+  get durationOverflowDays(): number | null {
+    const longest = this.longestDeliverableDays, end = this.effectiveDurationDays;
+    if (this.durationLocked || this.durationDays === null || longest === null || end === null) return null;
+    return longest > end ? longest : null;
+  }
+
+  /** Smallest duration the insighter may suggest: past the client's duration and long enough for every deliverable. */
+  get minimumSuggestedDays(): number {
+    return Math.max((this.durationDays ?? 0) + 1, this.longestDeliverableDays ?? 0, 1);
+  }
+
+  get suggestedDurationError(): string | null {
+    const days = this.suggestedDurationDays, ar = this.lang === 'ar';
+    if (this.durationLocked || !this.durationSuggestOpen) return null;
+    if (days === null) return ar ? 'أدخل عدد الأيام، أو أبقِ على مدة العميل.' : 'Enter the number of days, or keep the client’s duration.';
+    if (!Number.isInteger(Number(days)) || Number(days) < 1) return ar ? 'أدخل عدد أيام صحيحًا.' : 'Enter a whole number of days.';
+    if (this.durationDays !== null && Number(days) <= this.durationDays)
+      return ar ? `يجب أن تكون المدة المقترحة أكثر من مدة المشروع الحالية (${this.durationDays} يومًا).` : `Suggest more than the current project duration (${this.durationDays} days).`;
+    return null;
+  }
+
+  /** Every installment pinned to the project end follows the planned duration. */
+  setSuggestedDuration(days: number | string | null): void {
+    const value = days === null || days === '' ? null : Math.round(Number(days));
+    this.suggestedDurationDays = value === null || !Number.isFinite(value) ? null : value;
+    this.installments.filter(item => item.isProjectEnd).forEach(item => item.period_days = this.effectiveDurationDays);
+  }
+
+  openSuggestedDuration(): void {
+    this.durationSuggestOpen = true;
+    this.setSuggestedDuration(this.minimumSuggestedDays);
+    setTimeout(() => document.getElementById('sp-suggested-duration')?.focus(), 0);
+  }
+
+  /** Deliverables tab: extend the suggestion so the latest deliverable fits. */
+  suggestDurationForDeliverables(): void {
+    const days = this.durationOverflowDays;
+    if (days === null) return;
+    this.durationSuggestOpen = true;
+    this.setSuggestedDuration(days);
+  }
+
+  clearSuggestedDuration(): void {
+    this.durationSuggestOpen = false;
+    this.setSuggestedDuration(null);
   }
 
   // ---------- Pricing ----------
@@ -348,6 +487,21 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
         });
       });
     });
+    if (this.editMode) {
+      const offerRows: PaymentDeliverable[] = [];
+      (this.proposal?.offer?.offer_components ?? []).filter(component => !this.editRequirements.service_components.some(group => group.project_service_id === component.project_service_id)).forEach(component => (component.value?.deliverables ?? []).forEach((row: any) => {
+        if (row.id) offerRows.push({ reference: `offer:${row.id}`, title: row.title, period_days: row.period_days, date: null });
+      }));
+      // Keep an existing offer-deliverable link selectable even on older detail responses.
+      this.installments.filter(item => item.deliverable_key?.startsWith('offer:')).forEach(item => {
+        if (!offerRows.some(row => row.reference === item.deliverable_key)) offerRows.push({ reference: item.deliverable_key!, title: item.title, period_days: item.period_days, date: null });
+      });
+      const saved = existing.filter(row => !this.editRequirements.service_components.some(group => group.project_service_id === row.project_service_id && editableOfferDeliverables(this.proposal!, group.project_service_id!, this.editUserId).source === 'project' && editableOfferDeliverables(this.proposal!, group.project_service_id!, this.editUserId).items.some(item => item.id === row.id)));
+      this.deliverablesDraft.offer_components.forEach(component => (component.value?.deliverables ?? []).forEach((row: any) => {
+        if (row.id) saved.push({ ...row, reference: editableOfferDeliverables(this.proposal!, component.project_service_id!, this.editUserId).source === 'offer' ? `offer:${row.id}` : row.id });
+      }));
+      return [...saved, ...offerRows];
+    }
     return [...existing, ...drafted];
   }
 
@@ -361,6 +515,7 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
     this.installmentsTouched = true;
   }
 
+  installmentDeliverableTitle(item: InstallmentDraft): string { return this.linkedDeliverable(item)?.title || ''; }
   private linkedDeliverable(item: InstallmentDraft): PaymentDeliverable | undefined {
     return this.paymentDeliverables.find(deliverable => deliverable.reference === this.installmentDeliverableReference(item));
   }
@@ -424,7 +579,7 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
   addInstallment(): void {
     this.installmentsTouched = true;
     const used = this.installmentsPercentTotal;
-    const lastDay = this.durationDays ?? (this.lastDeliverable?.period_days ?? 0);
+    const lastDay = this.effectiveDurationDays ?? (this.lastDeliverable?.period_days ?? 0);
     this.installments = [
       ...this.installments,
       this.createInstallment({
@@ -465,7 +620,7 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
   onInstallmentChanged(item: InstallmentDraft): void {
     this.installmentsTouched = true;
     if (item.isProjectEnd) {
-      item.period_days = this.durationDays;
+      item.period_days = this.effectiveDurationDays;
     }
   }
 
@@ -493,10 +648,10 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
   }
 
   setProjectEnd(item: InstallmentDraft): void {
-    if (this.paymentPlan !== 'full' || this.durationDays === null) return;
+    if (this.paymentPlan !== 'full' || this.effectiveDurationDays === null) return;
     item.isProjectEnd = true;
     item.due_type = 'date';
-    item.period_days = this.durationDays;
+    item.period_days = this.effectiveDurationDays;
     this.onInstallmentChanged(item);
   }
 
@@ -535,11 +690,12 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
     const paymentDays = item.due_type === 'deliverable'
       ? this.linkedDeliverable(item)?.period_days
       : item.due_type === 'date' ? item.period_days : null;
-    if (this.durationDays !== null && paymentDays !== null && paymentDays !== undefined
-      && Number(paymentDays) > this.durationDays) {
-      errors.push(ar
-        ? `لا يمكن أن تتجاوز مدة استحقاق الدفعة مدة المشروع (${this.durationDays} يومًا).`
-        : `Payment duration cannot exceed the project duration (${this.durationDays} days).`);
+    const endDays = this.effectiveDurationDays;
+    if (endDays !== null && paymentDays !== null && paymentDays !== undefined
+      && Number(paymentDays) > endDays) {
+      errors.push(this.suggestedDurationDays !== null
+        ? (ar ? `لا يمكن أن تتجاوز مدة استحقاق الدفعة مدة المشروع المقترحة (${endDays} يومًا).` : `Payment duration cannot exceed the suggested project duration (${endDays} days).`)
+        : (ar ? `لا يمكن أن تتجاوز مدة استحقاق الدفعة مدة المشروع (${endDays} يومًا).` : `Payment duration cannot exceed the project duration (${endDays} days).`));
     }
     if (item.due_type === 'deliverable' && !this.linkedDeliverable(item)) {
       errors.push(ar ? 'اختر المخرج المرتبط.' : 'Pick the linked deliverable.');
@@ -606,7 +762,7 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
         title: this.lang === 'ar' ? 'دفعة 2' : 'Payment 2',
         percentage: 70,
         due_type: firstDeliverable ? 'deliverable' : 'date',
-        period_days: firstDeliverable ? firstDeliverable.period_days : (this.durationDays ?? 0),
+        period_days: firstDeliverable ? firstDeliverable.period_days : (this.effectiveDurationDays ?? 0),
         project_service_deliverable_id: typeof firstDeliverable?.reference === 'number' ? firstDeliverable.reference : null,
         deliverable_key: typeof firstDeliverable?.reference === 'string' ? firstDeliverable.reference : null,
       }),
@@ -614,6 +770,7 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
   }
 
   submitProposal(): void {
+    if (this.editMode) { this.saveEditedOffer(); return; }
     if (this.isSubmitting) return;
     if (!this.proposalUuid || this.isProposalFormInvalid()) {
       this.markRequiredFieldsTouchedAndDirty();
@@ -649,6 +806,251 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
           this.handleServerErrors(err);
         },
       });
+  }
+
+  editMode = false;
+  editStale = false;
+  editSaved = false;
+  editError = '';
+  revisionNote = '';
+  editUserId: number | null = null;
+  editRequirements = mapMissingOfferRequirements(null);
+  readOnlyScopeRequirements = mapMissingOfferRequirements(null);
+  readOnlyDeliverablesRequirements = mapMissingOfferRequirements(null);
+  readOnlyScopeSeed: OfferRequirementDraft = { offer_scopes: [], offer_components: [] };
+  readOnlyDeliverablesSeed: OfferRequirementDraft = { offer_scopes: [], offer_components: [] };
+  scopeSeed: OfferRequirementDraft = { offer_scopes: [], offer_components: [] };
+  deliverablesSeed: OfferRequirementDraft = { offer_scopes: [], offer_components: [] };
+  editLinkedIds = new Set<number>();
+  editLinkedOfferIds = new Set<number>();
+  editOfferDeliverableServiceIds = new Set<number>();
+  private editSnapshot = '';
+  private revisionsApi: AgreementRevisionsService;
+  private profile: ProfileService;
+
+  get editLocked(): boolean {
+    const record = this.proposal;
+    return !record?.offer?.uuid || agreementIsLocked(record.contract ?? record.project.contract ?? record.offer?.contract, record.project.status) ||
+      (!!record.contract_uuid && !record.contract && !record.project.contract && !record.offer?.contract);
+  }
+  get editCommercialLocked(): boolean { return this.editLocked || agreementPaymentStarted(this.proposal?.order); }
+  get editReturnRoute(): string[] {
+    return this.route.snapshot.queryParamMap.get('from') === 'projects'
+      ? ['/app/insighter-dashboard/on-work-projects/details', this.proposalUuid!]
+      : ['/app/insighter-dashboard/project-offers/details', this.proposalUuid!];
+  }
+  get readOnlyScopes(): Array<{ serviceId: number; title: string; items: any[]; offerRows: boolean }> {
+    const record = this.proposal;
+    if (!record) return [];
+    return record.project.project_services.filter(service => service.id !== null).map(service => {
+      const editable = editableOfferScopes(record, service.id!, this.editUserId);
+      const offerRows = !service.scopes.length;
+      const original = (record.offer?.offer_scopes ?? []).filter(row => row.project_service_id === service.id);
+      const source = offerRows ? original : this.editLocked && editable.source === 'offer' ? [...service.scopes, ...original] : service.scopes;
+      const items = this.editLocked || editable.source !== (offerRows ? 'offer' : 'project') ? source : source.filter(row => !editable.items.includes(row));
+      return { serviceId: service.id!, title: service.title || service.service?.name || '', items, offerRows };
+    }).filter(group => group.items.length > 0);
+  }
+  get readOnlyDeliverables(): Array<{ serviceId: number; title: string; items: any[]; offerRows: boolean }> {
+    const record = this.proposal;
+    if (!record) return [];
+    return record.project.project_services.filter(service => service.id !== null).map(service => {
+      const editable = editableOfferDeliverables(record, service.id!, this.editUserId);
+      const offerRows = !service.deliverables.length;
+      const original = (record.offer?.offer_components ?? []).filter(row => row.project_service_id === service.id).reduce<any[]>((all, row) => all.concat(row.value?.deliverables ?? []), []);
+      const source = offerRows ? original : this.editLocked && editable.source === 'offer' ? [...service.deliverables, ...original] : service.deliverables;
+      const items = this.editLocked || editable.source !== (offerRows ? 'offer' : 'project') ? source : source.filter(row => !editable.items.includes(row));
+      return { serviceId: service.id!, title: service.title || service.service?.name || '', items, offerRows };
+    }).filter(group => group.items.length > 0);
+  }
+  isEditTabReadOnly(key: ProposalTab): boolean {
+    if (!this.editMode || key === 'review') return false;
+    if (this.editLocked) return true;
+    if (key === 'cover') return false;
+    if (key === 'scope') return !this.scopeRequirements.scopes.length;
+    if (key === 'deliverables') return !this.deliverablesRequirements.service_components.length;
+    return this.editCommercialLocked;
+  }
+  private editCommercial(): CommercialDraft {
+    return commercialDraft({ price_type: this.priceType, fixed_price: this.fixedPrice, hourly_rate: this.hourlyRate, estimated_hours: this.estimatedHours,
+      daily_rate: this.dailyRate, estimated_days: this.estimatedDays, payment_plan: this.paymentPlan,
+      installments: this.installments.map(item => ({ title: item.title, percentage: item.percentage, due_type: item.due_type,
+        period_days: item.period_days, project_service_deliverable_id: item.project_service_deliverable_id,
+        project_proposal_offer_deliverable_id: item.deliverable_key?.startsWith('offer:') ? Number(item.deliverable_key.slice(6)) : null })) });
+  }
+  private get editTerms(): OfferTermsDraft {
+    return { coverLetter: this.coverLetter || '', retainedAttachmentUuids: this.retainedAttachmentUuids, newFileCount: this.selectedAttachments.length,
+      suggestedDurationDays: this.suggestedDurationDays, durationLocked: this.durationLocked };
+  }
+  get editPatch() {
+    if (!this.proposal || this.editLocked) return {};
+    const commercial = this.editCommercialLocked ? commercialDraft(this.proposal.offer) : this.editCommercial();
+    return offerEditPatch(this.proposal, this.editUserId, this.requirementDraft, commercial, this.editTerms);
+  }
+  /** Review tab: the duration the offer suggested before this edit. */
+  get editSavedSuggestion(): number | null { return offerDurationSuggestion(this.proposal?.offer, this.durationDays); }
+  get editDurationChanged(): boolean { return !this.durationLocked && this.suggestedDurationDays !== this.editSavedSuggestion; }
+  get editRemovedAttachments(): ProjectOfferFile[] { return this.existingAttachments.filter(row => !row.kept).map(row => row.file); }
+  get editScopeChanges() { return [...(this.editPatch.scopes ?? []), ...(this.editPatch.offer_scopes ?? [])]; }
+  get editDeliverableChanges() { return [...(this.editPatch.deliverables ?? []), ...(this.editPatch.offer_deliverables ?? [])]; }
+  get editDirty(): boolean { return this.editMode && Object.keys(this.editPatch).length > 0; }
+  get editChangeSummary(): string[] {
+    const patch = this.editPatch, ar = this.lang === 'ar', result: string[] = [];
+    for (const group of [...(patch.scopes ?? []), ...(patch.offer_scopes ?? [])]) {
+      const service = this.proposal?.project.project_services.find(s => s.id === group.project_service_id);
+      result.push(`${ar ? 'تحديث النطاقات' : 'Update scopes'} · ${service?.title || service?.service?.name || ''}`);
+    }
+    for (const group of [...(patch.deliverables ?? []), ...(patch.offer_deliverables ?? [])]) {
+      const service = this.proposal?.project.project_services.find(s => s.id === group.project_service_id);
+      result.push(`${ar ? 'تحديث المخرجات' : 'Update deliverables'} · ${service?.title || service?.service?.name || ''}`);
+    }
+    if (patch.price_type) result.push(ar ? 'تحديث السعر وجدول الدفعات' : 'Update pricing and payment schedule');
+    if (patch.cover_letter !== undefined) result.push(ar ? 'تحديث نص العرض الفني' : 'Update the technical proposal');
+    if (patch.attachment_uuids) result.push(ar ? 'تحديث المرفقات' : 'Update attachments');
+    if (this.editDurationChanged) result.push(ar ? 'تحديث مدة المشروع المقترحة' : 'Update the suggested project duration');
+    return result;
+  }
+  get editPreviousTotal(): number { return Number(this.proposal?.offer?.proposed_price) || 0; }
+  get editPreviousPriceType(): string { return priceTypeLabel(this.proposal?.offer?.price_type, this.lang); }
+  /** Review tab, left card: the submitted schedule; rows past the new length were removed. */
+  get editPreviousScheduleRows(): Array<{ title: string; percentage: number; amount: number; due: string; removed: boolean }> {
+    const original: any[] = this.proposal?.offer?.installments ?? [];
+    return original.map((row, index) => {
+      const reference = row.project_service_deliverable_id ?? (row.project_proposal_offer_deliverable_id ? `offer:${row.project_proposal_offer_deliverable_id}` : null);
+      const detail = row.due_type === 'date' ? this.periodLabel(row.period_days) : row.due_type === 'deliverable' ? this.paymentDeliverables.find(item => item.reference === reference)?.title || '' : '';
+      return {
+        title: row.title, percentage: Number(row.percentage) || 0,
+        amount: Math.round(this.editPreviousTotal * (Number(row.percentage) || 0)) / 100,
+        due: [this.dueTypeLabel(row.due_type), detail].filter(Boolean).join(' · '),
+        removed: index >= this.installments.length,
+      };
+    });
+  }
+  /** Review tab, right card: installments after the edit, compared position by position with the submitted offer. */
+  get editScheduleRows(): Array<{ item: InstallmentDraft; amount: number; due: string; status: 'new' | 'changed' | 'same' }> {
+    const original: any[] = this.proposal?.offer?.installments ?? [];
+    return this.installments.map((item, index) => {
+      const before = original[index];
+      const linkBefore = before?.project_service_deliverable_id ?? (before?.project_proposal_offer_deliverable_id ? `offer:${before.project_proposal_offer_deliverable_id}` : null);
+      const changed = !!before && (before.title !== item.title || Number(before.percentage) !== Number(item.percentage) || before.due_type !== item.due_type
+        || (item.due_type === 'date' && Number(before.period_days ?? 0) !== Number(item.period_days ?? 0))
+        || (item.due_type === 'deliverable' && linkBefore !== this.installmentDeliverableReference(item)));
+      const detail = item.due_type === 'date' ? this.periodLabel(item.period_days) : item.due_type === 'deliverable' ? this.installmentDeliverableTitle(item) : '';
+      return {
+        item, amount: Math.round(this.totalPrice * (Number(item.percentage) || 0)) / 100,
+        due: [this.dueTypeLabel(item.due_type), detail].filter(Boolean).join(' · '),
+        status: !before ? 'new' : changed ? 'changed' : 'same',
+      };
+    });
+  }
+  /** Financial summary step: every installment as a timeline stop — when it is due, what triggers it, its share and the running total. */
+  get summaryScheduleRows(): Array<{ item: InstallmentDraft; amount: number; date: string | null; when: string; whenSub: string; tag: string; detail: string; upfront: boolean; cumulative: number }> {
+    const ar = this.lang === 'ar';
+    let cumulative = 0;
+    return this.installments.map(item => {
+      const date = this.installmentDate(item);
+      const upfront = item.due_type === 'contract';
+      cumulative = Number((cumulative + (Number(item.percentage) || 0)).toFixed(4));
+      const parsed = date ? new Date(date) : null;
+      const valid = !!parsed && !isNaN(parsed.getTime());
+      const locale = ar ? 'ar-EG' : 'en-US';
+      const when = upfront ? (ar ? 'التوقيع' : 'Signing')
+        : valid ? parsed!.toLocaleDateString(locale, { month: 'short', day: 'numeric' })
+        : item.due_type === 'date' && item.period_days !== null && item.period_days !== undefined ? (ar ? `اليوم ${item.period_days}` : `Day ${item.period_days}`) : '—';
+      const whenSub = upfront ? (ar ? 'اليوم 0' : 'Day 0') : valid ? parsed!.toLocaleDateString(locale, { year: 'numeric' }) : '';
+      const tag = upfront ? (ar ? 'مقدّم' : 'Upfront')
+        : item.isProjectEnd ? (ar ? 'نهاية المشروع' : 'Project end')
+        : item.due_type === 'deliverable' ? (ar ? 'مخرج' : 'Deliverable') : (ar ? 'مدة' : 'Duration');
+      const detail = upfront ? this.dueTypeLabel(item.due_type)
+        : item.due_type === 'deliverable' ? this.installmentDeliverableTitle(item) : this.periodLabel(item.period_days);
+      return { item, amount: this.installmentAmount(item), date, when, whenSub, tag, detail, upfront, cumulative };
+    });
+  }
+
+  /** Last planned date in the schedule, for the timeline footer. */
+  get summaryScheduleEnd(): string | null {
+    const dates = this.summaryScheduleRows.map(row => row.date).filter((date): date is string => !!date).sort();
+    return dates.length ? dates[dates.length - 1] : null;
+  }
+  private editSectionValid(section: 'scope' | 'deliverables'): boolean {
+    const editor = this.requirementEditors?.find(item => item.section === section && !item.readOnly);
+    const requirements = section === 'scope' ? this.scopeRequirements : this.deliverablesRequirements;
+    if (!requirements.scopes.length && !requirements.service_components.length) return true;
+    return editor?.complete ?? false;
+  }
+  private loadEditedOffer(uuid: string): void {
+    this.isLoading = true;
+    forkJoin({ record: this.projectOffersService.getProposalDetails(uuid), user: this.profile.getProfile() }).pipe(takeUntil(this.unsubscribe$)).subscribe({
+      next: ({ record, user }) => {
+        this.proposal = record; this.editUserId = Number(user?.id) || null;
+        const adapted = offerEditRequirements(record, this.editUserId);
+        this.editRequirements = this.editLocked ? mapMissingOfferRequirements(null) : adapted.requirements;
+        this.scopeSeed = { offer_scopes: this.editLocked ? [] : adapted.draft.offer_scopes, offer_components: [] };
+        this.deliverablesSeed = { offer_scopes: [], offer_components: this.editLocked ? [] : adapted.draft.offer_components };
+        this.scopeDraft = JSON.parse(JSON.stringify(this.scopeSeed)); this.deliverablesDraft = JSON.parse(JSON.stringify(this.deliverablesSeed));
+        this.editOfferDeliverableServiceIds = new Set(this.editRequirements.service_components.filter(group => editableOfferDeliverables(record, group.project_service_id!, this.editUserId).source === 'offer').map(group => group.project_service_id!));
+        const scopes = this.readOnlyScopes, deliverables = this.readOnlyDeliverables;
+        this.readOnlyScopeRequirements = { scopes: scopes.map(group => ({ project_service_id: group.serviceId, required_in_offer: false })), project_components: [], service_components: [] };
+        this.readOnlyScopeSeed = { offer_scopes: scopes.reduce<OfferRequirementDraft['offer_scopes']>((all, group) => all.concat(group.items.map(item => ({ ...item, project_service_id: group.serviceId }))), []), offer_components: [] };
+        this.readOnlyDeliverablesRequirements = { scopes: [], project_components: [], service_components: deliverables.map(group => ({ project_service_id: group.serviceId, component_id: -1, component: { id: -1, name: this.lang === 'ar' ? 'المخرجات' : 'Deliverables', slug: 'deliverable-stage' }, ownership_level: 'project_service', required_in_offer: false })) };
+        this.readOnlyDeliverablesSeed = { offer_scopes: [], offer_components: deliverables.map(group => ({ project_service_id: group.serviceId, component_id: -1, value: { deliverables: group.items.map(item => ({ ...item, period_days: item.period_days ?? null, report_type: item.report_type ?? [], way: { ...item.way, selected: item.way?.selected ?? '', address: item.way?.address ?? '' } })) } })) };
+        const terms = commercialDraft(record.offer ?? {});
+        this.coverLetter = record.offer?.cover_letter || '';
+        this.retainedAttachmentUuids = (record.offer?.files ?? []).map(file => file.uuid).filter(Boolean);
+        this.selectedAttachments = []; this.attachmentErrors = [];
+        this.suggestedDurationDays = offerDurationSuggestion(record.offer, record.project.schedule?.duration_days);
+        this.durationSuggestOpen = this.suggestedDurationDays !== null;
+        this.priceType = terms.price_type as ProjectPriceType; this.fixedPrice = terms.fixed_price;
+        this.hourlyRate = terms.hourly_rate ?? null; this.estimatedHours = terms.estimated_hours ?? null;
+        this.dailyRate = terms.daily_rate ?? null; this.estimatedDays = terms.estimated_days ?? null;
+        this.paymentPlan = terms.payment_plan as ProjectPaymentPlan;
+        this.installments = terms.installments.map(item => this.createInstallment({ ...item, due_type: item.due_type as InstallmentDueType, period_days: item.period_days ?? null, project_service_deliverable_id: item.project_service_deliverable_id ?? null,
+          deliverable_key: item.project_proposal_offer_deliverable_id ? `offer:${item.project_proposal_offer_deliverable_id}` : null }));
+        this.installmentsTouched = true;
+        this.editLinkedIds = linkedDeliverableIds([...(record.offer?.installments ?? []), ...(record.order?.installments ?? [])]);
+        this.editLinkedOfferIds = new Set<number>((record.offer?.installments ?? []).map(item => Number(item.project_proposal_offer_deliverable_id)).filter(id => id > 0));
+        this.editSnapshot = offerEditFingerprint(record);
+        this.activeTab = this.tabs[0]?.key ?? 'review'; this.isLoading = false;
+      }, error: error => { this.isLoading = false; this.editError = this.lang === 'ar' ? 'تعذر تحميل العرض. أعد المحاولة.' : 'Could not load the offer. Please try again.'; this.handleServerErrors(error); },
+    });
+  }
+  private saveEditedOffer(): void {
+    if (this.isSubmitting || !this.editDirty || this.editLocked || this.editStale) return;
+    const invalid = this.firstInvalidTab();
+    if (invalid) { this.markRequiredFieldsTouchedAndDirty(); return; }
+    if (this.activeTab !== 'review') { this.selectTab('review'); return; }
+    const payload = { ...this.editPatch, user_note: this.revisionNote.trim() || undefined };
+    const files = [...this.selectedAttachments];
+    if (files.length && emptyAgreementGroups(payload)) {
+      this.editError = this.lang === 'ar'
+        ? 'لا يمكن حذف كل نطاقات أو مخرجات خدمة ورفع ملفات جديدة في الحفظ نفسه. احفظ الحذف أولاً ثم ارفع الملفات.'
+        : 'Removing every scope or deliverable of a service cannot be saved together with new files. Save the removal first, then upload the files.';
+      return;
+    }
+    this.isSubmitting = true; this.editError = '';
+    this.projectOffersService.getProposalDetails(this.proposalUuid!).pipe(takeUntil(this.unsubscribe$)).subscribe({
+      next: latest => {
+        if (offerEditFingerprint(latest) !== this.editSnapshot) { this.isSubmitting = false; this.editStale = true; return; }
+        this.revisionsApi.update('insighter', this.proposal!.offer!.uuid, payload, files).pipe(takeUntil(this.unsubscribe$)).subscribe({
+          next: revision => {
+            this.isSubmitting = false; this.editSaved = true;
+            this.revisionsApi.changed$.next({ projectUuid: this.proposalUuid!, revisionId: revision.id });
+            this.showSuccess(this.lang === 'ar' ? 'تم حفظ التعديلات' : 'Changes saved', this.lang === 'ar' ? `تم حفظ المراجعة #${revision.revision_number}. سيتم إشعار العميل.` : `Revision #${revision.revision_number} saved. The client will be notified.`);
+            this.router.navigate(this.editReturnRoute, { queryParams: { tab: 'revisions' } });
+          }, error: error => { this.isSubmitting = false; this.editError = this.lang === 'ar' ? 'تعذر الحفظ. تغييراتك ما زالت موجودة، أعد المحاولة.' : 'Could not save. Your changes are still here; please retry.'; this.handleServerErrors(error); },
+        });
+      }, error: error => { this.isSubmitting = false; this.editError = this.lang === 'ar' ? 'تعذر التحقق من أحدث بيانات العرض. أعد المحاولة.' : 'Could not check the latest offer details. Please retry.'; this.handleServerErrors(error); },
+    });
+  }
+  canDeactivate(): boolean | Observable<boolean> {
+    if (!this.editMode || this.editSaved) return true;
+    if (this.isSubmitting) return false;
+    if (!this.editDirty && !this.revisionNote.trim()) return true;
+    return from(Swal.fire({ title: this.lang === 'ar' ? 'تجاهل التغييرات غير المحفوظة؟' : 'Discard unsaved changes?', icon: 'warning', showCancelButton: true,
+      confirmButtonText: this.lang === 'ar' ? 'تجاهل التغييرات' : 'Discard changes', cancelButtonText: this.lang === 'ar' ? 'متابعة التعديل' : 'Keep editing' })).pipe(map(result => result.isConfirmed));
+  }
+  @HostListener('window:beforeunload', ['$event']) beforeUnload(event: BeforeUnloadEvent): void {
+    if (this.editMode && !this.editSaved && (this.editDirty || this.revisionNote.trim() || this.isSubmitting)) { event.preventDefault(); event.returnValue = ''; }
   }
 
   // ---------- Display helpers (mirror project-detail patterns) ----------
@@ -773,6 +1175,7 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
     return `${scope?.scope || 'scope'}-${index}`;
   }
   trackByFile(_: number, file: ProjectOfferFile): string { return file.uuid; }
+  trackByExistingAttachment(_: number, row: { file: ProjectOfferFile }): string { return row.file.uuid; }
 
   /** Find a component block by key inside the loaded proposal's project. */
   getComponent(key: string): any | null {
@@ -918,7 +1321,10 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
   }
 
   isCoverLetterInvalid(): boolean {
-    return !(this.coverLetter || '').trim();
+    const text = (this.coverLetter || '').trim();
+    if (text.length > COVER_LETTER_MAX_LENGTH) return true;
+    // An edit only fails when it clears a saved text: an offer saved without one can still change other terms.
+    return this.editMode ? !text && !!(this.proposal?.offer?.cover_letter || '').trim() : !text;
   }
 
   isEstimatedHoursInvalid(): boolean {
@@ -996,6 +1402,7 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
     });
 
     formData.append('cover_letter', (this.coverLetter || '').trim());
+    if (this.suggestedDurationDays !== null) formData.append('suggested_duration_days', `${this.suggestedDurationDays}`);
 
     this.selectedAttachments.forEach((file, index) => {
       formData.append(`files[${index}]`, file, file.name);
@@ -1009,6 +1416,8 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
   private isProposalFormInvalid(): boolean {
     return !this.requirementsValid || !this.proposal
       || this.isCoverLetterInvalid()
+      || !!this.suggestedDurationError
+      || !!this.durationOverflowDays
       || this.isPricingInvalid()
       || this.isPaymentPlanInvalid();
   }
@@ -1030,7 +1439,6 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
       this.requirementEditors?.forEach(editor => {
         if (editor.section === this.activeTab) editor.revealFirstIncompleteRow();
       });
-      this.revealActiveTab();
       // Wait for the reopened accordion's fields to render before focusing one.
       setTimeout(() => this.scrollToFirstInvalidField(), 0);
     }, 0);
@@ -1039,7 +1447,7 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
   private scrollToFirstInvalidField(): void {
     const panel = document.getElementById(`sp-panel-${this.activeTab}`);
     const firstInvalid = panel?.querySelector<HTMLElement>(
-      '.sp-input.is-invalid, .sp-input-group.is-invalid, .sp-pay-card.is-invalid, .sp-installments__total.is-invalid, .sw-input.is-invalid, .sw-pill.is-invalid'
+      '.sp-input.is-invalid, .sp-input-group.is-invalid, .sp-pay-card.is-invalid, .sp-installments__total.is-invalid, .sw-input.is-invalid, .sw-pill.is-invalid, .sp-duration-callout.is-invalid'
     ) ?? panel?.querySelector<HTMLElement>('.sw-row.is-error .sw-row__toggle');
     firstInvalid?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     const control = firstInvalid?.matches('input, textarea, select, button')
@@ -1048,6 +1456,7 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
   }
 
   private loadAll(uuid: string): void {
+    if (this.editMode) { this.loadEditedOffer(uuid); return; }
     this.projectOffersService.getProposalDetails(uuid)
       .pipe(takeUntil(this.unsubscribe$))
       .subscribe({
@@ -1119,9 +1528,5 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
         this.lang === 'ar' ? 'حدث خطأ غير متوقع' : 'An unexpected error occurred.'
       );
     }
-  }
-
-  override ngOnDestroy(): void {
-    super.ngOnDestroy();
   }
 }
