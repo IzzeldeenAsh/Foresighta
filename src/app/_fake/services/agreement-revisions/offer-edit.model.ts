@@ -1,6 +1,6 @@
 import { ProjectOffer } from '../project-offers/project-offers.service';
 import { MissingOfferRequirements, OfferRequirementDraft } from '../project-phase2/project-requirements.model';
-import { AgreementPatch, CommercialDraft, commercialDraft, deliverableDraft, scopeDraft, ScopeDraft, DeliverableDraft, AgreementGroup, offerDurationSuggestion } from './agreement-revisions.model';
+import { AgreementPatch, CommercialDraft, commercialDraft, deliverableDraft, scopeDraft, ScopeDraft, DeliverableDraft, AgreementGroup, offerDurationSuggestion, scopeEditorDraft, onlyChangedScopeFiles } from './agreement-revisions.model';
 
 export interface OfferEditPatch extends AgreementPatch {
   /** Original offer records need their own API targets; their IDs are not project row IDs. */
@@ -40,7 +40,7 @@ export function offerEditRequirements(record: ProjectOffer, userId: number | nul
     const deliverables = editableOfferDeliverables(record, service.id, userId);
     if (scopes.items.length) {
       requirements.scopes.push({ project_service_id: service.id, title: service.title, required_in_offer: false });
-      draft.offer_scopes.push(...scopes.items.map(row => ({ ...scopeDraft(row), project_service_id: service.id! })));
+      draft.offer_scopes.push(...scopes.items.map(row => ({ ...scopeEditorDraft(row), project_service_id: service.id! })));
     }
     if (deliverables.items.length) {
       // A local editor key only; revision requests use the project-service ID and deliverable row IDs.
@@ -100,7 +100,9 @@ export function offerEditPatch(record: ProjectOffer, userId: number | null, draf
     const items = draft.offer_scopes.filter(row => row.project_service_id === group.project_service_id).map(scopeDraft);
     const original = before.draft.offer_scopes.filter(row => row.project_service_id === group.project_service_id).map(scopeDraft);
     const target = editableOfferScopes(record, group.project_service_id, userId).source === 'offer' ? 'offer_scopes' : 'scopes';
-    if (JSON.stringify(items) !== JSON.stringify(original)) (patch[target] ??= []).push({ project_service_id: group.project_service_id, items });
+    // New uploads are File objects, which JSON.stringify cannot tell apart, so their names join the comparison.
+    const fingerprint = (rows: ScopeDraft[]) => JSON.stringify(rows.map(row => ({ ...row, subscopes: row.subscopes.map(child => ({ ...child, file: child.file?.map(file => [file.name, file.size]) })) })));
+    if (fingerprint(items) !== fingerprint(original)) (patch[target] ??= []).push({ project_service_id: group.project_service_id, items: onlyChangedScopeFiles(items, original) });
   }
   for (const group of before.requirements.service_components) {
     const rows = draft.offer_components.find(row => row.component_id === group.component_id && row.project_service_id === group.project_service_id)?.value?.deliverables ?? [];

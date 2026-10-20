@@ -177,6 +177,8 @@ export interface CreatedProject {
   last_proposal_deadline?: string | null;
   /** Agreement revisions the client has not opened yet. */
   unseen_agreement_revisions_count?: number;
+  /** Unread Insighter messages across every private offer thread (0 outside the proposal stage). */
+  unread_private_messages_count?: number;
   created_at?: string | null;
   schedule: ProjectScheduleFields;
   /** Project-level and service-level components merged (deliverables excluded). */
@@ -224,6 +226,8 @@ export interface CreatedProjectInvitedInsighter {
 }
 
 export interface CreatedProjectSubmittedOffer {
+  /** Unread Insighter messages in this offer's private thread. */
+  unread_private_messages_count?: number;
   offer_scopes?: OfferScope[];
   offer_components?: OfferComponent[];
   uuid: string;
@@ -796,6 +800,7 @@ export class ProjectsCreatedService {
       budget_max: p?.budget_max ?? null,
       last_proposal_deadline: p?.last_proposal_deadline ?? null,
       unseen_agreement_revisions_count: Number(p?.unseen_agreement_revisions_count) || 0,
+      unread_private_messages_count: Number(p?.unread_private_messages_count) || 0,
       created_at: p?.created_at ?? null,
       schedule: mapProjectSchedule(p),
       components: this.sanitizeBlocks(mergeComponents(p?.components, projectServices)),
@@ -827,6 +832,7 @@ export class ProjectsCreatedService {
 
     return {
       uuid: this.stringifyValue(offer?.uuid),
+      unread_private_messages_count: Number(offer?.unread_private_messages_count) || 0,
       offer_scopes: Array.isArray(offer?.offer_scopes) ? offer.offer_scopes : [],
       offer_components: Array.isArray(offer?.offer_components) ? offer.offer_components : [],
       price_type: offer?.price_type ?? null,
@@ -921,7 +927,13 @@ export class ProjectsCreatedService {
           country: item.insighter?.country ?? null,
           company: item.insighter?.company ?? null,
         } : null,
-        offer: this.mapSubmittedOffer(item?.offer, item?.contract_uuid ?? item?.contract?.uuid),
+        offer: this.mapSubmittedOffer(
+          // The match list also carries the thread's count on the match itself.
+          item?.offer && item.offer.unread_private_messages_count == null
+            ? { ...item.offer, unread_private_messages_count: item?.unread_private_messages_count }
+            : item?.offer,
+          item?.contract_uuid ?? item?.contract?.uuid
+        ),
       }))
       .filter((invite: CreatedProjectProposalInvite) => !!invite.uuid || !!invite.insighter?.uuid);
   }

@@ -60,6 +60,10 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
   isLoading$: Observable<boolean>;
 
   isDetailsPage = false;
+  /** Private Client ↔ Insighter thread on the submitted offer, opened from the Offer tab (proposal stage only). */
+  privateMessagesVisible = false;
+  /** `?offer=` from a private-message notification, opened once the offer details load. */
+  protected pendingPrivateOfferUuid: string | null = null;
   offers: ProjectOffer[] = [];
   viewMode: ViewMode = 'list';
   offerReadImageUrl = 'https://res.cloudinary.com/dsiku9ipv/image/upload/v1777637418/job-offer_8062313_lqbkuq.png';
@@ -350,6 +354,7 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
           this.drawerDetailsLoading = false;
           this.setDrawerTab(this.getInitialDrawerTab(this.selectedOffer), this.selectedOffer);
           this.markOfferAsViewed(this.selectedOffer);
+          this.openPendingPrivateMessages();
         },
         error: (err) => {
           if (requestId !== this.drawerDetailsRequestId) {
@@ -364,6 +369,7 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
   }
 
   closeDrawer(): void {
+    this.privateMessagesVisible = false;
     this.drawerVisible = false;
     this.selectedOffer = null;
     this.drawerDetailsLoading = false;
@@ -1017,6 +1023,75 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
 
   hasSubmittedOffer(offer: ProjectOffer | null | undefined): boolean {
     return !!offer?.offer;
+  }
+
+  /**
+   * The private thread needs a submitted offer and closes once the project is awarded (to this
+   * Insighter → stage `project`, to someone else → offer `not_selected`).
+   */
+  canUsePrivateOfferDiscussion(offer: ProjectOffer | null | undefined): boolean {
+    const status = (offer?.offer?.status || '').toLowerCase();
+    return !!offer?.offer?.uuid
+      && !!offer?.project?.uuid
+      && !this.isActiveProject(offer)
+      && !['awarded', 'not_selected'].includes(status);
+  }
+
+  /** Unread client messages in this Insighter's offer thread (badges hide once the thread is closed). */
+  offerUnreadMessages(offer: ProjectOffer | null | undefined): number {
+    if (!this.canUsePrivateOfferDiscussion(offer)) return 0;
+    return Number(offer?.offer?.unread_private_messages_count ?? offer?.unread_private_messages_count) || 0;
+  }
+
+  /** List rows only carry the project-level count (the API sends 0 after the award). */
+  listUnreadMessages(offer: ProjectOffer | null | undefined): number {
+    return Number(offer?.unread_private_messages_count) || 0;
+  }
+
+  /** The open thread was marked read on the server — clear the drawer badges and the matching list row. */
+  onOfferThreadRead(offer: ProjectOffer): void {
+    if (offer.offer) offer.offer.unread_private_messages_count = 0;
+    offer.unread_private_messages_count = 0;
+    const row = this.offers.find(item => item !== offer && !!item.uuid && item.uuid === offer.uuid);
+    if (row) row.unread_private_messages_count = 0;
+  }
+
+  openPrivateMessages(offer: ProjectOffer | null | undefined = this.selectedOffer): void {
+    if (!this.canUsePrivateOfferDiscussion(offer)) return;
+    this.privateMessagesVisible = true;
+  }
+
+  closePrivateMessages(): void {
+    this.privateMessagesVisible = false;
+  }
+
+  /** The private thread answered 403 — re-read the offer so the page follows the new project status. */
+  onPrivateOfferDiscussionClosed(offer: ProjectOffer): void {
+    this.privateMessagesVisible = false;
+    this.showInfo(
+      this.lang === 'ar' ? 'تم إغلاق رسائل العرض' : 'Offer messages closed',
+      this.lang === 'ar'
+        ? 'تمت ترسية المشروع، لذلك لم تعد رسائل هذا العرض متاحة.'
+        : 'The project has been awarded, so messages about this offer are no longer available.'
+    );
+
+    const detailsUuid = this.getProposalDetailsUuid(offer);
+    if (!detailsUuid) return;
+    this.projectOffersService.getProposalDetails(detailsUuid)
+      .pipe(takeUntil(this.unsubscribe$))
+      .subscribe({
+        next: details => {
+          if (this.selectedOffer === offer) this.selectedOffer = this.mergeOfferDetails(offer, details);
+        },
+        error: () => undefined,
+      });
+  }
+
+  protected openPendingPrivateMessages(): void {
+    const offerUuid = this.pendingPrivateOfferUuid;
+    if (!offerUuid || !this.selectedOffer) return;
+    this.pendingPrivateOfferUuid = null;
+    if (this.selectedOffer.offer?.uuid === offerUuid) this.openPrivateMessages(this.selectedOffer);
   }
 
   getProposalFiles(

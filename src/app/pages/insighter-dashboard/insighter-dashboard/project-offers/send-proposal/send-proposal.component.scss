@@ -2723,6 +2723,12 @@
 
     li { padding: 3px 10px; border: 1px solid var(--sp-border); border-radius: 999px; background: var(--sp-surface-muted); font-size: 12px; color: var(--sp-ink-700); overflow-wrap: anywhere; }
   }
+
+  // A sub-scope's description and file changes.
+  &__sub {
+    b { font-weight: 600; color: var(--sp-ink-700); }
+    small { display: flex; align-items: center; gap: 4px; margin-top: 2px; i { font-size: 13px; color: inherit; } }
+  }
 }
 
 // Note for the client

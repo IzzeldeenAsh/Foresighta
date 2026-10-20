@@ -80,13 +80,32 @@ describe('Offer requirement completion', () => {
     editor.pendingScope[44] = 'Regulatory review';
     editor.commitCustomScope(44);
     expect(editor.scopesFor(44)).toEqual([
-      { project_service_id: 44, scope: 'Market sizing', description: 'Estimate the opportunity.', subscopes: [{ scope: 'Growth drivers', description: '' }, { scope: 'Pricing benchmarks', description: '' }] },
+      { project_service_id: 44, scope: 'Market sizing', description: 'Estimate the opportunity.', subscopes: [{ scope: 'Growth drivers', description: '', files: [], new_files: [] }, { scope: 'Pricing benchmarks', description: '', files: [], new_files: [] }] },
       { project_service_id: 44, scope: 'Competitor analysis', description: '', subscopes: [] },
       { project_service_id: 44, scope: 'Regulatory review', description: '', subscopes: [] },
     ]);
     editor.toggleScope(44, sizing);
     expect(editor.scopesFor(44).map(s => s.scope)).toEqual(['Competitor analysis', 'Regulatory review']);
     expect(editor.scopesFor(45)).toEqual([]);
+  });
+  it('adds a description and files to a picked sub-scope', () => {
+    const [sizing] = editor.scopeState[44].options;
+    editor.toggleScope(44, sizing);
+    const pick = editor.pick(44, 'c1')!;
+    editor.pendingChild[editor.childKey(44, pick)] = 'Pricing benchmarks';
+    editor.commitCustomChild(44, pick);
+    const detail = editor.subscopeDetail(pick, 'Pricing benchmarks');
+    detail.description = 'Compare list prices';
+    const pdf = new File(['x'], 'prices.pdf', { type: 'application/pdf' });
+    const exe = new File(['x'], 'tool.exe');
+    editor.addSubscopeFiles(pick, 'Pricing benchmarks', { target: { files: [pdf, exe], value: '' } } as any);
+    expect(detail.newFiles).toEqual([pdf]);
+    expect(detail.errors.length).toBe(1);
+    const child = editor.scopesFor(44)[0].subscopes![0];
+    expect(child).toEqual(jasmine.objectContaining({ scope: 'Pricing benchmarks', description: 'Compare list prices', files: [], new_files: [pdf] }));
+    // Renaming keeps the details with the sub-scope.
+    editor.renameCustomChild(pick, 0, 'Price benchmarks');
+    expect(editor.scopesFor(44)[0].subscopes![0]).toEqual(jasmine.objectContaining({ scope: 'Price benchmarks', description: 'Compare list prices', new_files: [pdf] }));
   });
   it('renders the backend-listed fields only and serializes service instances in nested multipart fields', () => {
     const headings = fixture.nativeElement.querySelectorAll('h3');

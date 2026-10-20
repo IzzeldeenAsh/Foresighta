@@ -1,9 +1,10 @@
 import { AgreementRevisionsService } from 'src/app/_fake/services/agreement-revisions/agreement-revisions.service';
+import { ProjectDiscussionService } from 'src/app/pages/insighter-dashboard/insighter-dashboard/shared/project-discussion/project-discussion.service';
 import { Component, OnInit, OnDestroy, ElementRef, ViewChild, HostListener, Renderer2, NgZone, ChangeDetectorRef } from '@angular/core';
 import { trigger, transition, style, animate } from '@angular/animations';
 import { MenuItem } from 'primeng/api';
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
-import { Subscription } from 'rxjs';
+import { Subscription, merge } from 'rxjs';
 import { ProfileService } from 'src/app/_fake/services/get-profile/get-profile.service';
 import { Router, NavigationEnd } from '@angular/router';
 import { TranslationService } from 'src/app/modules/i18n';
@@ -186,6 +187,7 @@ export class PrimengHeaderComponent implements OnInit, OnDestroy {
 
   constructor(
     private agreementRevisions: AgreementRevisionsService,
+    private projectDiscussion: ProjectDiscussionService,
     private breakpointObserver: BreakpointObserver,
     private profileService: ProfileService,
     private router: Router,
@@ -247,8 +249,8 @@ export class PrimengHeaderComponent implements OnInit, OnDestroy {
       }
     });
 
-    // Opening a revision marks its bell notification read on the backend; refresh the count.
-    this.revisionSeenSubscription = this.agreementRevisions.seen$.subscribe(() => {
+    // Opening a revision (or reading an offer thread) marks its bell notifications read on the backend; refresh the count.
+    this.revisionSeenSubscription = merge(this.agreementRevisions.seen$, this.projectDiscussion.offerThreadRead$).subscribe(() => {
       this.notificationService.getNotifications(this.lang || 'en').subscribe(notifications => {
         this.notifications = notifications;
         this.notificationCount = notifications.filter(n => !n.read_at).length;
@@ -989,6 +991,8 @@ export class PrimengHeaderComponent implements OnInit, OnDestroy {
       sub_type_value: data?.sub_type_value,
       redirect_page: !!data?.redirect_page,
       url: data?.url,
+      visibility: data?.visibility ?? null,
+      project_proposal_offer_uuid: data?.project_proposal_offer_uuid ?? null,
       read_at: undefined,
       sub_page: data?.sub_page,
       tap: data?.tap,

@@ -141,6 +141,8 @@ export interface ProjectOfferProposalSummary {
 }
 
 export interface ProjectOfferDetails {
+  /** Unread client messages in this offer's private thread. */
+  unread_private_messages_count?: number;
   offer_scopes?: OfferScope[];
   offer_components?: OfferComponent[];
   uuid: string;
@@ -166,6 +168,8 @@ export interface ProjectOffer {
   order?: any;
   /** Agreement revisions the insighter has not opened yet. */
   unseen_agreement_revisions_count?: number;
+  /** Unread client messages in this Insighter's private offer thread(s) (0 outside the proposal stage). */
+  unread_private_messages_count?: number;
   missing_offer_requirements?: MissingOfferRequirements;
   /** Project UUID — routing/details identifier (GET /insighter/project/show/{uuid}). */
   uuid: string;
@@ -712,6 +716,7 @@ export class ProjectOffersService {
     return {
       order: (project as any)?.order ?? null,
       unseen_agreement_revisions_count: Number((project as any)?.unseen_agreement_revisions_count) || 0,
+      unread_private_messages_count: Number((project as any)?.unread_private_messages_count) || 0,
       uuid: project?.uuid ?? '',
       missing_offer_requirements: mapMissingOfferRequirements(project?.missing_offer_requirements),
       status: projectStatus ?? proposalStatus,
@@ -774,6 +779,7 @@ export class ProjectOffersService {
     return {
       ...offer,
       uuid: offer?.uuid ?? '',
+      unread_private_messages_count: Number(offer?.unread_private_messages_count) || 0,
       price_type: offer?.price_type ?? null,
       proposed_price: offer?.proposed_price ?? null,
       payment_plan: offer?.payment_plan ?? null,

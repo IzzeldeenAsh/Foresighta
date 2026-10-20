@@ -2,14 +2,17 @@ import {
   AfterViewChecked,
   Component,
   ElementRef,
+  EventEmitter,
   Injector,
   Input,
   OnChanges,
   OnDestroy,
   OnInit,
+  Output,
   SimpleChanges,
   ViewChild,
 } from '@angular/core';
+import { Observable } from 'rxjs';
 import { finalize, takeUntil } from 'rxjs/operators';
 import { ProfileService } from 'src/app/_fake/services/get-profile/get-profile.service';
 import { BaseComponent } from 'src/app/modules/base.component';
@@ -32,6 +35,17 @@ export class ProjectDiscussionComponent extends BaseComponent implements OnInit,
   @Input() disabledBadgeLabel: string | null = null;
   @Input() disabledBadgeClass = 'badge-light-warning';
   @Input() disabledMessage: string | null = null;
+  /**
+   * Submitted offer (project_proposal_offer UUID). When set, the component talks to the private
+   * Client ↔ Insighter offer thread instead of the project discussion.
+   */
+  @Input() offerUuid: string | null | undefined = null;
+  /** Name of the other participant, used in the private-thread empty/waiting copy. */
+  @Input() counterpartName: string | null = null;
+  /** Fired when the API refuses the private thread (403 — e.g. the offer was awarded meanwhile). */
+  @Output() accessClosed = new EventEmitter<void>();
+  /** Fired after the open private thread was marked read on the server, so parents can clear its badge. */
+  @Output() threadRead = new EventEmitter<void>();
 
   @ViewChild('messagesScroller') messagesScroller?: ElementRef<HTMLDivElement>;
 
@@ -43,8 +57,11 @@ export class ProjectDiscussionComponent extends BaseComponent implements OnInit,
   loadFailed = false;
   currentProfileUuid: string | null = null;
   currentProfileName: string | null = null;
+  /** True once the current thread answered at least once, so "waiting for the client" is not shown while loading. */
+  hasLoadedThread = false;
 
   private refreshTimer: ReturnType<typeof setInterval> | null = null;
+  private isMarkingRead = false;
   private shouldScrollToBottom = false;
 
   constructor(
@@ -62,9 +79,16 @@ export class ProjectDiscussionComponent extends BaseComponent implements OnInit,
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes.projectUuid && !changes.projectUuid.firstChange) {
+    const threadChanged = (changes.projectUuid && !changes.projectUuid.firstChange)
+      || (changes.offerUuid && !changes.offerUuid.firstChange);
+    if (threadChanged) {
       this.messages = [];
+      this.draft = '';
+      this.hasLoadedThread = false;
+      this.isLoading = false;
+      this.isRefreshing = false;
       this.loadMessages();
+      this.startRefreshTimer();
     }
   }
 
@@ -89,21 +113,37 @@ export class ProjectDiscussionComponent extends BaseComponent implements OnInit,
       this.loadFailed = false;
     }
 
-    this.discussionService.listMessages(this.context, projectUuid)
+    const threadKey = this.threadKey;
+    this.listThread(projectUuid)
       .pipe(
         takeUntil(this.unsubscribe$),
         finalize(() => {
+          if (threadKey !== this.threadKey) return;
           this.isLoading = false;
           this.isRefreshing = false;
         })
       )
       .subscribe({
         next: messages => {
-          this.messages = messages;
+          if (threadKey !== this.threadKey) return;
+          const visible = this.isPrivateThread
+            ? messages
+            : messages.filter(message => message.visibility !== 'private_offer');
+          const grew = visible.length !== this.messages.length;
+          this.messages = visible;
           this.loadFailed = false;
-          this.queueScrollToBottom();
+          this.hasLoadedThread = true;
+          this.markThreadReadIfNeeded();
+          if (!silent || grew) this.queueScrollToBottom();
         },
         error: err => {
+          if (threadKey !== this.threadKey) return;
+          if (this.isPrivateThread && err?.status === 403) {
+            this.stopRefreshTimer();
+            this.loadFailed = true;
+            this.accessClosed.emit();
+            return;
+          }
           if (!silent) {
             this.loadFailed = true;
             this.handleServerErrors(err);
@@ -115,11 +155,11 @@ export class ProjectDiscussionComponent extends BaseComponent implements OnInit,
   sendMessage(): void {
     const body = this.draft.trim();
     const projectUuid = this.normalizedProjectUuid;
-    if (!this.canSend || !body || !projectUuid || this.isSending) return;
+    if (!this.canCompose || !body || !projectUuid || this.isSending) return;
 
     this.isSending = true;
 
-    this.discussionService.sendMessage(this.context, projectUuid, body)
+    this.sendToThread(projectUuid, body)
       .pipe(
         takeUntil(this.unsubscribe$),
         finalize(() => (this.isSending = false))
@@ -141,12 +181,18 @@ export class ProjectDiscussionComponent extends BaseComponent implements OnInit,
           }
           this.queueScrollToBottom();
         },
-        error: err => this.handleServerErrors(err),
+        error: err => {
+          this.handleServerErrors(err);
+          if (this.isPrivateThread && err?.status === 403) {
+            this.loadMessages(true);
+            this.accessClosed.emit();
+          }
+        },
       });
   }
 
   onMessageKeydown(event: KeyboardEvent): void {
-    if (!this.canSend || event.key !== 'Enter' || event.shiftKey) return;
+    if (!this.canCompose || event.key !== 'Enter' || event.shiftKey) return;
     event.preventDefault();
     this.sendMessage();
   }
@@ -246,6 +292,76 @@ export class ProjectDiscussionComponent extends BaseComponent implements OnInit,
 
   get normalizedProjectUuid(): string {
     return (this.projectUuid || '').trim();
+  }
+
+  get normalizedOfferUuid(): string {
+    return (this.offerUuid || '').trim();
+  }
+
+  get isPrivateThread(): boolean {
+    return !!this.normalizedOfferUuid;
+  }
+
+  /**
+   * The Insighter can only answer a private offer thread the Client opened. Only the two of them can
+   * post there and the Insighter cannot go first, so any loaded message means the Client has written.
+   */
+  get isAwaitingClient(): boolean {
+    return this.isPrivateThread && this.context === 'insighter' && this.messages.length === 0;
+  }
+
+  /** Composer is shown (and usable) — read-only footers cover the other cases. */
+  get canCompose(): boolean {
+    return this.canSend && !this.isAwaitingClient;
+  }
+
+  get counterpartLabel(): string {
+    return (this.counterpartName || '').trim()
+      || (this.context === 'client'
+        ? (this.lang === 'ar' ? 'الخبير' : 'the Insighter')
+        : (this.lang === 'ar' ? 'العميل' : 'the client'));
+  }
+
+  private get threadKey(): string {
+    return `${this.context}|${this.normalizedProjectUuid}|${this.normalizedOfferUuid}`;
+  }
+
+  /**
+   * GET never marks anything read: once the open private thread shows incoming unread messages,
+   * tell the API (PUT .../offer/read/...) and clear them locally only after it succeeds.
+   */
+  private markThreadReadIfNeeded(): void {
+    const projectUuid = this.normalizedProjectUuid;
+    if (!this.isPrivateThread || this.isMarkingRead || !projectUuid) return;
+    if (!this.messages.some(message => message.is_read === false)) return;
+
+    const threadKey = this.threadKey;
+    this.isMarkingRead = true;
+    this.discussionService.markOfferThreadRead(this.context, projectUuid, this.normalizedOfferUuid)
+      .pipe(
+        takeUntil(this.unsubscribe$),
+        finalize(() => (this.isMarkingRead = false))
+      )
+      .subscribe({
+        next: () => {
+          if (threadKey !== this.threadKey) return;
+          this.messages = this.messages.map(message => message.is_read === false ? { ...message, is_read: true } : message);
+          this.threadRead.emit();
+        },
+        error: () => undefined,
+      });
+  }
+
+  private listThread(projectUuid: string): Observable<ProjectDiscussionMessage[]> {
+    return this.isPrivateThread
+      ? this.discussionService.listOfferMessages(this.context, projectUuid, this.normalizedOfferUuid)
+      : this.discussionService.listMessages(this.context, projectUuid);
+  }
+
+  private sendToThread(projectUuid: string, body: string): Observable<ProjectDiscussionMessage | null> {
+    return this.isPrivateThread
+      ? this.discussionService.sendOfferMessage(this.context, projectUuid, this.normalizedOfferUuid, body)
+      : this.discussionService.sendMessage(this.context, projectUuid, body);
   }
 
   private loadCurrentProfile(): void {

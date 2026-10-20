@@ -4,7 +4,7 @@ import { Subject } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
 import { TranslationService } from 'src/app/modules/i18n';
-import { AgreementPatch, AgreementRevision, AgreementRevisionList, AgreementRole, agreementFormData } from './agreement-revisions.model';
+import { AgreementPatch, AgreementRevision, AgreementRevisionList, AgreementRole, agreementFormData, payloadHasFiles } from './agreement-revisions.model';
 
 @Injectable({ providedIn: 'root' })
 export class AgreementRevisionsService {
@@ -31,10 +31,10 @@ export class AgreementRevisionsService {
     return this.http.get<{ data: Array<{ id: number; name: string }> }>(`${environment.apiBaseUrl}/common/setting/${endpoint[type] ?? endpoint['country']}`, { headers: this.headers() })
       .pipe(map(res => res?.data ?? []));
   }
-  /** New offer files switch the request to multipart; everything else stays JSON. */
+  /** New offer or sub-scope files switch the request to multipart; everything else stays JSON. */
   update(role: AgreementRole, contextUuid: string, payload: AgreementPatch, files: File[] = []) {
     // Sent as POST with Laravel's method override: a real PATCH fails the CORS preflight.
-    const body = files.length ? agreementFormData(payload, files) : { ...payload, _method: 'PATCH' };
+    const body = files.length || payloadHasFiles(payload) ? agreementFormData(payload, files) : { ...payload, _method: 'PATCH' };
     return this.http.post<{ data: AgreementRevision }>(`${this.base(role)}/agreement/${role}-requirements/${encodeURIComponent(contextUuid)}`, body, { headers: this.headers() }).pipe(map(res => res.data));
   }
 }

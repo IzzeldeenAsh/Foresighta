@@ -3,13 +3,16 @@ import { HttpClient } from '@angular/common/http';
 import { environment } from 'src/environments/environment';
 import { MissingOfferRequirements, MissingComponentRequirement, MissingScopeRequirement, OfferRequirementDraft, OfferScope, OfferComponent, mapMissingOfferRequirements, offerRequirementsAreComplete, requirementValueIsFilled } from 'src/app/_fake/services/project-phase2/project-requirements.model';
 import { ProjectServiceDetails, addDaysToDate, flatMapList } from'src/app/_fake/services/project-phase2/project-phase2.model';
+import { OFFER_FILE_EXTENSIONS, ScopeFile, offerFileError, subscopeFilesState } from 'src/app/_fake/services/agreement-revisions/agreement-revisions.model';
 
 /** One accordion row: a service's scope, or a component the insighter must fill. */
 interface RequirementRow { key: string; scope?: MissingScopeRequirement; component?: MissingComponentRequirement; }
 /** A catalog scope from `common/setting/service/scope/{service}`; children are its sub-scopes. */
 interface ScopeOption { id: number; name: string; description?: string | null; children: ScopeOption[]; }
 /** A picked scope (catalog `c{id}` or custom `m{n}`) and the sub-scopes picked under it, like the client stepper. */
-interface ScopePick { id?: number; savedChildren?: any[]; key: string; name: string; description?: string | null; children: ScopeOption[]; childIds: number[]; customChildren: string[]; }
+interface ScopePick { id?: number; key: string; name: string; description?: string | null; children: ScopeOption[]; childIds: number[]; customChildren: string[]; details?: Record<string, SubscopeDetail>; }
+/** What the insighter adds to a picked sub-scope: a description and files (kept, removed this edit, or new). */
+interface SubscopeDetail { id?: number; description: string | null; files: ScopeFile[]; removed: ScopeFile[]; locked: boolean; newFiles: File[]; errors: string[]; }
 interface ServiceScopeState { catalogId: number | null; options: ScopeOption[]; loading: boolean; error: boolean; picks: ScopePick[]; customCount: number; }
 
 // Deliverable card options, matching the client wizard's deliverables step (Next.js DeliverablesPlanQuestion).
@@ -110,7 +113,12 @@ export class OfferRequirementsEditorComponent implements OnChanges {
       this.draft = JSON.parse(JSON.stringify(this.initialDraft));
       this.missing.scopes.forEach(req => {
         const state = this.scopeState[req.project_service_id];
-        state.picks = this.scopesFor(req.project_service_id).map(scope => ({ key: `m${++state.customCount}`, id: scope.id, name: scope.scope, description: scope.description, children: [], childIds: [], savedChildren: scope.subscopes ?? scope.children ?? [], customChildren: (scope.subscopes ?? scope.children ?? []).map(child => child.scope) }));
+        state.picks = this.scopesFor(req.project_service_id).map(scope => {
+          const saved: any[] = scope.subscopes ?? scope.children ?? [];
+          const details: Record<string, SubscopeDetail> = {};
+          saved.forEach(child => { details[child.scope] = this.savedDetail(child); });
+          return { key: `m${++state.customCount}`, id: scope.id, name: scope.scope, description: scope.description, children: [], childIds: [], details, customChildren: saved.map(child => child.scope) };
+        });
       });
     }
     if (this.componentRequirements.some(req => req.component.slug === 'target-market')) this.loadMarkets('country');
@@ -144,8 +152,8 @@ export class OfferRequirementsEditorComponent implements OnChanges {
       return requirementValueIsFilled(value);
     }
     const scopes = this.scopesFor(row.scope!.project_service_id);
-    if (this.revisionMode) return scopes.every(scope => !!scope.scope?.trim() && scope.scope.length <= 255 && (scope.description?.length ?? 0) <= 2500 &&
-      (scope.subscopes ?? []).every(child => !!child.scope?.trim() && (child.description?.length ?? 0) <= 2500));
+    if (this.revisionMode) return scopes.every(scope => !!scope.scope?.trim() && scope.scope.length <= 255 && (scope.description?.length ?? 0) <= this.descriptionMax &&
+      (scope.subscopes ?? []).every(child => !!child.scope?.trim() && (child.description?.length ?? 0) <= this.descriptionMax));
     return offerRequirementsAreComplete({ scopes: [row.scope!], project_components: [], service_components: [] }, { offer_scopes: scopes, offer_components: [] });
   }
 
@@ -278,8 +286,13 @@ export class OfferRequirementsEditorComponent implements OnChanges {
     this.syncScopes();
   }
   renameCustomChild(pick: ScopePick, index: number, value: string): void {
-    const saved = pick.savedChildren?.find(child => child.scope === pick.customChildren[index]);
-    if (saved) saved.scope = value;
+    // Details follow the sub-scope to its new name.
+    const previous = pick.customChildren[index];
+    const detail = pick.details?.[previous];
+    if (detail && previous !== value) {
+      delete pick.details![previous];
+      pick.details![value] = detail;
+    }
     pick.customChildren[index] = value;
     this.syncScopes();
   }
@@ -294,12 +307,88 @@ export class OfferRequirementsEditorComponent implements OnChanges {
       project_service_id: req.project_service_id,
       scope: pick.name,
       description: this.revisionMode ? pick.description ?? null : pick.description || '',
-      subscopes: [
-        ...pick.children.filter(c => pick.childIds.includes(c.id)).map(c => ({ scope: c.name, description: c.description || '' })),
-        ...pick.customChildren.map(name => ({ ...pick.savedChildren?.find(child => child.scope === name), scope: name, description: this.revisionMode ? pick.savedChildren?.find(child => child.scope === name)?.description ?? null : pick.savedChildren?.find(child => child.scope === name)?.description || '' })),
-      ],
+      subscopes: this.pickedChildren(pick).map(name => {
+        const detail = this.subscopeDetail(pick, name);
+        return {
+          ...(detail.id ? { id: detail.id } : {}),
+          scope: name,
+          description: this.revisionMode ? detail.description || null : detail.description || '',
+          ...(detail.locked ? { files_locked: true } : { files: [...detail.files] }),
+          new_files: [...detail.newFiles],
+        };
+      }),
     })));
     this.emit();
+  }
+
+  // ---- Sub-scope details: an optional description and files per picked sub-scope ----
+  get descriptionMax(): number { return this.revisionMode ? 2500 : 5000; }
+  readonly fileAccept = OFFER_FILE_EXTENSIONS.map(extension => `.${extension}`).join(',');
+  /** Open sub-scope detail panels, keyed `${service}:${pick}:${name}`. */
+  openDetails = new Set<string>();
+  /** Picked sub-scope names in display order: catalog picks first, then the ones the insighter typed. */
+  pickedChildren(pick: ScopePick): string[] {
+    return [...pick.children.filter(c => pick.childIds.includes(c.id)).map(c => c.name), ...pick.customChildren];
+  }
+  private savedDetail(child: any): SubscopeDetail {
+    const files = subscopeFilesState(child);
+    return { ...(child.id ? { id: child.id } : {}), description: child.description ?? null, files: files.files ?? [], removed: [], locked: !!files.files_locked, newFiles: [], errors: [] };
+  }
+  /** Details for a picked sub-scope; a catalog sub-scope starts from its catalog description. */
+  subscopeDetail(pick: ScopePick, name: string): SubscopeDetail {
+    pick.details ??= {};
+    return pick.details[name] ??= {
+      description: pick.children.find(c => c.name === name)?.description ?? null,
+      files: [], removed: [], locked: false, newFiles: [], errors: [],
+    };
+  }
+  detailKey(serviceId: number, pick: ScopePick, name: string): string { return `${serviceId}:${pick.key}:${name}`; }
+  isDetailOpen(serviceId: number, pick: ScopePick, name: string): boolean { return this.openDetails.has(this.detailKey(serviceId, pick, name)); }
+  toggleDetail(serviceId: number, pick: ScopePick, name: string): void {
+    const key = this.detailKey(serviceId, pick, name);
+    if (this.openDetails.has(key)) this.openDetails.delete(key); else this.openDetails.add(key);
+  }
+  trackChildName(_: number, name: string): string { return name; }
+  subscopeFileCount(detail: SubscopeDetail): number { return detail.files.length + detail.newFiles.length; }
+  subscopeHasDetails(detail: SubscopeDetail): boolean {
+    return !!detail.description?.trim() || this.subscopeFileCount(detail) > 0 || detail.removed.length > 0 || detail.locked;
+  }
+  /** Read-only rows list only sub-scopes that carry something to show. */
+  detailedChildren(pick: ScopePick): string[] {
+    return this.readOnly ? this.pickedChildren(pick).filter(name => this.subscopeHasDetails(this.subscopeDetail(pick, name))) : this.pickedChildren(pick);
+  }
+  addSubscopeFiles(pick: ScopePick, name: string, event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const picked = Array.from(input.files ?? []);
+    input.value = '';
+    const detail = this.subscopeDetail(pick, name);
+    detail.errors = picked.map(file => offerFileError(file, this.ar)).filter((error): error is string => !!error);
+    detail.newFiles = [...detail.newFiles, ...picked.filter(file => !offerFileError(file, this.ar))];
+    this.syncScopes();
+  }
+  removeNewSubscopeFile(pick: ScopePick, name: string, index: number): void {
+    const detail = this.subscopeDetail(pick, name);
+    detail.newFiles = detail.newFiles.filter((_, i) => i !== index);
+    detail.errors = [];
+    this.syncScopes();
+  }
+  /** Existing files are only marked; the save sends the files still kept. */
+  toggleSavedSubscopeFile(pick: ScopePick, name: string, file: ScopeFile): void {
+    const detail = this.subscopeDetail(pick, name);
+    if (detail.files.includes(file)) {
+      detail.files = detail.files.filter(row => row !== file);
+      detail.removed = [...detail.removed, file];
+    } else {
+      detail.removed = detail.removed.filter(row => row !== file);
+      detail.files = [...detail.files, file];
+    }
+    this.syncScopes();
+  }
+  fileSize(bytes: number | null | undefined): string {
+    const size = Number(bytes);
+    if (!size) return '';
+    if (size < 1024 * 1024) return `${Math.max(1, Math.round(size / 1024))} KB`;
+    return `${(size / (1024 * 1024)).toFixed(1)} MB`;
   }
   // ---- Deliverables (same card as the client wizard's deliverables step) ----
   get maxDay(): number { return this.allowPastEnd ? MAX_DUE_DAY : this.durationDays ?? Number.MAX_SAFE_INTEGER; }

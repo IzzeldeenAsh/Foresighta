@@ -173,6 +173,10 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
   proposalDrawerVisible: boolean = false;
   selectedInvite: CreatedProjectProposalInvite | null = null;
   proposalDrawerMode: 'proposal' | 'awarded' = 'proposal';
+  /** Offer drawer section — the private offer thread sits next to the offer itself. */
+  proposalDrawerSection: 'offer' | 'discussion' = 'offer';
+  /** `?offer=` from a discussion notification, opened once the submitted offers load. */
+  private pendingDiscussionOfferUuid: string | null = null;
   openingFileUuid: string | null = null;
   offerActionUuid: string | null = null;
   offerActionKind: ProjectOfferTechnicalDecisionStatus | 'award' | null = null;
@@ -252,6 +256,11 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
     this.route.queryParamMap.pipe(takeUntil(this.unsubscribe$)).subscribe(params => {
       const tab = params.get('tab');
       if (['overview', 'documents', 'reviews', 'discussion', 'revisions'].includes(tab || '')) this.activeTab = tab as ProjectDetailTab;
+      const offerUuid = params.get('offer');
+      if (offerUuid) {
+        this.pendingDiscussionOfferUuid = offerUuid;
+        this.openPendingOfferDiscussion();
+      }
     });
     this.projectsCreatedService.isLoading$
       .pipe(takeUntil(this.unsubscribe$))
@@ -687,11 +696,78 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
     }
   }
 
-  openProposalDrawer(invite: CreatedProjectProposalInvite): void {
+  openProposalDrawer(invite: CreatedProjectProposalInvite, section: 'offer' | 'discussion' = 'offer'): void {
     if (!this.canViewSubmittedOffer(invite)) return;
     this.proposalDrawerMode = 'proposal';
     this.selectedInvite = invite;
+    this.proposalDrawerSection = section === 'discussion' && this.canUsePrivateOfferDiscussion(invite) ? 'discussion' : 'offer';
     this.proposalDrawerVisible = true;
+  }
+
+  /**
+   * Proposal stage only: the client talks privately to the Insighter of one submitted offer. Once an
+   * offer is awarded the project moves to the `project` stage and the normal project discussion takes over.
+   */
+  isPrivateOfferDiscussionStage(project: CreatedProject | null = this.project): boolean {
+    return !!project && this.normalizeValue(project.stage || 'proposal') === 'proposal' && !this.isProjectAwarded(project);
+  }
+
+  canUsePrivateOfferDiscussion(invite: CreatedProjectProposalInvite | null | undefined): boolean {
+    return !!invite?.offer?.uuid
+      && !this.isAwardedOfferDrawer()
+      && this.canViewSubmittedOffer(invite)
+      && this.isPrivateOfferDiscussionStage();
+  }
+
+  /** Unread Insighter messages in this offer's private thread (badges hide outside the proposal stage). */
+  offerUnreadMessages(invite: CreatedProjectProposalInvite | null | undefined): number {
+    if (!invite?.offer || !this.isPrivateOfferDiscussionStage()) return 0;
+    return Number(invite.offer.unread_private_messages_count) || 0;
+  }
+
+  /** The open thread was marked read on the server — clear its badge and take it off the project total. */
+  onOfferThreadRead(invite: CreatedProjectProposalInvite | null | undefined): void {
+    if (!invite?.offer) return;
+    const cleared = Number(invite.offer.unread_private_messages_count) || 0;
+    invite.offer.unread_private_messages_count = 0;
+    if (this.project) {
+      this.project.unread_private_messages_count = Math.max(0, (Number(this.project.unread_private_messages_count) || 0) - cleared);
+    }
+  }
+
+  setProposalDrawerSection(section: 'offer' | 'discussion'): void {
+    this.proposalDrawerSection = section === 'discussion' && this.canUsePrivateOfferDiscussion(this.selectedInvite) ? 'discussion' : 'offer';
+  }
+
+  /** "Offer Change Request" in the offer aside — the request goes through the Offer Messages thread. */
+  openOfferChangeRequest(main: HTMLElement, body: HTMLElement): void {
+    this.setProposalDrawerSection('discussion');
+    body.scrollTop = 0;
+    // Below 992px the aside sits under the offer, so bring the thread back into view.
+    main.scrollIntoView({ block: 'start', behavior: 'smooth' });
+  }
+
+  /** The private thread answered 403 (offer awarded meanwhile, or access lost) — re-read the project. */
+  onPrivateOfferDiscussionClosed(): void {
+    const projectUuid = this.project?.uuid;
+    if (!projectUuid) return;
+    this.showInfo(
+      this.lang === 'ar' ? 'تم إغلاق رسائل العرض' : 'Offer messages closed',
+      this.lang === 'ar'
+        ? 'تغيّرت حالة المشروع، لذلك أُغلقت رسائل هذا العرض.'
+        : 'The project status changed, so messages on this offer are closed.'
+    );
+    this.loadProject(projectUuid);
+  }
+
+  private openPendingOfferDiscussion(): void {
+    const offerUuid = this.pendingDiscussionOfferUuid;
+    if (!offerUuid || !this.project) return;
+    const invite = this.invitedInsighters.find(item => item.offer?.uuid === offerUuid);
+    if (!invite) return;
+    this.pendingDiscussionOfferUuid = null;
+    if (this.canUsePrivateOfferDiscussion(invite)) this.openProposalDrawer(invite, 'discussion');
+    this.router.navigate([], { relativeTo: this.route, queryParams: { offer: null }, queryParamsHandling: 'merge', replaceUrl: true });
   }
 
   openAwardedOfferDrawer(step?: ProjectTimelineStep): void {
@@ -706,6 +782,7 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
     this.proposalDrawerVisible = false;
     this.selectedInvite = null;
     this.proposalDrawerMode = 'proposal';
+    this.proposalDrawerSection = 'offer';
   }
 
   isAwardedOfferDrawer(): boolean {
@@ -2873,6 +2950,7 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
         next: (result: ProjectMatchListResponse) => {
           this.invitedInsighters = result.submitted || [];
           this.submittedOfferDeadline = this.getFarthestSubmittedOfferDeadline(this.invitedInsighters);
+          this.openPendingOfferDiscussion();
         },
         error: () => {
           this.invitedInsighters = [];

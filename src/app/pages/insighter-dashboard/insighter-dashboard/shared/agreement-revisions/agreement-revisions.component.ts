@@ -50,7 +50,7 @@ export class AgreementRevisionsComponent implements OnInit, OnChanges, OnDestroy
   expandedItems = new Set<AgreementRevisionItem>();
   private tables = new WeakMap<AgreementRevisionItem, RevisionTable>();
   private installmentDiffs = new WeakMap<AgreementRevisionItem, InstallmentDiff | null>();
-  private attachmentChangeLists = new WeakMap<AgreementRevision, AttachmentChange[]>();
+  private attachmentChangeLists = new WeakMap<AgreementRevision, Record<string, AttachmentChange[]>>();
   openingFileUuid = '';
   detail: AgreementRevision | null = null;
   detailVisible = false;
@@ -403,7 +403,7 @@ export class AgreementRevisionsComponent implements OnInit, OnChanges, OnDestroy
       full: ['Full payment', 'دفع كامل'], partial: ['Installments', 'دفعات'], on_platform: ['On platform', 'على المنصة'], session: ['Session', 'جلسة'], physical_workshop: ['In-person workshop', 'ورشة حضورية'],
       position: ['Order', 'الترتيب'], value: ['Value', 'القيمة'], selected: ['Method', 'الطريقة'], way: ['Delivery', 'التسليم'], address: ['Address', 'العنوان'],
       cover_letter: ['Technical proposal', 'نص العرض الفني'], suggested_duration_days: ['Suggested project duration', 'مدة المشروع المقترحة'],
-      offer_cover_letter: ['Technical proposal', 'نص العرض الفني'], offer_attachment: ['Offer attachments', 'مرفقات العرض'], offer_duration_days: ['Suggested project duration', 'مدة المشروع المقترحة'],
+      offer_cover_letter: ['Technical proposal', 'نص العرض الفني'], offer_attachment: ['Offer attachments', 'مرفقات العرض'], scope_attachment: ['Sub-scope attachments', 'مرفقات النطاقات الفرعية'], offer_duration_days: ['Suggested project duration', 'مدة المشروع المقترحة'],
     };
     return labels[value] ? this.text(...labels[value]) : value.replace(/_/g, ' ');
   }
@@ -419,6 +419,7 @@ export class AgreementRevisionsComponent implements OnInit, OnChanges, OnDestroy
       proposal_property: ['ki-time', 'scope', 'Offer deadline', 'موعد انتهاء العرض'],
       offer_cover_letter: ['ki-document', 'component', 'Technical proposal', 'العرض الفني'],
       offer_attachment: ['ki-paper-clip', 'component', 'Attachments', 'المرفقات'],
+      scope_attachment: ['ki-paper-clip', 'scope', 'Sub-scope files', 'ملفات النطاقات الفرعية'],
       offer_duration_days: ['ki-time', 'deliverable', 'Suggested duration', 'المدة المقترحة'],
     };
     const [icon, tone, en, ar] = meta[type] ?? ['ki-notepad-edit', 'component', this.label(type), this.label(type)];
@@ -454,23 +455,33 @@ export class AgreementRevisionsComponent implements OnInit, OnChanges, OnDestroy
     }
     return table;
   }
-  /** Attachment items render together as one list of added and removed files. */
+  /** Offer and sub-scope attachment items each render together as one list of added and removed files. */
   detailItems(revision: AgreementRevision): AgreementRevisionItem[] {
-    return (revision.items ?? []).filter(item => item.target_type !== 'offer_attachment');
+    return (revision.items ?? []).filter(item => item.target_type !== 'offer_attachment' && item.target_type !== 'scope_attachment');
   }
-  attachmentChanges(revision: AgreementRevision): AttachmentChange[] {
-    let list = this.attachmentChangeLists.get(revision);
+  attachmentChanges(revision: AgreementRevision, type: 'offer_attachment' | 'scope_attachment' = 'offer_attachment'): AttachmentChange[] {
+    let lists = this.attachmentChangeLists.get(revision);
+    if (!lists) this.attachmentChangeLists.set(revision, lists = {});
+    let list = lists[type];
     if (!list) {
-      const active = new Set(this.activeOfferFiles.map((file: any) => file?.uuid).filter(Boolean));
-      list = (revision.items ?? []).filter(item => item.target_type === 'offer_attachment').map(item => {
+      const files = type === 'offer_attachment' ? this.activeOfferFiles : this.activeScopeFiles;
+      const active = new Set(files.map((file: any) => file?.uuid).filter(Boolean));
+      list = (revision.items ?? []).filter(item => item.target_type === type).map(item => {
         const file = this.plain(item.action === 'deleted' ? item.before_value : item.after_value) ?? {};
         const uuid = String(file['file_uuid'] ?? file['uuid'] ?? '');
         return { action: item.action === 'deleted' ? 'deleted' : 'created', uuid, name: String(file['name'] || this.text('File', 'ملف')),
           size: this.fileSize(file['size']), active: item.action !== 'deleted' && !!uuid && active.has(uuid) } as AttachmentChange;
       }).sort((a, b) => (a.action === b.action ? 0 : a.action === 'deleted' ? -1 : 1));
-      this.attachmentChangeLists.set(revision, list);
+      lists[type] = list;
     }
     return list;
+  }
+  /** Sub-scope files as they are now, on the offer scopes and on the project scopes after award. */
+  private get activeScopeFiles(): any[] {
+    const match = this.role === 'client' ? this.matches.find((m: any) => m.uuid === this.matchUuid) : null;
+    const offer = this.role === 'insighter' ? this.record?.offer : match?.offer ?? this.project?.offer;
+    const scopes: any[] = [...(offer?.offer_scopes ?? []), ...((this.project?.project_services ?? []) as any[]).reduce<any[]>((all, s) => all.concat(s.scopes ?? []), [])];
+    return scopes.reduce<any[]>((all, scope) => all.concat(scope.files ?? [], ...(scope.children ?? []).map((child: any) => child.files ?? [])), []);
   }
   /** The offer's files as they are now, which is what an added file in a revision can still open. */
   private get activeOfferFiles(): any[] {

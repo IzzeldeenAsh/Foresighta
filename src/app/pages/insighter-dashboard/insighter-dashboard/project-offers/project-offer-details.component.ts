@@ -11,6 +11,7 @@ import { DrawerTab, ProjectOffersComponent } from './project-offers.component';
 })
 export class ProjectOfferDetailsComponent extends ProjectOffersComponent implements OnInit {
   private readonly detailTabParam = 'tab';
+  private handledOfferParam: string | null = null;
   private readonly detailTabValues: DrawerTab[] = ['revisions', 'overview', 'documents', 'discussion', 'offer'];
 
   constructor(
@@ -38,8 +39,15 @@ export class ProjectOfferDetailsComponent extends ProjectOffersComponent impleme
 
     this.route.queryParamMap
       .pipe(takeUntil(this.unsubscribe$))
-      .subscribe(() => {
+      .subscribe(params => {
+        // `?offer=` (private-message notification) opens the private drawer once per link.
+        const offerParam = params.get('offer');
+        if (offerParam && offerParam !== this.handledOfferParam) {
+          this.handledOfferParam = offerParam;
+          this.pendingPrivateOfferUuid = offerParam;
+        }
         if (!this.selectedOffer) return;
+        this.openPendingPrivateMessages();
         const tab = this.getCurrentTabFromUrl(this.selectedOffer);
         super.setDrawerTab(tab, this.selectedOffer, false);
         this.updateTabQueryParam(tab);

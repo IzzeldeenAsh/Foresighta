@@ -36,6 +36,7 @@ export class NotificationsInnerComponent extends BaseComponent implements OnInit
   /** A trailing URL segment that is an id (uuid or numeric), not a page name. */
   private static readonly ID_PATTERN =
     /^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|\d+)$/i;
+  private static readonly UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
   @Input() notifications: Notification[] = [];
   @Input() parent: string = '';
@@ -517,16 +518,24 @@ export class NotificationsInnerComponent extends BaseComponent implements OnInit
       // Insighter receives, param = project.uuid
       case 'project.insighter.closed':
       case 'project.insighter.contract':
-      case 'project.review.submission.reviewed':
         this.navigateTo(param ? `${insighterBase}/details/${param}` : insighterBase);
+        return true;
+
+      // Client approved or asked for changes — the reply is unread on the insighter's Reviews tab.
+      case 'project.review.submission.reviewed':
+        this.navigateTo(param ? `${insighterBase}/details/${param}?tab=reviews` : insighterBase);
         return true;
 
       // Client receives, param = project.uuid
       case 'project.client.closed':
       case 'project.client.contract':
       case 'project.client.started':
-      case 'project.review.submission':
         this.navigateTo(param ? `${clientBase}/${param}` : clientBase);
+        return true;
+
+      // Insighter submitted a deliverable for review — unread on the client's Reviews tab.
+      case 'project.review.submission':
+        this.navigateTo(param ? `${clientBase}/${param}?tab=reviews` : clientBase);
         return true;
 
       // Insighter receives, param = project id/uuid (the API route binding takes either).
@@ -577,10 +586,10 @@ export class NotificationsInnerComponent extends BaseComponent implements OnInit
         this.navigateTo(param ? `${clientBase}/${param}` : clientBase);
         return true;
       case 'project_review_submission':           // client, project.uuid
-        this.navigateTo(param ? `${clientBase}/${param}` : clientBase);
+        this.navigateTo(param ? `${clientBase}/${param}?tab=reviews` : clientBase);
         return true;
       case 'project_review_submission_reviewed':  // insighter, project.uuid
-        this.navigateTo(param ? `${insighterBase}/details/${param}` : insighterBase);
+        this.navigateTo(param ? `${insighterBase}/details/${param}?tab=reviews` : insighterBase);
         return true;
       case 'project_offer_technical_decision':
       case 'project_offer_not_selected':
@@ -695,7 +704,40 @@ export class NotificationsInnerComponent extends BaseComponent implements OnInit
     // The URL's trailing id may be a proposal-match uuid; `param` has the
     // project uuid. Always land on the discussion tab, ignoring whatever tab
     // the backend may have baked in.
-    this.navigateTo(`${this.pathWithParamId(path, n.param)}?tab=discussion`);
+    const target = this.pathWithParamId(path, n.param);
+    // Offer messages live in a drawer opened from the offer, not in the Discussion tab, so `?offer=` opens it.
+    const offerUuid = this.privateOfferUuid(n, raw);
+    if (offerUuid) {
+      const offerQuery = `offer=${encodeURIComponent(offerUuid)}`;
+      if (target.startsWith('/app/insighter-dashboard/projects-created/')) {
+        this.navigateTo(`${target}?${offerQuery}`);
+        return;
+      }
+      if (target.startsWith('/app/insighter-dashboard/project-offers/details/')) {
+        this.navigateTo(`${target}?tab=offer&${offerQuery}`);
+        return;
+      }
+    }
+    this.navigateTo(`${target}?tab=discussion`);
+  }
+
+  /**
+   * Offer UUID of a private offer message: `project_proposal_offer_uuid` (current API), the `offer` query
+   * of its url, or — for notifications sent before that field existed — `notifiable_group_id`, which
+   * then held the offer UUID (it now holds the project UUID).
+   */
+  private privateOfferUuid(n: Notification, rawUrl: string): string | null {
+    if (n.visibility === 'public') return null;
+    const explicit = (n.project_proposal_offer_uuid ?? '').toString().trim();
+    if (explicit) return explicit;
+    try {
+      const fromUrl = new URL(rawUrl, window.location.origin).searchParams.get('offer');
+      if (fromUrl) return fromUrl;
+    } catch { /* not a URL */ }
+    if (n.visibility === 'private_offer') return null;
+    const legacy = (n.notifiable_group_id ?? '').toString().trim();
+    const projectUuid = (n.param ?? '').toString().trim();
+    return NotificationsInnerComponent.UUID_PATTERN.test(legacy) && legacy !== projectUuid ? legacy : null;
   }
 
   // Resolve client vs insighter destination by the user's role.

@@ -3,7 +3,7 @@ import { HttpClientTestingModule, HttpTestingController } from '@angular/common/
 import { AgreementRevisionsService } from './agreement-revisions.service';
 import { TranslationService } from 'src/app/modules/i18n';
 import { environment } from 'src/environments/environment';
-import { agreementFormData, agreementPaymentStarted, offerDurationSuggestion } from './agreement-revisions.model';
+import { agreementFormData, agreementPaymentStarted, emptiedScopeFiles, offerDurationSuggestion, onlyChangedScopeFiles, scopeDraft, scopeEditorDraft } from './agreement-revisions.model';
 
 describe('Agreement revision API boundaries', () => {
   let service: AgreementRevisionsService;
@@ -45,6 +45,34 @@ describe('Agreement revision API boundaries', () => {
     expect(body.get('deliverables[0][items][0][period_days]')).toBe('45');
     expect(body.get('deliverables[0][items][0][report_type][0]')).toBe('pdf');
     expect(body.get('deliverables[0][items][0][way][address]')).toBe('');
+  });
+  it('sends sub-scope uploads as multipart under the sub-scope with the retained file list', () => {
+    const file = new File(['x'], 'market-sizing.pdf');
+    service.update('insighter', 'offer-uuid', { scopes: [{ project_service_id: 44, items: [{ id: 10, scope: 'Market sizing', description: null,
+      subscopes: [{ id: 11, scope: 'TAM', description: 'Updated', subscopes: [], file_uuids: ['keep-me'], file: [file] }] }] }] }).subscribe();
+    const request = http.expectOne(`${environment.apiBaseUrl}/insighter/project/agreement/insighter-requirements/offer-uuid`);
+    const body = request.request.body as FormData;
+    expect(body instanceof FormData).toBeTrue();
+    expect(body.get('scopes[0][items][0][subscopes][0][file_uuids][0]')).toBe('keep-me');
+    expect((body.get('scopes[0][items][0][subscopes][0][file][0]') as File).name).toBe('market-sizing.pdf');
+    request.flush({data:{id:3}});
+  });
+  it('keeps sub-scope file fields only where the attachments changed', () => {
+    const saved = [scopeEditorDraft({ id: 10, scope: 'Market sizing', children: [
+      { id: 11, scope: 'TAM', files: [{ uuid: 'a', name: 'a.pdf' }, { uuid: 'b', name: 'b.pdf' }] },
+      { id: 12, scope: 'SAM', files: [{ uuid: 'c', name: 'c.pdf' }] },
+      { id: 13, scope: 'SOM', have_attachments: true },
+    ] })];
+    const original = saved.map(scopeDraft);
+    const edited = JSON.parse(JSON.stringify(saved));
+    edited[0].subscopes[0].files = [{ uuid: 'a', name: 'a.pdf' }];
+    edited[0].subscopes[1].description = 'Now described';
+    const [scope] = onlyChangedScopeFiles(edited.map(scopeDraft), original);
+    expect(scope.subscopes[0].file_uuids).toEqual(['a']);
+    expect('file_uuids' in scope.subscopes[1]).toBeFalse();
+    // Files the API only reports as present are never resent, so they stay untouched.
+    expect('file_uuids' in scope.subscopes[2]).toBeFalse();
+    expect(emptiedScopeFiles({ scopes: [{ project_service_id: 44, items: [{ ...scope, subscopes: [{ ...scope.subscopes[0], file_uuids: [] }] }] }] })).toBeTrue();
   });
   it('reads a suggested duration only when it extends the project', () => {
     expect(offerDurationSuggestion({ suggested_duration_days: 45 }, 30)).toBe(45);

@@ -1,4 +1,13 @@
-<div class="discussion-card" [class.discussion-card--empty]="hasEmptyThread" [attr.dir]="lang === 'ar' ? 'rtl' : 'ltr'">
+<div class="discussion-card" [class.discussion-card--empty]="hasEmptyThread" [class.discussion-card--private]="isPrivateThread" [attr.dir]="lang === 'ar' ? 'rtl' : 'ltr'">
+  <div class="discussion-card__private" *ngIf="isPrivateThread">
+    <i class="ki-outline ki-lock-2 fs-5" aria-hidden="true"></i>
+    <span>
+      {{ lang === 'ar'
+        ? 'رسائل خاصة بهذا العرض — تظهر لك ولـ ' + counterpartLabel + ' فقط.'
+        : 'Private messages about this offer — only you and ' + counterpartLabel + ' can see them.' }}
+    </span>
+  </div>
+
   <div class="discussion-card__body" #messagesScroller>
     <div *ngIf="isLoading" class="discussion-state">
       <span class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></span>
@@ -20,8 +29,26 @@
 
     <div *ngIf="hasEmptyThread"
          class="discussion-state discussion-state--empty">
-      <i class="ki-outline ki-messages fs-2x text-gray-400"></i>
-      <span>{{ lang === 'ar' ? 'لا توجد رسائل بعد.' : 'No messages yet.' }}</span>
+      <i class="ki-outline fs-2x text-gray-400" [ngClass]="isAwaitingClient ? 'ki-time' : 'ki-messages'"></i>
+      <ng-container *ngIf="!isPrivateThread">
+        <span>{{ lang === 'ar' ? 'لا توجد رسائل بعد.' : 'No messages yet.' }}</span>
+      </ng-container>
+      <ng-container *ngIf="isPrivateThread && context === 'client'">
+        <strong class="discussion-state__title">{{ lang === 'ar' ? 'ابدأ المراسلة حول هذا العرض' : 'Start messaging about this offer' }}</strong>
+        <span>
+          {{ lang === 'ar'
+            ? 'اسأل ' + counterpartLabel + ' عن أي تفصيل في عرضه. لن يتمكن من مراسلتك هنا قبل أن ترسل الرسالة الأولى.'
+            : 'Ask ' + counterpartLabel + ' about anything in this offer. They can only message you here after you send the first message.' }}
+        </span>
+      </ng-container>
+      <ng-container *ngIf="isAwaitingClient">
+        <strong class="discussion-state__title">{{ lang === 'ar' ? 'لا توجد رسائل من العميل بعد' : 'No messages from the client yet' }}</strong>
+        <span>
+          {{ lang === 'ar'
+            ? 'يبدأ العميل المراسلة حول عرضك. ستتمكن من الرد هنا بعد أن يرسل رسالته الأولى.'
+            : 'The client starts the conversation about your offer. You can reply here once they send the first message.' }}
+        </span>
+      </ng-container>
     </div>
 
     <ng-container *ngIf="!isLoading && !loadFailed">
@@ -60,12 +87,12 @@
     </ng-container>
   </div>
 
-  <div class="discussion-card__footer" *ngIf="canSend; else discussionReadOnly">
+  <div class="discussion-card__footer" *ngIf="canCompose; else discussionReadOnly">
     <textarea
       class="discussion-input"
       rows="2"
       [(ngModel)]="draft"
-      [disabled]="isSending || !normalizedProjectUuid || !canSend"
+      [disabled]="isSending || !normalizedProjectUuid || !canCompose"
       [placeholder]="lang === 'ar' ? 'اكتب رسالة' : 'Type a message'"
       (keydown)="onMessageKeydown($event)">
     </textarea>
@@ -84,6 +111,19 @@
 </div>
 
 <ng-template #discussionReadOnly>
+  <div class="discussion-card__footer discussion-card__footer--readonly" *ngIf="canSend && isAwaitingClient; else discussionClosed">
+    <span class="badge badge-light-info discussion-readonly-badge">
+      {{ lang === 'ar' ? 'بانتظار العميل' : 'Waiting for the client' }}
+    </span>
+    <span class="discussion-readonly-message">
+      {{ hasLoadedThread
+        ? (lang === 'ar' ? 'يمكنك الرد بعد أن يرسل العميل الرسالة الأولى.' : 'You can reply after the client sends the first message.')
+        : (lang === 'ar' ? 'جار التحقق من المحادثة...' : 'Checking the conversation...') }}
+    </span>
+  </div>
+</ng-template>
+
+<ng-template #discussionClosed>
   <div class="discussion-card__footer discussion-card__footer--readonly">
     <span class="badge discussion-readonly-badge" [ngClass]="disabledBadgeClass">
       {{ disabledBadgeLabel || (lang === 'ar' ? 'للقراءة فقط' : 'Read only') }}

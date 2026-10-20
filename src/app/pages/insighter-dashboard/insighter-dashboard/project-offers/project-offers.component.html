@@ -131,6 +131,11 @@
               <span class="po-table__project-copy">
                 <span class="po-table__project-title">
                   {{ offer.project.title }}
+                  <span class="po-msg-badge" *ngIf="listUnreadMessages(offer) > 0"
+                        [pTooltip]="lang === 'ar' ? 'رسائل عرض غير مقروءة' : 'Unread offer messages'" tooltipPosition="top"
+                        [attr.aria-label]="lang === 'ar' ? 'رسائل عرض غير مقروءة' : 'Unread offer messages'">
+                        <i class="ki-outline ki-messages" aria-hidden="true"></i>{{ listUnreadMessages(offer) }}
+                      </span>
                 </span>
                 <span *ngIf="isOpenActiveProject(offer)" class="po-active-marker">
                   <span class="po-active-marker__dot"></span>
@@ -206,6 +211,11 @@
                     <ng-container *ngTemplateOutlet="typeIcon; context:{ $implicit: offer.project.type }"></ng-container>
                   </span>
                   {{ offer.project.title }}
+                  <span class="po-msg-badge" *ngIf="listUnreadMessages(offer) > 0"
+                        [pTooltip]="lang === 'ar' ? 'رسائل عرض غير مقروءة' : 'Unread offer messages'" tooltipPosition="top"
+                        [attr.aria-label]="lang === 'ar' ? 'رسائل عرض غير مقروءة' : 'Unread offer messages'">
+                        <i class="ki-outline ki-messages" aria-hidden="true"></i>{{ listUnreadMessages(offer) }}
+                      </span>
                 </span>
                 <app-definition-mode-badge [mode]="offer.project.definition_mode" [lang]="lang"></app-definition-mode-badge>
                 <span *ngIf="isOpenActiveProject(offer)" class="po-active-marker">
@@ -255,6 +265,11 @@
       <div class="po-card__content">
         <div class="po-card__title fs-1" [title]="offer.project.title">
           {{ offer.project.title }}
+          <span class="po-msg-badge" *ngIf="listUnreadMessages(offer) > 0"
+                [pTooltip]="lang === 'ar' ? 'رسائل عرض غير مقروءة' : 'Unread offer messages'" tooltipPosition="top"
+                [attr.aria-label]="lang === 'ar' ? 'رسائل عرض غير مقروءة' : 'Unread offer messages'">
+                <i class="ki-outline ki-messages" aria-hidden="true"></i>{{ listUnreadMessages(offer) }}
+              </span>
         </div>
 
         <p class="po-card__summary">
@@ -439,6 +454,7 @@
               (click)="setDrawerTab(tab.value, offer)">
               <i class="ki-outline po-drawer-tab__icon" [ngClass]="tab.iconClass" aria-hidden="true"></i>
               <span>{{ lang === 'ar' ? tab.labelAr : tab.labelEn }}</span>
+              <span class="po-tab-badge" *ngIf="tab.value === 'offer' && offerUnreadMessages(offer) > 0" [attr.aria-label]="lang === 'ar' ? 'رسائل عرض غير مقروءة' : 'Unread offer messages'">{{ offerUnreadMessages(offer) }}</span>
               <span class="po-tab-badge" *ngIf="tab.value === 'revisions' && offer.offer?.uuid && (offer.unseen_agreement_revisions_count || 0) > 0" [attr.aria-label]="lang === 'ar' ? 'مراجعات غير مقروءة' : 'Unseen revisions'">{{ offer.unseen_agreement_revisions_count }}</span>
             </button>
           </div>
@@ -937,9 +953,15 @@
                 [statusLabel]="getOfferStatusLabel(submittedOffer.status)"
                 [statusClass]="getOfferStatusBadgeClass(submittedOffer.status)"
                 [pricingSummary]="getOfferPaymentSummary(submittedOffer)">
-                <button offerActions type="button" class="btn btn-sm btn-info" *ngIf="canEditOffer(offer)" (click)="onEditOffer(offer)">
-                  <i class="ki-outline ki-pencil fs-5"></i>{{ lang === 'ar' ? 'تعديل العرض' : 'Edit offer' }}
-                </button>
+                <div offerActions class="d-flex flex-wrap align-items-center gap-2" *ngIf="canUsePrivateOfferDiscussion(offer) || canEditOffer(offer)">
+                  <button type="button" class="btn btn-sm btn-light-info" *ngIf="canUsePrivateOfferDiscussion(offer)" (click)="openPrivateMessages(offer)">
+                    <i class="ki-outline ki-messages fs-5"></i>{{ lang === 'ar' ? 'رسائل العرض' : 'Offer Messages' }}
+                  <span class="po-tab-badge ms-2" *ngIf="offerUnreadMessages(offer) > 0" [attr.aria-label]="lang === 'ar' ? 'رسائل غير مقروءة' : 'Unread messages'">{{ offerUnreadMessages(offer) }}</span>
+                  </button>
+                  <button type="button" class="btn btn-sm btn-info" *ngIf="canEditOffer(offer)" (click)="onEditOffer(offer)">
+                    <i class="ki-outline ki-pencil fs-5"></i>{{ lang === 'ar' ? 'تعديل العرض' : 'Edit offer' }}
+                  </button>
+                </div>
                 <div class="po-document-group mt-4" *ngIf="getOfferFiles(offer).length">
                   <div class="po-document-group__head">
                     <span class="po-document-group__icon po-document-group__icon--offer"><i class="ki-outline ki-paper-clip fs-5"></i></span>
@@ -1105,5 +1127,32 @@
   styleClass="po-drawer" (onHide)="closeDrawer()">
   <ng-container *ngIf="selectedOffer as offer">
     <ng-container *ngTemplateOutlet="offerDetailsContent; context: { $implicit: offer }"></ng-container>
+  </ng-container>
+</p-sidebar>
+
+<p-sidebar [(visible)]="privateMessagesVisible" position="right" appendTo="body" [modal]="true" [dismissible]="true"
+  [blockScroll]="true" [baseZIndex]="1400" [showCloseIcon]="false" [style]="{ width: '640px', maxWidth: '100vw' }"
+  styleClass="po-private-drawer" (onHide)="closePrivateMessages()">
+  <ng-container *ngIf="privateMessagesVisible && selectedOffer as offer">
+    <div class="po-private-drawer__head">
+      <div class="po-private-drawer__title">
+        <span>{{ lang === 'ar' ? 'رسائل العرض' : 'Offer Messages' }}</span>
+        <small>{{ offer.project.title }}</small>
+      </div>
+      <button type="button" class="po-private-drawer__close" (click)="closePrivateMessages()"
+        [attr.aria-label]="lang === 'ar' ? 'إغلاق' : 'Close'">
+        <i class="pi pi-times" aria-hidden="true"></i>
+      </button>
+    </div>
+    <div class="po-private-drawer__body">
+      <app-project-discussion
+        [projectUuid]="offer.project.uuid || null"
+        [offerUuid]="offer.offer?.uuid || null"
+        [counterpartName]="offer.project.client?.name || null"
+        context="insighter"
+        (threadRead)="onOfferThreadRead(offer)"
+        (accessClosed)="onPrivateOfferDiscussionClosed(offer)">
+      </app-project-discussion>
+    </div>
   </ng-container>
 </p-sidebar>

@@ -2,7 +2,7 @@ import Swal from 'sweetalert2';
 import { forkJoin, from, Observable } from 'rxjs';
 import { ProfileService } from 'src/app/_fake/services/get-profile/get-profile.service';
 import { AgreementRevisionsService } from 'src/app/_fake/services/agreement-revisions/agreement-revisions.service';
-import { agreementIsLocked, agreementPaymentStarted, commercialDraft, CommercialDraft, COVER_LETTER_MAX_LENGTH, emptyAgreementGroups, linkedDeliverableIds, OFFER_FILE_EXTENSIONS, offerDurationSuggestion, offerFileError } from 'src/app/_fake/services/agreement-revisions/agreement-revisions.model';
+import { agreementIsLocked, agreementPaymentStarted, commercialDraft, CommercialDraft, COVER_LETTER_MAX_LENGTH, emptyAgreementGroups, emptiedScopeFiles, linkedDeliverableIds, payloadHasFiles, OFFER_FILE_EXTENSIONS, offerDurationSuggestion, offerFileError } from 'src/app/_fake/services/agreement-revisions/agreement-revisions.model';
 import { offerEditRequirements, offerEditPatch, offerEditFingerprint, editableOfferScopes, editableOfferDeliverables, OfferTermsDraft } from 'src/app/_fake/services/agreement-revisions/offer-edit.model';
 import { MissingOfferRequirements, OfferRequirementDraft, appendRequirementFormData, mapMissingOfferRequirements, offerRequirementsAreComplete } from 'src/app/_fake/services/project-phase2/project-requirements.model';
 import { Component, HostListener, Injector, OnDestroy, OnInit, QueryList, ViewChildren } from '@angular/core';
@@ -1017,10 +1017,18 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
     if (this.activeTab !== 'review') { this.selectTab('review'); return; }
     const payload = { ...this.editPatch, user_note: this.revisionNote.trim() || undefined };
     const files = [...this.selectedAttachments];
-    if (files.length && emptyAgreementGroups(payload)) {
+    // A request with uploads goes as multipart, which cannot carry an empty list.
+    const multipart = files.length > 0 || payloadHasFiles(payload);
+    if (multipart && emptyAgreementGroups(payload)) {
       this.editError = this.lang === 'ar'
         ? 'لا يمكن حذف كل نطاقات أو مخرجات خدمة ورفع ملفات جديدة في الحفظ نفسه. احفظ الحذف أولاً ثم ارفع الملفات.'
         : 'Removing every scope or deliverable of a service cannot be saved together with new files. Save the removal first, then upload the files.';
+      return;
+    }
+    if (multipart && emptiedScopeFiles(payload)) {
+      this.editError = this.lang === 'ar'
+        ? 'لا يمكن حذف كل مرفقات نطاق فرعي ورفع ملفات جديدة في مكان آخر في الحفظ نفسه. احفظ الحذف أولاً ثم ارفع الملفات.'
+        : 'Removing every file of a sub-scope cannot be saved together with new uploads elsewhere. Save the removal first, then upload the files.';
       return;
     }
     this.isSubmitting = true; this.editError = '';
@@ -1405,6 +1413,9 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
     });
 
     appendRequirementFormData(formData, 'offer_scopes', this.requirementDraft.offer_scopes.map(scope => ({ project_service_id: scope.project_service_id, scope: scope.scope.trim(), description: scope.description?.trim(), subscopes: (scope.subscopes ?? []).map(child => ({ scope: child.scope.trim(), description: child.description?.trim() })) })));
+    // Sub-scope files go under the same indexes as the sub-scopes above.
+    this.requirementDraft.offer_scopes.forEach((scope, scopeIndex) => (scope.subscopes ?? []).forEach((child, childIndex) =>
+      (child.new_files ?? []).forEach((file, fileIndex) => formData.append(`offer_scopes[${scopeIndex}][subscopes][${childIndex}][file][${fileIndex}]`, file, file.name))));
     appendRequirementFormData(formData, 'offer_components', this.requirementDraft.offer_components.map(component => ({ project_service_id: component.project_service_id, component_id: component.component_id, value: component.value })));
     return formData;
   }

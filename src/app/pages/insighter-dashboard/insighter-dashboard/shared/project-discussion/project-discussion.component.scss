@@ -14,6 +14,30 @@
   grid-template-rows: minmax(180px, auto) auto;
 }
 
+.discussion-card--private {
+  grid-template-rows: auto minmax(360px, 1fr) auto;
+}
+
+.discussion-card--private.discussion-card--empty {
+  grid-template-rows: auto minmax(180px, auto) auto;
+}
+
+.discussion-card__private {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-bottom: 1px solid #edf0f5;
+  background: #f8fafc;
+  color: #475569;
+  font-size: 12.5px;
+  font-weight: 500;
+}
+
+.discussion-card__private i {
+  color: #0ea5e9;
+}
+
 .discussion-card__body {
   min-height: 0;
   max-height: 560px;
@@ -295,4 +319,16 @@
   .discussion-send {
     width: 100%;
   }
+}
+
+.discussion-state__title {
+  color: #0f172a;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.discussion-state--empty > span {
+  max-width: 460px;
+  font-weight: 500;
+  line-height: 1.55;
 }

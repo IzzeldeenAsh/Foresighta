@@ -1576,3 +1576,26 @@
     justify-content: center;
   }
 }
+
+/* Unread private offer messages (proposal stage) */
+.pc-msg-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  height: 20px;
+  margin-inline-start: 6px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: #dc2626;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+  vertical-align: middle;
+  white-space: nowrap;
+
+  i {
+    color: inherit;
+    font-size: 12px;
+  }
+}

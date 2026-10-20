@@ -109,7 +109,11 @@
                     {{ allChildrenPicked(pick) ? (ar ? 'إلغاء تحديد الكل' : 'Clear') : (ar ? 'تحديد الكل' : 'Select all') }}
                   </button>
                 </div>
-                <label *ngIf="revisionMode || (readOnly && pick.description)" class="sw-revision-description">{{ ar ? 'وصف النطاق (اختياري)' : 'Scope description (optional)' }}<textarea class="sw-input" rows="2" maxlength="2500" [(ngModel)]="pick.description" (ngModelChange)="syncScopes()"></textarea></label>
+                <label *ngIf="!readOnly || pick.description" class="sw-field">
+                  <span class="sw-label">{{ ar ? 'وصف النطاق' : 'Scope description' }} <span class="sw-optional">{{ ar ? 'اختياري' : 'Optional' }}</span></span>
+                  <textarea class="sw-input sw-textarea" rows="2" [maxlength]="descriptionMax" [(ngModel)]="pick.description" (ngModelChange)="syncScopes()"
+                    [placeholder]="ar ? 'صف ما سيغطيه هذا النطاق…' : 'Describe what this scope will cover…'"></textarea>
+                </label>
                 <p class="sw-hint" *ngIf="!pick.children.length && !pick.customChildren.length">
                   {{ ar ? 'سيتم تضمين هذا النطاق بالكامل. أضف نطاقات فرعية إذا أردت تفاصيل أكثر.' : 'This whole scope will be included. Add sub-scopes if you want to be more specific.' }}
                 </p>
@@ -135,6 +139,80 @@
                     <i class="ki-outline ki-plus"></i>{{ ar ? 'إضافة نطاق فرعي' : 'Add sub-scope' }}
                   </button>
                 </div>
+
+                <!-- Each picked sub-scope can carry a description and supporting files -->
+                <ul class="sw-subs" *ngIf="detailedChildren(pick).length">
+                  <li class="sw-sub" *ngFor="let name of detailedChildren(pick); trackBy: trackChildName"
+                    [class.is-open]="isDetailOpen(req.project_service_id, pick, name)">
+                    <ng-container *ngIf="subscopeDetail(pick, name) as detail">
+                      <button type="button" class="sw-sub__toggle" [attr.aria-expanded]="isDetailOpen(req.project_service_id, pick, name)"
+                        (click)="toggleDetail(req.project_service_id, pick, name)">
+                        <span class="sw-sub__name">{{ name }}</span>
+                        <span class="sw-sub__meta">
+                          <span class="sw-sub__badge" *ngIf="detail.description?.trim()"><i class="ki-outline ki-notepad"></i>{{ ar ? 'وصف' : 'Description' }}</span>
+                          <span class="sw-sub__badge" *ngIf="subscopeFileCount(detail) || detail.locked"><i class="ki-outline ki-paper-clip"></i>{{ detail.locked ? (ar ? 'مرفقات' : 'Files') : subscopeFileCount(detail) }}</span>
+                          <span class="sw-sub__action" *ngIf="!readOnly">
+                            {{ subscopeHasDetails(detail) ? (ar ? 'تعديل التفاصيل' : 'Edit details') : (ar ? 'إضافة وصف ومرفقات' : 'Add description & files') }}
+                          </span>
+                        </span>
+                        <i class="ki-outline ki-down sw-sub__chev" aria-hidden="true"></i>
+                      </button>
+
+                      <div class="sw-sub__panel" *ngIf="isDetailOpen(req.project_service_id, pick, name)">
+                        <label class="sw-field" *ngIf="!readOnly || detail.description">
+                          <span class="sw-label">{{ ar ? 'الوصف' : 'Description' }} <span class="sw-optional">{{ ar ? 'اختياري' : 'Optional' }}</span></span>
+                          <textarea class="sw-input sw-textarea" rows="3" [maxlength]="descriptionMax" [(ngModel)]="detail.description" (ngModelChange)="syncScopes()"
+                            [placeholder]="ar ? 'وضّح ما سيشمله هذا النطاق الفرعي…' : 'Explain what this sub-scope includes…'"></textarea>
+                        </label>
+
+                        <div class="sw-field">
+                          <span class="sw-label">{{ ar ? 'المرفقات' : 'Attachments' }} <span class="sw-optional">{{ ar ? 'اختياري' : 'Optional' }}</span></span>
+                          <p class="sw-hint" *ngIf="detail.locked">
+                            {{ ar ? 'لهذا النطاق الفرعي مرفقات حالية لا يمكن تعديلها من هنا بعد.' : 'This sub-scope already has files that can’t be changed here yet.' }}
+                          </p>
+                          <ul class="sw-files" *ngIf="!detail.locked && (detail.files.length || detail.removed.length || detail.newFiles.length)">
+                            <li class="sw-file" *ngFor="let file of detail.files">
+                              <i class="ki-outline ki-document sw-file__icon" aria-hidden="true"></i>
+                              <span class="sw-file__text">
+                                <span class="sw-file__name">{{ file.name || (ar ? 'ملف' : 'File') }}</span>
+                                <span class="sw-file__meta">{{ ar ? 'مرفق حالي' : 'Current file' }}<ng-container *ngIf="fileSize(file.size)"> · {{ fileSize(file.size) }}</ng-container></span>
+                              </span>
+                              <button type="button" class="sw-file__action sw-file__action--remove" *ngIf="!readOnly" (click)="toggleSavedSubscopeFile(pick, name, file)"
+                                [attr.aria-label]="(ar ? 'حذف ' : 'Remove ') + (file.name || '')"><i class="ki-outline ki-trash"></i></button>
+                            </li>
+                            <li class="sw-file is-removed" *ngFor="let file of detail.removed">
+                              <i class="ki-outline ki-document sw-file__icon" aria-hidden="true"></i>
+                              <span class="sw-file__text">
+                                <span class="sw-file__name"><s>{{ file.name || (ar ? 'ملف' : 'File') }}</s></span>
+                                <span class="sw-file__meta">{{ ar ? 'سيُحذف عند الحفظ' : 'Removed when you save' }}</span>
+                              </span>
+                              <button type="button" class="sw-file__action" (click)="toggleSavedSubscopeFile(pick, name, file)">{{ ar ? 'تراجع' : 'Undo' }}</button>
+                            </li>
+                            <li class="sw-file is-new" *ngFor="let file of detail.newFiles; let i = index">
+                              <i class="ki-outline ki-document sw-file__icon" aria-hidden="true"></i>
+                              <span class="sw-file__text">
+                                <span class="sw-file__name">{{ file.name }}</span>
+                                <span class="sw-file__meta">{{ fileSize(file.size) }}<ng-container *ngIf="revisionMode"> · {{ ar ? 'جديد' : 'New' }}</ng-container></span>
+                              </span>
+                              <button type="button" class="sw-file__action sw-file__action--remove" (click)="removeNewSubscopeFile(pick, name, i)"
+                                [attr.aria-label]="(ar ? 'حذف ' : 'Remove ') + file.name"><i class="ki-outline ki-trash"></i></button>
+                            </li>
+                          </ul>
+                          <p class="sw-hint" *ngIf="readOnly && !detail.locked && !detail.files.length">{{ ar ? 'لا توجد مرفقات.' : 'No attachments.' }}</p>
+                          <label class="sw-upload" *ngIf="!readOnly && !detail.locked">
+                            <input type="file" class="sw-upload__input" multiple [accept]="fileAccept" (change)="addSubscopeFiles(pick, name, $event)" />
+                            <i class="ki-outline ki-paper-clip" aria-hidden="true"></i>
+                            <span class="sw-upload__text">
+                              <span class="sw-upload__title">{{ ar ? 'إرفاق ملفات' : 'Attach files' }}</span>
+                              <span class="sw-upload__hint">{{ ar ? 'PDF أو Word أو Excel أو PowerPoint أو صور · حتى 50 ميغابايت للملف' : 'PDF, Word, Excel, PowerPoint or images · up to 50 MB each' }}</span>
+                            </span>
+                          </label>
+                          <p class="sw-error" role="alert" *ngFor="let error of detail.errors">{{ error }}</p>
+                        </div>
+                      </div>
+                    </ng-container>
+                  </li>
+                </ul>
               </div>
             </div>
           </ng-container>
@@ -172,7 +250,6 @@
                           <ng-container *ngIf="deliverable.period_days !== null; else duePlaceholder">
                             <span>{{ dueLabel(deliverable) }}</span>
                             <span class="sw-pill__muted" *ngIf="plannedStartDate">· {{ dueDate(deliverable.period_days) }}</span>
-                            <span class="badge badge-light-danger sw-pill__badge" *ngIf="isPastEnd(deliverable.period_days)">{{ ar ? 'تجاوز المدة' : 'Duration exceeded' }}</span>
                           </ng-container>
                           <ng-template #duePlaceholder><span class="sw-pill__placeholder">{{ ar ? 'اختر موعد التسليم' : 'Choose due date' }}</span></ng-template>
                           <i class="ki-outline ki-down sw-pill__chev"></i>
@@ -200,6 +277,9 @@
                             </div>
                             <span class="sw-menu__hint">{{ dueUnitHint(dueUnit(deliverable)) }}</span>
                           </div>
+                          <p class="sw-menu__exceeded" *ngIf="isPastEnd(deliverable.period_days)">
+                            <i class="ki-outline ki-information-5"></i>{{ ar ? 'تجاوز المدة' : 'Duration exceeded' }}
+                          </p>
                           <p class="sw-menu__note sw-menu__note--due" *ngIf="deliverable.period_days !== null && (dueUnit(deliverable) !== 'days' || plannedStartDate)">
                             <ng-container *ngIf="dueUnit(deliverable) !== 'days'">{{ ar ? '= ' + deliverable.period_days + ' يومًا' : '= ' + deliverable.period_days + ' days' }}</ng-container><ng-container *ngIf="dueUnit(deliverable) !== 'days' && plannedStartDate"> · </ng-container><ng-container *ngIf="plannedStartDate">{{ ar ? 'التسليم في' : 'Due' }} {{ dueDate(deliverable.period_days, { year: 'numeric', month: 'short', day: 'numeric' }) }}</ng-container>
                           </p>

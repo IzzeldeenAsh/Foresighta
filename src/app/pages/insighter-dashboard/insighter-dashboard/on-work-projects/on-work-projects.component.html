@@ -987,7 +987,8 @@
                     (click)="markReviewSubmissionAsRead(review)"
                     *ngFor="let review of getSortedReviewSubmissions(); let i = index; trackBy: trackByReview">
                     <span class="po-new-ribbon po-new-ribbon--review" *ngIf="isUnreadReview(review)">
-                      {{ lang === 'ar' ? 'جديد' : 'New' }}
+                      <!-- The insighter's own submission is read for them; unread after an answer means the client replied. -->
+                      {{ isReviewPending(review) ? (lang === 'ar' ? 'جديد' : 'New') : (lang === 'ar' ? 'رد جديد' : 'New reply') }}
                     </span>
                     <div class="pd-review-card__tab">
                       {{ lang === 'ar' ? 'مرجع المراجعة' : 'Review reference' }} <span dir="ltr" [title]="review.uuid">{{ review.uuid | slice:0:8 }}</span>

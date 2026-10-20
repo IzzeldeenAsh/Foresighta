@@ -152,6 +152,11 @@
               <div class="pc-table__project">
                 <span class="pc-table__project-title">
                   {{ project.title }}
+                  <span class="pc-msg-badge" *ngIf="unreadOfferMessages(project) > 0"
+                      [pTooltip]="lang === 'ar' ? 'رسائل عروض غير مقروءة' : 'Unread offer messages'" tooltipPosition="top"
+                      [attr.aria-label]="lang === 'ar' ? 'رسائل عروض غير مقروءة' : 'Unread offer messages'">
+                  <i class="ki-outline ki-messages" aria-hidden="true"></i>{{ unreadOfferMessages(project) }}
+                </span>
                 </span>
                 <span class="pc-table__project-summary">{{ getSummary(project) }}</span>
               </div>
@@ -224,7 +229,13 @@
                    src="assets/media/icons/projects/project-row-document.svg"
                    [alt]="lang === 'ar' ? 'أيقونة المشروع' : 'Project icon'">
               <div class="pc-mobile-table__copy">
-                <span class="pc-mobile-table__title">{{ project.title }}</span>
+                <span class="pc-mobile-table__title">{{ project.title }}
+                  <span class="pc-msg-badge" *ngIf="unreadOfferMessages(project) > 0"
+                      [pTooltip]="lang === 'ar' ? 'رسائل عروض غير مقروءة' : 'Unread offer messages'" tooltipPosition="top"
+                      [attr.aria-label]="lang === 'ar' ? 'رسائل عروض غير مقروءة' : 'Unread offer messages'">
+                  <i class="ki-outline ki-messages" aria-hidden="true"></i>{{ unreadOfferMessages(project) }}
+                </span>
+                </span>
                 <app-definition-mode-badge [mode]="project.definition_mode" [lang]="lang"></app-definition-mode-badge>
                 <span class="pc-mobile-table__summary">{{ getSummary(project) }}</span>
               </div>
@@ -282,7 +293,13 @@
     </div>
 
     <div class="pc-card__content">
-      <h6 class="pc-card__title" [title]="project.title">{{ project.title }}</h6>
+      <h6 class="pc-card__title" [title]="project.title">{{ project.title }}
+        <span class="pc-msg-badge" *ngIf="unreadOfferMessages(project) > 0"
+                      [pTooltip]="lang === 'ar' ? 'رسائل عروض غير مقروءة' : 'Unread offer messages'" tooltipPosition="top"
+                      [attr.aria-label]="lang === 'ar' ? 'رسائل عروض غير مقروءة' : 'Unread offer messages'">
+                  <i class="ki-outline ki-messages" aria-hidden="true"></i>{{ unreadOfferMessages(project) }}
+                </span>
+      </h6>
       <p class="pc-card__summary">{{ getSummary(project) }}</p>
     </div>
 

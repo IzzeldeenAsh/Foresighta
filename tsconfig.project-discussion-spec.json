@@ -1,0 +1,6 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": { "outDir": "./out-tsc/project-discussion", "types": ["jasmine"] },
+  "files": ["src/test-project-discussion.ts", "src/polyfills.ts"],
+  "include": ["src/**/*.d.ts"]
+}

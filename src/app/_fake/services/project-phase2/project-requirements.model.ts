@@ -38,7 +38,16 @@ export interface OfferScope extends RequirementOwnership {
   scope: string;
   description?: string | null;
   children?: OfferScope[];
-  subscopes?: Array<{ scope: string; description?: string | null }>;
+  subscopes?: OfferSubscope[];
+}
+/** A sub-scope with its optional description and files (`files` kept, `new_files` to upload). */
+export interface OfferSubscope {
+  id?: number;
+  scope: string;
+  description?: string | null;
+  files?: Array<{ uuid: string; name?: string | null; size?: number | null }>;
+  files_locked?: boolean;
+  new_files?: File[];
 }
 export interface OfferComponent extends RequirementOwnership {
   project_service_id: number | null;

@@ -159,6 +159,21 @@
         </section>
       </div>
       </ng-container>
+      <ng-container *ngIf="attachmentChanges(revision, 'scope_attachment') as files">
+      <div class="rv-item" *ngIf="files.length">
+        <section class="rv-item__changes">
+          <div class="rv-item__head"><h3>{{ text('Sub-scope attachments', 'مرفقات النطاقات الفرعية') }}</h3></div>
+          <ul class="rv-files">
+            <li *ngFor="let file of files" [ngClass]="file.action === 'deleted' ? 'is-removed' : 'is-added'">
+              <span class="rv-files__mark" aria-hidden="true">{{ file.action === 'deleted' ? '−' : '+' }}</span>
+              <span class="rv-files__name"><s *ngIf="file.action === 'deleted'; else addedName">{{ file.name }}</s><ng-template #addedName>{{ file.name }}</ng-template><small *ngIf="file.size">{{ file.size }}</small></span>
+              <span class="rv-files__state">{{ file.action === 'deleted' ? text('Removed', 'حُذف') : text('Added', 'أُضيف') }}</span>
+              <button type="button" class="rv-files__open" *ngIf="file.active" [disabled]="openingFileUuid === file.uuid" (click)="openAttachment(file)">{{ openingFileUuid === file.uuid ? text('Opening…', 'جارٍ الفتح…') : text('Open', 'فتح') }}</button>
+            </li>
+          </ul>
+        </section>
+      </div>
+      </ng-container>
     </ng-container>
   </div>
 </p-dialog>

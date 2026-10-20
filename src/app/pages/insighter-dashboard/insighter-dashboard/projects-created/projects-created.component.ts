@@ -306,6 +306,11 @@ export class ProjectsCreatedComponent extends BaseComponent implements OnInit, O
     return project.service_prompt || project.description || '-';
   }
 
+  /** Unread Insighter messages across the project's private offer threads (0 once awarded). */
+  unreadOfferMessages(project: CreatedProject | null | undefined): number {
+    return Number(project?.unread_private_messages_count) || 0;
+  }
+
   isClientUnread(project: CreatedProject): boolean {
     return project.is_read === false;
   }

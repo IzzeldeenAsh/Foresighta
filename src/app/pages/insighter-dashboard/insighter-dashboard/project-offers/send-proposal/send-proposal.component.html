@@ -676,6 +676,15 @@
                 <strong>{{ item.scope }}</strong>
                 <p *ngIf="item.description">{{ item.description }}</p>
                 <ul class="sp-rv-item__tags" *ngIf="item.subscopes?.length"><li *ngFor="let child of item.subscopes">{{ child.scope }}</li></ul>
+                <ng-container *ngFor="let child of item.subscopes">
+                  <p class="sp-rv-item__sub" *ngIf="child.description || child.file_uuids">
+                    <b>{{ child.scope }}</b><ng-container *ngIf="child.description">: {{ child.description }}</ng-container>
+                    <small *ngIf="child.file_uuids">
+                      <i class="ki-outline ki-paper-clip" aria-hidden="true"></i>
+                      {{ lang === 'ar' ? 'المرفقات:' : 'Files:' }} {{ child.file_uuids.length }} {{ lang === 'ar' ? 'محتفظ بها' : 'kept' }}<ng-container *ngIf="child.file?.length">, {{ child.file?.length }} {{ lang === 'ar' ? 'جديدة' : 'new' }}</ng-container>
+                    </small>
+                  </p>
+                </ng-container>
               </div>
             </div>
           </section>

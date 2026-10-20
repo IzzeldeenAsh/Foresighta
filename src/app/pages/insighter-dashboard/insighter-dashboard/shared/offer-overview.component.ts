@@ -1,5 +1,6 @@
 import { Component, Input, OnChanges } from '@angular/core';
-import { ProjectOfferDetails } from 'src/app/_fake/services/project-offers/project-offers.service';
+import { ProjectOfferDetails, ProjectOffersService } from 'src/app/_fake/services/project-offers/project-offers.service';
+import { ProjectsCreatedService } from 'src/app/_fake/services/projects-created/projects-created.service';
 import { OfferComponent } from 'src/app/_fake/services/project-phase2/project-requirements.model';
 import { ProjectDeliverable, ProjectServiceDetails, addDaysToDate, deliverableWayLabel, periodDaysLabel } from 'src/app/_fake/services/project-phase2/project-phase2.model';
 import { offerDurationSuggestion } from 'src/app/_fake/services/agreement-revisions/agreement-revisions.model';
@@ -15,6 +16,7 @@ interface OverviewScope {
   scope: string | null;
   description?: string | null;
   children?: OverviewScope[];
+  files?: Array<{ uuid: string; name?: string | null }>;
 }
 interface ServiceGroup {
   id: number | null;
@@ -42,7 +44,27 @@ export class OfferOverviewComponent implements OnChanges {
   @Input() pricingSummary = '';
   groups: ServiceGroup[] = [];
   otherComponents: OfferComponent[] = [];
+  openingFileUuid = '';
+  fileError = '';
+  constructor(private clients: ProjectsCreatedService, private insighters: ProjectOffersService) {}
   get ar(): boolean { return this.lang === 'ar'; }
+
+  /** Sub-scope files open through a short-lived link from the side that is viewing. */
+  openScopeFile(file: { uuid: string }): void {
+    if (!file?.uuid || this.openingFileUuid) return;
+    const tab = window.open('', '_blank');
+    this.openingFileUuid = file.uuid;
+    this.fileError = '';
+    const request = this.context === 'client' ? this.clients.getProjectFileUrl(file.uuid) : this.insighters.getProjectFileUrl(file.uuid);
+    request.subscribe({
+      next: url => {
+        this.openingFileUuid = '';
+        if (!url) { tab?.close(); this.fileError = this.ar ? 'رابط الملف غير متاح.' : 'The file link is not available.'; return; }
+        if (tab) tab.location.href = url; else window.open(url, '_blank');
+      },
+      error: () => { this.openingFileUuid = ''; tab?.close(); this.fileError = this.ar ? 'تعذر فتح الملف.' : 'Could not open the file.'; },
+    });
+  }
 
   ngOnChanges(): void {
     if (!this.offer) return;

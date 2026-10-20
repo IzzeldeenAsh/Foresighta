@@ -26,6 +26,10 @@ export interface Notification {
   // Full destination URL shipped by the backend for redirect notifications
   // (e.g. project_discussion). When present we navigate straight to it.
   url?: string;
+  // project_discussion only: 'private_offer' for a Client ↔ Insighter offer thread, else 'public'.
+  visibility?: 'private_offer' | 'public' | null;
+  // project_discussion only: the offer whose private thread the message belongs to.
+  project_proposal_offer_uuid?: string | null;
   read_at?: string;
   sub_page?: string;
   tap?: string;

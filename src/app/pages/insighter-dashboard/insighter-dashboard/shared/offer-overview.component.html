@@ -53,8 +53,15 @@
           </ul>
           <ng-container *ngFor="let child of scope.children">
             <p class="offer-scope__description" *ngIf="child.description"><strong>{{ child.scope }}:</strong> {{ child.description }}</p>
+            <div class="offer-scope__files" *ngIf="child.files?.length">
+              <span class="offer-scope__files-label" *ngIf="!child.description">{{ child.scope }}:</span>
+              <button type="button" class="offer-scope__file" *ngFor="let file of child.files" [disabled]="openingFileUuid === file.uuid" (click)="openScopeFile(file)">
+                <i class="ki-outline ki-paper-clip" aria-hidden="true"></i>{{ openingFileUuid === file.uuid ? (ar ? 'جارٍ الفتح…' : 'Opening…') : (file.name || (ar ? 'ملف' : 'File')) }}
+              </button>
+            </div>
           </ng-container>
         </div>
+        <p class="offer-scope__error" role="alert" *ngIf="fileError">{{ fileError }}</p>
       </div>
       <div class="offer-service__deliverables">
         <div class="offer-deliverable" *ngFor="let deliverable of group.deliverables">

@@ -817,8 +817,11 @@
                   <button type="button"
                           *ngIf="canViewSubmittedOffer(invite)"
                           class="btn btn-link btn-sm p-0 border-0 bg-transparent text-info fw-bold pd-invite-card__offer-btn"
-                          (click)="openProposalDrawer(invite)">
+                          (click)="openProposalDrawer(invite, offerUnreadMessages(invite) > 0 ? 'discussion' : 'offer')">
                     <span>{{ lang === 'ar' ? 'عرض العرض' : 'View Offer' }}</span>
+                    <span class="pd-tab-badge ms-2" *ngIf="offerUnreadMessages(invite) > 0"
+                          [pTooltip]="lang === 'ar' ? 'رسائل عرض غير مقروءة' : 'Unread offer messages'" tooltipPosition="top"
+                          [attr.aria-label]="lang === 'ar' ? 'رسائل عرض غير مقروءة' : 'Unread offer messages'">{{ offerUnreadMessages(invite) }}</span>
                   </button>
                 </div>
               </article>
@@ -1592,7 +1595,7 @@
            (onHide)="closeProposalDrawer()">
   <ng-container *ngIf="selectedInvite as invite">
     <div class="pd-proposal-drawer__wrap">
-      <div class="pd-proposal-drawer__main">
+      <div class="pd-proposal-drawer__main" #proposalDrawerMain>
         <div class="pd-proposal-drawer__topbar">
           <button type="button"
                   class="pd-iconbtn"
@@ -1602,7 +1605,7 @@
           </button>
         </div>
 
-        <div class="pd-proposal-drawer__body">
+        <div class="pd-proposal-drawer__body" #proposalDrawerBody>
           <div class="pd-proposal-drawer__hero">
             <div class="pd-proposal-drawer__eyebrow">
               <span class="pd-proposal-drawer__pill">
@@ -1638,6 +1641,36 @@
             </div>
           </div>
 
+          <div class="pd-drawer-sections" role="tablist" *ngIf="canUsePrivateOfferDiscussion(invite)"
+               [attr.aria-label]="lang === 'ar' ? 'أقسام العرض' : 'Offer sections'">
+            <button type="button" class="pd-drawer-section" role="tab"
+                    [class.active]="proposalDrawerSection === 'offer'"
+                    [attr.aria-selected]="proposalDrawerSection === 'offer'"
+                    (click)="setProposalDrawerSection('offer')">
+              <i class="ki-outline ki-dollar" aria-hidden="true"></i>
+              <span>{{ lang === 'ar' ? 'العرض' : 'Offer' }}</span>
+            </button>
+            <button type="button" class="pd-drawer-section" role="tab"
+                    [class.active]="proposalDrawerSection === 'discussion'"
+                    [attr.aria-selected]="proposalDrawerSection === 'discussion'"
+                    (click)="setProposalDrawerSection('discussion')">
+              <i class="ki-outline ki-messages" aria-hidden="true"></i>
+              <span>{{ lang === 'ar' ? 'رسائل العرض' : 'Offer Messages' }}</span>
+              <span class="pd-tab-badge" *ngIf="offerUnreadMessages(invite) > 0"
+                    [attr.aria-label]="lang === 'ar' ? 'رسائل غير مقروءة' : 'Unread messages'">{{ offerUnreadMessages(invite) }}</span>
+            </button>
+          </div>
+
+          <app-project-discussion *ngIf="proposalDrawerSection === 'discussion' && canUsePrivateOfferDiscussion(invite) && project"
+            [projectUuid]="project.uuid"
+            [offerUuid]="invite.offer?.uuid || null"
+            [counterpartName]="invite.insighter?.name || null"
+            context="client"
+            (threadRead)="onOfferThreadRead(invite)"
+            (accessClosed)="onPrivateOfferDiscussionClosed()">
+          </app-project-discussion>
+
+          <ng-container *ngIf="proposalDrawerSection === 'offer' || !canUsePrivateOfferDiscussion(invite)">
           <app-offer-overview *ngIf="invite.offer as submittedOffer" context="client"
             [offer]="submittedOffer" [services]="project?.project_services ?? []" [lang]="lang"
             [projectDurationDays]="project?.schedule?.duration_days ?? null"
@@ -1685,6 +1718,7 @@
             </div>
           </section>
           </app-offer-overview>
+          </ng-container>
         </div>
       </div>
 
@@ -1764,6 +1798,17 @@
               {{ getAwardDisabledReason(invite) }}
             </p>
           </ng-container>
+
+          <button *ngIf="canUsePrivateOfferDiscussion(invite)"
+                  type="button"
+                  class="btn btn-light-warning w-100 pd-request-change"
+                  [class.mt-2]="getOfferStatus(invite) === 'technical_accepted' || getOfferStatus(invite) === 'technical_rejected'"
+                  (click)="openOfferChangeRequest(proposalDrawerMain, proposalDrawerBody)">
+            <i class="ki-outline ki-message-edit fs-6 me-1"></i>
+            {{ lang === 'ar' ? 'طلب تعديل العرض' : 'Offer Change Request' }}
+            <span class="pd-tab-badge ms-2" *ngIf="offerUnreadMessages(invite) > 0"
+                  [attr.aria-label]="lang === 'ar' ? 'رسائل غير مقروءة' : 'Unread messages'">{{ offerUnreadMessages(invite) }}</span>
+          </button>
 
           <div class="pd-aside-table-wrap">
             <table class="pd-aside-table">

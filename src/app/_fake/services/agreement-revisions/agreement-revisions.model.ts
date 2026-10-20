@@ -44,6 +44,10 @@ export interface ScopeDraft {
   scope: string;
   description: string | null;
   subscopes: ScopeDraft[];
+  /** Sub-scope only: the complete list of existing files to keep; sent with attachment changes only. */
+  file_uuids?: string[];
+  /** Sub-scope only: new uploads, which switch the request to multipart. */
+  file?: File[];
 }
 export interface DeliverableDraft {
   id?: number;
@@ -107,14 +111,16 @@ export function offerDurationSuggestion(offer: { suggested_duration_days?: numbe
 }
 
 /**
- * Multipart body for a revision that uploads files. Nulls become empty strings (the API reads them as null),
- * empty arrays cannot be sent and are left out, so callers must not rely on an empty list here.
+ * Multipart body for a revision that uploads files (offer `files` and any nested sub-scope `file` lists).
+ * Nulls become empty strings (the API reads them as null), empty arrays cannot be sent and are left out,
+ * so callers must not rely on an empty list here.
  */
 export function agreementFormData(payload: AgreementPatch, files: File[]): FormData {
   const form = new FormData();
   const append = (key: string, value: unknown): void => {
     if (value === undefined) return;
     if (value === null) form.append(key, '');
+    else if (value instanceof Blob) form.append(key, value, value instanceof File ? value.name : 'file');
     else if (Array.isArray(value)) value.forEach((item, index) => append(`${key}[${index}]`, item));
     else if (typeof value === 'object') Object.entries(value as Record<string, unknown>).forEach(([field, item]) => append(`${key}[${field}]`, item));
     else if (typeof value === 'boolean') form.append(key, value ? '1' : '0');
@@ -183,9 +189,60 @@ export function ownsAgreementGroup(rows: RequirementOwnership[], role: Agreement
 
 export function scopeDraft(row: any): ScopeDraft {
   return {
-    ...(row.id ? { id: row.id } : {}), scope: row.scope ?? '', description: row.description ?? null,
-    subscopes: (row.children ?? row.subscopes ?? []).map(scopeDraft),
+    // An emptied description and a missing one both read as null, so clearing a field is not a change.
+    ...(row.id ? { id: row.id } : {}), scope: row.scope ?? '', description: row.description || null,
+    subscopes: (row.children ?? row.subscopes ?? []).map((child: any) => ({
+      ...(child.id ? { id: child.id } : {}), scope: child.scope ?? '', description: child.description || null, subscopes: [],
+      // Known files travel as the retained list; rows whose files the API did not list keep theirs untouched.
+      ...(Array.isArray(child.files) && !child.files_locked ? { file_uuids: child.files.map((file: ScopeFile) => file.uuid) } : {}),
+      ...(child.new_files?.length ? { file: [...child.new_files] } : {}),
+    })),
   };
+}
+
+/** A file attached to a sub-scope, as the offer and project resources list it. */
+export interface ScopeFile { uuid: string; name?: string | null; size?: number | null; }
+/** Editor state for a sub-scope's files: kept existing files, new uploads, or locked when the API only says files exist. */
+export interface SubscopeFilesState { files?: ScopeFile[]; files_locked?: boolean; new_files?: File[]; }
+export function subscopeFilesState(row: any): SubscopeFilesState {
+  if (Array.isArray(row?.files)) return { files: row.files.filter((file: any) => file?.uuid).map((file: any) => ({ uuid: String(file.uuid), name: file.name ?? null, size: file.size ?? null })) };
+  return row?.have_attachments ? { files_locked: true } : { files: [] };
+}
+/** Saved scopes for the editor, keeping sub-scope file names that the request payload reduces to UUIDs. */
+export function scopeEditorDraft(row: any): any {
+  return {
+    ...(row.id ? { id: row.id } : {}), scope: row.scope ?? '', description: row.description ?? null,
+    subscopes: (row.children ?? row.subscopes ?? []).map((child: any) => ({
+      ...(child.id ? { id: child.id } : {}), scope: child.scope ?? '', description: child.description ?? null, ...subscopeFilesState(child),
+    })),
+  };
+}
+/** Keep sub-scope file fields only where the attachments changed, as the API expects. */
+export function onlyChangedScopeFiles(items: ScopeDraft[], original: ScopeDraft[]): ScopeDraft[] {
+  const saved = new Map<number, ScopeDraft>();
+  original.forEach(scope => scope.subscopes.forEach(child => { if (child.id) saved.set(child.id, child); }));
+  return items.map(scope => ({
+    ...scope,
+    subscopes: scope.subscopes.map(child => {
+      const before = child.id ? saved.get(child.id)?.file_uuids ?? [] : [];
+      const kept = child.file_uuids ?? before;
+      const changed = !!child.file?.length || kept.length !== before.length || kept.some(uuid => !before.includes(uuid));
+      if (changed) return { ...child, file_uuids: kept };
+      const { file_uuids, file, ...rest } = child;
+      return rest;
+    }),
+  }));
+}
+/** Whether any value in a payload is a file, so it has to go as multipart. */
+export function payloadHasFiles(value: unknown): boolean {
+  if (typeof Blob !== 'undefined' && value instanceof Blob) return true;
+  if (Array.isArray(value)) return value.some(payloadHasFiles);
+  return !!value && typeof value === 'object' && Object.values(value as Record<string, unknown>).some(payloadHasFiles);
+}
+/** A sub-scope whose files are all removed with nothing uploaded: multipart cannot send its empty `file_uuids` list. */
+export function emptiedScopeFiles(payload: AgreementPatch & Record<string, any>): boolean {
+  return ['scopes', 'offer_scopes'].some(key => (payload[key] ?? []).some((group: AgreementGroup<ScopeDraft>) =>
+    (group.items ?? []).some(scope => (scope.subscopes ?? []).some(child => Array.isArray(child.file_uuids) && !child.file_uuids.length && !child.file?.length))));
 }
 export function deliverableDraft(row: any): DeliverableDraft {
   return {
