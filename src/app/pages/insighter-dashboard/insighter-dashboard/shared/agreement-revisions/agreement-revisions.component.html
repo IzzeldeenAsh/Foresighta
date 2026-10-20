@@ -3,13 +3,12 @@
     <button type="button" class="primary" *ngIf="showEditAction && canEdit && role === 'insighter'" [disabled]="preparing" (click)="startEditing()"><i class="pi pi-pencil" aria-hidden="true"></i> {{ preparing ? text('Refreshing…', 'جارٍ التحديث…') : (role === 'insighter' ? text('Edit offer', 'تعديل العرض') : text('Edit agreement', 'تعديل الاتفاق')) }}</button>
   </header>
   <div class="notice" *ngIf="locked"><i class="pi pi-lock" aria-hidden="true"></i><span>{{ text('This agreement is locked. Revisions remain available for reference after the first signature.', 'هذا الاتفاق مقفل. يبقى سجل المراجعات متاحاً بعد أول توقيع.') }}</span></div>
-  <label class="context" *ngIf="role === 'client' && matches.length > 1">{{ text('Agreement with', 'الاتفاق مع') }}<select [ngModel]="matchUuid" (ngModelChange)="matchUuid = $event; changeMatch()"><option value="">{{ text('Choose an Insighter', 'اختر الخبير') }}</option><option *ngFor="let match of matches; trackBy: trackMatch" [value]="match.uuid">{{ match.insighter?.name || text('Insighter', 'الخبير') }}</option></select></label>
   <div class="notice success" role="status" *ngIf="success">{{ success }}</div>
   <div class="notice warning" role="status" *ngIf="stale && !editorVisible">{{ text('The agreement has changed. Refresh to view the latest details.', 'تغيّر الاتفاق. حدّث الصفحة لعرض أحدث التفاصيل.') }} <button type="button" (click)="refreshDetails()">{{ text('Refresh details', 'تحديث التفاصيل') }}</button></div>
   <div class="notice error" role="alert" *ngIf="error">{{ error }} <button type="button" (click)="load()">{{ text('Retry', 'إعادة المحاولة') }}</button></div>
-  <div class="empty" *ngIf="!contextUuid"><i class="pi pi-history" aria-hidden="true"></i><h3>{{ text('Choose an agreement to see its history', 'اختر اتفاقاً لعرض سجله') }}</h3><p>{{ role === 'client' ? text('Revisions belong to a specific invitation. Select an Insighter above when available.', 'المراجعات مرتبطة بدعوة محددة. اختر الخبير أعلاه عند توفره.') : text('Revision history becomes available once an offer has been submitted.', 'يصبح سجل المراجعات متاحاً بعد تقديم العرض.') }}</p></div>
+  <div class="empty" *ngIf="!listContexts.length"><i class="pi pi-history" aria-hidden="true"></i><h3>{{ text('No revision history yet', 'لا يوجد سجل تعديلات بعد') }}</h3><p>{{ role === 'client' ? text('Revision history becomes available once an Insighter is invited.', 'يصبح سجل المراجعات متاحاً بعد دعوة خبير.') : text('Revision history becomes available once an offer has been submitted.', 'يصبح سجل المراجعات متاحاً بعد تقديم العرض.') }}</p></div>
   <div class="loading" role="status" *ngIf="loading && !revisions.length"><span></span><span></span><span></span>{{ text('Loading revisions…', 'جارٍ تحميل المراجعات…') }}</div>
-  <div class="empty" *ngIf="contextUuid && !loading && !error && !revisions.length"><i class="pi pi-history" aria-hidden="true"></i><h3>{{ text('The story starts here', 'هنا يبدأ سجل التغييرات') }}</h3><p>{{ text('No revisions yet. Saved changes will appear here for both parties.', 'لا توجد مراجعات بعد. ستظهر التغييرات المحفوظة هنا للطرفين.') }}</p></div>
+  <div class="empty" *ngIf="listContexts.length && !loading && !error && !revisions.length"><i class="pi pi-history" aria-hidden="true"></i><h3>{{ text('The story starts here', 'هنا يبدأ سجل التغييرات') }}</h3><p>{{ text('No revisions yet. Saved changes will appear here for both parties.', 'لا توجد مراجعات بعد. ستظهر التغييرات المحفوظة هنا للطرفين.') }}</p></div>
   <p class="rv-unseen" role="status" *ngIf="unseenCount > 0">{{ unseenCount === 1 ? text('1 new revision', 'مراجعة جديدة واحدة') : text(unseenCount + ' new revisions', unseenCount + ' مراجعات جديدة') }}</p>
   <div class="rv-list" role="list" *ngIf="revisions.length">
     <div role="listitem" *ngFor="let revision of revisions; let first = first">
@@ -24,7 +23,7 @@
       </button>
     </div>
   </div>
-  <button type="button" class="load-more" *ngIf="page < lastPage && page > 0" [disabled]="loading" (click)="load(true)">{{ loading ? text('Loading…', 'جارٍ التحميل…') : text('Load earlier revisions', 'تحميل المراجعات السابقة') }}</button>
+  <button type="button" class="load-more" *ngIf="hasMore" [disabled]="loading" (click)="load(true)">{{ loading ? text('Loading…', 'جارٍ التحميل…') : text('Load earlier revisions', 'تحميل المراجعات السابقة') }}</button>
 </section>
 
 <p-dialog [(visible)]="detailVisible" [modal]="true" [baseZIndex]="1300" [draggable]="false" [resizable]="false" [showHeader]="false" styleClass="rv-dialog" [style]="{width: '640px', maxWidth: '96vw'}" appendTo="body">

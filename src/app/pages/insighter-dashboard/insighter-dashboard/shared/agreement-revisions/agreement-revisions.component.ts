@@ -1,7 +1,7 @@
 import Swal from 'sweetalert2';
 import { Component, EventEmitter, HostListener, Input, OnChanges, OnDestroy, OnInit, Output } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Observable, Subject, Subscription, from, of } from 'rxjs';
+import { Observable, Subject, Subscription, forkJoin, from, of } from 'rxjs';
 import { takeUntil, catchError, concatMap, filter, take, defaultIfEmpty, map } from 'rxjs/operators';
 import { ProfileService } from 'src/app/_fake/services/get-profile/get-profile.service';
 import { ProjectsCreatedService } from 'src/app/_fake/services/projects-created/projects-created.service';
@@ -59,8 +59,6 @@ export class AgreementRevisionsComponent implements OnInit, OnChanges, OnDestroy
   loading = false;
   error = '';
   success = '';
-  page = 0;
-  lastPage = 1;
   matchUuid = '';
   editorVisible = false;
   saving = false;
@@ -82,6 +80,12 @@ export class AgreementRevisionsComponent implements OnInit, OnChanges, OnDestroy
   private contextKey = '';
   private snapshot = '';
   private listRequest?: Subscription;
+  /** Pages read so far per invitation: the client's list merges every invited Insighter's history. */
+  private pages: Record<string, { page: number; last: number }> = {};
+  /** The invitations each listed revision was read through; opening it uses the first. */
+  private revisionContexts = new Map<number, string[]>();
+  /** The invitation the open revision belongs to. */
+  private detailContext = '';
   private detailRequest?: Subscription;
   private destroy$ = new Subject<void>();
   private requestedRevision = 0;
@@ -105,9 +109,9 @@ export class AgreementRevisionsComponent implements OnInit, OnChanges, OnDestroy
   ngOnChanges(): void {
     if (this.role === 'client' && !this.matches.some((m: any) => m.uuid === this.matchUuid)) {
       const awarded = this.matches.find((m: any) => m.offer?.uuid && m.offer.uuid === this.project?.offer?.uuid);
-      this.matchUuid = awarded?.uuid || (this.matches.length === 1 ? this.matches[0].uuid : '');
+      this.matchUuid = awarded?.uuid || this.matches[0]?.uuid || '';
     }
-    const key = `${this.role}:${this.project?.uuid}:${this.contextUuid}`;
+    const key = `${this.role}:${this.project?.uuid}:${this.listContexts.join(',')}`;
     if (key !== this.contextKey) {
       this.contextKey = key;
       this.detailVisible = false;
@@ -125,6 +129,9 @@ export class AgreementRevisionsComponent implements OnInit, OnChanges, OnDestroy
       .map((m: any) => ({ ...m, uuid: m.agreement_match_uuid }));
   }
   get contextUuid(): string { return this.role === 'client' ? this.matchUuid : this.record?.offer?.uuid || ''; }
+  /** Where the history is read from: the client sees every invited Insighter's revisions in one list. */
+  get listContexts(): string[] { return this.role === 'client' ? this.matches.map((m: any) => m.uuid) : this.contextUuid ? [this.contextUuid] : []; }
+  get hasMore(): boolean { return Object.keys(this.pages).some(context => this.pages[context].page < this.pages[context].last); }
   get services(): ProjectServiceDetails[] { return this.project?.project_services ?? []; }
   get contract(): any { return this.record?.contract ?? this.project?.contract ?? this.record?.offer?.contract; }
   get locked(): boolean {
@@ -160,19 +167,32 @@ export class AgreementRevisionsComponent implements OnInit, OnChanges, OnDestroy
     ];
     return linkedDeliverableIds(installments);
   }
-  trackMatch(_: number, match: any): string { return match.uuid; }
-  changeMatch(): void { this.success = ''; this.requestedRevision = 0; this.detailRequest?.unsubscribe(); this.ngOnChanges(); }
   load(more = false): void {
     this.listRequest?.unsubscribe();
-    if (!more) { this.revisions = []; this.page = 0; this.lastPage = 1; }
+    if (!more) { this.revisions = []; this.pages = {}; this.revisionContexts = new Map(); }
     this.error = '';
-    if (!this.contextUuid) { this.loading = false; return; }
+    const contexts = more ? this.listContexts.filter(c => this.pages[c] && this.pages[c].page < this.pages[c].last) : this.listContexts;
+    if (!contexts.length) { this.loading = false; return; }
     this.loading = true;
-    const page = more ? this.page + 1 : 1;
-    this.listRequest = this.api.list(this.role, this.contextUuid, page).subscribe({
-      next: res => {
-        this.revisions = more ? [...this.revisions, ...res.data] : res.data; this.page = page; this.lastPage = res.meta?.last_page ?? page; this.loading = false;
-        if (!more) this.unseenCount = res.meta?.unseen_count ?? res.data.filter(r => r.is_seen === false).length;
+    this.listRequest = forkJoin(contexts.map(context => {
+      const page = (this.pages[context]?.page ?? 0) + 1;
+      return this.api.list(this.role, context, page).pipe(map(res => ({ context, page, res })));
+    })).subscribe({
+      next: results => {
+        // Client-wide revisions come back under every invitation: list each once, newest first.
+        const byId = new Map(this.revisions.map(r => [r.id, r] as [number, AgreementRevision]));
+        results.forEach(({ context, page, res }) => {
+          this.pages[context] = { page, last: res.meta?.last_page ?? page };
+          res.data.forEach(r => {
+            if (!byId.has(r.id)) byId.set(r.id, r);
+            const seenIn = this.revisionContexts.get(r.id) ?? [];
+            if (!seenIn.includes(context)) this.revisionContexts.set(r.id, [...seenIn, context]);
+          });
+        });
+        this.revisions = Array.from(byId.values()).sort((a, b) => b.revision_number - a.revision_number);
+        if (!more) this.unseenCount = results.length === 1 && results[0].res.meta?.unseen_count != null
+          ? results[0].res.meta.unseen_count : this.revisions.filter(r => r.is_seen === false).length;
+        this.loading = false;
       },
       error: err => { this.error = this.serverError(err); this.loading = false; },
     });
@@ -195,16 +215,15 @@ export class AgreementRevisionsComponent implements OnInit, OnChanges, OnDestroy
       next: result => {
         this.detailLoading = false;
         if (!result) { this.detailError = this.text('This revision is not available for these invitations.', 'هذه المراجعة غير متاحة ضمن الدعوات الحالية.'); return; }
-        this.matchUuid = result.match.uuid; this.contextKey = `${this.role}:${this.project?.uuid}:${this.contextUuid}`;
-        this.detail = result.revision; this.load(); this.markSeen(result.revision);
+        this.detailContext = result.match.uuid; this.detail = result.revision; this.markSeen(result.revision);
       }, error: err => { this.detailLoading = false; this.detailError = this.serverError(err); },
     });
   }
   openRevision(id: number): void {
     this.detailRequest?.unsubscribe(); this.detail = null; this.detailError = ''; this.detailVisible = true; this.detailLoading = true;
-    this.requestedRevision = id;
+    this.requestedRevision = id; this.detailContext = this.revisionContexts.get(id)?.[0] || this.contextUuid;
     this.expandedItems = new Set(); this.tables = new WeakMap(); this.attachmentChangeLists = new WeakMap();
-    this.detailRequest = this.api.show(this.role, this.contextUuid, id).subscribe({
+    this.detailRequest = this.api.show(this.role, this.detailContext, id).subscribe({
       next: detail => { this.detail = detail; this.detailLoading = false; this.markSeen(detail); },
       error: err => { this.detailError = this.serverError(err); this.detailLoading = false; },
     });
@@ -213,13 +232,13 @@ export class AgreementRevisionsComponent implements OnInit, OnChanges, OnDestroy
   private markSeen(revision: AgreementRevision): void {
     const listed = this.revisions.find(r => r.id === revision.id);
     if (revision.is_seen !== false && listed?.is_seen !== false) return;
-    const contextUuid = this.contextUuid;
+    const contextUuid = this.detailContext || this.contextUuid;
     if (!contextUuid) return;
     this.api.markSeen(this.role, contextUuid, revision.id).pipe(takeUntil(this.destroy$)).subscribe({
       next: () => {
         const seenAt = new Date().toISOString();
         [revision, listed].forEach(r => { if (r) { r.is_seen = true; r.seen_at = r.seen_at ?? seenAt; } });
-        if (contextUuid !== this.contextUuid) return;
+        if (!this.listContexts.includes(contextUuid)) return;
         this.unseenCount = Math.max(0, this.unseenCount - 1);
         this.revisionSeen.emit(revision.id);
         this.api.seen$.next({ projectUuid: this.project?.uuid, revisionId: revision.id });
@@ -478,7 +497,7 @@ export class AgreementRevisionsComponent implements OnInit, OnChanges, OnDestroy
   }
   /** Sub-scope files as they are now, on the offer scopes and on the project scopes after award. */
   private get activeScopeFiles(): any[] {
-    const match = this.role === 'client' ? this.matches.find((m: any) => m.uuid === this.matchUuid) : null;
+    const match = this.role === 'client' ? this.matches.find((m: any) => m.uuid === (this.detailContext || this.matchUuid)) : null;
     const offer = this.role === 'insighter' ? this.record?.offer : match?.offer ?? this.project?.offer;
     const scopes: any[] = [...(offer?.offer_scopes ?? []), ...((this.project?.project_services ?? []) as any[]).reduce<any[]>((all, s) => all.concat(s.scopes ?? []), [])];
     return scopes.reduce<any[]>((all, scope) => all.concat(scope.files ?? [], ...(scope.children ?? []).map((child: any) => child.files ?? [])), []);
@@ -486,7 +505,7 @@ export class AgreementRevisionsComponent implements OnInit, OnChanges, OnDestroy
   /** The offer's files as they are now, which is what an added file in a revision can still open. */
   private get activeOfferFiles(): any[] {
     if (this.role === 'insighter') return this.record?.offer?.files ?? [];
-    const match = this.matches.find((m: any) => m.uuid === this.matchUuid);
+    const match = this.matches.find((m: any) => m.uuid === (this.detailContext || this.matchUuid));
     return match?.offer?.files ?? this.project?.offer?.files ?? [];
   }
   openAttachment(change: AttachmentChange): void {

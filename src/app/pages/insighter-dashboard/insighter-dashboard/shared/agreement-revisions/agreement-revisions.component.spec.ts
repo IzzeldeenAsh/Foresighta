@@ -112,6 +112,33 @@ describe('Agreement revisions safeguards', () => {
     component.openRevision(9);
     expect(api.markSeen).toHaveBeenCalledTimes(1);
   });
+  it('lists every invited Insighter\'s revisions in one list without choosing an Insighter', () => {
+    const shared = { id: 5, revision_number: 5, is_seen: false, changed_by_role: 'client', changed_target_types: ['scope'], items_count: 1 };
+    const byInsighter = { id: 6, revision_number: 6, is_seen: false, changed_by_role: 'insighter', changed_target_types: ['offer_cover_letter'], items_count: 1 };
+    api.list.and.callFake((_: string, uuid: string, page: number) => of(uuid === 'match-b'
+      ? { data: page === 1 ? [byInsighter, shared] : [{ id: 2, revision_number: 2, is_seen: true }], meta: { last_page: 2, unseen_count: 2 } }
+      : { data: [shared], meta: { last_page: 1, unseen_count: 1 } }));
+    api.show = jasmine.createSpy().and.returnValue(of(byInsighter));
+    api.markSeen = jasmine.createSpy().and.returnValue(of({}));
+    api.seen$ = new Subject();
+    component.record = { ...record, invited: [
+      { agreement_match_uuid: 'match-a', insighter: { name: 'Ali' } },
+      { agreement_match_uuid: 'match-b', insighter: { name: 'Sara' } },
+    ] };
+    component.ngOnChanges();
+    expect(component.revisions.map(r => r.id)).toEqual([6, 5]);
+    expect(component.unseenCount).toBe(2);
+    expect(component.hasMore).toBeTrue();
+    component.load(true);
+    expect(api.list).toHaveBeenCalledWith('client', 'match-b', 2);
+    expect(api.list).not.toHaveBeenCalledWith('client', 'match-a', 2);
+    expect(component.revisions.map(r => r.id)).toEqual([6, 5, 2]);
+    expect(component.hasMore).toBeFalse();
+    component.openRevision(6);
+    expect(api.show).toHaveBeenCalledWith('client', 'match-b', 6);
+    expect(api.markSeen).toHaveBeenCalledOnceWith('client', 'match-b', 6);
+    expect(component.unseenCount).toBe(1);
+  });
   it('renders backend change rows and formats schedule properties', () => {
     const rows = component.changeRows({ id: 1, action: 'updated', target_type: 'project_property', target_label: 'Planned start date',
       before_value: { value: '2026-11-01' }, after_value: { value: '2026-11-15' },

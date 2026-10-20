@@ -22,7 +22,6 @@
 .agreement__header { display: flex; align-items: center; justify-content: space-between; gap: 24px; margin-bottom: 22px; p { color: #4f6467; font-size: 15px; margin: 0; } }
 .eyebrow { color: #087c86; font-size: .76rem; font-weight: 700; letter-spacing: .08em; }
 .notice { display: flex; align-items: center; gap: 12px; padding: 14px 18px; border: 1px solid #dce9e9; background: #f3f8f8; border-radius: 10px; margin: 16px 0; line-height: 1.6; font-size: .94rem; flex-wrap: wrap; &.success { color: #17644d; background: #eef9f3; border-color: #b9dfcc; } &.warning { color: #7d5e20; background: #fff9ed; border-color: #ecdcad; } &.error { color: #a1323a; background: #fff5f5; border-color: #f0cbd0; } }
-.context { max-width: 380px; }
 .empty { text-align: center; padding: 64px 24px; border: 1px dashed #d6e3e3; border-radius: 14px; margin: 22px 0; background: #fcfefe; i { font-size: 2rem; color: #6da7ac; margin-bottom: 18px; display: block; } h3 { margin-bottom: 10px; } p { max-width: 440px; margin: 0 auto; color: #657b7f; } }
 .badge, .owner { display: inline-block; font-weight: 600; border-radius: 6px; padding: 5px 9px; background: #edf5f6; color: #1c747b; font-size: .75rem; &.added, &.editable { color: #267251; background: #eaf7ee; } &.removed { color: #a23d43; background: #fbecee; } }
 .owner { background: #f1f4f4; color: #687d80; }
