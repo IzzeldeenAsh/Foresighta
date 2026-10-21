@@ -316,18 +316,18 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
       });
   }
 
-  /**
-   * The client edits the agreement in the Next.js app (wizard-style summary + section pages).
-   * Shown only before the first signature, when an invitation exists and the client owns
-   * at least one editable requirement — the same rules as the agreement revisions editor.
-   */
   /** Lowers a Revisions tab badge after a revision is marked seen. */
   lowerCount(count?: number | null): number { return Math.max(0, (Number(count) || 0) - 1); }
 
+  /**
+   * The client edits the agreement in the Next.js app (wizard-style summary + section pages).
+   * Shown only before the first signature, when the client owns at least one editable
+   * requirement — the same rules as the agreement revisions editor. The edit API is
+   * project-based, so no invitation is needed.
+   */
   get agreementEditUrl(): string | null {
     const p = this.project;
-    const matches = (p?.invited ?? []).filter(match => !!match.agreement_match_uuid);
-    if (!p?.uuid || !matches.length) return null;
+    if (!p?.uuid) return null;
     if (agreementIsLocked(p.contract, p.status) || (!!p.contract_uuid && !p.contract)) return null;
     // The client may also extend the schedule (not for urgent requests) and, until an offer is awarded, the offer deadline.
     const scheduleEditable = p.type !== 'urgent_request' && !!p.schedule?.planned_start_date && p.schedule?.duration_days != null;
@@ -336,10 +336,8 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
     const editable = scheduleEditable || deadlineEditable || editableComponents(p, 'client', null).length > 0 || p.project_services.some(service =>
       editableScopes(service, 'client', null) || ownsAgreementGroup(service.deliverables, 'client', null));
     if (!editable) return null;
-    const awarded = matches.find(match => !!match.offer?.uuid && match.offer.uuid === p.offer?.uuid);
-    const matchUuid = awarded?.agreement_match_uuid || (matches.length === 1 ? matches[0].agreement_match_uuid : '');
     const locale = this.lang === 'ar' ? 'ar' : 'en';
-    return `${environment.mainAppUrl}/${locale}/project/edit/${encodeURIComponent(p.uuid)}${matchUuid ? `?match=${encodeURIComponent(matchUuid)}` : ''}`;
+    return `${environment.mainAppUrl}/${locale}/project/edit/${encodeURIComponent(p.uuid)}`;
   }
 
   get todayDateString(): string {
@@ -1561,6 +1559,8 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
       reverseButtons: this.lang === 'ar',
       buttonsStyling: false,
       customClass: {
+        // Award is confirmed from inside the offer drawer, so the alert must sit above it.
+        container: 'pd-swal-above-drawer',
         confirmButton: 'btn btn-info',
         cancelButton: 'btn btn-light me-3',
       },

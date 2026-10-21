@@ -151,6 +151,22 @@ describe('Agreement revisions safeguards', () => {
       changes: [{ field: 'fixed_price', label: 'Fixed price', before: 2500, after: 5555 }] } as any);
     expect(priced).toEqual([{ label: 'Fixed price', before: '$2,500.00', after: '$5,555.00', delta: '+$3,055.00' }]);
   });
+  it('names target markets by type and resolves ids against the loaded market lists', () => {
+    api.markets = jasmine.createSpy().and.callFake((type: string) => of(type === 'region'
+      ? [{ id: 1, name: 'Africa' }, { id: 2, name: 'Asia' }] : [{ id: 5, name: 'Saudi Arabia', flag: 'saudi-arabia' }]));
+    const item: any = { id: 9, action: 'updated', target_type: 'component', target_label: 'Target Market', component: { id: 3, name: 'Target Market', slug: 'target-market' },
+      before_value: { value: { type: 'region', ids: [1, 2] } }, after_value: { value: { type: 'country', ids: [5] } },
+      changes: [{ field: 'value', label: 'Value', before: { type: 'region', ids: [1, 2] }, after: { type: 'country', ids: [5] } }] };
+    (component as any).loadRevisionMarkets({ items: [item] });
+    expect(api.markets.calls.allArgs()).toEqual([['region'], ['country']]);
+    const t = component.table(item);
+    expect(t.tableRows).toEqual([]);
+    expect(component.marketHeading(t.market!.market!.before!)).toBe('Regions (2)');
+    expect(component.marketChips(t.market!.market!.before!).map(m => m.name)).toEqual(['Africa', 'Asia']);
+    expect(component.marketChips(t.market!.market!.after!)).toEqual([{ id: 5, name: 'Saudi Arabia', flag: 'saudi-arabia' }]);
+    expect(component.itemMeta(item).icon).toBe('ki-geolocation');
+    expect(component.describe('both')).toBe('Primary and secondary data');
+  });
   it('fails closed when a contract identifier exists without signature information', () => {
     record.contract_uuid = 'contract-uuid'; expect(component.canEdit).toBeFalse();
   });

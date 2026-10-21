@@ -27,11 +27,15 @@ export interface AgreementRevisionItem {
   target_type: string;
   target_label: string;
   project_service?: { title: string };
+  /** Set for requirement (component) items. */
+  component?: { id: number; name: string; slug: string } | null;
   before_value: unknown;
   after_value: unknown;
   /** Backend-built comparison rows; preferred over diffing the raw values. */
   changes?: AgreementRevisionChange[];
 }
+/** A target-market option from the country, region or economic-bloc lists; only countries carry a flag. */
+export interface MarketOption { id: number; name: string; flag?: string | null; }
 export interface AgreementRevisionChange { field: string; label: string; before: unknown; after: unknown; }
 export interface AgreementRevisionList { data: AgreementRevision[]; meta?: { last_page?: number; unseen_count?: number }; }
 /** Proposal-level revisions (the offer deadline) apply to every Insighter invited under the proposal. */

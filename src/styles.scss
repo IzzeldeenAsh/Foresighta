@@ -506,3 +506,6 @@ tag-input,
 
 /* Accordion sections on phones: tighter gutters so nested content keeps its width */
 @media (max-width:575px){.pd-section--accordion>:not(summary),.po-section--accordion>:not(summary){margin-inline:14px}.pd-section--accordion>:last-child,.po-section--accordion>:last-child{margin-bottom:16px}.pd-section--accordion>:not(summary):first-of-type,.po-section--accordion>:not(summary):first-of-type{margin-top:16px}.pd-section__summary,.po-section__summary{min-height:0;padding:16px 14px!important;gap:10px}.pd-section--accordion .pd-section__title,.po-section--accordion .po-section__title{font-size:18px}.pd-section--accordion .pd-section__eyebrow,.po-section--accordion .po-section__eyebrow{display:none}}
+
+/* SweetAlert opened from inside a PrimeNG drawer (e.g. award confirm in the offer drawer) must sit above the drawer and its mask */
+.swal2-container.pd-swal-above-drawer{z-index:10000!important}

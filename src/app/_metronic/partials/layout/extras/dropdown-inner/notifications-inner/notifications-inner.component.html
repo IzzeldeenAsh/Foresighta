@@ -22,7 +22,7 @@
   <div class="separator m-0"></div>
 </div>
 
-<div class="my-3" style="height: calc(100vh - 90px); overflow-y: auto;">
+<div class="my-3" style="height: calc(100vh - 90px); overflow-y: auto; overflow-x: hidden; white-space: normal;">
   <!-- Show message when no notifications are available -->
   <div *ngIf="notifications.length === 0" class="text-center py-4">
     <div class="text-gray-500">{{ 'NOTIFICATIONS.NO_NEW' | translate }}</div>
@@ -32,10 +32,10 @@
   <ng-container *ngIf="notifications.length > 0">
     <ng-container *ngFor="let alert of notifications">
       <a [routerLink]="alert.type === 'knowledge' && alert.category ? null : ((alert.sub_type === 'project_proposal_offer' ? alert.sub_type : alert.type) | notificationsLinks:parent)" (click)="onNotificationClick(alert, $event)">
-      <div  class="d-flex flex-stack py-4 cursor-pointer bg-hover-light-info px-8">
+      <div class="d-flex align-items-center gap-3 py-4 cursor-pointer bg-hover-light-info px-5 px-sm-8">
         
-        <div class="d-flex align-items-center">
-          <div class="symbol symbol-45px me-4">
+        <div class="d-flex align-items-center flex-grow-1" style="min-width: 0;">
+          <div class="symbol symbol-45px me-3 me-sm-4 flex-shrink-0">
             <span class="symbol-label" style="background: none;">
               <app-keenicon
                 *ngIf="getKeeniconName(alert) as kiName; else svgIcon"
@@ -52,8 +52,8 @@
             </span>
           </div>
   
-          <div class="mb-0 me-2">
-            <a  class="fs-8 text-info-800 text-hover-info text-capitalize" [ngClass]="{'fw-bolder': !alert.read_at, 'fw-light': alert.read_at}" style="word-break: break-word;">
+          <div class="mb-0 flex-grow-1" style="min-width: 0;">
+            <a  class="fs-8 text-info-800 text-hover-info text-capitalize" [ngClass]="{'fw-bolder': !alert.read_at, 'fw-light': alert.read_at}" style="overflow-wrap: anywhere;">
             
               <ng-container *ngIf="getNotificationTitle(alert) as projectTitle; else standardTitle">
                 {{ projectTitle }}
@@ -69,6 +69,7 @@
             </a>
             <div
               class="text-gray-900 fs-7"
+              style="overflow-wrap: anywhere;"
               [ngClass]="{ 'fw-medium': !alert.read_at, 'fw-light': alert.read_at }"
               [style.white-space]="alert.read_at ? 'pre-line' : null"
             >
@@ -81,7 +82,7 @@
             </div>
           </div>
         </div>
-          <span class="badge badge-light-info fs-8 badge-hover-primary " >{{ 'NOTIFICATIONS.VIEW' | translate }}</span>
+          <span class="badge badge-light-info fs-8 badge-hover-primary flex-shrink-0">{{ 'NOTIFICATIONS.VIEW' | translate }}</span>
       
       </div>
     </a>

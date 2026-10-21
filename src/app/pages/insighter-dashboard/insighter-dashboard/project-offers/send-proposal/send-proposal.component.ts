@@ -796,7 +796,7 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
             this.lang === 'ar' ? 'تم الإرسال' : 'Submitted',
             res?.message || (this.lang === 'ar' ? 'تم إرسال عرضك بنجاح.' : 'Your proposal has been sent successfully.')
           );
-          this.router.navigate(['/app/insighter-dashboard/project-offers']);
+          this.router.navigate(['/app/insighter-dashboard/project-offers/details', this.proposalUuid!], { queryParams: { tab: 'offer' } });
         },
         error: (err) => {
           this.isSubmitting = false;

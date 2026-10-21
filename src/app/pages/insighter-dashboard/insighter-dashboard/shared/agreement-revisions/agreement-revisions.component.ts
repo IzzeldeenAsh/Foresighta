@@ -8,16 +8,18 @@ import { ProjectsCreatedService } from 'src/app/_fake/services/projects-created/
 import { ProjectOffersService } from 'src/app/_fake/services/project-offers/project-offers.service';
 import { ProjectServiceDetails } from 'src/app/_fake/services/project-phase2/project-phase2.model';
 import { AgreementRevisionsService } from 'src/app/_fake/services/agreement-revisions/agreement-revisions.service';
-import { AgreementPatch, AgreementRevision, AgreementRevisionChange, AgreementRevisionItem, AgreementRole, isSharedRevision, CommercialDraft, ComponentDraft, DeliverableDraft, ScopeDraft, agreementPaymentStarted, editableComponents, agreementIsLocked, commercialDraft, deliverableDraft, editableScopes, linkedDeliverableIds, ownsAgreementGroup, scopeDraft } from 'src/app/_fake/services/agreement-revisions/agreement-revisions.model';
+import { AgreementPatch, AgreementRevision, AgreementRevisionChange, AgreementRevisionItem, AgreementRole, MarketOption, isSharedRevision, CommercialDraft, ComponentDraft, DeliverableDraft, ScopeDraft, agreementPaymentStarted, editableComponents, agreementIsLocked, commercialDraft, deliverableDraft, editableScopes, linkedDeliverableIds, ownsAgreementGroup, scopeDraft } from 'src/app/_fake/services/agreement-revisions/agreement-revisions.model';
 
 interface ServiceDraft {
   id: number; title: string; scopes: ScopeDraft[]; deliverables: DeliverableDraft[];
   editScopes: boolean; editDeliverables: boolean;
 }
-interface ChangeRow { label: string; before: string; after: string; delta?: string }
+/** A target-market value as stored (`{ type, ids }`) or with its markets already named (`{ type, objects }`). */
+interface MarketValue { type: string; ids: number[]; given: Record<number, MarketOption> }
+interface ChangeRow { label: string; before: string; after: string; delta?: string; market?: { before: MarketValue | null; after: MarketValue | null } }
 interface RecordRow { label: string; before: string; after: string; changed: boolean }
 /** A revision item's changed fields and its full before/after record, as the details dialog shows them. */
-interface RevisionTable { rows: ChangeRow[]; hasDelta: boolean; record: RecordRow[]; showRecord: boolean; hasBefore: boolean; hasAfter: boolean }
+interface RevisionTable { rows: ChangeRow[]; tableRows: ChangeRow[]; market: ChangeRow | null; hasDelta: boolean; record: RecordRow[]; showRecord: boolean; hasBefore: boolean; hasAfter: boolean }
 type InstallmentStatus = 'same' | 'changed' | 'added' | 'removed';
 /** A payment value; `was` is set only when the revision changed it. */
 interface InstallmentCell { text: string; was?: string }
@@ -28,6 +30,7 @@ interface InstallmentDiff { summary: string; rows: InstallmentRow[]; bars: Array
 /** One offer file a revision added or removed; only files still on the offer can be opened. */
 interface AttachmentChange { action: 'created' | 'deleted'; uuid: string; name: string; size: string; active: boolean }
 const MONEY_FIELDS = ['fixed_price', 'proposed_price', 'hourly_rate', 'daily_rate'];
+const MARKET_TYPES = ['country', 'region', 'economic'];
 @Component({
   selector: 'app-agreement-revisions',
   templateUrl: './agreement-revisions.component.html',
@@ -69,7 +72,8 @@ export class AgreementRevisionsComponent implements OnInit, OnChanges, OnDestroy
   groups: ServiceDraft[] = [];
   components: ComponentDraft[] = [];
   originalComponents: ComponentDraft[] = [];
-  marketOptions: Record<string, Array<{ id: number; name: string }>> = {};
+  marketOptions: Record<string, MarketOption[]> = {};
+  private marketIndex: Record<string, Map<number, MarketOption>> = {};
   marketError = '';
   commercial: CommercialDraft | null = null;
   originalCommercial: CommercialDraft | null = null;
@@ -154,7 +158,10 @@ export class AgreementRevisionsComponent implements OnInit, OnChanges, OnDestroy
     if (this.marketOptions[type]) return;
     this.marketError = '';
     this.api.markets(type).pipe(takeUntil(this.destroy$)).subscribe({
-      next: options => this.marketOptions = { ...this.marketOptions, [type]: options },
+      next: options => {
+        this.marketIndex[type] = new Map(options.map(option => [Number(option.id), option]));
+        this.marketOptions = { ...this.marketOptions, [type]: options };
+      },
       error: () => this.marketError = this.text('Could not load markets.', 'تعذر تحميل الأسواق.'),
     });
   }
@@ -215,7 +222,7 @@ export class AgreementRevisionsComponent implements OnInit, OnChanges, OnDestroy
       next: result => {
         this.detailLoading = false;
         if (!result) { this.detailError = this.text('This revision is not available for these invitations.', 'هذه المراجعة غير متاحة ضمن الدعوات الحالية.'); return; }
-        this.detailContext = result.match.uuid; this.detail = result.revision; this.markSeen(result.revision);
+        this.detailContext = result.match.uuid; this.detail = result.revision; this.markSeen(result.revision); this.loadRevisionMarkets(result.revision);
       }, error: err => { this.detailLoading = false; this.detailError = this.serverError(err); },
     });
   }
@@ -224,9 +231,15 @@ export class AgreementRevisionsComponent implements OnInit, OnChanges, OnDestroy
     this.requestedRevision = id; this.detailContext = this.revisionContexts.get(id)?.[0] || this.contextUuid;
     this.expandedItems = new Set(); this.tables = new WeakMap(); this.attachmentChangeLists = new WeakMap();
     this.detailRequest = this.api.show(this.role, this.detailContext, id).subscribe({
-      next: detail => { this.detail = detail; this.detailLoading = false; this.markSeen(detail); },
+      next: detail => { this.detail = detail; this.detailLoading = false; this.markSeen(detail); this.loadRevisionMarkets(detail); },
       error: err => { this.detailError = this.serverError(err); this.detailLoading = false; },
     });
+  }
+  /** Target-market changes store ids only; load each market list they use so the dialog can name them. */
+  private loadRevisionMarkets(revision: AgreementRevision): void {
+    const values = (revision.items ?? []).reduce<unknown[]>((all, item) => all.concat(item.before_value, item.after_value,
+      this.plain(item.before_value)?.['value'], this.plain(item.after_value)?.['value']), []);
+    new Set(values.map(value => this.marketValue(value)?.type)).forEach(type => { if (type && MARKET_TYPES.includes(type)) this.loadMarkets(type); });
   }
   /** Opening a revision marks it seen (and its bell notification read). Failures stay silent. */
   private markSeen(revision: AgreementRevision): void {
@@ -422,6 +435,7 @@ export class AgreementRevisionsComponent implements OnInit, OnChanges, OnDestroy
       full: ['Full payment', 'دفع كامل'], partial: ['Installments', 'دفعات'], on_platform: ['On platform', 'على المنصة'], session: ['Session', 'جلسة'], physical_workshop: ['In-person workshop', 'ورشة حضورية'],
       position: ['Order', 'الترتيب'], value: ['Value', 'القيمة'], selected: ['Method', 'الطريقة'], way: ['Delivery', 'التسليم'], address: ['Address', 'العنوان'],
       cover_letter: ['Technical proposal', 'نص العرض الفني'], suggested_duration_days: ['Suggested project duration', 'مدة المشروع المقترحة'],
+      primary_data: ['Primary data', 'بيانات أولية'], secondary_data: ['Secondary data', 'بيانات ثانوية'], both: ['Primary and secondary data', 'بيانات أولية وثانوية'], does_not_matter: ['No preference', 'لا تفضيل'],
       offer_cover_letter: ['Technical proposal', 'نص العرض الفني'], offer_attachment: ['Offer attachments', 'مرفقات العرض'], scope_attachment: ['Sub-scope attachments', 'مرفقات النطاقات الفرعية'], offer_duration_days: ['Suggested project duration', 'مدة المشروع المقترحة'],
     };
     return labels[value] ? this.text(...labels[value]) : value.replace(/_/g, ' ');
@@ -443,6 +457,15 @@ export class AgreementRevisionsComponent implements OnInit, OnChanges, OnDestroy
     };
     const [icon, tone, en, ar] = meta[type] ?? ['ki-notepad-edit', 'component', this.label(type), this.label(type)];
     return { icon, tone, label: this.text(en, ar) };
+  }
+  /** Section icon in the details dialog: requirements get one per kind, everything else follows its type. */
+  itemMeta(item: AgreementRevisionItem): { icon: string; tone: string } {
+    if (item.target_type !== 'component') return this.typeMeta(item.target_type);
+    const slug = item.component?.slug ?? '';
+    const value = this.plain(item.after_value)?.['value'] ?? this.plain(item.before_value)?.['value'];
+    if (slug.includes('target-market') || this.marketValue(value)) return { icon: 'ki-geolocation', tone: 'deliverable' };
+    if (slug.includes('data-sources')) return { icon: 'ki-data', tone: 'scope' };
+    return this.typeMeta(item.target_type);
   }
   revisionTitle(revision: AgreementRevision): string {
     return (revision.changed_target_types ?? []).map(type => this.typeMeta(type).label).join(this.text(' and ', ' و'));
@@ -467,7 +490,8 @@ export class AgreementRevisionsComponent implements OnInit, OnChanges, OnDestroy
       const rows = item.action === 'updated' ? this.changeRows(item) : [];
       const record = this.recordRows(item);
       // An updated item whose every field changed would only repeat the change table above.
-      table = { rows, hasDelta: rows.some(row => row.delta), record,
+      table = { rows, tableRows: rows.filter(row => !row.market), market: rows.find(row => row.market) ?? null,
+        hasDelta: rows.some(row => row.delta), record,
         showRecord: record.length > 0 && (item.action !== 'updated' || record.some(row => !row.changed)),
         hasBefore: item.before_value != null, hasAfter: item.after_value != null };
       this.tables.set(item, table);
@@ -656,7 +680,9 @@ export class AgreementRevisionsComponent implements OnInit, OnChanges, OnDestroy
   }
   private row(label: string, key: string, before: unknown, after: unknown): ChangeRow {
     const delta = this.delta(key, before, after);
-    return { label, before: this.formatField(key, before), after: this.formatField(key, after), ...(delta ? { delta } : {}) };
+    const market = { before: this.marketValue(before), after: this.marketValue(after) };
+    return { label, before: this.formatField(key, before), after: this.formatField(key, after), ...(delta ? { delta } : {}),
+      ...(market.before || market.after ? { market } : {}) };
   }
   private delta(key: string, before: unknown, after: unknown): string {
     if (!MONEY_FIELDS.includes(key) || before == null || after == null || before === '' || after === '') return '';
@@ -703,6 +729,31 @@ export class AgreementRevisionsComponent implements OnInit, OnChanges, OnDestroy
       return `${raw} ${this.text(Number(value) === 1 ? 'day' : 'days', 'يوم')}`;
     return this.describe(value);
   }
+  private marketValue(value: unknown): MarketValue | null {
+    const object = this.plain(value);
+    if (!object || typeof object['type'] !== 'string' || !(Array.isArray(object['ids']) || Array.isArray(object['objects']))) return null;
+    const given: Record<number, MarketOption> = {};
+    (Array.isArray(object['objects']) ? object['objects'] : []).forEach((row: any) => {
+      const id = Number(row?.id ?? row);
+      if (id > 0) given[id] = { id, name: row?.name ?? '', flag: row?.flag ?? null };
+    });
+    const ids = Array.isArray(object['ids']) ? object['ids'].map(Number).filter((id: number) => id > 0) : Object.keys(given).map(Number);
+    return { type: object['type'], ids, given };
+  }
+  /** "Countries (3)": the market kind and how many were chosen. */
+  marketHeading(value: MarketValue): string {
+    const kinds: Record<string, [string, string]> = { country: ['Countries', 'الدول'], region: ['Regions', 'المناطق'], economic: ['Economic blocs', 'التكتلات الاقتصادية'] };
+    return `${kinds[value.type] ? this.text(...kinds[value.type]) : this.label(value.type)} (${value.ids.length})`;
+  }
+  marketIcon(type: string): string {
+    return type === 'country' ? 'ki-flag' : type === 'economic' ? 'ki-bank' : 'ki-map';
+  }
+  /** Each chosen market by name; ids stay visible only if the list could not name them. */
+  marketChips(value: MarketValue): MarketOption[] {
+    const index = this.marketIndex[value.type];
+    return value.ids.map(id => index?.get(id) ?? (value.given[id]?.name ? value.given[id] : { id, name: index ? `#${id}` : '…' }));
+  }
+  hideFlag(event: Event): void { (event.target as HTMLElement).style.display = 'none'; }
   private plain(value: unknown): Record<string, any> | null {
     return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, any> : null;
   }
@@ -710,6 +761,8 @@ export class AgreementRevisionsComponent implements OnInit, OnChanges, OnDestroy
   describe(value: any): string {
     if (value === null || value === undefined || value === '') return '—';
     if (Array.isArray(value)) return value.map(v => this.describe(v)).join(' · ');
+    const market = this.marketValue(value);
+    if (market) return `${this.marketHeading(market)}: ${this.marketChips(market).map(chip => chip.name).join(', ')}`;
     if (typeof value === 'object') return Object.entries(value).map(([k, v]) => `${this.label(k)}: ${this.describe(v)}`).join(' · ');
     return typeof value === 'string' ? this.label(value) : String(value);
   }
