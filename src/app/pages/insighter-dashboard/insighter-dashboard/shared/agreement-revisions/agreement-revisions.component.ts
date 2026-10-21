@@ -45,11 +45,27 @@ export class AgreementRevisionsComponent implements OnInit, OnChanges, OnDestroy
   @Input() showEditAction = true;
   /** The client's submitted matches (proposal match list): the project payload drops `invited` once the project is awarded. */
   @Input() matchList: any[] = [];
+  /** `accordion` expands each revision in place (offer drawers, project tab); `list` opens a details dialog. */
+  @Input() layout: 'list' | 'accordion' = 'list';
+  /** Client only: read a single invitation's history (the offer drawer) instead of every invited Insighter's. */
+  @Input() onlyMatch = '';
+  /** Show only revisions made by this side (the client's project tab lists the client's own changes). */
+  @Input() authorRole: AgreementRole | null = null;
+  /** The other side's name for the author filter (the Insighter's name in the client's offer drawer). */
+  @Input() counterpartName = '';
   @Output() refreshed = new EventEmitter<any>();
   /** A revision was marked seen, so the parent can lower its Revisions tab badge. */
   @Output() revisionSeen = new EventEmitter<number>();
+  /** A requested revision is listed here but hidden by `authorRole`: the parent opens it where it lives (an offer drawer). */
+  @Output() revisionElsewhere = new EventEmitter<{ revisionId: number; contextUuid: string }>();
   revisions: AgreementRevision[] = [];
   unseenCount = 0;
+  authorFilter: 'all' | AgreementRole = 'all';
+  openIds = new Set<number>();
+  /** Revision details loaded for the accordion, keyed by revision id. */
+  inlineDetails = new Map<number, AgreementRevision>();
+  inlineLoading = new Set<number>();
+  inlineErrors = new Map<number, string>();
   expandedItems = new Set<AgreementRevisionItem>();
   private tables = new WeakMap<AgreementRevisionItem, RevisionTable>();
   private installmentDiffs = new WeakMap<AgreementRevisionItem, InstallmentDiff | null>();
@@ -111,7 +127,8 @@ export class AgreementRevisionsComponent implements OnInit, OnChanges, OnDestroy
     });
   }
   ngOnChanges(): void {
-    if (this.role === 'client' && !this.matches.some((m: any) => m.uuid === this.matchUuid)) {
+    if (this.role === 'client' && this.onlyMatch) this.matchUuid = this.onlyMatch;
+    else if (this.role === 'client' && !this.matches.some((m: any) => m.uuid === this.matchUuid)) {
       const awarded = this.matches.find((m: any) => m.offer?.uuid && m.offer.uuid === this.project?.offer?.uuid);
       this.matchUuid = awarded?.uuid || this.matches[0]?.uuid || '';
     }
@@ -134,7 +151,25 @@ export class AgreementRevisionsComponent implements OnInit, OnChanges, OnDestroy
   }
   get contextUuid(): string { return this.role === 'client' ? this.matchUuid : this.record?.offer?.uuid || ''; }
   /** Where the history is read from: the client sees every invited Insighter's revisions in one list. */
-  get listContexts(): string[] { return this.role === 'client' ? this.matches.map((m: any) => m.uuid) : this.contextUuid ? [this.contextUuid] : []; }
+  get listContexts(): string[] {
+    if (this.role === 'client' && this.onlyMatch) return [this.onlyMatch];
+    return this.role === 'client' ? this.matches.map((m: any) => m.uuid) : this.contextUuid ? [this.contextUuid] : [];
+  }
+  /** Revisions after the author restriction and the accordion's author filter. */
+  get visibleRevisions(): AgreementRevision[] {
+    const role = this.authorRole || (this.authorFilter === 'all' ? null : this.authorFilter);
+    return role ? this.revisions.filter(r => r.changed_by_role === role) : this.revisions;
+  }
+  get showAuthorFilter(): boolean { return this.layout === 'accordion' && !this.authorRole && this.revisions.length > 0; }
+  authorCount(role: 'all' | AgreementRole): number { return role === 'all' ? this.revisions.length : this.revisions.filter(r => r.changed_by_role === role).length; }
+  /** Filter label for a side: "You" for the viewer, the Insighter's name or "Client" for the other party. */
+  authorLabel(role: AgreementRole): string {
+    if (role === this.role) return this.text('You', 'أنت');
+    return role === 'insighter' ? this.counterpartName || this.label('insighter') : this.label('client');
+  }
+  /** "New" marks the other party's unseen changes; your own edits are never news to you. */
+  isNew(revision: AgreementRevision): boolean { return revision.is_seen === false && revision.changed_by_role !== this.role; }
+  get newCount(): number { return this.visibleRevisions.filter(r => this.isNew(r)).length; }
   get hasMore(): boolean { return Object.keys(this.pages).some(context => this.pages[context].page < this.pages[context].last); }
   get services(): ProjectServiceDetails[] { return this.project?.project_services ?? []; }
   get contract(): any { return this.record?.contract ?? this.project?.contract ?? this.record?.offer?.contract; }
@@ -176,7 +211,7 @@ export class AgreementRevisionsComponent implements OnInit, OnChanges, OnDestroy
   }
   load(more = false): void {
     this.listRequest?.unsubscribe();
-    if (!more) { this.revisions = []; this.pages = {}; this.revisionContexts = new Map(); }
+    if (!more) { this.revisions = []; this.pages = {}; this.revisionContexts = new Map(); this.openIds.clear(); this.inlineDetails.clear(); this.inlineErrors.clear(); }
     this.error = '';
     const contexts = more ? this.listContexts.filter(c => this.pages[c] && this.pages[c].page < this.pages[c].last) : this.listContexts;
     if (!contexts.length) { this.loading = false; return; }
@@ -200,11 +235,16 @@ export class AgreementRevisionsComponent implements OnInit, OnChanges, OnDestroy
         if (!more) this.unseenCount = results.length === 1 && results[0].res.meta?.unseen_count != null
           ? results[0].res.meta.unseen_count : this.revisions.filter(r => r.is_seen === false).length;
         this.loading = false;
+        if (this.layout === 'accordion' && this.requestedRevision && !more) this.openRequested(this.requestedRevision);
       },
       error: err => { this.error = this.serverError(err); this.loading = false; },
     });
   }
   private resolveRevision(id: number): void {
+    if (this.layout === 'accordion') { if (!this.loading && this.revisions.length) this.openRequested(id); return; }
+    this.resolveInDialog(id);
+  }
+  private resolveInDialog(id: number): void {
     if (this.role !== 'client' || this.matches.length < 2) {
       if (this.contextUuid) this.openRevision(id);
       return;
@@ -235,6 +275,41 @@ export class AgreementRevisionsComponent implements OnInit, OnChanges, OnDestroy
       error: err => { this.detailError = this.serverError(err); this.detailLoading = false; },
     });
   }
+  /** A notification's revision: expand it in the list, or fall back to the dialog when it is not listed. */
+  private openRequested(id: number): void {
+    const listed = this.revisions.find(r => r.id === id);
+    if (!listed) { this.resolveInDialog(id); return; }
+    if (this.authorRole && listed.changed_by_role !== this.authorRole) {
+      this.revisionElsewhere.emit({ revisionId: id, contextUuid: this.revisionContexts.get(id)?.[0] || '' });
+      return;
+    }
+    this.authorFilter = 'all';
+    if (!this.openIds.has(id)) this.toggleRevision(id);
+    setTimeout(() => document.getElementById(`rv-acc-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+  }
+  toggleRevision(id: number): void {
+    if (this.openIds.has(id)) { this.openIds.delete(id); return; }
+    this.openIds.add(id);
+    if (!this.inlineDetails.has(id)) this.loadInline(id);
+  }
+  get allOpen(): boolean { return this.visibleRevisions.length > 0 && this.visibleRevisions.every(r => this.openIds.has(r.id)); }
+  toggleAll(): void {
+    if (this.allOpen) { this.openIds.clear(); return; }
+    this.visibleRevisions.forEach(r => { if (!this.openIds.has(r.id)) this.toggleRevision(r.id); });
+  }
+  setAuthorFilter(role: 'all' | AgreementRole): void { this.authorFilter = role; }
+  loadInline(id: number): void {
+    const context = this.revisionContexts.get(id)?.[0] || this.contextUuid;
+    if (!context) return;
+    this.inlineLoading.add(id); this.inlineErrors.delete(id);
+    this.api.show(this.role, context, id).pipe(takeUntil(this.destroy$)).subscribe({
+      next: detail => {
+        this.inlineLoading.delete(id); this.inlineDetails.set(id, detail);
+        this.markSeen(detail, context); this.loadRevisionMarkets(detail);
+      },
+      error: err => { this.inlineLoading.delete(id); this.inlineErrors.set(id, this.serverError(err)); },
+    });
+  }
   /** Target-market changes store ids only; load each market list they use so the dialog can name them. */
   private loadRevisionMarkets(revision: AgreementRevision): void {
     const values = (revision.items ?? []).reduce<unknown[]>((all, item) => all.concat(item.before_value, item.after_value,
@@ -242,10 +317,10 @@ export class AgreementRevisionsComponent implements OnInit, OnChanges, OnDestroy
     new Set(values.map(value => this.marketValue(value)?.type)).forEach(type => { if (type && MARKET_TYPES.includes(type)) this.loadMarkets(type); });
   }
   /** Opening a revision marks it seen (and its bell notification read). Failures stay silent. */
-  private markSeen(revision: AgreementRevision): void {
+  private markSeen(revision: AgreementRevision, context = ''): void {
     const listed = this.revisions.find(r => r.id === revision.id);
     if (revision.is_seen !== false && listed?.is_seen !== false) return;
-    const contextUuid = this.detailContext || this.contextUuid;
+    const contextUuid = context || this.detailContext || this.contextUuid;
     if (!contextUuid) return;
     this.api.markSeen(this.role, contextUuid, revision.id).pipe(takeUntil(this.destroy$)).subscribe({
       next: () => {
@@ -266,7 +341,7 @@ export class AgreementRevisionsComponent implements OnInit, OnChanges, OnDestroy
   toggleRecord(item: AgreementRevisionItem): void {
     if (this.expandedItems.has(item)) this.expandedItems.delete(item); else this.expandedItems.add(item);
   }
-  retryDetail(): void { this.resolveRevision(this.requestedRevision); }
+  retryDetail(): void { this.resolveInDialog(this.requestedRevision); }
   private fetchRecord(): Observable<any> {
     return this.role === 'client' ? this.clients.getProject(this.project.uuid) :
       this.proposalContext ? this.insighters.getProposalDetails(this.project.uuid) : this.insighters.getInsighterProjectDetails(this.project.uuid);

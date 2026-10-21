@@ -416,7 +416,7 @@
 </div>
 
 <ng-template #offerDetailsContent let-offer>
-    <div class="po-drawer__wrap" [class.po-drawer__wrap--offer]="activeDrawerTab === 'offer'">
+    <div class="po-drawer__wrap">
       <div class="po-drawer__main">
         <div class="po-drawer__topbar">
           <button type="button" class="po-iconbtn" (click)="closeDrawer()"
@@ -454,13 +454,10 @@
               (click)="setDrawerTab(tab.value, offer)">
               <i class="ki-outline po-drawer-tab__icon" [ngClass]="tab.iconClass" aria-hidden="true"></i>
               <span>{{ lang === 'ar' ? tab.labelAr : tab.labelEn }}</span>
-              <span class="po-tab-badge" *ngIf="tab.value === 'offer' && offerUnreadMessages(offer) > 0" [attr.aria-label]="lang === 'ar' ? 'رسائل عرض غير مقروءة' : 'Unread offer messages'">{{ offerUnreadMessages(offer) }}</span>
-              <span class="po-tab-badge" *ngIf="tab.value === 'revisions' && offer.offer?.uuid && (offer.unseen_agreement_revisions_count || 0) > 0" [attr.aria-label]="lang === 'ar' ? 'مراجعات غير مقروءة' : 'Unseen revisions'">{{ offer.unseen_agreement_revisions_count }}</span>
             </button>
           </div>
 
           <ng-container [ngSwitch]="activeDrawerTab">
-            <app-agreement-revisions *ngSwitchCase="'revisions'" [record]="offer" role="insighter" [lang]="lang" [proposalContext]="true" [showEditAction]="false" (revisionSeen)="offer.unseen_agreement_revisions_count = lowerCount(offer.unseen_agreement_revisions_count)" (refreshed)="selectedOffer = $event"></app-agreement-revisions>
             <div *ngSwitchCase="'overview'" class="po-tab-panel">
           <section class="po-section" *ngIf="offer.project.service_prompt || offer.project.description">
             <p class="po-section__text" *ngIf="offer.project.service_prompt">{{ offer.project.service_prompt }}</p>
@@ -944,55 +941,6 @@
                 context="insighter">
               </app-project-discussion>
             </ng-container>
-
-            <ng-container *ngSwitchCase="'offer'">
-              <app-offer-overview *ngIf="offer.offer as submittedOffer"
-                [offer]="submittedOffer" [services]="offer.project.project_services" [lang]="lang"
-                [projectDurationDays]="offer.project.schedule.duration_days ?? null"
-                [baseDate]="offer.project.schedule.started_at || offer.project.schedule.planned_start_date"
-                [statusLabel]="getOfferStatusLabel(submittedOffer.status)"
-                [statusClass]="getOfferStatusBadgeClass(submittedOffer.status)"
-                [pricingSummary]="getOfferPaymentSummary(submittedOffer)">
-                <div offerActions class="d-flex flex-wrap align-items-center gap-2" *ngIf="canUsePrivateOfferDiscussion(offer) || canEditOffer(offer)">
-                  <button type="button" class="btn btn-sm btn-light-info" *ngIf="canUsePrivateOfferDiscussion(offer)" (click)="openPrivateMessages(offer)">
-                    <i class="ki-outline ki-messages fs-5"></i>{{ lang === 'ar' ? 'رسائل العرض' : 'Offer Messages' }}
-                  <span class="po-tab-badge ms-2" *ngIf="offerUnreadMessages(offer) > 0" [attr.aria-label]="lang === 'ar' ? 'رسائل غير مقروءة' : 'Unread messages'">{{ offerUnreadMessages(offer) }}</span>
-                  </button>
-                  <button type="button" class="btn btn-sm btn-info" *ngIf="canEditOffer(offer)" (click)="onEditOffer(offer)">
-                    <i class="ki-outline ki-pencil fs-5"></i>{{ lang === 'ar' ? 'تعديل العرض' : 'Edit offer' }}
-                  </button>
-                </div>
-                <div class="po-document-group mt-4" *ngIf="getOfferFiles(offer).length">
-                  <div class="po-document-group__head">
-                    <span class="po-document-group__icon po-document-group__icon--offer"><i class="ki-outline ki-paper-clip fs-5"></i></span>
-                    <div>
-                      <h6>{{ lang === 'ar' ? 'مرفقات العرض' : 'Offer Attachments' }}</h6>
-                      <span>{{ getOfferFiles(offer).length }} {{ lang === 'ar' ? 'ملف' : 'file(s)' }}</span>
-                    </div>
-                  </div>
-                  <div class="po-document-list">
-                    <button type="button" class="po-document-item"
-                      *ngFor="let file of getOfferFiles(offer); trackBy: trackByFile"
-                      [disabled]="isOpeningFile(file)"
-                      [attr.aria-label]="getProjectFileName(file)"
-                      [attr.title]="getProjectFileName(file)"
-                      (click)="openProjectFile(file)">
-                      <img class="po-document-item__icon"
-                        [src]="getFileTypeIconPath(getProjectFileExtension(file))"
-                        [alt]="getProjectFileExtension(file) || 'file'"
-                        loading="lazy"
-                        (error)="onFileIconLoadError($event)">
-                      <span class="po-document-item__scope">{{ file.scope || getProjectFileName(file) }}</span>
-                      <span class="po-document-item__copy">
-                        <strong>{{ getProjectFileName(file) }}</strong>
-                        <small>{{ file.uploadBy || '-' }} &middot; {{ formatDate(file.upload_date) }}</small>
-                      </span>
-                    </button>
-                  </div>
-                </div>
-
-              </app-offer-overview>
-            </ng-container>
           </ng-container>
         </div>
       </div>
@@ -1045,6 +993,13 @@
               </ng-container>
             </div>
           </div>
+
+          <button *ngIf="!isActiveProject(offer) && hasSubmittedOffer(offer)" type="button" class="btn btn-info w-100 mb-2 po-view-offer" (click)="openOfferDrawer(offer, offerUnreadMessages(offer) > 0 ? 'messages' : offerRevisionsUnseen > 0 ? 'revisions' : 'offer')">
+            <i class="ki-outline ki-eye fs-6 me-1"></i>
+            {{ lang === 'ar' ? 'عرض العرض' : 'View Offer' }}
+            <span class="po-view-offer__badge ms-2" *ngIf="offerDrawerBadge(offer) > 0"
+              [attr.aria-label]="lang === 'ar' ? 'رسائل أو تعديلات جديدة' : 'New messages or revisions'">{{ offerDrawerBadge(offer) }}</span>
+          </button>
 
           <ng-container *ngIf="!isActiveProject(offer) && !isOfferTimedOut(offer)">
             <button *ngIf="hasContractAction(offer)" type="button" class="btn btn-info w-100 mb-2" (click)="viewContract(offer)">
@@ -1130,29 +1085,143 @@
   </ng-container>
 </p-sidebar>
 
-<p-sidebar [(visible)]="privateMessagesVisible" position="right" appendTo="body" [modal]="true" [dismissible]="true"
-  [blockScroll]="true" [baseZIndex]="1400" [showCloseIcon]="false" [style]="{ width: '640px', maxWidth: '100vw' }"
-  styleClass="po-private-drawer" (onHide)="closePrivateMessages()">
-  <ng-container *ngIf="privateMessagesVisible && selectedOffer as offer">
-    <div class="po-private-drawer__head">
-      <div class="po-private-drawer__title">
-        <span>{{ lang === 'ar' ? 'رسائل العرض' : 'Offer Messages' }}</span>
-        <small>{{ offer.project.title }}</small>
+<p-sidebar [(visible)]="offerDrawerVisible" position="right" appendTo="body" [modal]="true" [dismissible]="true"
+  [blockScroll]="true" [baseZIndex]="1400" [showCloseIcon]="false" [style]="{ width: '86vw', maxWidth: '1280px' }"
+  styleClass="po-offer-drawer" (onHide)="closeOfferDrawer()">
+  <ng-container *ngIf="offerDrawerVisible && selectedOffer as offer">
+    <div class="po-offer-drawer__wrap" *ngIf="offer.offer as submittedOffer">
+      <div class="po-offer-drawer__main">
+        <div class="po-offer-drawer__topbar">
+          <button type="button" class="po-iconbtn" (click)="closeOfferDrawer()" [attr.aria-label]="lang === 'ar' ? 'إغلاق العرض' : 'Close offer'">
+            <i class="pi pi-times" aria-hidden="true"></i>
+          </button>
+        </div>
+
+        <div class="po-offer-drawer__body">
+          <div class="po-offer-drawer__hero">
+            <span class="po-offer-drawer__pill">{{ lang === 'ar' ? 'عرضك' : 'Your Offer' }}</span>
+            <h3 class="po-offer-drawer__title">{{ offer.project.title }}</h3>
+            <span class="po-offer-drawer__sub" *ngIf="offer.project.client?.name">{{ lang === 'ar' ? 'العميل' : 'Client' }} · {{ offer.project.client?.name }}</span>
+          </div>
+
+          <div class="po-offer-sections" role="tablist" [attr.aria-label]="lang === 'ar' ? 'أقسام العرض' : 'Offer sections'">
+            <button type="button" class="po-offer-section" role="tab"
+              [class.active]="offerSection(offer) === 'offer'" [attr.aria-selected]="offerSection(offer) === 'offer'"
+              (click)="setOfferDrawerSection('offer')">
+              <i class="ki-outline ki-dollar" aria-hidden="true"></i>
+              <span>{{ lang === 'ar' ? 'العرض' : 'Offer' }}</span>
+            </button>
+            <button type="button" class="po-offer-section" role="tab" *ngIf="canUsePrivateOfferDiscussion(offer)"
+              [class.active]="offerSection(offer) === 'messages'" [attr.aria-selected]="offerSection(offer) === 'messages'"
+              (click)="setOfferDrawerSection('messages')">
+              <i class="ki-outline ki-messages" aria-hidden="true"></i>
+              <span>{{ lang === 'ar' ? 'رسائل العرض' : 'Offer Messages' }}</span>
+              <span class="po-tab-badge" *ngIf="offerUnreadMessages(offer) > 0" [attr.aria-label]="lang === 'ar' ? 'رسائل غير مقروءة' : 'Unread messages'">{{ offerUnreadMessages(offer) }}</span>
+            </button>
+            <button type="button" class="po-offer-section" role="tab"
+              [class.active]="offerSection(offer) === 'revisions'" [attr.aria-selected]="offerSection(offer) === 'revisions'"
+              (click)="setOfferDrawerSection('revisions')">
+              <i class="ki-outline ki-time" aria-hidden="true"></i>
+              <span>{{ lang === 'ar' ? 'التعديلات' : 'Revisions' }}</span>
+              <span class="po-tab-badge" *ngIf="offerRevisionsUnseen > 0" [attr.aria-label]="lang === 'ar' ? 'تعديلات جديدة' : 'New revisions'">{{ offerRevisionsUnseen }}</span>
+            </button>
+          </div>
+
+          <ng-container [ngSwitch]="offerSection(offer)">
+            <app-project-discussion *ngSwitchCase="'messages'"
+              [projectUuid]="offer.project.uuid || null"
+              [offerUuid]="submittedOffer.uuid || null"
+              [counterpartName]="offer.project.client?.name || null"
+              context="insighter"
+              (threadRead)="onOfferThreadRead(offer)"
+              (accessClosed)="onPrivateOfferDiscussionClosed(offer)">
+            </app-project-discussion>
+
+            <app-agreement-revisions *ngSwitchCase="'revisions'" [record]="offer" role="insighter" layout="accordion" [lang]="lang"
+              [proposalContext]="true" [showEditAction]="false"
+              (revisionSeen)="onOfferRevisionSeen(offer)" (refreshed)="selectedOffer = $event">
+            </app-agreement-revisions>
+
+            <ng-container *ngSwitchDefault>
+              <app-offer-overview *ngIf="offer.offer as submittedOffer"
+                [offer]="submittedOffer" [services]="offer.project.project_services" [lang]="lang"
+                [projectDurationDays]="offer.project.schedule.duration_days ?? null"
+                [baseDate]="offer.project.schedule.started_at || offer.project.schedule.planned_start_date"
+                [statusLabel]="getOfferStatusLabel(submittedOffer.status)"
+                [statusClass]="getOfferStatusBadgeClass(submittedOffer.status)"
+                [pricingSummary]="getOfferPaymentSummary(submittedOffer)">
+                <div class="po-document-group mt-4" *ngIf="getOfferFiles(offer).length">
+                  <div class="po-document-group__head">
+                    <span class="po-document-group__icon po-document-group__icon--offer"><i class="ki-outline ki-paper-clip fs-5"></i></span>
+                    <div>
+                      <h6>{{ lang === 'ar' ? 'مرفقات العرض' : 'Offer Attachments' }}</h6>
+                      <span>{{ getOfferFiles(offer).length }} {{ lang === 'ar' ? 'ملف' : 'file(s)' }}</span>
+                    </div>
+                  </div>
+                  <div class="po-document-list">
+                    <button type="button" class="po-document-item"
+                      *ngFor="let file of getOfferFiles(offer); trackBy: trackByFile"
+                      [disabled]="isOpeningFile(file)"
+                      [attr.aria-label]="getProjectFileName(file)"
+                      [attr.title]="getProjectFileName(file)"
+                      (click)="openProjectFile(file)">
+                      <img class="po-document-item__icon"
+                        [src]="getFileTypeIconPath(getProjectFileExtension(file))"
+                        [alt]="getProjectFileExtension(file) || 'file'"
+                        loading="lazy"
+                        (error)="onFileIconLoadError($event)">
+                      <span class="po-document-item__scope">{{ file.scope || getProjectFileName(file) }}</span>
+                      <span class="po-document-item__copy">
+                        <strong>{{ getProjectFileName(file) }}</strong>
+                        <small>{{ file.uploadBy || '-' }} &middot; {{ formatDate(file.upload_date) }}</small>
+                      </span>
+                    </button>
+                  </div>
+                </div>
+
+              </app-offer-overview>
+            </ng-container>
+          </ng-container>
+        </div>
       </div>
-      <button type="button" class="po-private-drawer__close" (click)="closePrivateMessages()"
-        [attr.aria-label]="lang === 'ar' ? 'إغلاق' : 'Close'">
-        <i class="pi pi-times" aria-hidden="true"></i>
-      </button>
-    </div>
-    <div class="po-private-drawer__body">
-      <app-project-discussion
-        [projectUuid]="offer.project.uuid || null"
-        [offerUuid]="offer.offer?.uuid || null"
-        [counterpartName]="offer.project.client?.name || null"
-        context="insighter"
-        (threadRead)="onOfferThreadRead(offer)"
-        (accessClosed)="onPrivateOfferDiscussionClosed(offer)">
-      </app-project-discussion>
+
+      <aside class="po-offer-drawer__aside">
+        <div class="po-offer-drawer__aside-card">
+          <div class="po-aside-card__title">{{ lang === 'ar' ? 'تفاصيل العرض' : 'Offer Details' }}</div>
+          <p class="po-aside-card__hint">
+            {{ canEditOffer(offer)
+              ? (lang === 'ar' ? 'يمكنك تعديل عرضك ما دام العميل يراجعه. كل تعديل محفوظ يظهر في «التعديلات» للطرفين.' : 'You can edit your offer while the client reviews it. Every saved change appears in Revisions for both sides.')
+              : (lang === 'ar' ? 'راجع عرضك ورسائله وسجل تعديلاته.' : 'Review your offer, its messages and its revision history.') }}
+          </p>
+
+          <button type="button" class="btn btn-info w-100 mb-2" *ngIf="canEditOffer(offer)" (click)="onEditOffer(offer)">
+            <i class="ki-outline ki-pencil fs-6 me-1"></i>{{ lang === 'ar' ? 'تعديل العرض' : 'Edit offer' }}
+          </button>
+
+          <div class="po-aside-table-wrap">
+            <table class="po-aside-table">
+              <tbody>
+                <tr>
+                  <th scope="row">{{ lang === 'ar' ? 'الحالة' : 'Status' }}</th>
+                  <td><span class="badge" [ngClass]="getOfferStatusBadgeClass(submittedOffer.status)">{{ getOfferStatusLabel(submittedOffer.status) }}</span></td>
+                </tr>
+                <tr>
+                  <th scope="row">{{ lang === 'ar' ? 'موعد العرض' : 'Offer Deadline' }}</th>
+                  <td>{{ getDeadlineLabel(offer) }}</td>
+                </tr>
+                <tr>
+                  <th scope="row">{{ lang === 'ar' ? 'التسعير' : 'Pricing' }}</th>
+                  <td>{{ getOfferPaymentSummary(submittedOffer) || '-' }}</td>
+                </tr>
+                <tr>
+                  <th scope="row">{{ lang === 'ar' ? 'السعر' : 'Price' }}</th>
+                  <td>{{ submittedOffer.proposed_price != null && submittedOffer.proposed_price !== '' ? '$' + formatMoney(submittedOffer.proposed_price) : '-' }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </aside>
     </div>
   </ng-container>
 </p-sidebar>

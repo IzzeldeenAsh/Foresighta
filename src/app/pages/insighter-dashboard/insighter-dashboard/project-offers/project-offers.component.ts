@@ -20,9 +20,12 @@ import {
 import { offerPaymentSummary } from 'src/app/_fake/services/project-phase2/project-phase2.model';
 import { insighterCanEditOffer } from 'src/app/_fake/services/agreement-revisions/agreement-revisions.model';
 import { ProfileService } from 'src/app/_fake/services/get-profile/get-profile.service';
+import { AgreementRevisionsService } from 'src/app/_fake/services/agreement-revisions/agreement-revisions.service';
 
 type ViewMode = 'grid' | 'list';
-export type DrawerTab = 'revisions' | 'overview' | 'documents' | 'offer' | 'discussion';
+export type DrawerTab = 'overview' | 'documents' | 'discussion';
+/** Sections of the "View Offer" drawer, mirroring the client's offer drawer. */
+export type OfferDrawerSection = 'offer' | 'messages' | 'revisions';
 /** Virtual chip value — awarded projects are filtered by stage, not action_status. */
 export const ACTIVE_PROJECTS_FILTER = 'active_projects';
 type StatusChipValue = ProjectOfferActionStatus | typeof ACTIVE_PROJECTS_FILTER;
@@ -60,8 +63,12 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
   isLoading$: Observable<boolean>;
 
   isDetailsPage = false;
-  /** Private Client ↔ Insighter thread on the submitted offer, opened from the Offer tab (proposal stage only). */
-  privateMessagesVisible = false;
+  /** "View Offer" drawer: the submitted offer, its private Client ↔ Insighter thread and its revisions. */
+  offerDrawerVisible = false;
+  offerDrawerSection: OfferDrawerSection = 'offer';
+  /** Unseen client revisions on the open offer (the Revisions badge). */
+  offerRevisionsUnseen = 0;
+  protected agreementRevisions: AgreementRevisionsService;
   /** `?offer=` from a private-message notification, opened once the offer details load. */
   protected pendingPrivateOfferUuid: string | null = null;
   offers: ProjectOffer[] = [];
@@ -118,8 +125,6 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
     { value: 'overview', labelEn: 'Overview', labelAr: 'نظرة عامة', iconClass: 'ki-element-7' },
     { value: 'documents', labelEn: 'Shared Documents', labelAr: 'المستندات', iconClass: 'ki-document' },
     { value: 'discussion', labelEn: 'Discussion', labelAr: 'النقاش', iconClass: 'ki-messages' },
-    { value: 'offer', labelEn: 'Offer', labelAr: 'العرض', iconClass: 'ki-dollar' },
-    { value: 'revisions', labelEn: 'Changes Revisions', labelAr: 'سجل التعديلات', iconClass: 'ki-time' },
   ];
 
   constructor(
@@ -128,6 +133,7 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
     private router: Router,
   ) {
     super(injector);
+    this.agreementRevisions = injector.get(AgreementRevisionsService);
     this.isLoading$ = this.projectOffersService.isLoading$;
     const profile = injector.get(ProfileService);
     profile.currentUser$.pipe(takeUntil(this.unsubscribe$))
@@ -354,7 +360,9 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
           this.drawerDetailsLoading = false;
           this.setDrawerTab(this.getInitialDrawerTab(this.selectedOffer), this.selectedOffer);
           this.markOfferAsViewed(this.selectedOffer);
+          this.loadOfferRevisionsUnseen(this.selectedOffer);
           this.openPendingPrivateMessages();
+          this.openPendingOfferDrawer();
         },
         error: (err) => {
           if (requestId !== this.drawerDetailsRequestId) {
@@ -369,7 +377,7 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
   }
 
   closeDrawer(): void {
-    this.privateMessagesVisible = false;
+    this.offerDrawerVisible = false;
     this.drawerVisible = false;
     this.selectedOffer = null;
     this.drawerDetailsLoading = false;
@@ -999,11 +1007,7 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
       .filter(value => value !== '-');
   }
 
-  setDrawerTab(tab: DrawerTab, offer: ProjectOffer | null | undefined = this.selectedOffer, syncUrl = true): void {
-    if (tab === 'offer' && !this.hasSubmittedOffer(offer)) {
-      return;
-    }
-
+  setDrawerTab(tab: DrawerTab, _offer: ProjectOffer | null | undefined = this.selectedOffer, syncUrl = true): void {
     this.activeDrawerTab = tab;
 
     if (syncUrl) {
@@ -1011,8 +1015,8 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
     }
   }
 
-  getVisibleDrawerTabs(offer: ProjectOffer | null | undefined): DrawerTabOption[] {
-    return this.drawerTabOptions.filter(tab => tab.value !== 'offer' || this.hasSubmittedOffer(offer));
+  getVisibleDrawerTabs(_: ProjectOffer | null | undefined): DrawerTabOption[] {
+    return this.drawerTabOptions;
   }
 
   protected getInitialDrawerTab(_: ProjectOffer | null | undefined): DrawerTab {
@@ -1058,16 +1062,62 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
 
   openPrivateMessages(offer: ProjectOffer | null | undefined = this.selectedOffer): void {
     if (!this.canUsePrivateOfferDiscussion(offer)) return;
-    this.privateMessagesVisible = true;
+    this.openOfferDrawer(offer, 'messages');
   }
 
-  closePrivateMessages(): void {
-    this.privateMessagesVisible = false;
+  /** Opens the submitted offer; unavailable sections (thread closed, nothing to show) fall back to the offer. */
+  openOfferDrawer(offer: ProjectOffer | null | undefined = this.selectedOffer, section: OfferDrawerSection = 'offer'): void {
+    if (!this.hasSubmittedOffer(offer)) return;
+    this.offerDrawerSection = section;
+    this.offerDrawerVisible = true;
   }
+
+  closeOfferDrawer(): void {
+    this.offerDrawerVisible = false;
+    this.offerDrawerSection = 'offer';
+    this.onOfferDrawerClosed();
+  }
+
+  protected onOfferDrawerClosed(): void {}
+
+  /** The section actually shown: one that is no longer available falls back to the offer. */
+  offerSection(offer: ProjectOffer | null | undefined): OfferDrawerSection {
+    if (this.offerDrawerSection === 'messages' && !this.canUsePrivateOfferDiscussion(offer)) return 'offer';
+    return this.offerDrawerSection;
+  }
+
+  setOfferDrawerSection(section: OfferDrawerSection): void { this.offerDrawerSection = section; }
+
+  /** Badge on "View Offer": unread offer messages plus unseen client revisions. */
+  offerDrawerBadge(offer: ProjectOffer | null | undefined): number {
+    return this.offerUnreadMessages(offer) + this.offerRevisionsUnseen;
+  }
+
+  /** Counts the client's unseen revisions on this offer (your own edits never count). */
+  protected loadOfferRevisionsUnseen(offer: ProjectOffer | null | undefined): void {
+    this.offerRevisionsUnseen = 0;
+    const offerUuid = offer?.offer?.uuid;
+    if (!offerUuid) return;
+    this.agreementRevisions.list('insighter', offerUuid).pipe(takeUntil(this.unsubscribe$)).subscribe({
+      next: res => {
+        if (this.selectedOffer?.offer?.uuid !== offerUuid) return;
+        this.offerRevisionsUnseen = (res.data ?? []).filter(r => r.is_seen === false && r.changed_by_role === 'client').length;
+      },
+      error: () => {},
+    });
+  }
+
+  onOfferRevisionSeen(offer: ProjectOffer): void {
+    this.offerRevisionsUnseen = this.lowerCount(this.offerRevisionsUnseen);
+    offer.unseen_agreement_revisions_count = this.lowerCount(offer.unseen_agreement_revisions_count);
+  }
+
+  /** Detail pages open the drawer from the URL (`?tab=offer|revisions`) once the offer loads. */
+  protected openPendingOfferDrawer(): void {}
 
   /** The private thread answered 403 — re-read the offer so the page follows the new project status. */
   onPrivateOfferDiscussionClosed(offer: ProjectOffer): void {
-    this.privateMessagesVisible = false;
+    this.offerDrawerSection = 'offer';
     this.showInfo(
       this.lang === 'ar' ? 'تم إغلاق رسائل العرض' : 'Offer messages closed',
       this.lang === 'ar'

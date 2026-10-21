@@ -405,6 +405,37 @@
   box-shadow: 0 0 0 2px #ffffff;
 }
 
+.pd-tab-badge--revisions {
+  gap: 3px;
+  background: #1b84ff;
+
+  i {
+    font-size: 11px;
+    color: inherit;
+  }
+}
+
+// Client project tab: the revisions here are the client's own; offer revisions live in each offer drawer
+.pd-revisions-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  border: 1px solid #e8eaf0;
+  border-radius: 10px;
+  background: #f9f9fb;
+  color: #4b5675;
+  font-size: 13px;
+  line-height: 1.55;
+
+  i {
+    margin-top: 2px;
+    font-size: 16px;
+    color: #1b84ff;
+  }
+}
+
 .pd-new-ribbon {
   position: absolute;
   top: 8px;
@@ -3536,7 +3567,8 @@
 /* Private offer discussion (proposal stage) */
 .pd-drawer-sections {
   display: inline-grid;
-  grid-template-columns: 1fr 1fr;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
   gap: 2px;
   justify-self: start;
   margin: 4px 0 16px;

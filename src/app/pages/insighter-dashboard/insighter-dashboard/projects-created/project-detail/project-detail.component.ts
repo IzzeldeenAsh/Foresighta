@@ -40,9 +40,11 @@ import {
   orderInstallmentIdFromStep,
 } from 'src/app/_fake/services/project-timeline/project-timeline.model';
 import { addDaysToDate, offerPaymentSummary, offerPricingSummary } from 'src/app/_fake/services/project-phase2/project-phase2.model';
+import { AgreementRevisionsService } from 'src/app/_fake/services/agreement-revisions/agreement-revisions.service';
 import { agreementIsLocked, editableComponents, editableScopes, offerDurationSuggestion, ownsAgreementGroup } from 'src/app/_fake/services/agreement-revisions/agreement-revisions.model';
 
 type ProjectDetailTab = 'revisions' | 'overview' | 'documents' | 'reviews' | 'discussion';
+type ProposalDrawerSection = 'offer' | 'discussion' | 'revisions';
 type RematchWizardStep =
   | 'industry'
   | 'preferred-type'
@@ -173,8 +175,10 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
   proposalDrawerVisible: boolean = false;
   selectedInvite: CreatedProjectProposalInvite | null = null;
   proposalDrawerMode: 'proposal' | 'awarded' = 'proposal';
-  /** Offer drawer section — the private offer thread sits next to the offer itself. */
-  proposalDrawerSection: 'offer' | 'discussion' = 'offer';
+  /** Offer drawer section — the private offer thread and the offer's revisions sit next to the offer itself. */
+  proposalDrawerSection: ProposalDrawerSection = 'offer';
+  /** Unseen Insighter revisions per invitation (agreement match uuid), for the drawer's Revisions badge. */
+  offerRevisionUnseen: Record<string, number> = {};
   /** `?offer=` from a discussion notification, opened once the submitted offers load. */
   private pendingDiscussionOfferUuid: string | null = null;
   openingFileUuid: string | null = null;
@@ -248,6 +252,7 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
     private router: Router,
     private projectsCreatedService: ProjectsCreatedService,
     private walletService: WalletService,
+    private agreementRevisions: AgreementRevisionsService,
   ) {
     super(injector);
   }
@@ -694,12 +699,61 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
     }
   }
 
-  openProposalDrawer(invite: CreatedProjectProposalInvite, section: 'offer' | 'discussion' = 'offer'): void {
+  openProposalDrawer(invite: CreatedProjectProposalInvite, section: ProposalDrawerSection = 'offer'): void {
     if (!this.canViewSubmittedOffer(invite)) return;
     this.proposalDrawerMode = 'proposal';
     this.selectedInvite = invite;
-    this.proposalDrawerSection = section === 'discussion' && this.canUsePrivateOfferDiscussion(invite) ? 'discussion' : 'offer';
+    this.proposalDrawerSection = this.availableDrawerSection(invite, section);
     this.proposalDrawerVisible = true;
+  }
+
+  /** The drawer section actually shown: a section that is no longer available falls back to the offer. */
+  drawerSection(invite: CreatedProjectProposalInvite | null): ProposalDrawerSection {
+    return this.availableDrawerSection(invite, this.proposalDrawerSection);
+  }
+
+  private availableDrawerSection(invite: CreatedProjectProposalInvite | null, section: ProposalDrawerSection): ProposalDrawerSection {
+    if (section === 'discussion' && this.canUsePrivateOfferDiscussion(invite)) return 'discussion';
+    if (section === 'revisions' && this.canViewOfferRevisions(invite)) return 'revisions';
+    return 'offer';
+  }
+
+  /** The offer's own revision timeline: the client's changes plus this Insighter's, read through the invitation. */
+  canViewOfferRevisions(invite: CreatedProjectProposalInvite | null | undefined): boolean {
+    return !!invite?.agreement_match_uuid && !!invite.offer?.uuid;
+  }
+
+  offerRevisionsNew(invite: CreatedProjectProposalInvite | null | undefined): number {
+    return invite?.agreement_match_uuid ? this.offerRevisionUnseen[invite.agreement_match_uuid] || 0 : 0;
+  }
+
+  /** Counts each submitted offer's unseen Insighter revisions so the invite card and drawer can flag them. */
+  private loadOfferRevisionCounts(invites: CreatedProjectProposalInvite[]): void {
+    this.offerRevisionUnseen = {};
+    invites.filter(invite => this.canViewOfferRevisions(invite)).forEach(invite => {
+      const matchUuid = invite.agreement_match_uuid!;
+      this.agreementRevisions.list('client', matchUuid).pipe(takeUntil(this.unsubscribe$)).subscribe({
+        next: res => {
+          this.offerRevisionUnseen = {
+            ...this.offerRevisionUnseen,
+            [matchUuid]: (res.data ?? []).filter(r => r.is_seen === false && r.changed_by_role === 'insighter').length,
+          };
+        },
+        error: () => {},
+      });
+    });
+  }
+
+  onOfferRevisionSeen(invite: CreatedProjectProposalInvite | null): void {
+    const matchUuid = invite?.agreement_match_uuid;
+    if (matchUuid) this.offerRevisionUnseen = { ...this.offerRevisionUnseen, [matchUuid]: this.lowerCount(this.offerRevisionUnseen[matchUuid]) };
+    if (this.project) this.project.unseen_agreement_revisions_count = this.lowerCount(this.project.unseen_agreement_revisions_count);
+  }
+
+  /** A notification's revision belongs to one Insighter's offer: open that offer's drawer on Revisions. */
+  onRevisionElsewhere(event: { revisionId: number; contextUuid: string }): void {
+    const invite = this.invitedInsighters.find(item => item.agreement_match_uuid === event.contextUuid);
+    if (invite && this.canViewOfferRevisions(invite)) this.openProposalDrawer(invite, 'revisions');
   }
 
   /**
@@ -733,8 +787,8 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
     }
   }
 
-  setProposalDrawerSection(section: 'offer' | 'discussion'): void {
-    this.proposalDrawerSection = section === 'discussion' && this.canUsePrivateOfferDiscussion(this.selectedInvite) ? 'discussion' : 'offer';
+  setProposalDrawerSection(section: ProposalDrawerSection): void {
+    this.proposalDrawerSection = this.availableDrawerSection(this.selectedInvite, section);
   }
 
   /** "Offer Change Request" in the offer aside — the request goes through the Offer Messages thread. */
@@ -777,6 +831,10 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
   }
 
   closeProposalDrawer(): void {
+    // A notification's `?revision=` is handled once; drop it so the next drawer does not reopen it.
+    if (this.selectedInvite && this.route.snapshot.queryParamMap.has('revision')) {
+      this.router.navigate([], { relativeTo: this.route, queryParams: { revision: null }, queryParamsHandling: 'merge', replaceUrl: true });
+    }
     this.proposalDrawerVisible = false;
     this.selectedInvite = null;
     this.proposalDrawerMode = 'proposal';
@@ -2950,6 +3008,7 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
         next: (result: ProjectMatchListResponse) => {
           this.invitedInsighters = result.submitted || [];
           this.submittedOfferDeadline = this.getFarthestSubmittedOfferDeadline(this.invitedInsighters);
+          this.loadOfferRevisionCounts(this.invitedInsighters);
           this.openPendingOfferDiscussion();
         },
         error: () => {
@@ -3498,6 +3557,7 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
 
     return {
       uuid: offer?.uuid || this.project?.uuid || '',
+      agreement_match_uuid: this.invitedInsighters.find(invite => !!offer?.uuid && invite.offer?.uuid === offer.uuid)?.agreement_match_uuid,
       action_status: 'offered',
       submission_status: 'submitted',
       deadline_offer: this.project?.last_proposal_deadline || null,

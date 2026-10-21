@@ -35,6 +35,55 @@ describe('Agreement revisions safeguards', () => {
     expect(component.durationNote(revision.items[1])).toContain('45 days');
     expect(component.revisionTitle(revision)).toBe('Technical proposal and Suggested duration and Attachments');
   });
+  describe('accordion layout', () => {
+    const rows = [
+      { id: 3, revision_number: 3, changed_by_role: 'insighter', changed_target_types: ['offer_price'], is_seen: false, items_count: 1 },
+      { id: 2, revision_number: 2, changed_by_role: 'client', changed_target_types: ['scope'], is_seen: false, items_count: 1 },
+      { id: 1, revision_number: 1, changed_by_role: 'client', changed_target_types: ['deliverable'], is_seen: true, items_count: 1 },
+    ];
+    beforeEach(() => {
+      record.invited.push({ uuid: 'other-match', agreement_match_uuid: 'other-match', offer: {} });
+      api.list.and.returnValue(of({ data: rows.map(row => ({ ...row })), meta: { last_page: 1 } }));
+      api.show = jasmine.createSpy().and.callFake((_: string, __: string, id: number) => of({ ...rows.find(row => row.id === id), items: [] }));
+      api.markSeen = jasmine.createSpy().and.returnValue(of({}));
+      api.seen$ = new Subject();
+      component.layout = 'accordion';
+    });
+    it('reads only the drawer invitation and filters by author', () => {
+      component.onlyMatch = 'other-match'; component.ngOnChanges();
+      expect(api.list.calls.mostRecent().args[1]).toBe('other-match');
+      expect(component.listContexts).toEqual(['other-match']);
+      component.setAuthorFilter('insighter');
+      expect(component.visibleRevisions.map(r => r.id)).toEqual([3]);
+      expect(component.authorCount('client')).toBe(2);
+    });
+    it('shows only the client changes on the project tab and hands other revisions to the parent', () => {
+      component.authorRole = 'client'; component.ngOnChanges(); component.load();
+      expect(component.visibleRevisions.map(r => r.id)).toEqual([2, 1]);
+      const elsewhere = jasmine.createSpy();
+      component.revisionElsewhere.subscribe(elsewhere);
+      (component as any).openRequested(3);
+      expect(elsewhere).toHaveBeenCalledWith({ revisionId: 3, contextUuid: 'match-uuid' });
+      expect(component.openIds.has(3)).toBeFalse();
+    });
+    it('expands in place, loads the details once and marks the revision seen', () => {
+      component.onlyMatch = 'match-uuid'; component.ngOnChanges();
+      const seen = jasmine.createSpy();
+      component.revisionSeen.subscribe(seen);
+      component.toggleRevision(3);
+      expect(component.inlineDetails.get(3)?.id).toBe(3);
+      expect(api.markSeen).toHaveBeenCalledWith('client', 'match-uuid', 3);
+      expect(seen).toHaveBeenCalledWith(3);
+      component.toggleRevision(3); component.toggleRevision(3);
+      expect(api.show.calls.count()).toBe(1);
+    });
+    it('never flags your own edits as new', () => {
+      component.onlyMatch = 'match-uuid'; component.ngOnChanges(); component.load();
+      expect(component.revisions.filter(r => component.isNew(r)).map(r => r.id)).toEqual([3]);
+      component.role = 'insighter';
+      expect(component.revisions.filter(r => component.isNew(r)).map(r => r.id)).toEqual([2]);
+    });
+  });
   it('locks on either first signature, including timestamps, but not false flags', () => {
     expect(agreementIsLocked({ user_sign_at: true, insighter_sign_at: false })).toBeTrue();
     expect(agreementIsLocked({ user_sign_at: false, insighter_sign_at: '2026-10-15' })).toBeTrue();

@@ -1,4 +1,4 @@
-<section class="agreement" [attr.dir]="lang === 'ar' ? 'rtl' : 'ltr'">
+<section [class.agreement]="layout === 'list'" [class.rv-acc]="layout === 'accordion'" [attr.dir]="lang === 'ar' ? 'rtl' : 'ltr'">
   <ng-template #editAction><button type="button" class="rv-edit" [disabled]="preparing" (click)="startEditing()"><i class="pi pi-pencil" aria-hidden="true"></i>{{ preparing ? text('Refreshing…', 'جارٍ التحديث…') : text('Edit offer', 'تعديل العرض') }}</button></ng-template>
   <header class="agreement__header" *ngIf="showEditAction && canEdit && role === 'insighter' && !revisions.length"><ng-container [ngTemplateOutlet]="editAction"></ng-container></header>
   <div class="notice" *ngIf="locked"><i class="pi pi-lock" aria-hidden="true"></i><span>{{ text('This agreement is locked. Revisions remain available for reference after the first signature.', 'هذا الاتفاق مقفل. يبقى سجل المراجعات متاحاً بعد أول توقيع.') }}</span></div>
@@ -8,8 +8,37 @@
   <div class="empty" *ngIf="!listContexts.length"><i class="pi pi-history" aria-hidden="true"></i><h3>{{ text('No revision history yet', 'لا يوجد سجل تعديلات بعد') }}</h3><p>{{ role === 'client' ? text('Revision history becomes available once an Insighter is invited.', 'يصبح سجل المراجعات متاحاً بعد دعوة خبير.') : text('Revision history becomes available once an offer has been submitted.', 'يصبح سجل المراجعات متاحاً بعد تقديم العرض.') }}</p></div>
   <div class="loading" role="status" *ngIf="loading && !revisions.length"><span></span><span></span><span></span>{{ text('Loading revisions…', 'جارٍ تحميل المراجعات…') }}</div>
   <div class="empty" *ngIf="listContexts.length && !loading && !error && !revisions.length"><i class="pi pi-history" aria-hidden="true"></i><h3>{{ text('The story starts here', 'هنا يبدأ سجل التغييرات') }}</h3><p>{{ text('No revisions yet. Saved changes will appear here for both parties.', 'لا توجد مراجعات بعد. ستظهر التغييرات المحفوظة هنا للطرفين.') }}</p></div>
-  <p class="rv-unseen" role="status" *ngIf="unseenCount > 0">{{ unseenCount === 1 ? text('1 new revision', 'مراجعة جديدة واحدة') : text(unseenCount + ' new revisions', unseenCount + ' مراجعات جديدة') }}</p>
-  <div class="rv-list" *ngIf="revisions.length">
+  <p class="rv-unseen" role="status" *ngIf="layout === 'list' && unseenCount > 0">{{ unseenCount === 1 ? text('1 new revision', 'مراجعة جديدة واحدة') : text(unseenCount + ' new revisions', unseenCount + ' مراجعات جديدة') }}</p>
+  <div class="rv-acc__head" *ngIf="layout === 'accordion' && revisions.length">
+    <span class="rv-acc__title">{{ authorRole === 'client' ? text('Project changes', 'تعديلات المشروع') : text('Revision history', 'سجل التعديلات') }}<span class="rv-acc__new" *ngIf="newCount > 0">{{ newCount === 1 ? text('1 new', 'تعديل جديد') : text(newCount + ' new', newCount + ' جديدة') }}</span></span>
+    <div class="rv-acc__tools">
+      <div class="rv-acc__filter" role="group" *ngIf="showAuthorFilter" [attr.aria-label]="text('Filter by author', 'تصفية حسب الطرف')">
+        <button type="button" [attr.aria-pressed]="authorFilter === 'all'" (click)="setAuthorFilter('all')">{{ text('All', 'الكل') }} <span>{{ authorCount('all') }}</span></button>
+        <button type="button" [attr.aria-pressed]="authorFilter === 'client'" (click)="setAuthorFilter('client')">{{ authorLabel('client') }} <span>{{ authorCount('client') }}</span></button>
+        <button type="button" [attr.aria-pressed]="authorFilter === 'insighter'" (click)="setAuthorFilter('insighter')">{{ authorLabel('insighter') }} <span>{{ authorCount('insighter') }}</span></button>
+      </div>
+      <button type="button" class="rv-acc__toggle-all" *ngIf="visibleRevisions.length" (click)="toggleAll()">{{ allOpen ? text('Collapse all', 'طي الكل') : text('Expand all', 'فتح الكل') }}</button>
+    </div>
+  </div>
+  <div class="rv-acc__list" *ngIf="layout === 'accordion' && revisions.length">
+    <p class="rv-acc__empty" *ngIf="!visibleRevisions.length">{{ authorRole === 'client' ? text('You have not changed the project yet. Your saved edits will appear here.', 'لم تعدّل المشروع بعد. ستظهر تعديلاتك المحفوظة هنا.') : text('No changes from this side yet.', 'لا توجد تعديلات من هذا الطرف بعد.') }}</p>
+    <div class="rv-acc__item" *ngFor="let revision of visibleRevisions; let first = first" [id]="'rv-acc-' + revision.id" [class.is-open]="openIds.has(revision.id)" [class.is-unseen]="isNew(revision)">
+      <button type="button" class="rv-acc__row" [attr.aria-expanded]="openIds.has(revision.id)" [attr.aria-controls]="'rv-acc-body-' + revision.id" (click)="toggleRevision(revision.id)">
+        <span class="rv-acc__mark" [class.is-client]="revision.changed_by_role === 'client'" aria-hidden="true"><i class="ki-outline" [ngClass]="typeMeta(revision.changed_target_types[0] || '').icon"></i></span>
+        <span class="rv-acc__body">
+          <span class="rv-acc__name">{{ text('Revision', 'التعديل') }} #{{ revision.revision_number }}<ng-container *ngIf="revisionTitle(revision)"> · {{ revisionTitle(revision) }}</ng-container><span class="rv-acc__chip is-new" *ngIf="isNew(revision)">{{ text('New', 'جديد') }}</span><span class="rv-acc__chip is-latest" *ngIf="first && authorFilter === 'all'">{{ text('Latest', 'الأحدث') }}</span><span class="rv-acc__chip is-shared" *ngIf="shared(revision)">{{ text('All invited Insighters', 'لجميع الخبراء المدعوين') }}</span></span>
+          <span class="rv-acc__meta"><span class="rv-avatar" aria-hidden="true"><img *ngIf="revision.changed_by_user?.profile_photo_url; else accInitials" [src]="revision.changed_by_user?.profile_photo_url" alt="" loading="lazy" /><ng-template #accInitials>{{ initials(revision.changed_by_user?.name) }}</ng-template></span>{{ revision.changed_by_user?.name || label(revision.changed_by_role) }}<span class="rv-acc__role" [class.is-client]="revision.changed_by_role === 'client'">{{ label(revision.changed_by_role) }}</span>· {{ revision.created_at | date:'MMM d, y · h:mm a' }} · {{ revision.items_count }} {{ revision.items_count === 1 ? text('change', 'تغيير') : text('changes', 'تغييرات') }}</span>
+        </span>
+        <i class="ki-outline ki-down rv-acc__chevron" aria-hidden="true"></i>
+      </button>
+      <div class="rv-acc__panel rv-sheet rv-sheet--inline" [id]="'rv-acc-body-' + revision.id" *ngIf="openIds.has(revision.id)" [attr.dir]="lang === 'ar' ? 'rtl' : 'ltr'">
+        <p class="rv-sheet__status" role="status" *ngIf="inlineLoading.has(revision.id)">{{ text('Loading changes…', 'جارٍ تحميل التغييرات…') }}</p>
+        <div class="rv-sheet__status is-error" role="alert" *ngIf="inlineErrors.get(revision.id) as inlineError">{{ inlineError }} <button type="button" (click)="loadInline(revision.id)">{{ text('Retry', 'إعادة المحاولة') }}</button></div>
+        <ng-container *ngIf="inlineDetails.get(revision.id) as detailed"><ng-container *ngTemplateOutlet="revisionBody; context: { $implicit: detailed }"></ng-container></ng-container>
+      </div>
+    </div>
+  </div>
+  <div class="rv-list" *ngIf="layout === 'list' && revisions.length">
     <div class="rv-list__toolbar">
       <span class="rv-list__title">{{ text('Revision history', 'سجل المراجعات') }}</span>
       <ng-container *ngIf="showEditAction && canEdit && role === 'insighter'" [ngTemplateOutlet]="editAction"></ng-container>
@@ -48,7 +77,11 @@
     </header>
     <p class="rv-sheet__status" role="status" *ngIf="detailLoading">{{ text('Loading changes…', 'جارٍ تحميل التغييرات…') }}</p>
     <div class="rv-sheet__status is-error" role="alert" *ngIf="detailError">{{ detailError }} <button type="button" (click)="retryDetail()">{{ text('Retry', 'إعادة المحاولة') }}</button></div>
-    <ng-container *ngIf="detail as revision">
+    <ng-container *ngIf="detail as revision"><ng-container *ngTemplateOutlet="revisionBody; context: { $implicit: revision }"></ng-container></ng-container>
+  </div>
+</p-dialog>
+
+<ng-template #revisionBody let-revision>
       <blockquote class="rv-sheet__aside is-note" *ngIf="revision.user_note">{{ revision.user_note }}</blockquote>
       <div class="rv-item" *ngFor="let item of detailItems(revision)">
         <section class="rv-item__changes" *ngIf="item.target_type === 'offer_cover_letter'; else nonCoverItem">
@@ -183,9 +216,7 @@
         </section>
       </div>
       </ng-container>
-    </ng-container>
-  </div>
-</p-dialog>
+</ng-template>
 
 <p-dialog [(visible)]="editorVisible" [modal]="true" [baseZIndex]="1300" [closable]="false" [closeOnEscape]="false" [draggable]="false" [resizable]="false" [style]="{width: '960px', maxWidth: '96vw'}" [header]="text('Edit agreement', 'تعديل الاتفاق')" appendTo="body">
   <div class="agreement editor" [attr.dir]="lang === 'ar' ? 'rtl' : 'ltr'">

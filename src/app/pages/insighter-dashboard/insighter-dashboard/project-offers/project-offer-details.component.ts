@@ -2,7 +2,7 @@ import { Component, Injector, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { takeUntil } from 'rxjs/operators';
 import { ProjectOffer, ProjectOffersService } from 'src/app/_fake/services/project-offers/project-offers.service';
-import { DrawerTab, ProjectOffersComponent } from './project-offers.component';
+import { DrawerTab, OfferDrawerSection, ProjectOffersComponent } from './project-offers.component';
 
 @Component({
   selector: 'app-project-offer-details',
@@ -12,7 +12,9 @@ import { DrawerTab, ProjectOffersComponent } from './project-offers.component';
 export class ProjectOfferDetailsComponent extends ProjectOffersComponent implements OnInit {
   private readonly detailTabParam = 'tab';
   private handledOfferParam: string | null = null;
-  private readonly detailTabValues: DrawerTab[] = ['revisions', 'overview', 'documents', 'discussion', 'offer'];
+  private readonly detailTabValues: DrawerTab[] = ['overview', 'documents', 'discussion'];
+  /** `?tab=offer|revisions` (old tab links, notifications) now opens the "View Offer" drawer on that section. */
+  private pendingOfferSection: OfferDrawerSection | null = null;
 
   constructor(
     injector: Injector,
@@ -46,8 +48,11 @@ export class ProjectOfferDetailsComponent extends ProjectOffersComponent impleme
           this.handledOfferParam = offerParam;
           this.pendingPrivateOfferUuid = offerParam;
         }
+        const tabParam = params.get(this.detailTabParam);
+        if (tabParam === 'offer' || tabParam === 'revisions') this.pendingOfferSection = tabParam;
         if (!this.selectedOffer) return;
         this.openPendingPrivateMessages();
+        this.openPendingOfferDrawer();
         const tab = this.getCurrentTabFromUrl(this.selectedOffer);
         super.setDrawerTab(tab, this.selectedOffer, false);
         this.updateTabQueryParam(tab);
@@ -58,6 +63,19 @@ export class ProjectOfferDetailsComponent extends ProjectOffersComponent impleme
     this.detailsRouter.navigate(['/app/insighter-dashboard/project-offers']);
   }
 
+  protected override openPendingOfferDrawer(): void {
+    const section = this.pendingOfferSection;
+    if (!section || !this.selectedOffer) return;
+    this.pendingOfferSection = null;
+    if (!this.offerDrawerVisible) this.openOfferDrawer(this.selectedOffer, section);
+  }
+
+  /** A notification's `?revision=` is handled once; drop it so reopening the drawer starts fresh. */
+  protected override onOfferDrawerClosed(): void {
+    if (!this.route.snapshot.queryParamMap.has('revision')) return;
+    this.detailsRouter.navigate([], { relativeTo: this.route, queryParams: { revision: null }, queryParamsHandling: 'merge', replaceUrl: true });
+  }
+
   protected override getInitialDrawerTab(offer: ProjectOffer | null | undefined): DrawerTab {
     return this.getCurrentTabFromUrl(offer);
   }
@@ -66,13 +84,13 @@ export class ProjectOfferDetailsComponent extends ProjectOffersComponent impleme
     this.updateTabQueryParam(tab);
   }
 
-  private getCurrentTabFromUrl(offer: ProjectOffer | null | undefined): DrawerTab {
+  private getCurrentTabFromUrl(_offer: ProjectOffer | null | undefined): DrawerTab {
     const tab = this.route.snapshot.queryParamMap.get(this.detailTabParam) || '';
     if (!this.isValidDetailTab(tab)) {
       return 'overview';
     }
 
-    return tab === 'offer' && !this.hasSubmittedOffer(offer) ? 'overview' : tab;
+    return tab;
   }
 
   private isValidDetailTab(tab: string): tab is DrawerTab {

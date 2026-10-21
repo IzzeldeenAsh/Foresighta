@@ -109,10 +109,16 @@
               <i class="ki-outline ki-messages pd-tab__icon" aria-hidden="true"></i>
               <span>{{ lang === 'ar' ? 'النقاش' : 'Discussion' }}</span>
             </button>
-            <button type="button" class="pd-tab" role="tab" [class.active]="activeTab === 'revisions'" [attr.aria-selected]="activeTab === 'revisions'" (click)="setActiveTab('revisions')"><i class="ki-outline ki-time pd-tab__icon" aria-hidden="true"></i><span>{{ lang === 'ar' ? 'سجل التعديلات' : 'Changes Revisions' }}</span><span class="pd-tab-badge" *ngIf="(p.unseen_agreement_revisions_count || 0) > 0" [attr.aria-label]="lang === 'ar' ? 'مراجعات غير مقروءة' : 'Unseen revisions'">{{ p.unseen_agreement_revisions_count }}</span></button>
+            <button type="button" class="pd-tab" role="tab" [class.active]="activeTab === 'revisions'" [attr.aria-selected]="activeTab === 'revisions'" (click)="setActiveTab('revisions')"><i class="ki-outline ki-time pd-tab__icon" aria-hidden="true"></i><span>{{ lang === 'ar' ? 'سجل التعديلات' : 'Changes Revisions' }}</span></button>
           </div>
 
-          <app-agreement-revisions *ngIf="activeTab === 'revisions'" [record]="p" role="client" [matchList]="invitedInsighters" [lang]="lang" (revisionSeen)="p.unseen_agreement_revisions_count = lowerCount(p.unseen_agreement_revisions_count)" (refreshed)="onAgreementRefreshed($event)"></app-agreement-revisions>
+          <ng-container *ngIf="activeTab === 'revisions'">
+            <div class="pd-revisions-hint">
+              <i class="ki-outline ki-information-5" aria-hidden="true"></i>
+              <span>{{ lang === 'ar' ? 'هنا تعديلاتك على المشروع فقط. تعديلات كل خبير على عرضه تجدها داخل العرض في تبويب «التعديلات».' : 'Your changes to the project only. Each Insighter\'s changes to their offer are in that offer, under Revisions.' }}</span>
+            </div>
+            <app-agreement-revisions [record]="p" role="client" layout="accordion" authorRole="client" [matchList]="invitedInsighters" [lang]="lang" (revisionSeen)="p.unseen_agreement_revisions_count = lowerCount(p.unseen_agreement_revisions_count)" (revisionElsewhere)="onRevisionElsewhere($event)" (refreshed)="onAgreementRefreshed($event)"></app-agreement-revisions>
+          </ng-container>
           <ng-container *ngIf="visibleActiveTab === 'overview'">
           <!-- Description -->
           <section class="pd-section" *ngIf="p.service_prompt || p.description">
@@ -817,11 +823,14 @@
                   <button type="button"
                           *ngIf="canViewSubmittedOffer(invite)"
                           class="btn btn-link btn-sm p-0 border-0 bg-transparent text-info fw-bold pd-invite-card__offer-btn"
-                          (click)="openProposalDrawer(invite, offerUnreadMessages(invite) > 0 ? 'discussion' : 'offer')">
+                          (click)="openProposalDrawer(invite, offerUnreadMessages(invite) > 0 ? 'discussion' : offerRevisionsNew(invite) > 0 ? 'revisions' : 'offer')">
                     <span>{{ lang === 'ar' ? 'عرض العرض' : 'View Offer' }}</span>
                     <span class="pd-tab-badge ms-2" *ngIf="offerUnreadMessages(invite) > 0"
                           [pTooltip]="lang === 'ar' ? 'رسائل عرض غير مقروءة' : 'Unread offer messages'" tooltipPosition="top"
                           [attr.aria-label]="lang === 'ar' ? 'رسائل عرض غير مقروءة' : 'Unread offer messages'">{{ offerUnreadMessages(invite) }}</span>
+                    <span class="pd-tab-badge pd-tab-badge--revisions ms-2" *ngIf="offerRevisionsNew(invite) > 0"
+                          [pTooltip]="lang === 'ar' ? 'تعديلات جديدة على العرض' : 'New offer revisions'" tooltipPosition="top"
+                          [attr.aria-label]="lang === 'ar' ? 'تعديلات جديدة على العرض' : 'New offer revisions'"><i class="ki-outline ki-time" aria-hidden="true"></i>{{ offerRevisionsNew(invite) }}</span>
                   </button>
                 </div>
               </article>
@@ -1641,7 +1650,7 @@
             </div>
           </div>
 
-          <div class="pd-drawer-sections" role="tablist" *ngIf="canUsePrivateOfferDiscussion(invite)"
+          <div class="pd-drawer-sections" role="tablist" *ngIf="canUsePrivateOfferDiscussion(invite) || canViewOfferRevisions(invite)"
                [attr.aria-label]="lang === 'ar' ? 'أقسام العرض' : 'Offer sections'">
             <button type="button" class="pd-drawer-section" role="tab"
                     [class.active]="proposalDrawerSection === 'offer'"
@@ -1650,7 +1659,7 @@
               <i class="ki-outline ki-dollar" aria-hidden="true"></i>
               <span>{{ lang === 'ar' ? 'العرض' : 'Offer' }}</span>
             </button>
-            <button type="button" class="pd-drawer-section" role="tab"
+            <button type="button" class="pd-drawer-section" role="tab" *ngIf="canUsePrivateOfferDiscussion(invite)"
                     [class.active]="proposalDrawerSection === 'discussion'"
                     [attr.aria-selected]="proposalDrawerSection === 'discussion'"
                     (click)="setProposalDrawerSection('discussion')">
@@ -1659,9 +1668,26 @@
               <span class="pd-tab-badge" *ngIf="offerUnreadMessages(invite) > 0"
                     [attr.aria-label]="lang === 'ar' ? 'رسائل غير مقروءة' : 'Unread messages'">{{ offerUnreadMessages(invite) }}</span>
             </button>
+            <button type="button" class="pd-drawer-section" role="tab" *ngIf="canViewOfferRevisions(invite)"
+                    [class.active]="proposalDrawerSection === 'revisions'"
+                    [attr.aria-selected]="proposalDrawerSection === 'revisions'"
+                    (click)="setProposalDrawerSection('revisions')">
+              <i class="ki-outline ki-time" aria-hidden="true"></i>
+              <span>{{ lang === 'ar' ? 'التعديلات' : 'Revisions' }}</span>
+              <span class="pd-tab-badge" *ngIf="offerRevisionsNew(invite) > 0"
+                    [attr.aria-label]="lang === 'ar' ? 'تعديلات جديدة' : 'New revisions'">{{ offerRevisionsNew(invite) }}</span>
+            </button>
           </div>
 
-          <app-project-discussion *ngIf="proposalDrawerSection === 'discussion' && canUsePrivateOfferDiscussion(invite) && project"
+          <app-agreement-revisions *ngIf="drawerSection(invite) === 'revisions' && project"
+            [record]="project" role="client" layout="accordion" [lang]="lang"
+            [matchList]="invitedInsighters" [onlyMatch]="invite.agreement_match_uuid || ''"
+            [counterpartName]="invite.insighter?.name || ''"
+            (revisionSeen)="onOfferRevisionSeen(invite)"
+            (refreshed)="onAgreementRefreshed($event)">
+          </app-agreement-revisions>
+
+          <app-project-discussion *ngIf="drawerSection(invite) === 'discussion' && project"
             [projectUuid]="project.uuid"
             [offerUuid]="invite.offer?.uuid || null"
             [counterpartName]="invite.insighter?.name || null"
@@ -1670,7 +1696,7 @@
             (accessClosed)="onPrivateOfferDiscussionClosed()">
           </app-project-discussion>
 
-          <ng-container *ngIf="proposalDrawerSection === 'offer' || !canUsePrivateOfferDiscussion(invite)">
+          <ng-container *ngIf="drawerSection(invite) === 'offer'">
           <app-offer-overview *ngIf="invite.offer as submittedOffer" context="client"
             [offer]="submittedOffer" [services]="project?.project_services ?? []" [lang]="lang"
             [projectDurationDays]="project?.schedule?.duration_days ?? null"
