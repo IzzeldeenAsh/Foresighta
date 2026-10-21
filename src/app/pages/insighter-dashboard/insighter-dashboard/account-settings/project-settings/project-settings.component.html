@@ -375,6 +375,7 @@
   appendTo="body"
   [style]="{ width: '85vw', maxWidth: '960px' }"
   [breakpoints]="{ '992px': '90vw', '576px': '96vw' }"
+  (onHide)="onAgreementDialogHide()"
 >
   <ng-template pTemplate="header">
     <h5 class="m-0">
@@ -386,6 +387,12 @@
   </ng-template>
 
   <div class="ps-agreement-dialog" [dir]="isRtl ? 'rtl' : 'ltr'">
+    <div *ngIf="embedded" class="alert alert-info ps-alert">
+      {{ lang === 'ar'
+        ? 'تم حفظ إعدادات المشاريع. وافق على الاتفاقية لتفعيل استقبال عروض المشاريع تلقائياً.'
+        : 'Your project settings are saved. Agree to the terms below to start receiving project offers.' }}
+    </div>
+
     <div *ngIf="isAgreementLoading" class="ps-muted">
       {{ lang === 'ar' ? 'جاري تحميل الاتفاقية...' : 'Loading agreement...' }}
     </div>

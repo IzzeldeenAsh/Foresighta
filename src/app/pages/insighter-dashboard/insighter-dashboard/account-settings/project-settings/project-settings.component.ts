@@ -1,6 +1,6 @@
 import { Component, Injector, Input, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
-import { BehaviorSubject, Observable, catchError, concatMap, finalize, forkJoin, map, of } from 'rxjs';
+import { BehaviorSubject, Observable, Subject, catchError, concatMap, finalize, forkJoin, map, of, take } from 'rxjs';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { GuidelineDetail, GuidelinesService } from 'src/app/_fake/services/guidelines/guidelines.service';
@@ -83,7 +83,8 @@ export class ProjectSettingsComponent extends BaseComponent implements OnInit {
    * When true the component is rendered inside the become-Insighter onboarding
    * wizard: the setup checklist and the receive-offers activation toggle are
    * hidden, the preferences form is shown directly, and the wizard drives save
-   * via saveForOnboarding().
+   * via saveForOnboarding(), which also activates receiving project offers
+   * through the agreement dialog.
    */
   @Input() embedded = false;
 
@@ -110,6 +111,10 @@ export class ProjectSettingsComponent extends BaseComponent implements OnInit {
   private lastResults: ProjectAccountCheckResults = {};
   private readonly hiddenServiceSlugs = new Set(['other']);
   private projectServiceAgreementAccepted = false;
+  /** Strict server state: a missing settings row means offers are not active yet. */
+  private receiveProjectServicesActive = false;
+  /** Onboarding: settles the agreement dialog opened by saveForOnboarding(). */
+  private onboardingActivation: Subject<boolean> | null = null;
 
   private readonly loadingSubject = new BehaviorSubject<boolean>(true);
   private readonly servicesLoadingSubject = new BehaviorSubject<boolean>(false);
@@ -173,8 +178,10 @@ export class ProjectSettingsComponent extends BaseComponent implements OnInit {
 
   /**
    * Save used by the onboarding wizard. Reuses the same validation and payload
-   * as submitProjectSettings() but returns whether the save succeeded so the
-   * wizard can advance to the next step.
+   * as submitProjectSettings(), then — unless offers are already active — opens
+   * the agreement dialog so agreeing activates receiving project offers. Emits
+   * whether the wizard can advance (false when the save fails or the dialog is
+   * dismissed; the preferences stay saved either way).
    */
   saveForOnboarding(): Observable<boolean> {
     if (this.settingsForm.invalid) {
@@ -201,19 +208,60 @@ export class ProjectSettingsComponent extends BaseComponent implements OnInit {
     return this.projectSettingsService.syncProjectAccountProperties(payload).pipe(
       map(() => {
         this.settingsForm.markAsPristine();
-        this.showSuccess(
-          '',
-          this.lang === 'ar'
-            ? 'تم تحديث إعدادات المشروع بنجاح.'
-            : 'Project settings updated successfully.'
-        );
         return true;
       }),
       catchError((error) => {
         this.showError('', this.extractErrorMessage(error));
         return of(false);
       }),
-      finalize(() => this.savingSubject.next(false))
+      finalize(() => this.savingSubject.next(false)),
+      concatMap((saved) => {
+        if (!saved) {
+          return of(false);
+        }
+
+        if (this.receiveProjectServicesActive) {
+          this.showSuccess(
+            '',
+            this.lang === 'ar'
+              ? 'تم تحديث إعدادات المشروع بنجاح.'
+              : 'Project settings updated successfully.'
+          );
+          return of(true);
+        }
+
+        return this.requestOnboardingActivation();
+      })
+    );
+  }
+
+  /** Opens the agreement dialog and waits for agree-and-activate or dismissal. */
+  private requestOnboardingActivation(): Observable<boolean> {
+    this.settleOnboardingActivation(false);
+    const decision = new Subject<boolean>();
+    this.onboardingActivation = decision;
+    this.openProjectServiceAgreementDialog();
+    return decision.pipe(take(1));
+  }
+
+  private settleOnboardingActivation(activated: boolean): void {
+    const decision = this.onboardingActivation;
+    this.onboardingActivation = null;
+    decision?.next(activated);
+    decision?.complete();
+  }
+
+  onAgreementDialogHide(): void {
+    if (!this.onboardingActivation) {
+      return;
+    }
+
+    this.settleOnboardingActivation(false);
+    this.showInfo(
+      '',
+      this.lang === 'ar'
+        ? 'تم حفظ إعداداتك. وافق على الاتفاقية لتفعيل استقبال عروض المشاريع، أو اختر "تخطي الآن".'
+        : 'Your settings are saved. Accept the agreement to start receiving project offers, or choose "Skip for now".'
     );
   }
 
@@ -292,11 +340,15 @@ export class ProjectSettingsComponent extends BaseComponent implements OnInit {
           this.settingsForm.patchValue({ project_status: nextValue }, { emitEvent: false });
           this.settingsForm.get('project_status')?.markAsPristine();
 
+          this.receiveProjectServicesActive = nextValue;
+
           if (acceptAgreement) {
             this.projectServiceAgreementAccepted = true;
           }
 
           if (nextValue) {
+            // Settle before hiding so the dialog's onHide isn't read as a dismissal.
+            this.settleOnboardingActivation(true);
             this.isAgreementDialogVisible = false;
           }
 
@@ -765,6 +817,8 @@ export class ProjectSettingsComponent extends BaseComponent implements OnInit {
       .filter((id) => this.isVisibleServiceId(id));
 
     const projectStatus = this.mapReceiveProjectServicesStatus(properties);
+    this.receiveProjectServicesActive =
+      (properties.receive_project_services ?? properties.status) === 'active';
     this.projectServiceAgreementAccepted =
       projectStatus || this.isProjectServiceAgreementAccepted(properties);
 
