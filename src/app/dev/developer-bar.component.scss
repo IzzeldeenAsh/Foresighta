@@ -1,0 +1,27 @@
+:host { display: contents; }
+aside {
+  position: fixed;
+  inset: auto 12px 10px 12px;
+  z-index: 2147483647;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  background: #111b23;
+  color: #e3ebf0;
+  border: 1px solid #38505d;
+  border-radius: 8px;
+  box-shadow: 0 4px 24px #0004;
+  font: 12px/1.5 ui-monospace, SFMono-Regular, Consolas, monospace;
+  text-align: left;
+}
+aside button { flex-shrink: 0; border: 1px solid #49616e; border-radius: 4px; background: #1e303c; color: #e3ebf0; padding: 4px 8px; font: inherit; cursor: pointer; }
+aside button:focus-visible { outline: 2px solid #7de1be; outline-offset: 2px; }
+aside button[aria-pressed=true] { background: #234d40; color: #9df1cf; }
+aside button:disabled { opacity: .5; cursor: default; }
+aside .badge { color: #9df1cf; }
+
+.files { flex: 1; min-width: 0; overflow: auto; white-space: nowrap; color: #b7c9d4; }
+@media (max-width: 640px) { aside { flex-wrap: wrap; gap: 6px; } .files { flex-basis: 100%; order: 1; } }
+
+aside[data-collapsed=true] { right: auto; }

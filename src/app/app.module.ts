@@ -10,6 +10,7 @@ import { InlineSVGModule } from 'ng-inline-svg-2';
 import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
+import { DeveloperBarComponent } from './dev/developer-bar.component';
 import { AuthService } from './modules/auth/services/auth.service';
 import { SweetAlert2Module } from '@sweetalert2/ngx-sweetalert2';
 import { AuthInterceptor } from './modules/auth/interceptor-auth.interceptor';
@@ -46,6 +47,7 @@ function appInitializer(authService: AuthService) {
   declarations: [AppComponent],
   imports: [
     BrowserModule,
+    DeveloperBarComponent,
     BrowserAnimationsModule,
     TranslateModule.forRoot(),
     HttpClientModule,

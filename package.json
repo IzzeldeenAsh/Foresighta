@@ -17,7 +17,11 @@
     "build:stage": "node --max-old-space-size=8192 node_modules/.bin/ng build --configuration staging",
     "test:project-requirements": "ng test --watch=false --browsers=ChromeHeadless --main=src/test-project-requirements.ts --ts-config=tsconfig.project-requirements-spec.json --include=src/app/pages/insighter-dashboard/insighter-dashboard/shared/offer-requirements-editor.component.spec.ts",
     "test:project-discussion": "ng test --watch=false --browsers=ChromeHeadless --main=src/test-project-discussion.ts --ts-config=tsconfig.project-discussion-spec.json --include=src/app/pages/insighter-dashboard/insighter-dashboard/shared/project-discussion/project-discussion.spec.ts",
-    "test:agreement-revisions": "ng test --watch=false --browsers=ChromeHeadless --main=src/test-agreement-revisions.ts --ts-config=tsconfig.agreement-revisions-spec.json --include=src/app/pages/insighter-dashboard/insighter-dashboard/shared/agreement-revisions/agreement-revisions.component.spec.ts --include=src/app/_fake/services/agreement-revisions/agreement-revisions.service.spec.ts"
+    "test:agreement-revisions": "ng test --watch=false --browsers=ChromeHeadless --main=src/test-agreement-revisions.ts --ts-config=tsconfig.agreement-revisions-spec.json --include=src/app/pages/insighter-dashboard/insighter-dashboard/shared/agreement-revisions/agreement-revisions.component.spec.ts --include=src/app/_fake/services/agreement-revisions/agreement-revisions.service.spec.ts",
+    "dev:sources": "node scripts/generate-component-sources.cjs",
+    "prestart": "npm run dev:sources",
+    "prewatch": "npm run dev:sources",
+    "predev:ssr": "npm run dev:sources"
   },
   "private": true,
   "dependencies": {
