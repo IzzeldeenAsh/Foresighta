@@ -104,6 +104,7 @@ export class ProjectSettingsService {
   private readonly activateApiUrl = `${environment.apiBaseUrl}/insighter/project/account/activate`;
   private readonly deactivateApiUrl = `${environment.apiBaseUrl}/insighter/project/account/deactivate`;
   private readonly acceptAgreementApiUrl = `${environment.apiBaseUrl}/insighter/project/account/agreement/accept`;
+  private readonly checkAgreementApiUrl = `${environment.apiBaseUrl}/insighter/project/account/agreement/check`;
   private readonly servicesApiUrl = `${environment.apiBaseUrl}/common/setting/service`;
 
   /** Emits whenever the receive-project-services state may have changed, so
@@ -184,6 +185,15 @@ export class ProjectSettingsService {
         { headers: this.getHeaders(), responseType: 'text' }
       )
       .pipe(tap(() => this.projectAccountChangedSubject.next()));
+  }
+
+  /** Whether the user accepted the latest project service agreement version. */
+  isProjectServiceAgreementAccepted(): Observable<boolean> {
+    return this.http
+      .get<{ data?: { accept?: boolean } }>(this.checkAgreementApiUrl, {
+        headers: this.getHeaders(),
+      })
+      .pipe(map((response) => !!response?.data?.accept));
   }
 
   acceptProjectServiceAgreement(): Observable<unknown> {

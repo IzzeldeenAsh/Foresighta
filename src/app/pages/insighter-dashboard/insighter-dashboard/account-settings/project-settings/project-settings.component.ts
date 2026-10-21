@@ -110,7 +110,6 @@ export class ProjectSettingsComponent extends BaseComponent implements OnInit {
   private profileAny: any = null;
   private lastResults: ProjectAccountCheckResults = {};
   private readonly hiddenServiceSlugs = new Set(['other']);
-  private projectServiceAgreementAccepted = false;
   /** Strict server state: a missing settings row means offers are not active yet. */
   private receiveProjectServicesActive = false;
   /** Onboarding: settles the agreement dialog opened by saveForOnboarding(). */
@@ -319,18 +318,22 @@ export class ProjectSettingsComponent extends BaseComponent implements OnInit {
       return;
     }
 
-    this.updateProjectStatus(true, !this.projectServiceAgreementAccepted);
+    this.updateProjectStatus(true);
   }
 
-  private updateProjectStatus(nextValue: boolean, acceptAgreement = false): void {
+  private updateProjectStatus(nextValue: boolean): void {
     this.isProjectStatusUpdating = true;
 
+    // Activation needs the latest agreement version accepted. Ask the backend
+    // instead of guessing from the settings payload (a new Insighter has no
+    // settings row, so its status is null).
     const request$ = nextValue
-      ? acceptAgreement
-        ? this.projectSettingsService.acceptProjectServiceAgreement().pipe(
-            concatMap(() => this.projectSettingsService.activateReceivingProjectService())
-          )
-        : this.projectSettingsService.activateReceivingProjectService()
+      ? this.projectSettingsService.isProjectServiceAgreementAccepted().pipe(
+          concatMap((accepted) =>
+            accepted ? of(null) : this.projectSettingsService.acceptProjectServiceAgreement()
+          ),
+          concatMap(() => this.projectSettingsService.activateReceivingProjectService())
+        )
       : this.projectSettingsService.deactivateReceivingProjectService();
 
     const sub = request$
@@ -341,10 +344,6 @@ export class ProjectSettingsComponent extends BaseComponent implements OnInit {
           this.settingsForm.get('project_status')?.markAsPristine();
 
           this.receiveProjectServicesActive = nextValue;
-
-          if (acceptAgreement) {
-            this.projectServiceAgreementAccepted = true;
-          }
 
           if (nextValue) {
             // Settle before hiding so the dialog's onHide isn't read as a dismissal.
@@ -819,8 +818,6 @@ export class ProjectSettingsComponent extends BaseComponent implements OnInit {
     const projectStatus = this.mapReceiveProjectServicesStatus(properties);
     this.receiveProjectServicesActive =
       (properties.receive_project_services ?? properties.status) === 'active';
-    this.projectServiceAgreementAccepted =
-      projectStatus || this.isProjectServiceAgreementAccepted(properties);
 
     this.settingsForm.patchValue({
       project_status: projectStatus,
@@ -848,15 +845,6 @@ export class ProjectSettingsComponent extends BaseComponent implements OnInit {
   private mapReceiveProjectServicesStatus(properties: ProjectAccountProperties): boolean {
     const status = properties.receive_project_services ?? properties.status;
     return status !== 'inactive';
-  }
-
-  private isProjectServiceAgreementAccepted(properties: ProjectAccountProperties): boolean {
-    return !!(
-      properties.project_service_agreement_accepted ||
-      properties.project_service_agreement ||
-      properties.accept_agreement ||
-      properties.agreement
-    );
   }
 
   private getSelectedProjectLanguages(): Array<'english' | 'arabic'> {
