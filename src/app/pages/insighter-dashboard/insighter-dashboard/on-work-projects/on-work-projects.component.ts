@@ -23,7 +23,7 @@ import {
   TimelineStepActionEvent,
 } from 'src/app/_fake/services/project-timeline/project-timeline.model';
 import { BaseComponent } from 'src/app/modules/base.component';
-import { offerPricingSummary } from 'src/app/_fake/services/project-phase2/project-phase2.model';
+import { offerPaymentSummary } from 'src/app/_fake/services/project-phase2/project-phase2.model';
 
 type ViewMode = 'grid' | 'list';
 export type DrawerTab = 'revisions' | 'overview' | 'documents' | 'reviews' | 'discussion';
@@ -662,8 +662,8 @@ export class OnWorkProjectsComponent extends BaseComponent implements OnInit {
     });
   }
 
-  getPricingSummary(offer: any): string {
-    return offerPricingSummary(offer, this.lang);
+  getOfferPaymentSummary(offer: any): string {
+    return offerPaymentSummary(offer, this.lang);
   }
 
 

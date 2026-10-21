@@ -242,12 +242,13 @@
   }
 }
 
+// No forced z-index: PrimeNG stacks the drawer and puts its mask one level below it.
+// Pinning the drawer lower than the mask (e.g. when a tooltip is open) greys the drawer out.
 ::ng-deep .owp-offer-drawer {
   top: 0 !important;
   height: 100dvh !important;
   max-width: 100vw;
   max-height: 100dvh !important;
-  z-index: 1325 !important;
 
   .p-sidebar-header {
     display: none;
@@ -265,40 +266,21 @@
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  padding: 18px 22px 0;
+  padding: 14px 22px 0;
 }
 
 .owp-offer-drawer__body {
-  height: calc(100% - 58px);
+  height: calc(100% - 54px);
   overflow-y: auto;
-  padding: 16px 28px 36px;
+  padding: 8px 28px 36px;
+
+  .po-document-group {
+    margin-bottom: 8px;
+  }
 
   @media (max-width: 575px) {
-    padding: 14px 18px 28px;
+    padding: 8px 12px 24px;
   }
-}
-
-.owp-offer-drawer__hero {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
-  margin-bottom: 24px;
-  padding-bottom: 22px;
-  border-bottom: 1px solid #e4e9f2;
-}
-
-.owp-offer-drawer__pill {
-  display: inline-flex;
-  align-items: center;
-  min-height: 32px;
-  padding: 7px 12px;
-  border-radius: 999px;
-  background: #ecfdf5;
-  color: #047857;
-  font-size: 12px;
-  font-weight: 800;
 }
 
 .owp-doc-workspace {

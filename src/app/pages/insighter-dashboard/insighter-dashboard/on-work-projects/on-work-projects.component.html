@@ -1271,7 +1271,7 @@
   [blockScroll]="false"
   [baseZIndex]="1320"
   [showCloseIcon]="false"
-  [style]="{ width: 'min(720px, 100vw)' }"
+  [style]="{ width: 'min(960px, 100vw)' }"
   styleClass="owp-offer-drawer"
   (onHide)="closeProjectOfferDrawer()">
   <ng-container *ngIf="selectedProject as project">
@@ -1286,60 +1286,14 @@
       </div>
 
       <div class="owp-offer-drawer__body" [attr.dir]="lang === 'ar' ? 'rtl' : 'ltr'">
-        <div class="owp-offer-drawer__hero">
-          <span class="owp-offer-drawer__pill">{{ lang === 'ar' ? 'تفاصيل العرض' : 'Offer Details' }}</span>
-          <span class="badge" [ngClass]="getOfferStatusBadgeClass(offer.status)">
-            {{ getOfferStatusLabel(offer.status) }}
-          </span>
-        </div>
-
-        <section class="po-section">
-          <div class="po-section__head">
-            <h6 class="po-section__title">{{ lang === 'ar' ? 'خطاب العرض' : 'Cover Letter' }}</h6>
-            <span class="po-section__eyebrow">{{ lang === 'ar' ? 'العرض المرسل' : 'Submitted Offer' }}</span>
-          </div>
-          <div class="po-detail-card po-detail-card--offer">
-            <div class="po-detail-card__body">
-              <p class="po-section__text mb-0">{{ offer.cover_letter || '-' }}</p>
-            </div>
-          </div>
-        </section>
-
-        <section class="po-section mt-5">
-          <div class="po-section__head">
-            <h6 class="po-section__title">{{ lang === 'ar' ? 'التفاصيل التجارية' : 'Commercial Details' }}</h6>
-            <span class="po-section__eyebrow">{{ lang === 'ar' ? 'السعر والمدة' : 'Price & Time' }}</span>
-          </div>
-
-          <div class="po-offer-summary-grid">
-            <div class="po-offer-summary-card po-offer-summary-card--price">
-              <span class="po-offer-summary-card__icon">
-                <i class="ki-outline ki-dollar fs-4"></i>
-              </span>
-              <span class="po-offer-summary-card__copy">
-                <span class="po-offer-summary-card__label">{{ lang === 'ar' ? 'السعر المقترح' : 'Proposed Price' }}</span>
-                <span class="po-offer-summary-card__value">${{ formatMoney(offer.proposed_price) }}</span>
-              </span>
-            </div>
-
-            <div class="po-offer-summary-card po-offer-summary-card--hours">
-              <span class="po-offer-summary-card__icon">
-                <i class="ki-outline ki-time fs-4"></i>
-              </span>
-              <span class="po-offer-summary-card__copy">
-                <span class="po-offer-summary-card__label">{{ lang === 'ar' ? 'أساس التسعير' : 'Pricing basis' }}</span>
-                <span class="po-offer-summary-card__value">{{ getPricingSummary(offer) }}</span>
-              </span>
-            </div>
-          </div>
-          <div class="mt-4" *ngIf="offer.installments?.length">
-            <div class="fw-semibold text-gray-800 fs-7 mb-2">{{ lang === 'ar' ? 'جدول الدفعات' : 'Payment schedule' }}</div>
-            <app-offer-installments [installments]="offer.installments" [total]="offer.proposed_price" [lang]="lang"></app-offer-installments>
-          </div>
-        </section>
-
-        <section class="po-section mt-5" *ngIf="getOfferFiles(project).length">
-          <div class="po-document-group">
+        <app-offer-overview
+          [offer]="offer" [services]="project.project.project_services" [lang]="lang"
+          [projectDurationDays]="project.project.schedule.duration_days ?? null"
+          [baseDate]="project.project.schedule.started_at || project.project.schedule.planned_start_date"
+          [statusLabel]="getOfferStatusLabel(offer.status)"
+          [statusClass]="getOfferStatusBadgeClass(offer.status)"
+          [pricingSummary]="getOfferPaymentSummary(offer)">
+          <div class="po-document-group" *ngIf="getOfferFiles(project).length">
             <div class="po-document-group__head">
               <span class="po-document-group__icon po-document-group__icon--offer"><i class="ki-outline ki-paper-clip fs-5"></i></span>
               <div>
@@ -1368,7 +1322,7 @@
               </button>
             </div>
           </div>
-        </section>
+        </app-offer-overview>
       </div>
     </ng-container>
   </ng-container>
