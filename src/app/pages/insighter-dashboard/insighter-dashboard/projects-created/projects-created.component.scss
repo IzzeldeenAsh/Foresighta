@@ -1593,6 +1593,16 @@
   line-height: 1;
   vertical-align: middle;
   white-space: nowrap;
+  cursor: pointer;
+
+  &:hover {
+    background: #b91c1c;
+  }
+
+  &:focus-visible {
+    outline: 2px solid #fca5a5;
+    outline-offset: 2px;
+  }
 
   i {
     color: inherit;

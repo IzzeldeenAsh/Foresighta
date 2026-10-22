@@ -16,14 +16,22 @@ export class AgreementRevisionsService {
     return new HttpHeaders({ Accept: 'application/json', 'Accept-Language': this.translation.getSelectedLanguage(), 'X-Timezone': Intl.DateTimeFormat().resolvedOptions().timeZone });
   }
   private base(role: AgreementRole) { return `${environment.apiBaseUrl}/${role === 'client' ? 'account' : 'insighter'}/project`; }
-  list(role: AgreementRole, contextUuid: string, page = 1) {
-    return this.http.get<AgreementRevisionList>(`${this.base(role)}/agreement-revisions/${encodeURIComponent(contextUuid)}`, { headers: this.headers(), params: { page, per_page: 25 } });
+  /** One Client ↔ Insighter negotiation: every Client revision plus that match's own. Stable before and after the offer. */
+  list(role: AgreementRole, matchUuid: string, page = 1) {
+    return this.http.get<AgreementRevisionList>(`${this.base(role)}/agreement-revisions/match/${encodeURIComponent(matchUuid)}`, { headers: this.headers(), params: { page, per_page: 25 } });
   }
-  show(role: AgreementRole, contextUuid: string, revisionId: number) {
-    return this.http.get<{ data: AgreementRevision }>(`${this.base(role)}/agreement-revisions/${encodeURIComponent(contextUuid)}/${revisionId}`, { headers: this.headers() }).pipe(map(res => res.data));
+  show(role: AgreementRole, matchUuid: string, revisionId: number) {
+    return this.http.get<{ data: AgreementRevision }>(`${this.base(role)}/agreement-revisions/match/${encodeURIComponent(matchUuid)}/${revisionId}`, { headers: this.headers() }).pipe(map(res => res.data));
   }
-  markSeen(role: AgreementRole, contextUuid: string, revisionId: number) {
-    return this.http.post<unknown>(`${this.base(role)}/agreement-revisions/${encodeURIComponent(contextUuid)}/${revisionId}/seen`, {}, { headers: this.headers() });
+  markSeen(role: AgreementRole, matchUuid: string, revisionId: number) {
+    return this.http.post<unknown>(`${this.base(role)}/agreement-revisions/match/${encodeURIComponent(matchUuid)}/${revisionId}/seen`, {}, { headers: this.headers() });
+  }
+  /** The Client's own project-wide revisions; works before any offer exists. */
+  listForProject(projectUuid: string, page = 1) {
+    return this.http.get<AgreementRevisionList>(`${this.base('client')}/${encodeURIComponent(projectUuid)}/agreement-revisions`, { headers: this.headers(), params: { page, per_page: 25 } });
+  }
+  showForProject(projectUuid: string, revisionId: number) {
+    return this.http.get<{ data: AgreementRevision }>(`${this.base('client')}/${encodeURIComponent(projectUuid)}/agreement-revisions/${revisionId}`, { headers: this.headers() }).pipe(map(res => res.data));
   }
   /** Market options for the target-market component (country / region / economic bloc lists). */
   markets(type: string) {
@@ -31,7 +39,8 @@ export class AgreementRevisionsService {
     return this.http.get<{ data: MarketOption[] }>(`${environment.apiBaseUrl}/common/setting/${endpoint[type] ?? endpoint['country']}`, { headers: this.headers() })
       .pipe(map(res => res?.data ?? []));
   }
-  /** New offer or sub-scope files switch the request to multipart; everything else stays JSON. */
+  /** New offer or sub-scope files switch the request to multipart; everything else stays JSON.
+   * `contextUuid` is the project for the Client and the offer for the Insighter. */
   update(role: AgreementRole, contextUuid: string, payload: AgreementPatch, files: File[] = []) {
     // Sent as POST with Laravel's method override: a real PATCH fails the CORS preflight.
     const body = files.length || payloadHasFiles(payload) ? agreementFormData(payload, files) : { ...payload, _method: 'PATCH' };

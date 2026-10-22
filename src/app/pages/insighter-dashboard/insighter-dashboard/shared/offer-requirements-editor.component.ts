@@ -47,6 +47,8 @@ export class OfferRequirementsEditorComponent implements OnChanges {
   @Input() initialDraft?: OfferRequirementDraft;
   @Input() revisionMode = false;
   @Input() readOnly = false;
+  /** Shown on hover of the Read-only badge. */
+  @Input() readOnlyReason = '';
   @Input() showHeading = true;
   get controlPrefix(): string { return this.section + (this.readOnly ? '-readonly' : ''); }
   @Input() linkedDeliverableIds = new Set<number>();

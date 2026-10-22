@@ -486,9 +486,11 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
     });
     if (this.editMode) {
       const offerRows: PaymentDeliverable[] = [];
-      (this.proposal?.offer?.offer_components ?? []).filter(component => !this.editRequirements.service_components.some(group => group.project_service_id === component.project_service_id)).forEach(component => (component.value?.deliverables ?? []).forEach((row: any) => {
+      const offerDeliverables = this.proposal?.offer?.offer_deliverables
+        ?? (this.proposal?.offer?.offer_components ?? []).reduce<any[]>((all, component) => all.concat((component.value?.deliverables ?? []).map((row: any) => ({ ...row, project_service_id: component.project_service_id }))), []);
+      offerDeliverables.filter(row => !this.editRequirements.service_components.some(group => group.project_service_id === row.project_service_id)).forEach(row => {
         if (row.id) offerRows.push({ reference: `offer:${row.id}`, title: row.title, period_days: row.period_days, date: null });
-      }));
+      });
       // Keep an existing offer-deliverable link selectable even on older detail responses.
       this.installments.filter(item => item.deliverable_key?.startsWith('offer:')).forEach(item => {
         if (!offerRows.some(row => row.reference === item.deliverable_key)) offerRows.push({ reference: item.deliverable_key!, title: item.title, period_days: item.period_days, date: null });
@@ -854,11 +856,23 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
     return record.project.project_services.filter(service => service.id !== null).map(service => {
       const editable = editableOfferDeliverables(record, service.id!, this.editUserId);
       const offerRows = !service.deliverables.length;
-      const original = (record.offer?.offer_components ?? []).filter(row => row.project_service_id === service.id).reduce<any[]>((all, row) => all.concat(row.value?.deliverables ?? []), []);
+      // Same rows editableOfferDeliverables returns, so the editable ones drop out of this read-only list.
+      const original = record.offer?.offer_deliverables?.filter(row => row.project_service_id === service.id)
+        ?? (record.offer?.offer_components ?? []).filter(row => row.project_service_id === service.id).reduce<any[]>((all, row) => all.concat(row.value?.deliverables ?? []), []);
       const source = offerRows ? original : this.editLocked && editable.source === 'offer' ? [...service.deliverables, ...original] : service.deliverables;
       const items = this.editLocked || editable.source !== (offerRows ? 'offer' : 'project') ? source : source.filter(row => !editable.items.includes(row));
       return { serviceId: service.id!, title: service.title || service.service?.name || '', items, offerRows };
     }).filter(group => group.items.length > 0);
+  }
+  /** Why the read-only scopes and deliverables can't be changed, shown on hover of their badge. */
+  get readOnlyReason(): string {
+    const ar = this.lang === 'ar';
+    if (this.editLocked) return ar
+      ? 'لا يمكن تعديل العرض بعد توقيع العقد أو بدء المشروع.'
+      : 'This offer can no longer be changed because the contract is signed or the project has started.';
+    return ar
+      ? 'أضافها العميل في طلب المشروع، لذا يمكن للعميل فقط تعديلها.'
+      : 'The client added these in the project request, so only the client can change them.';
   }
   isEditTabReadOnly(key: ProposalTab): boolean {
     if (!this.editMode || key === 'review') return false;

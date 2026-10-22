@@ -69,6 +69,10 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
   /** Unseen client revisions on the open offer (the Revisions badge). */
   offerRevisionsUnseen = 0;
   protected agreementRevisions: AgreementRevisionsService;
+  /** The match timeline answered 403 (older proposal without an offer, or not awarded): no Revisions. */
+  revisionsForbidden = false;
+  /** `?match=` from a revision notification: the negotiation to read instead of the proposal's own match. */
+  protected notificationMatchUuid: string | null = null;
   /** `?offer=` from a private-message notification, opened once the offer details load. */
   protected pendingPrivateOfferUuid: string | null = null;
   offers: ProjectOffer[] = [];
@@ -1065,9 +1069,18 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
     this.openOfferDrawer(offer, 'messages');
   }
 
-  /** Opens the submitted offer; unavailable sections (thread closed, nothing to show) fall back to the offer. */
+  /** The Client ↔ Insighter revision timeline, read through the match before and after the offer exists. */
+  canViewRevisions(offer: ProjectOffer | null | undefined): boolean {
+    return !!this.revisionsMatchUuid(offer) && !this.revisionsForbidden && !this.isActiveProject(offer);
+  }
+
+  revisionsMatchUuid(offer: ProjectOffer | null | undefined): string {
+    return this.notificationMatchUuid || offer?.match_uuid || '';
+  }
+
+  /** Opens the submitted offer (or, before an offer, the client's changes); unavailable sections fall back. */
   openOfferDrawer(offer: ProjectOffer | null | undefined = this.selectedOffer, section: OfferDrawerSection = 'offer'): void {
-    if (!this.hasSubmittedOffer(offer)) return;
+    if (!this.hasSubmittedOffer(offer) && !this.canViewRevisions(offer)) return;
     this.offerDrawerSection = section;
     this.offerDrawerVisible = true;
   }
@@ -1082,7 +1095,10 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
 
   /** The section actually shown: one that is no longer available falls back to the offer. */
   offerSection(offer: ProjectOffer | null | undefined): OfferDrawerSection {
-    if (this.offerDrawerSection === 'messages' && !this.canUsePrivateOfferDiscussion(offer)) return 'offer';
+    const fallback: OfferDrawerSection = this.hasSubmittedOffer(offer) ? 'offer' : 'revisions';
+    if (this.offerDrawerSection === 'messages' && !this.canUsePrivateOfferDiscussion(offer)) return fallback;
+    if (this.offerDrawerSection === 'revisions' && !this.canViewRevisions(offer)) return 'offer';
+    if (this.offerDrawerSection === 'offer' && !this.hasSubmittedOffer(offer)) return fallback;
     return this.offerDrawerSection;
   }
 
@@ -1090,20 +1106,38 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
 
   /** Badge on "View Offer": unread offer messages plus unseen client revisions. */
   offerDrawerBadge(offer: ProjectOffer | null | undefined): number {
-    return this.offerUnreadMessages(offer) + this.offerRevisionsUnseen;
+    return this.offerUnreadMessages(offer) + (this.canViewRevisions(offer) ? this.offerRevisionsUnseen : 0);
   }
 
-  /** Counts the client's unseen revisions on this offer (your own edits never count). */
+  /** Reads the match timeline's unseen count; a 403 means this match has no timeline (hide its Revisions). */
   protected loadOfferRevisionsUnseen(offer: ProjectOffer | null | undefined): void {
     this.offerRevisionsUnseen = 0;
-    const offerUuid = offer?.offer?.uuid;
-    if (!offerUuid) return;
-    this.agreementRevisions.list('insighter', offerUuid).pipe(takeUntil(this.unsubscribe$)).subscribe({
+    this.revisionsForbidden = false;
+    const matchUuid = this.revisionsMatchUuid(offer);
+    if (!matchUuid || this.isActiveProject(offer)) return;
+    this.agreementRevisions.list('insighter', matchUuid).pipe(takeUntil(this.unsubscribe$)).subscribe({
       next: res => {
-        if (this.selectedOffer?.offer?.uuid !== offerUuid) return;
-        this.offerRevisionsUnseen = (res.data ?? []).filter(r => r.is_seen === false && r.changed_by_role === 'client').length;
+        if (this.revisionsMatchUuid(this.selectedOffer) !== matchUuid) return;
+        this.offerRevisionsUnseen = res.meta?.unseen_count ?? (res.data ?? []).filter(r => r.is_seen === false).length;
       },
-      error: () => {},
+      error: err => { if (err?.status === 403) this.revisionsForbidden = true; },
+    });
+  }
+
+  /** The timeline answered 403 while open: close it and re-read the proposal so the page follows its new state. */
+  onOfferRevisionsClosed(offer: ProjectOffer): void {
+    this.revisionsForbidden = true;
+    this.offerDrawerSection = 'offer';
+    if (!this.hasSubmittedOffer(offer)) this.offerDrawerVisible = false;
+    this.showInfo(
+      this.lang === 'ar' ? 'التعديلات غير متاحة' : 'Revisions unavailable',
+      this.lang === 'ar' ? 'لم يعد سجل التعديلات متاحاً لهذه الدعوة.' : 'The revision history is no longer available for this invitation.'
+    );
+    const detailsUuid = this.getProposalDetailsUuid(offer);
+    if (!detailsUuid) return;
+    this.projectOffersService.getProposalDetails(detailsUuid).pipe(takeUntil(this.unsubscribe$)).subscribe({
+      next: details => { if (this.selectedOffer === offer) this.selectedOffer = this.mergeOfferDetails(offer, details); },
+      error: () => undefined,
     });
   }
 

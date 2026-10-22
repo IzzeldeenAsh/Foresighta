@@ -131,6 +131,19 @@ export interface ProjectOfferScope {
   [key: string]: any;
 }
 
+/** A deliverable the insighter added in their offer, saved with its own ID. */
+export interface ProjectOfferDeliverable {
+  id: number;
+  project_service_id: number;
+  title: string;
+  position?: number | null;
+  period_days: number | null;
+  date?: string | null;
+  report_type?: string[];
+  way?: { selected: string | null; address: string | null };
+  [key: string]: any;
+}
+
 export interface ProjectOfferProposalSummary {
   uuid: string;
   status: string | null;
@@ -145,6 +158,8 @@ export interface ProjectOfferDetails {
   unread_private_messages_count?: number;
   offer_scopes?: OfferScope[];
   offer_components?: OfferComponent[];
+  /** Saved offer deliverables; unlike offer_components values, these carry the IDs installments link to. */
+  offer_deliverables?: ProjectOfferDeliverable[];
   uuid: string;
   price_type: ProjectPriceType | string | null;
   proposed_price: string | number | null;

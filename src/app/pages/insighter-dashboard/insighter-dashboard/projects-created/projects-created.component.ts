@@ -213,6 +213,14 @@ export class ProjectsCreatedComponent extends BaseComponent implements OnInit, O
     this.router.navigate(['/app/insighter-dashboard/projects-created', project.uuid]);
   }
 
+  /** The unread-messages badge: open the project straight on the offer drawer's Messages tab. */
+  viewUnreadMessages(project: CreatedProject, event: Event): void {
+    event.stopPropagation();
+    event.preventDefault();
+    this.markProjectAsRead(project);
+    this.router.navigate(['/app/insighter-dashboard/projects-created', project.uuid], { queryParams: { messages: 'unread' } });
+  }
+
   getTypeMeta(key: CreatedProjectType): ProjectTypeMeta | undefined {
     return this.projectTypeOptions.find(o => o.key === key);
   }

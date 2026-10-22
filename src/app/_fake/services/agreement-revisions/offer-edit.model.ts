@@ -25,6 +25,8 @@ export function editableOfferDeliverables(record: ProjectOffer, serviceId: numbe
   const service = record.project.project_services.find(service => service.id === serviceId);
   const projectRows = (service?.deliverables ?? []).filter(row => ownedProjectRow(row, userId));
   if (projectRows.length) return { source: 'project', items: projectRows };
+  // offer_deliverables carry the persisted IDs that installments and revisions link to.
+  if (record.offer?.offer_deliverables) return { source: 'offer', items: record.offer.offer_deliverables.filter(row => row.project_service_id === serviceId) };
   const items = (record.offer?.offer_components ?? []).filter(row => row.project_service_id === serviceId && row.filled_by_role !== 'client')
     .reduce<any[]>((all, row) => all.concat((row.value?.deliverables ?? []).filter((item: any) => item.filled_by_role !== 'client')), []);
   return { source: 'offer', items };

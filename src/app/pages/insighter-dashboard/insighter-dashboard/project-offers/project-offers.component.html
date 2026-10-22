@@ -1020,12 +1020,21 @@
               : (lang === 'ar' ? 'مهتم' : 'Interested') }}
             </button>
 
-            <button *ngIf="!hasContractAction(offer)" type="button" class="btn btn-outline btn-outline-info w-100" (click)="onAskClient()">
+            <button *ngIf="!hasContractAction(offer)" type="button" class="btn btn-outline btn-outline-info w-100 mb-2" (click)="onAskClient()">
               <i class="ki-outline ki-messages fs-6 me-1"></i>
               {{ lang === 'ar' ? 'سؤال العميل' : 'Ask Client' }}
             </button>
+          </ng-container>
 
-            <button *ngIf="!hasContractAction(offer) && canRejectOffer(offer)" type="button" class="btn btn-outline btn-outline-danger w-100 mt-2"
+          <button *ngIf="!isActiveProject(offer) && !hasSubmittedOffer(offer) && canViewRevisions(offer)" type="button" class="btn btn-outline btn-outline-info w-100 mb-2" (click)="openOfferDrawer(offer, 'revisions')">
+            <i class="ki-outline ki-time fs-6 me-1"></i>
+            {{ lang === 'ar' ? 'تعديلات العميل' : 'Client changes' }}
+            <span class="po-tab-badge ms-2" *ngIf="offerRevisionsUnseen > 0"
+              [attr.aria-label]="lang === 'ar' ? 'تعديلات جديدة' : 'New revisions'">{{ offerRevisionsUnseen }}</span>
+          </button>
+
+          <ng-container *ngIf="!isActiveProject(offer) && !isOfferTimedOut(offer)">
+            <button *ngIf="!hasContractAction(offer) && canRejectOffer(offer)" type="button" class="btn btn-outline btn-outline-danger w-100 mb-2"
               [disabled]="isRejectingSelectedOffer()" (click)="onRejectOffer()">
               <i class="ki-outline ki-cross fs-6 me-1"></i>
               {{ isRejectingSelectedOffer()
@@ -1089,7 +1098,7 @@
   [blockScroll]="true" [baseZIndex]="1400" [showCloseIcon]="false" [style]="{ width: '86vw', maxWidth: '1280px' }"
   styleClass="po-offer-drawer" (onHide)="closeOfferDrawer()">
   <ng-container *ngIf="offerDrawerVisible && selectedOffer as offer">
-    <div class="po-offer-drawer__wrap" *ngIf="offer.offer as submittedOffer">
+    <div class="po-offer-drawer__wrap" *ngIf="hasSubmittedOffer(offer) || canViewRevisions(offer)">
       <div class="po-offer-drawer__main">
         <div class="po-offer-drawer__topbar">
           <button type="button" class="po-iconbtn" (click)="closeOfferDrawer()" [attr.aria-label]="lang === 'ar' ? 'إغلاق العرض' : 'Close offer'">
@@ -1099,13 +1108,13 @@
 
         <div class="po-offer-drawer__body">
           <div class="po-offer-drawer__hero">
-            <span class="po-offer-drawer__pill">{{ lang === 'ar' ? 'عرضك' : 'Your Offer' }}</span>
+            <span class="po-offer-drawer__pill">{{ hasSubmittedOffer(offer) ? (lang === 'ar' ? 'عرضك' : 'Your Offer') : (lang === 'ar' ? 'تعديلات العميل' : 'Client changes') }}</span>
             <h3 class="po-offer-drawer__title">{{ offer.project.title }}</h3>
             <span class="po-offer-drawer__sub" *ngIf="offer.project.client?.name">{{ lang === 'ar' ? 'العميل' : 'Client' }} · {{ offer.project.client?.name }}</span>
           </div>
 
           <div class="po-offer-sections" role="tablist" [attr.aria-label]="lang === 'ar' ? 'أقسام العرض' : 'Offer sections'">
-            <button type="button" class="po-offer-section" role="tab"
+            <button type="button" class="po-offer-section" role="tab" *ngIf="hasSubmittedOffer(offer)"
               [class.active]="offerSection(offer) === 'offer'" [attr.aria-selected]="offerSection(offer) === 'offer'"
               (click)="setOfferDrawerSection('offer')">
               <i class="ki-outline ki-dollar" aria-hidden="true"></i>
@@ -1118,7 +1127,7 @@
               <span>{{ lang === 'ar' ? 'رسائل العرض' : 'Offer Messages' }}</span>
               <span class="po-tab-badge" *ngIf="offerUnreadMessages(offer) > 0" [attr.aria-label]="lang === 'ar' ? 'رسائل غير مقروءة' : 'Unread messages'">{{ offerUnreadMessages(offer) }}</span>
             </button>
-            <button type="button" class="po-offer-section" role="tab"
+            <button type="button" class="po-offer-section" role="tab" *ngIf="canViewRevisions(offer)"
               [class.active]="offerSection(offer) === 'revisions'" [attr.aria-selected]="offerSection(offer) === 'revisions'"
               (click)="setOfferDrawerSection('revisions')">
               <i class="ki-outline ki-time" aria-hidden="true"></i>
@@ -1130,7 +1139,7 @@
           <ng-container [ngSwitch]="offerSection(offer)">
             <app-project-discussion *ngSwitchCase="'messages'"
               [projectUuid]="offer.project.uuid || null"
-              [offerUuid]="submittedOffer.uuid || null"
+              [offerUuid]="offer.offer?.uuid || null"
               [counterpartName]="offer.project.client?.name || null"
               context="insighter"
               (threadRead)="onOfferThreadRead(offer)"
@@ -1138,8 +1147,8 @@
             </app-project-discussion>
 
             <app-agreement-revisions *ngSwitchCase="'revisions'" [record]="offer" role="insighter" layout="accordion" [lang]="lang"
-              [proposalContext]="true" [showEditAction]="false"
-              (revisionSeen)="onOfferRevisionSeen(offer)" (refreshed)="selectedOffer = $event">
+              [proposalContext]="true" [showEditAction]="false" [contextMatch]="revisionsMatchUuid(offer)"
+              (revisionSeen)="onOfferRevisionSeen(offer)" (accessClosed)="onOfferRevisionsClosed(offer)" (refreshed)="selectedOffer = $event">
             </app-agreement-revisions>
 
             <ng-container *ngSwitchDefault>
@@ -1187,8 +1196,11 @@
 
       <aside class="po-offer-drawer__aside">
         <div class="po-offer-drawer__aside-card">
-          <div class="po-aside-card__title">{{ lang === 'ar' ? 'تفاصيل العرض' : 'Offer Details' }}</div>
-          <p class="po-aside-card__hint">
+          <div class="po-aside-card__title">{{ hasSubmittedOffer(offer) ? (lang === 'ar' ? 'تفاصيل العرض' : 'Offer Details') : (lang === 'ar' ? 'تعديلات العميل' : 'Client changes') }}</div>
+          <p class="po-aside-card__hint" *ngIf="!hasSubmittedOffer(offer)">
+            {{ lang === 'ar' ? 'راجع تعديلات العميل على المشروع قبل إرسال عرضك. تظهر هنا أيضاً تعديلاتك بعد إرسال العرض.' : 'Review the client\'s changes to the project before you send your offer. Your own offer changes appear here once you send it.' }}
+          </p>
+          <p class="po-aside-card__hint" *ngIf="hasSubmittedOffer(offer)">
             {{ canEditOffer(offer)
               ? (lang === 'ar' ? 'يمكنك تعديل عرضك ما دام العميل يراجعه. كل تعديل محفوظ يظهر في «التعديلات» للطرفين.' : 'You can edit your offer while the client reviews it. Every saved change appears in Revisions for both sides.')
               : (lang === 'ar' ? 'راجع عرضك ورسائله وسجل تعديلاته.' : 'Review your offer, its messages and its revision history.') }}
@@ -1198,7 +1210,7 @@
             <i class="ki-outline ki-pencil fs-6 me-1"></i>{{ lang === 'ar' ? 'تعديل العرض' : 'Edit offer' }}
           </button>
 
-          <div class="po-aside-table-wrap">
+          <div class="po-aside-table-wrap" *ngIf="offer.offer as submittedOffer">
             <table class="po-aside-table">
               <tbody>
                 <tr>

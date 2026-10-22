@@ -177,8 +177,12 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
   proposalDrawerMode: 'proposal' | 'awarded' = 'proposal';
   /** Offer drawer section — the private offer thread and the offer's revisions sit next to the offer itself. */
   proposalDrawerSection: ProposalDrawerSection = 'offer';
-  /** Unseen Insighter revisions per invitation (agreement match uuid), for the drawer's Revisions badge. */
+  /** Unseen revisions per invitation (agreement match uuid, from the timeline's `meta.unseen_count`). */
   offerRevisionUnseen: Record<string, number> = {};
+  /** Matches whose timeline answered 403 (older proposal, or not awarded): their Revisions section is hidden. */
+  private closedRevisionMatches = new Set<string>();
+  /** `?match=` from a revision notification, opened once the submitted offers load. */
+  private pendingRevisionMatchUuid: string | null = null;
   /** `?offer=` from a discussion notification, opened once the submitted offers load. */
   private pendingDiscussionOfferUuid: string | null = null;
   openingFileUuid: string | null = null;
@@ -261,6 +265,11 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
     this.route.queryParamMap.pipe(takeUntil(this.unsubscribe$)).subscribe(params => {
       const tab = params.get('tab');
       if (['overview', 'documents', 'reviews', 'discussion', 'revisions'].includes(tab || '')) this.activeTab = tab as ProjectDetailTab;
+      const matchUuid = params.get('match');
+      if (matchUuid && params.get('revision')) {
+        this.pendingRevisionMatchUuid = matchUuid;
+        this.openPendingRevisionMatch();
+      }
       const offerUuid = params.get('offer');
       if (offerUuid) {
         this.pendingDiscussionOfferUuid = offerUuid;
@@ -718,9 +727,15 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
     return 'offer';
   }
 
-  /** The offer's own revision timeline: the client's changes plus this Insighter's, read through the invitation. */
+  /**
+   * The offer's own revision timeline: the client's changes plus this Insighter's, read through the match.
+   * Once awarded, only the awarded match keeps its timeline; a 403 also closes it.
+   */
   canViewOfferRevisions(invite: CreatedProjectProposalInvite | null | undefined): boolean {
-    return !!invite?.agreement_match_uuid && !!invite.offer?.uuid;
+    const matchUuid = invite?.agreement_match_uuid;
+    if (!matchUuid || !invite?.offer?.uuid || this.closedRevisionMatches.has(matchUuid)) return false;
+    const awardedOfferUuid = this.project?.offer?.uuid;
+    return !this.isProjectAwarded() || !awardedOfferUuid || invite.offer.uuid === awardedOfferUuid;
   }
 
   offerRevisionsNew(invite: CreatedProjectProposalInvite | null | undefined): number {
@@ -734,12 +749,10 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
       const matchUuid = invite.agreement_match_uuid!;
       this.agreementRevisions.list('client', matchUuid).pipe(takeUntil(this.unsubscribe$)).subscribe({
         next: res => {
-          this.offerRevisionUnseen = {
-            ...this.offerRevisionUnseen,
-            [matchUuid]: (res.data ?? []).filter(r => r.is_seen === false && r.changed_by_role === 'insighter').length,
-          };
+          const unseen = res.meta?.unseen_count ?? (res.data ?? []).filter(r => r.is_seen === false).length;
+          this.offerRevisionUnseen = { ...this.offerRevisionUnseen, [matchUuid]: unseen };
         },
-        error: () => {},
+        error: err => { if (err?.status === 403) this.closedRevisionMatches.add(matchUuid); },
       });
     });
   }
@@ -750,10 +763,24 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
     if (this.project) this.project.unseen_agreement_revisions_count = this.lowerCount(this.project.unseen_agreement_revisions_count);
   }
 
-  /** A notification's revision belongs to one Insighter's offer: open that offer's drawer on Revisions. */
-  onRevisionElsewhere(event: { revisionId: number; contextUuid: string }): void {
-    const invite = this.invitedInsighters.find(item => item.agreement_match_uuid === event.contextUuid);
+  /** A revision notification names its negotiation (`?match=`): open that offer's drawer on Revisions. */
+  private openPendingRevisionMatch(): void {
+    const matchUuid = this.pendingRevisionMatchUuid;
+    if (!matchUuid || !this.project || !this.invitedInsighters.length) return;
+    this.pendingRevisionMatchUuid = null;
+    const invite = this.invitedInsighters.find(item => item.agreement_match_uuid === matchUuid);
     if (invite && this.canViewOfferRevisions(invite)) this.openProposalDrawer(invite, 'revisions');
+  }
+
+  /** The match timeline answered 403: hide its Revisions section and re-read the project. */
+  onOfferRevisionsClosed(invite: CreatedProjectProposalInvite | null): void {
+    if (invite?.agreement_match_uuid) this.closedRevisionMatches.add(invite.agreement_match_uuid);
+    this.proposalDrawerSection = 'offer';
+    this.showInfo(
+      this.lang === 'ar' ? 'التعديلات غير متاحة' : 'Revisions unavailable',
+      this.lang === 'ar' ? 'لم يعد سجل تعديلات هذا العرض متاحاً. تم تحديث المشروع.' : 'This offer\'s revision history is no longer available. The project has been refreshed.'
+    );
+    if (this.project?.uuid) this.loadProject(this.project.uuid);
   }
 
   /**
@@ -833,7 +860,7 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
   closeProposalDrawer(): void {
     // A notification's `?revision=` is handled once; drop it so the next drawer does not reopen it.
     if (this.selectedInvite && this.route.snapshot.queryParamMap.has('revision')) {
-      this.router.navigate([], { relativeTo: this.route, queryParams: { revision: null }, queryParamsHandling: 'merge', replaceUrl: true });
+      this.router.navigate([], { relativeTo: this.route, queryParams: { revision: null, match: null }, queryParamsHandling: 'merge', replaceUrl: true });
     }
     this.proposalDrawerVisible = false;
     this.selectedInvite = null;
@@ -3010,6 +3037,7 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
           this.submittedOfferDeadline = this.getFarthestSubmittedOfferDeadline(this.invitedInsighters);
           this.loadOfferRevisionCounts(this.invitedInsighters);
           this.openPendingOfferDiscussion();
+          this.openPendingRevisionMatch();
         },
         error: () => {
           this.invitedInsighters = [];

@@ -13,20 +13,28 @@ describe('Agreement revision API boundaries', () => {
     service = TestBed.inject(AgreementRevisionsService); http = TestBed.inject(HttpTestingController);
   });
   afterEach(() => http.verify());
-  it('uses the client match context and keeps an empty full-list deletion in the overridden PATCH body', () => {
-    service.update('client', 'match-uuid', {scopes: [{ project_service_id: 44, items: [] }]}).subscribe();
-    const request = http.expectOne(`${environment.apiBaseUrl}/account/project/agreement/client-requirements/match-uuid`);
+  it('updates client requirements per project and keeps an empty full-list deletion in the overridden PATCH body', () => {
+    service.update('client', 'project-uuid', {scopes: [{ project_service_id: 44, items: [] }]}).subscribe();
+    const request = http.expectOne(`${environment.apiBaseUrl}/account/project/agreement/client-requirements/project-uuid`);
     expect(request.request.method).toBe('POST'); expect(request.request.body._method).toBe('PATCH'); expect(request.request.headers.get('Accept-Language')).toBe('ar');
     expect(request.request.body.scopes[0].items).toEqual([]); request.flush({data:{id:1}});
   });
-  it('opens an insighter revision with the offer context, separately from project routing', () => {
-    service.show('insighter', 'offer-uuid', 7).subscribe();
-    const request = http.expectOne(`${environment.apiBaseUrl}/insighter/project/agreement-revisions/offer-uuid/7`);
+  it('reads an insighter revision through the match, never the offer', () => {
+    service.show('insighter', 'match-uuid', 7).subscribe();
+    const request = http.expectOne(`${environment.apiBaseUrl}/insighter/project/agreement-revisions/match/match-uuid/7`);
     expect(request.request.method).toBe('GET'); request.flush({data:{id:7}});
+    service.markSeen('client', 'match-uuid', 7).subscribe();
+    http.expectOne(`${environment.apiBaseUrl}/account/project/agreement-revisions/match/match-uuid/7/seen`).flush({ is_seen: true });
+  });
+  it('reads the client project-wide history by project', () => {
+    service.listForProject('project-uuid').subscribe();
+    http.expectOne(req => req.url === `${environment.apiBaseUrl}/account/project/project-uuid/agreement-revisions`).flush({ data: [] });
+    service.showForProject('project-uuid', 41).subscribe();
+    http.expectOne(`${environment.apiBaseUrl}/account/project/project-uuid/agreement-revisions/41`).flush({ data: { id: 41 } });
   });
   it('supports later pages of the revision timeline', () => {
     service.list('client', 'match-uuid', 2).subscribe();
-    const request = http.expectOne(req => req.url.endsWith('/agreement-revisions/match-uuid'));
+    const request = http.expectOne(req => req.url.endsWith('/agreement-revisions/match/match-uuid'));
     expect(request.request.params.get('page')).toBe('2'); request.flush({data:[],meta:{last_page:2}});
   });
   it('switches to multipart with the method override when offer files are uploaded', () => {

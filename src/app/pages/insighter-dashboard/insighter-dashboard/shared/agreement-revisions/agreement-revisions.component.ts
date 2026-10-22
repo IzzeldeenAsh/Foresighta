@@ -31,6 +31,8 @@ interface InstallmentDiff { summary: string; rows: InstallmentRow[]; bars: Array
 interface AttachmentChange { action: 'created' | 'deleted'; uuid: string; name: string; size: string; active: boolean }
 const MONEY_FIELDS = ['fixed_price', 'proposed_price', 'hourly_rate', 'daily_rate'];
 const MARKET_TYPES = ['country', 'region', 'economic'];
+/** List context for the Client's project-wide history (read by project, not by match). */
+const PROJECT_CONTEXT = '@project';
 @Component({
   selector: 'app-agreement-revisions',
   templateUrl: './agreement-revisions.component.html',
@@ -53,11 +55,14 @@ export class AgreementRevisionsComponent implements OnInit, OnChanges, OnDestroy
   @Input() authorRole: AgreementRole | null = null;
   /** The other side's name for the author filter (the Insighter's name in the client's offer drawer). */
   @Input() counterpartName = '';
+  /** Insighter: the negotiation to read (a notification's `match`); defaults to the record's own match. */
+  @Input() contextMatch = '';
   @Output() refreshed = new EventEmitter<any>();
   /** A revision was marked seen, so the parent can lower its Revisions tab badge. */
   @Output() revisionSeen = new EventEmitter<number>();
-  /** A requested revision is listed here but hidden by `authorRole`: the parent opens it where it lives (an offer drawer). */
-  @Output() revisionElsewhere = new EventEmitter<{ revisionId: number; contextUuid: string }>();
+  /** The backend answered 403: this negotiation is no longer open to the user (older proposal, or not awarded). */
+  @Output() accessClosed = new EventEmitter<void>();
+  forbidden = false;
   revisions: AgreementRevision[] = [];
   unseenCount = 0;
   authorFilter: 'all' | AgreementRole = 'all';
@@ -149,9 +154,13 @@ export class AgreementRevisionsComponent implements OnInit, OnChanges, OnDestroy
       .filter((m: any) => !!m.agreement_match_uuid && !seen.has(m.agreement_match_uuid) && !!seen.add(m.agreement_match_uuid))
       .map((m: any) => ({ ...m, uuid: m.agreement_match_uuid }));
   }
-  get contextUuid(): string { return this.role === 'client' ? this.matchUuid : this.record?.offer?.uuid || ''; }
+  /** The revision timeline is always read through the proposal match, before and after the offer exists. */
+  get contextUuid(): string { return this.role === 'client' ? this.matchUuid : this.contextMatch || this.record?.match_uuid || ''; }
+  /** The Client's project tab: their own changes, read project-wide. */
+  get projectHistory(): boolean { return this.role === 'client' && this.authorRole === 'client'; }
   /** Where the history is read from: the client sees every invited Insighter's revisions in one list. */
   get listContexts(): string[] {
+    if (this.projectHistory) return this.project?.uuid ? [PROJECT_CONTEXT] : [];
     if (this.role === 'client' && this.onlyMatch) return [this.onlyMatch];
     return this.role === 'client' ? this.matches.map((m: any) => m.uuid) : this.contextUuid ? [this.contextUuid] : [];
   }
@@ -168,7 +177,7 @@ export class AgreementRevisionsComponent implements OnInit, OnChanges, OnDestroy
     return role === 'insighter' ? this.counterpartName || this.label('insighter') : this.label('client');
   }
   /** "New" marks the other party's unseen changes; your own edits are never news to you. */
-  isNew(revision: AgreementRevision): boolean { return revision.is_seen === false && revision.changed_by_role !== this.role; }
+  isNew(revision: AgreementRevision): boolean { return revision.is_seen === false; }
   get newCount(): number { return this.visibleRevisions.filter(r => this.isNew(r)).length; }
   get hasMore(): boolean { return Object.keys(this.pages).some(context => this.pages[context].page < this.pages[context].last); }
   get services(): ProjectServiceDetails[] { return this.project?.project_services ?? []; }
@@ -182,7 +191,9 @@ export class AgreementRevisionsComponent implements OnInit, OnChanges, OnDestroy
       !agreementPaymentStarted(this.project?.order ?? this.record?.order);
   }
   get canEdit(): boolean {
-    return !!this.contextUuid && !this.locked && (this.canEditCommercial || this.ownedComponents.length > 0 || this.services.some(s =>
+    // Edits target the project (Client) or the offer (Insighter), never the revision timeline's match.
+    const editTarget = this.role === 'client' ? this.project?.uuid : this.record?.offer?.uuid;
+    return !!editTarget && !this.locked && (this.canEditCommercial || this.ownedComponents.length > 0 || this.services.some(s =>
       editableScopes(s, this.role, this.userId) || ownsAgreementGroup(s.deliverables, this.role, this.userId)));
   }
   get ownedComponents(): ComponentDraft[] { return editableComponents(this.project, this.role, this.userId); }
@@ -211,14 +222,15 @@ export class AgreementRevisionsComponent implements OnInit, OnChanges, OnDestroy
   }
   load(more = false): void {
     this.listRequest?.unsubscribe();
-    if (!more) { this.revisions = []; this.pages = {}; this.revisionContexts = new Map(); this.openIds.clear(); this.inlineDetails.clear(); this.inlineErrors.clear(); }
+    if (!more) { this.forbidden = false; this.revisions = []; this.pages = {}; this.revisionContexts = new Map(); this.openIds.clear(); this.inlineDetails.clear(); this.inlineErrors.clear(); }
     this.error = '';
     const contexts = more ? this.listContexts.filter(c => this.pages[c] && this.pages[c].page < this.pages[c].last) : this.listContexts;
     if (!contexts.length) { this.loading = false; return; }
     this.loading = true;
     this.listRequest = forkJoin(contexts.map(context => {
       const page = (this.pages[context]?.page ?? 0) + 1;
-      return this.api.list(this.role, context, page).pipe(map(res => ({ context, page, res })));
+      const list = context === PROJECT_CONTEXT ? this.api.listForProject(this.project.uuid, page) : this.api.list(this.role, context, page);
+      return list.pipe(map(res => ({ context, page, res })));
     })).subscribe({
       next: results => {
         // Client-wide revisions come back under every invitation: list each once, newest first.
@@ -237,8 +249,18 @@ export class AgreementRevisionsComponent implements OnInit, OnChanges, OnDestroy
         this.loading = false;
         if (this.layout === 'accordion' && this.requestedRevision && !more) this.openRequested(this.requestedRevision);
       },
-      error: err => { this.error = this.serverError(err); this.loading = false; },
+      error: err => { this.loading = false; if (!this.closeOnForbidden(err)) this.error = this.serverError(err); },
     });
+  }
+  /** 403: hide the timeline and let the parent refresh the project or proposal state. */
+  private closeOnForbidden(err: any): boolean {
+    if (err?.status !== 403) return false;
+    this.forbidden = true; this.revisions = []; this.detailVisible = false;
+    this.accessClosed.emit();
+    return true;
+  }
+  private showRevision(context: string, id: number): Observable<AgreementRevision> {
+    return context === PROJECT_CONTEXT ? this.api.showForProject(this.project.uuid, id) : this.api.show(this.role, context, id);
   }
   private resolveRevision(id: number): void {
     if (this.layout === 'accordion') { if (!this.loading && this.revisions.length) this.openRequested(id); return; }
@@ -263,24 +285,25 @@ export class AgreementRevisionsComponent implements OnInit, OnChanges, OnDestroy
         this.detailLoading = false;
         if (!result) { this.detailError = this.text('This revision is not available for these invitations.', 'هذه المراجعة غير متاحة ضمن الدعوات الحالية.'); return; }
         this.detailContext = result.match.uuid; this.detail = result.revision; this.markSeen(result.revision); this.loadRevisionMarkets(result.revision);
-      }, error: err => { this.detailLoading = false; this.detailError = this.serverError(err); },
+      }, error: err => { this.detailLoading = false; if (!this.closeOnForbidden(err)) this.detailError = this.serverError(err); },
     });
   }
   openRevision(id: number): void {
     this.detailRequest?.unsubscribe(); this.detail = null; this.detailError = ''; this.detailVisible = true; this.detailLoading = true;
     this.requestedRevision = id; this.detailContext = this.revisionContexts.get(id)?.[0] || this.contextUuid;
     this.expandedItems = new Set(); this.tables = new WeakMap(); this.attachmentChangeLists = new WeakMap();
-    this.detailRequest = this.api.show(this.role, this.detailContext, id).subscribe({
+    this.detailRequest = this.showRevision(this.detailContext, id).subscribe({
       next: detail => { this.detail = detail; this.detailLoading = false; this.markSeen(detail); this.loadRevisionMarkets(detail); },
-      error: err => { this.detailError = this.serverError(err); this.detailLoading = false; },
+      error: err => { this.detailLoading = false; if (!this.closeOnForbidden(err)) this.detailError = this.serverError(err); },
     });
   }
   /** A notification's revision: expand it in the list, or fall back to the dialog when it is not listed. */
   private openRequested(id: number): void {
     const listed = this.revisions.find(r => r.id === id);
-    if (!listed) { this.resolveInDialog(id); return; }
-    if (this.authorRole && listed.changed_by_role !== this.authorRole) {
-      this.revisionElsewhere.emit({ revisionId: id, contextUuid: this.revisionContexts.get(id)?.[0] || '' });
+    if (!listed) {
+      // A notification for one Insighter's negotiation: the parent opens that offer drawer from `?match=`.
+      if (this.projectHistory && this.route.snapshot.queryParamMap.get('match')) return;
+      this.resolveInDialog(id);
       return;
     }
     this.authorFilter = 'all';
@@ -302,12 +325,12 @@ export class AgreementRevisionsComponent implements OnInit, OnChanges, OnDestroy
     const context = this.revisionContexts.get(id)?.[0] || this.contextUuid;
     if (!context) return;
     this.inlineLoading.add(id); this.inlineErrors.delete(id);
-    this.api.show(this.role, context, id).pipe(takeUntil(this.destroy$)).subscribe({
+    this.showRevision(context, id).pipe(takeUntil(this.destroy$)).subscribe({
       next: detail => {
         this.inlineLoading.delete(id); this.inlineDetails.set(id, detail);
         this.markSeen(detail, context); this.loadRevisionMarkets(detail);
       },
-      error: err => { this.inlineLoading.delete(id); this.inlineErrors.set(id, this.serverError(err)); },
+      error: err => { this.inlineLoading.delete(id); if (!this.closeOnForbidden(err)) this.inlineErrors.set(id, this.serverError(err)); },
     });
   }
   /** Target-market changes store ids only; load each market list they use so the dialog can name them. */
@@ -321,7 +344,7 @@ export class AgreementRevisionsComponent implements OnInit, OnChanges, OnDestroy
     const listed = this.revisions.find(r => r.id === revision.id);
     if (revision.is_seen !== false && listed?.is_seen !== false) return;
     const contextUuid = context || this.detailContext || this.contextUuid;
-    if (!contextUuid) return;
+    if (!contextUuid || contextUuid === PROJECT_CONTEXT) return;
     this.api.markSeen(this.role, contextUuid, revision.id).pipe(takeUntil(this.destroy$)).subscribe({
       next: () => {
         const seenAt = new Date().toISOString();
@@ -472,7 +495,7 @@ export class AgreementRevisionsComponent implements OnInit, OnChanges, OnDestroy
           this.formError = this.text('The agreement changed while you were editing. Your draft is still visible. Close it and refresh before trying again.', 'تغيّر الاتفاق أثناء التعديل. مسودتك ما زالت ظاهرة. أغلقها وحدّث التفاصيل قبل المحاولة مجدداً.');
           return;
         }
-        this.api.update(this.role, this.contextUuid, patch).pipe(takeUntil(this.destroy$)).subscribe({
+        this.api.update(this.role, this.role === 'client' ? this.project.uuid : this.record?.offer?.uuid, patch).pipe(takeUntil(this.destroy$)).subscribe({
           next: revision => {
             this.lastSavedRevisionId = revision.id;
             this.editorVisible = false; this.saving = false;

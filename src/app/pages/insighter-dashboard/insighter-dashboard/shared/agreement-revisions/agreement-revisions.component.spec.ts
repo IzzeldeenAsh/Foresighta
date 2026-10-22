@@ -47,6 +47,8 @@ describe('Agreement revisions safeguards', () => {
       api.show = jasmine.createSpy().and.callFake((_: string, __: string, id: number) => of({ ...rows.find(row => row.id === id), items: [] }));
       api.markSeen = jasmine.createSpy().and.returnValue(of({}));
       api.seen$ = new Subject();
+      api.listForProject = jasmine.createSpy().and.returnValue(of({ data: rows.filter(row => row.changed_by_role === 'client').map(row => ({ ...row })), meta: { last_page: 1 } }));
+      api.showForProject = jasmine.createSpy().and.callFake((_: string, id: number) => of({ ...rows.find(row => row.id === id), items: [] }));
       component.layout = 'accordion';
     });
     it('reads only the drawer invitation and filters by author', () => {
@@ -57,14 +59,29 @@ describe('Agreement revisions safeguards', () => {
       expect(component.visibleRevisions.map(r => r.id)).toEqual([3]);
       expect(component.authorCount('client')).toBe(2);
     });
-    it('shows only the client changes on the project tab and hands other revisions to the parent', () => {
-      component.authorRole = 'client'; component.ngOnChanges(); component.load();
+    it('reads the client project tab project-wide and opens its revisions without a seen call', () => {
+      component.authorRole = 'client'; component.ngOnChanges();
+      expect(api.listForProject).toHaveBeenCalledWith('project-uuid', 1);
       expect(component.visibleRevisions.map(r => r.id)).toEqual([2, 1]);
-      const elsewhere = jasmine.createSpy();
-      component.revisionElsewhere.subscribe(elsewhere);
-      (component as any).openRequested(3);
-      expect(elsewhere).toHaveBeenCalledWith({ revisionId: 3, contextUuid: 'match-uuid' });
-      expect(component.openIds.has(3)).toBeFalse();
+      component.toggleRevision(2);
+      expect(api.showForProject).toHaveBeenCalledWith('project-uuid', 2);
+      expect(api.markSeen).not.toHaveBeenCalled();
+    });
+    it('reads the insighter timeline through the match, and the notification match wins', () => {
+      component.role = 'insighter'; component.record = { project: record, match_uuid: 'own-match', offer: { uuid: 'offer-uuid' } };
+      component.ngOnChanges();
+      expect(api.list.calls.mostRecent().args).toEqual(['insighter', 'own-match', 1]);
+      component.contextMatch = 'notified-match'; component.ngOnChanges();
+      expect(api.list.calls.mostRecent().args).toEqual(['insighter', 'notified-match', 1]);
+    });
+    it('closes the timeline on 403', () => {
+      api.list.and.returnValue(throwError(() => ({ status: 403 })));
+      const closed = jasmine.createSpy();
+      component.accessClosed.subscribe(closed);
+      component.onlyMatch = 'other-match'; component.ngOnChanges();
+      expect(component.forbidden).toBeTrue();
+      expect(component.error).toBe('');
+      expect(closed).toHaveBeenCalled();
     });
     it('expands in place, loads the details once and marks the revision seen', () => {
       component.onlyMatch = 'match-uuid'; component.ngOnChanges();
@@ -77,11 +94,9 @@ describe('Agreement revisions safeguards', () => {
       component.toggleRevision(3); component.toggleRevision(3);
       expect(api.show.calls.count()).toBe(1);
     });
-    it('never flags your own edits as new', () => {
+    it('flags unseen revisions as the backend reports them', () => {
       component.onlyMatch = 'match-uuid'; component.ngOnChanges(); component.load();
-      expect(component.revisions.filter(r => component.isNew(r)).map(r => r.id)).toEqual([3]);
-      component.role = 'insighter';
-      expect(component.revisions.filter(r => component.isNew(r)).map(r => r.id)).toEqual([2]);
+      expect(component.revisions.filter(r => component.isNew(r)).map(r => r.id)).toEqual([3, 2]);
     });
   });
   it('locks on either first signature, including timestamps, but not false flags', () => {
@@ -108,7 +123,7 @@ describe('Agreement revisions safeguards', () => {
     expect(component.payload.scopes![0].items[0].subscopes[0].id).toBe(11);
     expect(component.payload.deliverables).toBeUndefined();
     component.save();
-    expect(api.update.calls.mostRecent().args[1]).toBe('match-uuid');
+    expect(api.update.calls.mostRecent().args[1]).toBe('project-uuid');
     expect(api.update.calls.count()).toBe(1);
   });
   it('prevents deleting an installment-linked deliverable even by calling the handler directly', () => {

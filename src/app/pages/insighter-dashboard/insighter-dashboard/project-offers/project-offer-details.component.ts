@@ -48,6 +48,8 @@ export class ProjectOfferDetailsComponent extends ProjectOffersComponent impleme
           this.handledOfferParam = offerParam;
           this.pendingPrivateOfferUuid = offerParam;
         }
+        const matchParam = params.get('match');
+        if (matchParam && params.get('revision')) this.notificationMatchUuid = matchParam;
         const tabParam = params.get(this.detailTabParam);
         if (tabParam === 'offer' || tabParam === 'revisions') this.pendingOfferSection = tabParam;
         if (!this.selectedOffer) return;
