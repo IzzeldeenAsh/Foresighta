@@ -592,17 +592,8 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
 
   addInstallment(): void {
     this.installmentsTouched = true;
-    const used = this.installmentsPercentTotal;
     const lastDay = this.effectiveDurationDays ?? (this.lastDeliverable?.period_days ?? 0);
-    this.installments = [
-      ...this.installments,
-      this.createInstallment({
-        title: this.lang === 'ar' ? `دفعة ${this.installments.length + 1}` : `Payment ${this.installments.length + 1}`,
-        percentage: Math.max(0, 100 - used) || null,
-        due_type: 'date',
-        period_days: lastDay,
-      }),
-    ];
+    this.installments = [...this.installments, this.createInstallment({ due_type: 'date', period_days: lastDay })];
   }
 
   dropInstallment(event: CdkDragDrop<InstallmentDraft[]>): void {
@@ -652,11 +643,9 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
     if ((item.due_type === type && !item.isProjectEnd) || this.isDueTypeDisabled(item, type)) return;
     item.isProjectEnd = false;
     item.due_type = type;
-    if (type === 'deliverable') {
-      const available = this.getAvailableDeliverables(item);
-      if (!available.some(deliverable => deliverable.reference === this.installmentDeliverableReference(item))) {
-        this.selectInstallmentDeliverable(item, available[0]?.reference ?? null);
-      }
+    // The insighter picks the deliverable; nothing is preselected.
+    if (type === 'deliverable' && !this.getAvailableDeliverables(item).some(deliverable => deliverable.reference === this.installmentDeliverableReference(item))) {
+      this.selectInstallmentDeliverable(item, null);
     }
     this.onInstallmentChanged(item);
   }
@@ -691,12 +680,16 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
   trackByInstallment(_: number, item: InstallmentDraft): number { return item.key; }
   trackByDeliverable(_: number, item: ProjectDeliverable): number { return item.id; }
 
+  isInstallmentPercentValid(item: InstallmentDraft): boolean {
+    const pct = Number(item.percentage);
+    return item.percentage !== null && item.percentage !== undefined && `${item.percentage}` !== '' && isFinite(pct) && pct >= 1 && pct <= 100;
+  }
+
   getInstallmentErrors(item: InstallmentDraft): string[] {
     const errors: string[] = [];
     const ar = this.lang === 'ar';
     if (!(item.title || '').trim()) errors.push(ar ? 'عنوان الدفعة مطلوب.' : 'Give the payment a title.');
-    const pct = Number(item.percentage);
-    if (!isFinite(pct) || pct < 1 || pct > 100) errors.push(ar ? 'النسبة بين 1 و100.' : 'Percentage must be between 1 and 100.');
+    if (!this.isInstallmentPercentValid(item)) errors.push(ar ? 'النسبة بين 1 و100.' : 'Percentage must be between 1 and 100.');
     if (item.due_type === 'date' && (item.period_days === null || item.period_days === undefined
       || !(Number(item.period_days) >= 0 && Number.isInteger(Number(item.period_days))))) {
       errors.push(ar ? 'حدد عدد الأيام من بدء المشروع.' : 'Enter the number of days from the project start.');
@@ -754,31 +747,26 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
     };
   }
 
+  /** A full payment is always 100%; the insighter names it. */
   private defaultFullInstallment(): InstallmentDraft {
     return this.createInstallment({
-      title: this.lang === 'ar' ? 'الدفعة الكاملة' : 'Full payment',
       percentage: 100,
       due_type: 'contract',
       period_days: 0,
     });
   }
 
+  /** Titles, percentages and the second payment's deliverable start empty; the insighter fills them from placeholders. */
   private defaultPartialInstallments(): InstallmentDraft[] {
-    const firstDeliverable = this.paymentDeliverables[0] ?? null;
+    const hasDeliverables = this.paymentDeliverables.length > 0;
     return [
       this.createInstallment({
-        title: this.lang === 'ar' ? 'دفعة توقيع العقد' : 'Contract payment',
-        percentage: 30,
         due_type: 'contract',
         period_days: 0,
       }),
       this.createInstallment({
-        title: this.lang === 'ar' ? 'دفعة 2' : 'Payment 2',
-        percentage: 70,
-        due_type: firstDeliverable ? 'deliverable' : 'date',
-        period_days: firstDeliverable ? firstDeliverable.period_days : (this.effectiveDurationDays ?? 0),
-        project_service_deliverable_id: typeof firstDeliverable?.reference === 'number' ? firstDeliverable.reference : null,
-        deliverable_key: typeof firstDeliverable?.reference === 'string' ? firstDeliverable.reference : null,
+        due_type: hasDeliverables ? 'deliverable' : 'date',
+        period_days: hasDeliverables ? null : (this.effectiveDurationDays ?? 0),
       }),
     ];
   }
@@ -807,13 +795,13 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
     this.projectOffersService.submitProposalOffer(matchUuid, payload)
       .pipe(takeUntil(this.unsubscribe$))
       .subscribe({
-        next: (res) => {
+        next: () => {
           this.isSubmitting = false;
-          this.showSuccess(
-            this.lang === 'ar' ? 'تم الإرسال' : 'Submitted',
-            res?.message || (this.lang === 'ar' ? 'تم إرسال عرضك بنجاح.' : 'Your proposal has been sent successfully.')
-          );
-          this.router.navigate(['/app/insighter-dashboard/project-offers/details', this.proposalUuid!], { queryParams: { tab: 'offer' } });
+          // The details page greets the insighter with the "offer submitted" modal instead of a toast.
+          this.router.navigate(['/app/insighter-dashboard/project-offers/details', this.proposalUuid!], {
+            queryParams: { tab: 'overview' },
+            state: { offerSubmitted: true },
+          });
         },
         error: (err) => {
           this.isSubmitting = false;
@@ -1048,7 +1036,17 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
     });
   }
   private saveEditedOffer(): void {
-    if (this.isSubmitting || !this.editDirty || this.editLocked || this.editStale) return;
+    if (this.isSubmitting || this.editLocked || this.editStale) return;
+    if (!this.editDirty) {
+      const ar = this.lang === 'ar';
+      Swal.fire({
+        icon: 'info',
+        title: ar ? 'لا توجد تغييرات' : 'No changes made',
+        text: ar ? 'لم تُجرِ أي تغيير على عرضك، لذلك لن يتم إرسال أي مراجعة.' : "You haven't changed anything in your offer, so no revision will be submitted.",
+        confirmButtonText: ar ? 'حسنًا' : 'OK',
+      });
+      return;
+    }
     const invalid = this.firstInvalidTab();
     if (invalid) { this.markRequiredFieldsTouchedAndDirty(); return; }
     if (this.activeTab !== 'review') { this.selectTab('review'); return; }

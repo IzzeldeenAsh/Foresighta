@@ -3893,3 +3893,156 @@
     font-size: 12px;
   }
 }
+
+/* "Offer submitted" congratulations modal on the details page, right after send-proposal */
+::ng-deep .po-submitted-dialog {
+  width: min(420px, calc(100vw - 32px));
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: none;
+  overflow: hidden;
+
+  .p-dialog-content {
+    padding: 0;
+    border-radius: 8px;
+  }
+}
+
+.po-submitted {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 28px 24px 20px;
+  text-align: center;
+  background: #ffffff;
+}
+
+/* The document draws itself, its lines fill in, then the green badge pops and the check draws (plays once on open). */
+.po-submitted__animation {
+  display: block;
+  width: 80px;
+  height: 80px;
+  margin-bottom: 10px;
+  overflow: visible;
+}
+
+.po-submitted__doc {
+  fill: #ffffff;
+  stroke: #7c6cf0;
+  stroke-width: 2.5;
+  stroke-linejoin: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: po-submitted-draw 0.6s ease-out forwards;
+}
+
+.po-submitted__fold {
+  fill: #7c6cf0;
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: 0 100%;
+  animation: po-submitted-fold 0.25s 0.45s ease-out forwards;
+}
+
+.po-submitted__line {
+  stroke: #374151;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  transform-box: fill-box;
+  transform-origin: 0 50%;
+  transform: scaleX(0);
+  animation: po-submitted-line 0.22s ease-out forwards;
+
+  &:nth-of-type(1) { animation-delay: 0.6s; }
+  &:nth-of-type(2) { animation-delay: 0.7s; }
+  &:nth-of-type(3) { animation-delay: 0.8s; }
+  &:nth-of-type(4) { animation-delay: 0.9s; }
+}
+
+.po-submitted__badge {
+  fill: #22c55e;
+  stroke: #ffffff;
+  stroke-width: 3;
+  transform-box: fill-box;
+  transform-origin: center;
+  transform: scale(0);
+  animation: po-submitted-pop 0.4s 1.1s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.po-submitted__check {
+  fill: none;
+  stroke: #ffffff;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: po-submitted-draw 0.3s 1.4s ease-out forwards;
+}
+
+@keyframes po-submitted-draw {
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes po-submitted-fold {
+  from { opacity: 0; transform: scale(0.4); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes po-submitted-line {
+  to { transform: scaleX(1); }
+}
+
+@keyframes po-submitted-pop {
+  to { transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .po-submitted__doc,
+  .po-submitted__fold,
+  .po-submitted__line,
+  .po-submitted__badge,
+  .po-submitted__check {
+    animation-duration: 0.01s;
+    animation-delay: 0s;
+  }
+}
+
+.po-submitted__title {
+  margin: 0 0 8px;
+  color: #111827;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.po-submitted__text {
+  margin: 0 0 6px;
+  color: #374151;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.po-submitted__project {
+  color: #111827;
+  font-weight: 600;
+}
+
+.po-submitted__hint {
+  margin: 0 0 20px;
+  color: #6b7280;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.po-submitted__actions {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding-top: 16px;
+  border-top: 1px solid #f1f1f4;
+
+  .btn {
+    min-width: 120px;
+  }
+}

@@ -405,7 +405,7 @@
                     <label class="sp-pay-field sp-pay-card__heading">
                       <span>{{ lang === 'ar' ? 'عنوان الدفعة' : 'Payment title' }}</span>
                       <input class="sp-input" [name]="'installment-title-' + item.key" [(ngModel)]="item.title"
-                        (ngModelChange)="onInstallmentChanged(item)" maxlength="255"
+                        [class.is-invalid]="showInstallmentErrors && !(item.title || '').trim()" (ngModelChange)="onInstallmentChanged(item)" maxlength="255"
                         [placeholder]="lang === 'ar' ? 'مثال: دفعة توقيع العقد' : 'e.g. Contract payment'" />
                     </label>
                     <span class="sp-pay-card__amount">{{ formatPrice(installmentAmount(item)) }}</span>
@@ -451,9 +451,9 @@
                   <div class="sp-pay-card__fields" [class.sp-pay-card__fields--single]="item.due_type === 'contract'">
                     <label class="sp-pay-field">
                       <span>{{ lang === 'ar' ? 'النسبة' : 'Percentage' }}</span>
-                      <div class="sp-input-group">
+                      <div class="sp-input-group" [class.is-invalid]="showInstallmentErrors && !isInstallmentPercentValid(item)">
                         <input class="sp-input" type="number" min="1" max="100" step="1" [name]="'installment-percent-' + item.key"
-                          [(ngModel)]="item.percentage" (ngModelChange)="onInstallmentChanged(item)"
+                          [(ngModel)]="item.percentage" (ngModelChange)="onInstallmentChanged(item)" [placeholder]="lang === 'ar' ? 'مثال: 30' : 'e.g. 30'"
                           [readonly]="paymentPlan === 'full'" />
                         <span class="sp-input-group__suffix">%</span>
                       </div>
@@ -476,7 +476,9 @@
 
                     <label class="sp-pay-field" [attr.for]="'installment-deliverable-' + item.key" *ngIf="item.due_type === 'deliverable'">
                       <span>{{ lang === 'ar' ? 'المخرج المرتبط' : 'Linked deliverable' }}</span>
-                      <p-dropdown panelStyleClass="sp-deliverable-panel" styleClass="sp-deliverable-select" [style]="{ width: '100%' }"
+                      <p-dropdown panelStyleClass="sp-deliverable-panel" [style]="{ width: '100%' }"
+                        [styleClass]="'sp-deliverable-select' + (showInstallmentErrors && installmentDeliverableReference(item) === null ? ' is-invalid' : '')"
+                        [placeholder]="lang === 'ar' ? 'اختر المخرج' : 'Select a deliverable'"
                         [inputId]="'installment-deliverable-' + item.key" [name]="'installment-deliverable-' + item.key"
                         [options]="getAvailableDeliverables(item)" optionLabel="title" optionValue="reference" appendTo="body"
                         [ngModel]="installmentDeliverableReference(item)" (ngModelChange)="selectInstallmentDeliverable(item, $event)">
@@ -728,7 +730,7 @@
           {{ lang === 'ar' ? 'التالي:' : 'Next:' }} {{ lang === 'ar' ? next.label.ar : next.label.en }}
           <i class="ki-outline fs-5" [ngClass]="lang === 'ar' ? 'ki-arrow-left' : 'ki-arrow-right'"></i>
         </button>
-        <button type="button" class="btn btn-info" *ngIf="editMode ? (!editLocked && activeTab === 'review') : activeTab === 'summary'" [disabled]="isSubmitting || (editMode && (!editDirty || editStale))" (click)="submitProposal()">
+        <button type="button" class="btn btn-info" *ngIf="editMode ? (!editLocked && activeTab === 'review') : activeTab === 'summary'" [disabled]="isSubmitting || (editMode && editStale)" (click)="submitProposal()">
           <i class="ki-outline ki-send fs-5" *ngIf="!isSubmitting"></i>
           {{ isSubmitting
           ? (editMode ? (lang === 'ar' ? 'جارٍ الإرسال…' : 'Submitting…') : (lang === 'ar' ? 'جارٍ الإرسال...' : 'Submitting...'))

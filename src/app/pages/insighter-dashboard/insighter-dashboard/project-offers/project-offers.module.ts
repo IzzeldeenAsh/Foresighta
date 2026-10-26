@@ -12,6 +12,7 @@ import { DragDropModule } from '@angular/cdk/drag-drop';
 import { ProgressBarModule } from 'primeng/progressbar';
 import { PaginatorModule } from 'primeng/paginator';
 import { SidebarModule } from 'primeng/sidebar';
+import { DialogModule } from 'primeng/dialog';
 import { ButtonModule } from 'primeng/button';
 import { DropdownModule } from 'primeng/dropdown';
 import { TooltipModule } from 'primeng/tooltip';
@@ -56,6 +57,7 @@ const routes: Routes = [
     ProgressBarModule,
     PaginatorModule,
     SidebarModule,
+    DialogModule,
     ButtonModule,
     TooltipModule,
     DropdownModule,

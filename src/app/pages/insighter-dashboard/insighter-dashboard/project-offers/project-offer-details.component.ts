@@ -27,6 +27,7 @@ export class ProjectOfferDetailsComponent extends ProjectOffersComponent impleme
 
   override ngOnInit(): void {
     this.isDetailsPage = true;
+    this.takeOfferSubmittedFlag();
     this.route.paramMap
       .pipe(takeUntil(this.unsubscribe$))
       .subscribe(params => {
@@ -59,6 +60,15 @@ export class ProjectOfferDetailsComponent extends ProjectOffersComponent impleme
         super.setDrawerTab(tab, this.selectedOffer, false);
         this.updateTabQueryParam(tab);
       });
+  }
+
+  /** send-proposal navigates here with `state.offerSubmitted`; drop it from history so a reload doesn't greet again. */
+  private takeOfferSubmittedFlag(): void {
+    if (typeof history === 'undefined') return;
+    const submitted = this.detailsRouter.getCurrentNavigation()?.extras.state?.['offerSubmitted'] || history.state?.offerSubmitted;
+    if (!submitted) return;
+    this.offerSubmittedVisible = true;
+    if (history.state?.offerSubmitted) history.replaceState({ ...history.state, offerSubmitted: false }, '');
   }
 
   override closeDrawer(): void {

@@ -1,0 +1,9 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./out-tsc/send-proposal",
+    "types": ["jasmine"]
+  },
+  "files": ["src/test-send-proposal.ts", "src/polyfills.ts"],
+  "include": ["src/**/*.d.ts"]
+}

@@ -66,6 +66,8 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
   /** "View Offer" drawer: the submitted offer, its private Client ↔ Insighter thread and its revisions. */
   offerDrawerVisible = false;
   offerDrawerSection: OfferDrawerSection = 'offer';
+  /** Congratulations modal shown once on the details page right after the offer is submitted. */
+  offerSubmittedVisible = false;
   /** Unseen client revisions on the open offer (the Revisions badge). */
   offerRevisionsUnseen = 0;
   protected agreementRevisions: AgreementRevisionsService;
@@ -1083,6 +1085,11 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
     if (!this.hasSubmittedOffer(offer) && !this.canViewRevisions(offer)) return;
     this.offerDrawerSection = section;
     this.offerDrawerVisible = true;
+  }
+
+  viewSubmittedOffer(): void {
+    this.offerSubmittedVisible = false;
+    this.openOfferDrawer();
   }
 
   closeOfferDrawer(): void {

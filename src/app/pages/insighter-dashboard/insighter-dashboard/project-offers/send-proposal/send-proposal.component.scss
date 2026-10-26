@@ -2557,12 +2557,18 @@
     padding: 10px 12px;
     color: var(--sp-ink-900);
     font-size: 14px;
+
+    &.p-placeholder { color: var(--sp-ink-400); }
   }
 
   &:hover { border-color: var(--sp-border-strong); }
   &.p-focus {
     border-color: var(--sp-primary);
     box-shadow: 0 0 0 3px var(--sp-primary-soft);
+  }
+  &.is-invalid {
+    border-color: var(--sp-danger);
+    box-shadow: 0 0 0 3px rgba(217, 33, 78, 0.10);
   }
 }
 

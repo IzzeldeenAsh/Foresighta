@@ -1237,3 +1237,37 @@
     </div>
   </ng-container>
 </p-sidebar>
+
+<p-dialog [(visible)]="offerSubmittedVisible" [modal]="true" [dismissableMask]="true" [draggable]="false" [resizable]="false"
+  [showHeader]="false" [blockScroll]="true" appendTo="body" [baseZIndex]="1500" styleClass="po-submitted-dialog">
+  <div class="po-submitted">
+    <svg class="po-submitted__animation" viewBox="0 0 64 64" width="80" height="80" aria-hidden="true">
+      <path class="po-submitted__doc" pathLength="1" d="M17 6h20l11 11v39a2 2 0 0 1-2 2H17a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z" />
+      <path class="po-submitted__fold" d="M37 6v9a2 2 0 0 0 2 2h9z" />
+      <line class="po-submitted__line" x1="22" y1="25" x2="40" y2="25" />
+      <line class="po-submitted__line" x1="22" y1="31" x2="37" y2="31" />
+      <line class="po-submitted__line" x1="22" y1="37" x2="40" y2="37" />
+      <line class="po-submitted__line" x1="22" y1="43" x2="31" y2="43" />
+      <circle class="po-submitted__badge" cx="46" cy="48" r="11" />
+      <path class="po-submitted__check" pathLength="1" d="M41 48.5l3.5 3.5 6.5-7" />
+    </svg>
+    <h3 class="po-submitted__title">{{ lang === 'ar' ? 'تهانينا!' : 'Congratulations!' }}</h3>
+    <p class="po-submitted__text">
+      {{ lang === 'ar' ? 'تم إرسال عرضك بنجاح.' : 'Your offer has been submitted successfully.' }}
+      <ng-container *ngIf="selectedOffer?.project?.title as title">
+        <br /><span class="po-submitted__project">{{ title }}</span>
+      </ng-container>
+    </p>
+    <p class="po-submitted__hint">
+      {{ lang === 'ar' ? 'سيراجع العميل عرضك، وسنُعلمك فور رده.' : 'The client will review your offer, and we will notify you as soon as they respond.' }}
+    </p>
+    <div class="po-submitted__actions">
+      <button type="button" class="btn btn-sm btn-light" (click)="offerSubmittedVisible = false">
+        {{ lang === 'ar' ? 'إغلاق' : 'Close' }}
+      </button>
+      <button type="button" class="btn btn-sm btn-primary" [disabled]="!selectedOffer" (click)="viewSubmittedOffer()">
+        {{ lang === 'ar' ? 'عرض عرضي' : 'View my offer' }}
+      </button>
+    </div>
+  </div>
+</p-dialog>

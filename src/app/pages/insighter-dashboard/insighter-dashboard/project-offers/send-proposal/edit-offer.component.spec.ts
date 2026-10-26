@@ -1,3 +1,4 @@
+import Swal from 'sweetalert2';
 import { Injector, QueryList } from '@angular/core';
 import { ActivatedRoute, convertToParamMap, Router } from '@angular/router';
 import { of, Subject, throwError } from 'rxjs';
@@ -131,7 +132,9 @@ describe('Edit offer wizard', () => {
     component.submitProposal(); expect(api.update).not.toHaveBeenCalled(); expect(component.editStale).toBeTrue(); expect(component.fixedPrice).toBe(3000);
   });
   it('blocks a percentage mismatch, no-op and a notification-invalidated draft', () => {
+    const alert = spyOn(Swal, 'fire').and.resolveTo({} as any);
     component.activeTab = 'review'; component.submitProposal(); expect(api.update).not.toHaveBeenCalled();
+    expect(alert).toHaveBeenCalledWith(jasmine.objectContaining({ title: 'No changes made' }));
     component.fixedPrice = 3000; component.installments[0].percentage = 50; component.submitProposal(); expect(api.update).not.toHaveBeenCalled();
     component.installments[0].percentage = 40; api.changed$.next({ projectUuid: 'project' }); component.submitProposal(); expect(api.update).not.toHaveBeenCalled();
   });

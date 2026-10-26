@@ -20,6 +20,7 @@ describe('Proposal payment duration', () => {
     } as ProjectOffer;
     component.setPaymentPlan('full');
     payment = component.installments[0];
+    payment.title = 'Full payment';
   });
 
   afterEach(() => component.ngOnDestroy());
@@ -39,10 +40,31 @@ describe('Proposal payment duration', () => {
     expect(payment.period_days).toBe(15);
   });
 
+  it('starts payment titles, percentages and linked deliverables empty and blocks the next step until filled', () => {
+    component.coverLetter = 'My approach';
+    component.fixedPrice = 100;
+    component.setPaymentPlan('partial');
+    const [first, second] = component.installments;
+    expect(component.installments.map(item => [item.title, item.percentage])).toEqual([['', null], ['', null]]);
+    expect(second.due_type).toBe('deliverable');
+    expect(component.getInstallmentErrors(second)).toEqual(['Give the payment a title.', 'Percentage must be between 1 and 100.', 'Pick the linked deliverable.']);
+    component.selectTab('payment');
+    expect(component.selectTab('summary')).toBeFalse();
+    expect(component.activeTab).toBe('payment');
+    expect(component.showInstallmentErrors).toBeTrue();
+    first.title = 'Contract payment'; first.percentage = 30;
+    second.title = 'Report payment'; second.percentage = 70;
+    component.selectInstallmentDeliverable(second, 1);
+    component.proposal!.project.deliverables[0].period_days = 20;
+    expect(component.selectTab('summary')).toBeTrue();
+  });
+
   it('rejects durations past the project end for full and partial payment plans', () => {
     for (const plan of ['full', 'partial'] as const) {
       component.setPaymentPlan(plan);
       payment = component.installments[0];
+      payment.title = 'Payment';
+      payment.percentage = plan === 'full' ? 100 : 30;
       component.setDueType(payment, 'date');
       for (const days of [0, 30]) {
         payment.period_days = days;
@@ -66,6 +88,7 @@ describe('Proposal payment duration', () => {
 
   it('rejects linked deliverables after the project end', () => {
     component.setDueType(payment, 'deliverable');
+    component.selectInstallmentDeliverable(payment, 1);
     expect(component.getInstallmentErrors(payment)).toContain('Payment duration cannot exceed the project duration (30 days).');
   });
 
@@ -97,6 +120,9 @@ describe('Proposal payment duration', () => {
     component.onDeliverablesDraftChanged(draftWith(offerDeliverables()));
     expect(component.isDueTypeDisabled(payment, 'deliverable')).toBeFalse();
     component.setDueType(payment, 'deliverable');
+    expect(payment.deliverable_key).toBeNull();
+    expect(component.getInstallmentErrors(payment)).toContain('Pick the linked deliverable.');
+    component.selectInstallmentDeliverable(payment, 'frontend-deliverable-1');
     expect(payment.deliverable_key).toBe('frontend-deliverable-1');
     expect(payment.project_service_deliverable_id).toBeNull();
     expect(component.getInstallmentErrors(payment)).toEqual([]);
@@ -110,6 +136,7 @@ describe('Proposal payment duration', () => {
   it('preserves client IDs and switches exclusively between ID and key in a mixed project', () => {
     component.onDeliverablesDraftChanged(draftWith(offerDeliverables()));
     component.setDueType(payment, 'deliverable');
+    component.selectInstallmentDeliverable(payment, 1);
     let payload: FormData = (component as any).buildProposalFormData();
     expect(payload.get('installments[0][project_service_deliverable_id]')).toBe('1');
     expect(payload.has('installments[0][deliverable_key]')).toBeFalse();
@@ -127,6 +154,7 @@ describe('Proposal payment duration', () => {
     const deliverables = offerDeliverables();
     component.onDeliverablesDraftChanged(draftWith(deliverables));
     component.setDueType(payment, 'deliverable');
+    component.selectInstallmentDeliverable(payment, deliverables[0].key);
     expect(component.installmentDate(payment)).toBe('2026-10-24');
     deliverables[0].title = 'Updated report';
     deliverables[0].period_days = 31;
@@ -145,8 +173,10 @@ describe('Proposal payment duration', () => {
     component.onDeliverablesDraftChanged(draftWith(offerDeliverables()));
     component.setPaymentPlan('partial');
     const [first, second] = component.installments;
+    expect(second.due_type).toBe('deliverable');
+    expect(component.installmentDeliverableReference(second)).toBeNull();
     component.setDueType(first, 'deliverable');
-    expect(first.deliverable_key).toBe('frontend-deliverable-1');
+    component.selectInstallmentDeliverable(first, 'frontend-deliverable-1');
     expect(component.getAvailableDeliverables(second).map(item => item.reference)).toEqual([1, 'frontend-deliverable-2']);
     component.selectInstallmentDeliverable(second, first.deliverable_key!);
     expect(component.getInstallmentErrors(second)).toContain('This deliverable is already linked to another payment.');

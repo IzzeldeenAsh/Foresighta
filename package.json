@@ -21,7 +21,8 @@
     "dev:sources": "node scripts/generate-component-sources.cjs",
     "prestart": "npm run dev:sources",
     "prewatch": "npm run dev:sources",
-    "predev:ssr": "npm run dev:sources"
+    "predev:ssr": "npm run dev:sources",
+    "test:send-proposal": "ng test --watch=false --browsers=ChromeHeadless --main=src/test-send-proposal.ts --ts-config=tsconfig.send-proposal-spec.json --include=src/app/pages/insighter-dashboard/insighter-dashboard/project-offers/send-proposal/send-proposal.component.spec.ts --include=src/app/pages/insighter-dashboard/insighter-dashboard/project-offers/send-proposal/edit-offer.component.spec.ts"
   },
   "private": true,
   "dependencies": {
