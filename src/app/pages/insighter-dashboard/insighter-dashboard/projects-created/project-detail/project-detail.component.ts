@@ -992,11 +992,9 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
   }
 
   isLastProposalDeadlinePassed(project: CreatedProject | null = this.project): boolean {
-    const deadline = project?.last_proposal_deadline;
-    if (!deadline) return false;
-    const deadlineTime = new Date(deadline).getTime();
-    if (Number.isNaN(deadlineTime)) return false;
-    return deadlineTime <= Date.now();
+    const deadline = project?.last_proposal_deadline ?? this.submittedOfferDeadline;
+    const deadlineTime = this.getDateTime(deadline);
+    return deadlineTime > 0 && deadlineTime <= Date.now();
   }
 
   canAwardOffer(invite: CreatedProjectProposalInvite | null): boolean {
@@ -1031,7 +1029,8 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
   }
 
   hasSingleSubmittedOffer(): boolean {
-    return this.invitedInsighters.length === 1;
+    // `submitted` lists every invited match, including ones that never sent an offer.
+    return this.invitedInsighters.filter(invite => this.hasInviteOffer(invite)).length === 1;
   }
 
   shouldShowSubmittedOfferTimer(project: CreatedProject | null = this.project): boolean {

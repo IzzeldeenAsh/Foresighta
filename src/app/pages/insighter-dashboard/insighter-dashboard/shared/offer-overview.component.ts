@@ -32,7 +32,7 @@ interface ServiceGroup {
   styleUrls: ['./offer-overview.component.scss'],
 })
 export class OfferOverviewComponent implements OnChanges {
-  @Input({ required: true }) offer!: Pick<ProjectOfferDetails, 'proposed_price' | 'cover_letter' | 'status' | 'installments' | 'offer_scopes' | 'offer_components' | 'suggested_duration_days'>;
+  @Input({ required: true }) offer!: Pick<ProjectOfferDetails, 'proposed_price' | 'cover_letter' | 'status' | 'installments' | 'offer_scopes' | 'offer_components' | 'offer_deliverables' | 'suggested_duration_days'>;
   /** The project's current duration, so a longer suggestion in the offer can be shown next to it. */
   @Input() projectDurationDays: number | null = null;
   @Input() context: 'insighter' | 'client' = 'insighter';
@@ -70,21 +70,26 @@ export class OfferOverviewComponent implements OnChanges {
     if (!this.offer) return;
     const scopes = this.offer.offer_scopes ?? [];
     const components = this.offer.offer_components ?? [];
+    // offer_deliverables is the source of truth (it carries revision updates); the deliverables copied into offer_components are only a fallback.
+    const savedDeliverables = this.offer.offer_deliverables;
     const ids = new Set<number | null>([
       ...this.services.map(service => service.id),
       ...scopes.map(scope => scope.project_service_id),
-      ...components.filter(item => Array.isArray(item.value?.deliverables)).map(item => item.project_service_id),
+      ...(savedDeliverables ?? components.filter(item => Array.isArray(item.value?.deliverables))).map(item => item.project_service_id),
     ]);
     this.groups = Array.from(ids).map((id, index) => {
       const service = this.services.find(item => item.id === id);
       const proposedScopes = scopes.filter(scope => scope.project_service_id === id);
+      const savedForService = savedDeliverables?.filter(item => item.project_service_id === id) ?? [];
       const proposedDeliverables = components.filter(item => item.project_service_id === id && Array.isArray(item.value?.deliverables));
       return {
         id,
         position: service?.position ?? index + 1,
         name: service?.title || service?.service?.name || (id === null ? (this.ar ? 'المشروع' : 'Project') : (this.ar ? 'الخدمة' : 'Service')),
         scopes: proposedScopes.length ? proposedScopes : service?.scopes ?? [],
-        deliverables: proposedDeliverables.length
+        deliverables: savedForService.length
+          ? [...savedForService].sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+          : !savedDeliverables && proposedDeliverables.length
           ? proposedDeliverables.reduce<OverviewDeliverable[]>((list, item) => list.concat(item.value.deliverables), [])
           : service?.deliverables ?? [],
       };
