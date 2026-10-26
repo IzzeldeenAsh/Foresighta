@@ -393,7 +393,7 @@
                 *ngFor="let item of installments; let i = index; let first = first; let last = last; trackBy: trackByInstallment">
                 <div class="sp-timeline__rail"><span class="sp-timeline__dot">{{ i + 1 }}</span></div>
 
-                <div class="sp-pay-card" [class.is-invalid]="showInstallmentErrors && getInstallmentErrors(item).length">
+                <div class="sp-pay-card" [class.is-invalid]="visibleInstallmentErrors(item).length">
                   <div class="sp-pay-card__head">
                     <div class="sp-pay-card__order" *ngIf="paymentPlan === 'partial' && installments.length > 1">
                       <button type="button" class="sp-pay-card__move" [disabled]="first" (click)="moveInstallment(i, -1)"
@@ -405,7 +405,8 @@
                     <label class="sp-pay-field sp-pay-card__heading">
                       <span>{{ lang === 'ar' ? 'عنوان الدفعة' : 'Payment title' }}</span>
                       <input class="sp-input" [name]="'installment-title-' + item.key" [(ngModel)]="item.title"
-                        [class.is-invalid]="showInstallmentErrors && !(item.title || '').trim()" (ngModelChange)="onInstallmentChanged(item)" maxlength="255"
+                        [class.is-invalid]="showInstallmentFieldError(item, 'title') && !(item.title || '').trim()"
+                        (ngModelChange)="onInstallmentChanged(item, 'title')" (blur)="touchInstallment(item, 'title')" maxlength="255"
                         [placeholder]="lang === 'ar' ? 'مثال: دفعة توقيع العقد' : 'e.g. Contract payment'" />
                     </label>
                     <span class="sp-pay-card__amount">{{ formatPrice(installmentAmount(item)) }}</span>
@@ -451,9 +452,9 @@
                   <div class="sp-pay-card__fields" [class.sp-pay-card__fields--single]="item.due_type === 'contract'">
                     <label class="sp-pay-field">
                       <span>{{ lang === 'ar' ? 'النسبة' : 'Percentage' }}</span>
-                      <div class="sp-input-group" [class.is-invalid]="showInstallmentErrors && !isInstallmentPercentValid(item)">
+                      <div class="sp-input-group" [class.is-invalid]="showInstallmentFieldError(item, 'percentage') && !isInstallmentPercentValid(item)">
                         <input class="sp-input" type="number" min="1" max="100" step="1" [name]="'installment-percent-' + item.key"
-                          [(ngModel)]="item.percentage" (ngModelChange)="onInstallmentChanged(item)" [placeholder]="lang === 'ar' ? 'مثال: 30' : 'e.g. 30'"
+                          [(ngModel)]="item.percentage" (ngModelChange)="onInstallmentChanged(item, 'percentage')" (blur)="touchInstallment(item, 'percentage')" [placeholder]="lang === 'ar' ? 'مثال: 30' : 'e.g. 30'"
                           [readonly]="paymentPlan === 'full'" />
                         <span class="sp-input-group__suffix">%</span>
                       </div>
@@ -463,7 +464,7 @@
                       <span>{{ lang === 'ar' ? 'المدة من بدء المشروع' : 'Duration from project start' }}</span>
                       <div class="sp-input-group">
                         <input class="sp-input" type="number" min="0" [max]="effectiveDurationDays" step="1" [name]="'installment-days-' + item.key"
-                          [(ngModel)]="item.period_days" (ngModelChange)="onInstallmentChanged(item)" [readonly]="!!item.isProjectEnd" />
+                          [(ngModel)]="item.period_days" (ngModelChange)="onInstallmentChanged(item, 'period')" (blur)="touchInstallment(item, 'period')" [readonly]="!!item.isProjectEnd" />
                         <span class="sp-input-group__suffix">{{ lang === 'ar' ? 'يوم' : 'days' }}</span>
                       </div>
                       <span class="sp-field__hint" *ngIf="effectiveDurationDays !== null">
@@ -477,11 +478,11 @@
                     <label class="sp-pay-field" [attr.for]="'installment-deliverable-' + item.key" *ngIf="item.due_type === 'deliverable'">
                       <span>{{ lang === 'ar' ? 'المخرج المرتبط' : 'Linked deliverable' }}</span>
                       <p-dropdown panelStyleClass="sp-deliverable-panel" [style]="{ width: '100%' }"
-                        [styleClass]="'sp-deliverable-select' + (showInstallmentErrors && installmentDeliverableReference(item) === null ? ' is-invalid' : '')"
+                        [styleClass]="'sp-deliverable-select' + (showInstallmentFieldError(item, 'deliverable') && installmentDeliverableReference(item) === null ? ' is-invalid' : '')"
                         [placeholder]="lang === 'ar' ? 'اختر المخرج' : 'Select a deliverable'"
                         [inputId]="'installment-deliverable-' + item.key" [name]="'installment-deliverable-' + item.key"
                         [options]="getAvailableDeliverables(item)" optionLabel="title" optionValue="reference" appendTo="body"
-                        [ngModel]="installmentDeliverableReference(item)" (ngModelChange)="selectInstallmentDeliverable(item, $event)">
+                        [ngModel]="installmentDeliverableReference(item)" (ngModelChange)="selectInstallmentDeliverable(item, $event); touchInstallment(item, 'deliverable')" (onBlur)="touchInstallment(item, 'deliverable')">
                         <ng-template pTemplate="selectedItem" let-deliverable>
                           {{ deliverable.title }} · {{ periodLabel(deliverable.period_days) }}
                         </ng-template>
@@ -492,8 +493,8 @@
                     </label>
                   </div>
 
-                  <div class="sp-field__hint sp-field__hint--danger" *ngIf="showInstallmentErrors && getInstallmentErrors(item).length">
-                    {{ getInstallmentErrors(item).join(' ') }}
+                  <div class="sp-field__hint sp-field__hint--danger" *ngIf="visibleInstallmentErrors(item).join(' ') as errorText">
+                    {{ errorText }}
                   </div>
                 </div>
               </li>

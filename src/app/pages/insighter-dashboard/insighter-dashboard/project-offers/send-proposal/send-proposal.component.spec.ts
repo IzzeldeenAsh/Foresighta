@@ -40,6 +40,21 @@ describe('Proposal payment duration', () => {
     expect(payment.period_days).toBe(15);
   });
 
+  it('keeps a newly added installment neutral until its fields are edited or the payment tab is attempted', () => {
+    component.setPaymentPlan('partial');
+    component.addInstallment();
+    const added = component.installments[component.installments.length - 1];
+    expect(component.getInstallmentErrors(added).length).toBeGreaterThan(0);
+    expect(component.visibleInstallmentErrors(added)).toEqual([]);
+    expect(component.showInstallmentFieldError(added, 'title')).toBeFalse();
+    expect(component.showInstallmentErrors).toBeFalse();
+    added.title = 'Milestone';
+    component.onInstallmentChanged(added, 'title');
+    component.touchInstallment(added, 'percentage');
+    expect(component.visibleInstallmentErrors(added)).toEqual(['Percentage must be between 1 and 100.']);
+    expect(component.showInstallmentErrors).toBeTrue();
+  });
+
   it('starts payment titles, percentages and linked deliverables empty and blocks the next step until filled', () => {
     component.coverLetter = 'My approach';
     component.fixedPrice = 100;

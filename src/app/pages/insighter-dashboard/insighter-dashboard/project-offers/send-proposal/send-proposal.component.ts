@@ -43,6 +43,15 @@ export interface InstallmentDraft {
   project_service_deliverable_id: number | null;
   deliverable_key?: string | null;
   isProjectEnd?: boolean;
+  /** Fields the insighter has edited or left; only these show errors before the payment tab is attempted. */
+  touched?: Partial<Record<InstallmentField, boolean>>;
+}
+
+export type InstallmentField = 'title' | 'percentage' | 'period' | 'deliverable';
+
+interface InstallmentError {
+  field: InstallmentField;
+  message: string;
 }
 
 interface PaymentDeliverable {
@@ -264,8 +273,18 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
     return this.tabs.find(tab => this.isTabInvalid(tab.key))?.key ?? null;
   }
 
+  /** Plan-level errors (percentage total, one contract payment) show once a percentage was entered. */
   get showInstallmentErrors(): boolean {
-    return this.hasAttemptedTab('payment') || this.installmentsTouched;
+    return this.hasAttemptedTab('payment') || this.installments.some(item => !!item.touched?.percentage);
+  }
+
+  /** A new installment stays neutral until its field is edited or left, or the payment tab is attempted. */
+  showInstallmentFieldError(item: InstallmentDraft, field: InstallmentField): boolean {
+    return this.hasAttemptedTab('payment') || !!item.touched?.[field];
+  }
+
+  touchInstallment(item: InstallmentDraft, field: InstallmentField): void {
+    item.touched = { ...item.touched, [field]: true };
   }
 
   get priceTypeLabel(): string {
@@ -540,6 +559,7 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
       // A removed deliverable must be chosen again, without silently moving its payment.
       if (item.deliverable_key && !this.linkedDeliverable(item)) {
         this.selectInstallmentDeliverable(item, null);
+        this.touchInstallment(item, 'deliverable');
       }
     });
   }
@@ -622,8 +642,9 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
     return this.paymentDeliverables.filter(deliverable => !selectedReferences.has(deliverable.reference));
   }
 
-  onInstallmentChanged(item: InstallmentDraft): void {
+  onInstallmentChanged(item: InstallmentDraft, field?: InstallmentField): void {
     this.installmentsTouched = true;
+    if (field) this.touchInstallment(item, field);
     if (item.isProjectEnd) {
       item.period_days = this.effectiveDurationDays;
     }
@@ -686,13 +707,25 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
   }
 
   getInstallmentErrors(item: InstallmentDraft): string[] {
-    const errors: string[] = [];
+    return this.installmentErrors(item).map(error => error.message);
+  }
+
+  /** Errors of the fields that are already shown as invalid. */
+  visibleInstallmentErrors(item: InstallmentDraft): string[] {
+    return this.installmentErrors(item)
+      .filter(error => this.showInstallmentFieldError(item, error.field))
+      .map(error => error.message);
+  }
+
+  private installmentErrors(item: InstallmentDraft): InstallmentError[] {
+    const errors: InstallmentError[] = [];
+    const push = (field: InstallmentField, message: string) => errors.push({ field, message });
     const ar = this.lang === 'ar';
-    if (!(item.title || '').trim()) errors.push(ar ? 'عنوان الدفعة مطلوب.' : 'Give the payment a title.');
-    if (!this.isInstallmentPercentValid(item)) errors.push(ar ? 'النسبة بين 1 و100.' : 'Percentage must be between 1 and 100.');
+    if (!(item.title || '').trim()) push('title', ar ? 'عنوان الدفعة مطلوب.' : 'Give the payment a title.');
+    if (!this.isInstallmentPercentValid(item)) push('percentage', ar ? 'النسبة بين 1 و100.' : 'Percentage must be between 1 and 100.');
     if (item.due_type === 'date' && (item.period_days === null || item.period_days === undefined
       || !(Number(item.period_days) >= 0 && Number.isInteger(Number(item.period_days))))) {
-      errors.push(ar ? 'حدد عدد الأيام من بدء المشروع.' : 'Enter the number of days from the project start.');
+      push('period', ar ? 'حدد عدد الأيام من بدء المشروع.' : 'Enter the number of days from the project start.');
     }
     const paymentDays = item.due_type === 'deliverable'
       ? this.linkedDeliverable(item)?.period_days
@@ -700,16 +733,16 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
     const endDays = this.effectiveDurationDays;
     if (endDays !== null && paymentDays !== null && paymentDays !== undefined
       && Number(paymentDays) > endDays) {
-      errors.push(this.suggestedDurationDays !== null
+      push(item.due_type === 'date' ? 'period' : 'deliverable', this.suggestedDurationDays !== null
         ? (ar ? `لا يمكن أن تتجاوز مدة استحقاق الدفعة مدة المشروع المقترحة (${endDays} يومًا).` : `Payment duration cannot exceed the suggested project duration (${endDays} days).`)
         : (ar ? `لا يمكن أن تتجاوز مدة استحقاق الدفعة مدة المشروع (${endDays} يومًا).` : `Payment duration cannot exceed the project duration (${endDays} days).`));
     }
     if (item.due_type === 'deliverable' && !this.linkedDeliverable(item)) {
-      errors.push(ar ? 'اختر المخرج المرتبط.' : 'Pick the linked deliverable.');
+      push('deliverable', ar ? 'اختر المخرج المرتبط.' : 'Pick the linked deliverable.');
     }
     if (item.due_type === 'deliverable' && this.linkedDeliverable(item)
       && !this.getAvailableDeliverables(item).some(deliverable => deliverable.reference === this.installmentDeliverableReference(item))) {
-      errors.push(ar ? 'هذا المخرج مرتبط بدفعة أخرى.' : 'This deliverable is already linked to another payment.');
+      push('deliverable', ar ? 'هذا المخرج مرتبط بدفعة أخرى.' : 'This deliverable is already linked to another payment.');
     }
     return errors;
   }
