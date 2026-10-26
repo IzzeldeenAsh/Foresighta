@@ -992,9 +992,11 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
   }
 
   isLastProposalDeadlinePassed(project: CreatedProject | null = this.project): boolean {
-    const deadline = project?.last_proposal_deadline ?? this.submittedOfferDeadline;
-    const deadlineTime = this.getDateTime(deadline);
-    return deadlineTime > 0 && deadlineTime <= Date.now();
+    const deadline = project?.last_proposal_deadline;
+    if (!deadline) return false;
+    const deadlineTime = new Date(deadline).getTime();
+    if (Number.isNaN(deadlineTime)) return false;
+    return deadlineTime <= Date.now();
   }
 
   canAwardOffer(invite: CreatedProjectProposalInvite | null): boolean {
