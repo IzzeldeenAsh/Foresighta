@@ -10,8 +10,11 @@ import { SendProposalComponent } from './send-proposal.component';
 import { OfferRequirementsEditorComponent } from '../../shared/offer-requirements-editor.component';
 
 const own = { filled_by_role: 'insighter', filled_by_user_id: 32, source_project_proposal_offer_id: 80 };
+/** An awarded offer: the project holds copies (10, 11, 15) of the insighter's offer rows (60, 61, 65). */
 function fixture(): any {
-  return { uuid: 'project', offer: { uuid: 'offer', cover_letter: null, price_type: 'fixed', fixed_price: 2500, proposed_price: 2500, payment_plan: 'partial', installments: [{ title: 'Contract', percentage: 40, due_type: 'contract' }, { title: 'Report', percentage: 60, due_type: 'deliverable', project_service_deliverable_id: 15 }] }, project: {
+  return { uuid: 'project', offer: { uuid: 'offer', cover_letter: null, price_type: 'fixed', fixed_price: 2500, proposed_price: 2500, payment_plan: 'partial', installments: [{ title: 'Contract', percentage: 40, due_type: 'contract' }, { title: 'Report', percentage: 60, due_type: 'deliverable', project_service_deliverable_id: 15, project_proposal_offer_deliverable_id: 65 }],
+    offer_scopes: [{ id: 60, project_service_id: 44, scope: 'Market sizing', description: null, children: [{ id: 61, scope: 'TAM', description: null }] }],
+    offer_deliverables: [{ id: 65, project_service_id: 44, title: 'Report', period_days: 20, report_type: ['pdf'], way: { selected: 'on_platform' } }] }, project: {
     uuid: 'project', status: 'submitted', definition_mode: 'simple', schedule: { duration_days: 30 }, deliverables: [{ id: 15, project_service_id: 44, title: 'Report', period_days: 20 }], project_services: [{ id: 44, title: 'Research', scopes: [{ id: 10, scope: 'Market sizing', description: null, ...own, children: [{ id: 11, scope: 'TAM', description: null, ...own }] }], deliverables: [{ id: 15, title: 'Report', period_days: 20, report_type: ['pdf'], way: { selected: 'on_platform' }, ...own }] }],
   } };
 }
@@ -39,8 +42,8 @@ describe('Edit offer wizard', () => {
     expect(component.tabs[0].key).toBe('cover'); expect(component.isEditTabReadOnly('cover')).toBeFalse();
     // An offer saved without a cover letter can still change its other terms.
     expect(component.isCoverLetterInvalid()).toBeFalse();
-    expect(component.scopeSeed.offer_scopes[0].id).toBe(10);
-    expect(component.scopeSeed.offer_scopes[0].subscopes![0]).toEqual(jasmine.objectContaining({ id: 11 }));
+    expect(component.scopeSeed.offer_scopes[0].id).toBe(60);
+    expect(component.scopeSeed.offer_scopes[0].subscopes![0]).toEqual(jasmine.objectContaining({ id: 61 }));
     expect(component.editPatch).toEqual({}); expect(component.canDeactivate()).toBeTrue();
   });
   it('edits original-offer scope and deliverable answers', () => {
@@ -48,6 +51,7 @@ describe('Edit offer wizard', () => {
     basic.offer.payment_plan = 'full'; basic.offer.installments = [{ title: 'Contract', percentage: 100, due_type: 'contract' }];
     basic.offer.offer_scopes = [{ id: 701, project_service_id: 44, scope: 'Executive summary', children: [{ id: 702, scope: 'Financial outlook' }] }];
     basic.offer.offer_components = [{ project_service_id: 44, value: { deliverables: [{ id: 801, title: 'Business plan', period_days: 10, report_type: ['pdf'], way: { selected: 'on_platform' } }] } }];
+    delete basic.offer.offer_deliverables;
     basic.project.project_services[0].scopes = []; basic.project.project_services[0].deliverables = [];
     record = basic; (component as any).loadEditedOffer('project');
     expect(component.tabs.map(t => t.key)).toEqual(['cover', 'scope', 'deliverables', 'pricing', 'payment', 'review']);
@@ -58,11 +62,11 @@ describe('Edit offer wizard', () => {
     expect(component.editPatch).toEqual({});
     component.scopeDraft.offer_scopes[0].scope = 'Updated executive summary';
     component.deliverablesDraft.offer_components[0].value.deliverables[0].title = 'Updated business plan';
-    expect(component.editPatch.offer_scopes![0].items[0].id).toBe(701);
-    expect(component.editPatch.offer_deliverables![0].items[0].id).toBe(801);
-    expect(component.editPatch.scopes).toBeUndefined(); expect(component.editPatch.deliverables).toBeUndefined();
+    expect(component.editPatch.scopes![0].items[0].id).toBe(701);
+    expect(component.editPatch.deliverables![0].items[0].id).toBe(801);
+    expect((component.editPatch as any).offer_scopes).toBeUndefined(); expect((component.editPatch as any).offer_deliverables).toBeUndefined();
     expect(component.editChangeSummary.length).toBe(2);
-    // Original-offer changes are sent as offer_scopes / offer_deliverables; the backend decides whether they are allowed.
+    // The same scopes / deliverables fields are sent before and after award; the backend picks the sync.
   });
   it('keeps client answers read only alongside the insighter original-offer answers for the same service', () => {
     const mixed = fixture();
@@ -70,6 +74,7 @@ describe('Edit offer wizard', () => {
     mixed.project.project_services[0].deliverables[0].filled_by_role = 'client';
     mixed.offer.offer_scopes = [{ id: 701, project_service_id: 44, scope: 'Insighter scope' }];
     mixed.offer.offer_components = [{ project_service_id: 44, value: { deliverables: [{ id: 801, title: 'Insighter report', period_days: 10, report_type: [], way: { selected: 'on_platform' } }] } }];
+    delete mixed.offer.offer_deliverables;
     record = mixed; (component as any).loadEditedOffer('project');
     expect(component.readOnlyScopes[0].items[0].id).toBe(10);
     expect(component.readOnlyDeliverables[0].items[0].id).toBe(15);
@@ -85,6 +90,7 @@ describe('Edit offer wizard', () => {
     record.project.project_services[0].scopes = []; record.project.project_services[0].deliverables = [];
     record.offer.offer_scopes = [{ id: 701, project_service_id: 44, scope: 'Insighter scope' }];
     record.offer.offer_components = [{ project_service_id: 44, value: { deliverables: [{ title: 'Report' }] } }];
+    delete record.offer.offer_deliverables;
     record.contract = { user_sign_at: true }; (component as any).loadEditedOffer('project');
     expect(component.isEditTabReadOnly('scope')).toBeTrue(); expect(component.isEditTabReadOnly('deliverables')).toBeTrue();
     expect(component.readOnlyScopes[0].items[0].id).toBe(701);
@@ -94,6 +100,8 @@ describe('Edit offer wizard', () => {
     record.project.definition_mode = 'advanced';
     record.project.project_services[0].scopes.forEach((row: any) => { row.filled_by_role = 'client'; row.children.forEach((child: any) => child.filled_by_role = 'client'); });
     record.project.project_services[0].deliverables[0].filled_by_role = 'client';
+    record.offer.offer_scopes = []; record.offer.offer_deliverables = [];
+    record.offer.installments[1] = { title: 'Report', percentage: 60, due_type: 'deliverable', project_service_deliverable_id: 15 };
     (component as any).loadEditedOffer('project');
     expect(component.tabs.map(t => t.key)).toEqual(['cover', 'pricing', 'payment', 'review']);
     expect(component.requirementsValid).toBeTrue();
@@ -103,6 +111,7 @@ describe('Edit offer wizard', () => {
   });
   it('hides absent scope and deliverable tabs instead of showing empty read-only groups', () => {
     record.project.project_services[0].scopes = []; record.project.project_services[0].deliverables = [];
+    record.offer.offer_scopes = []; record.offer.offer_deliverables = [];
     (component as any).loadEditedOffer('project');
     expect(component.tabs.map(t => t.key)).toEqual(['cover', 'pricing', 'payment', 'review']);
   });
@@ -112,7 +121,7 @@ describe('Edit offer wizard', () => {
     expect(api.update).toHaveBeenCalledTimes(1);
     const [role, uuid, patch] = api.update.calls.mostRecent().args;
     expect(role).toBe('insighter'); expect(uuid).toBe('offer');
-    expect(patch.scopes[0].items[0].id).toBe(10); expect(patch.scopes[0].items[0].subscopes[0].id).toBe(11);
+    expect(patch.scopes[0].items[0].id).toBe(60); expect(patch.scopes[0].items[0].subscopes[0].id).toBe(61);
     expect(patch.fixed_price).toBe(3000); expect(patch.installments.length).toBe(2); expect(patch.payment_plan).toBe('partial');
     expect(patch.deliverables).toBeUndefined(); expect(patch.offer_scopes).toBeUndefined();
     expect(router.navigate).toHaveBeenCalledWith(['/app/insighter-dashboard/project-offers/details', 'project'], { queryParams: { tab: 'revisions' } });
@@ -214,12 +223,32 @@ describe('Edit offer wizard', () => {
     component.fixedPrice = 3000;
     expect(component.editPatch.suggested_duration_days).toBeUndefined();
   });
-  it('does not edit another party or reuse basic offer-row identifiers in project requirement requests', () => {
-    const original = fixture(); original.project.project_services[0].scopes[0].filled_by_user_id = 99;
-    expect(offerEditRequirements(original, 32).requirements.scopes).toEqual([]);
-    const before = fixture(), draft = offerEditRequirements(before, 32).draft;
+  it('does not edit client-filled offer rows and sends an emptied scope group in full', () => {
+    const original = fixture(); original.offer.offer_scopes[0].filled_by_role = 'client';
+    expect(offerEditRequirements(original).requirements.scopes).toEqual([]);
+    const before = fixture(), draft = offerEditRequirements(before).draft;
     draft.offer_scopes = [];
-    const patch = offerEditPatch(before, 32, draft, commercialDraft(before.offer));
+    const patch = offerEditPatch(before, draft, commercialDraft(before.offer));
     expect(patch.scopes).toEqual([{ project_service_id: 44, items: [] }]);
+  });
+  it('edits an awarded offer through its offer rows, hiding the project copies and linking payments by offer ID', () => {
+    expect(component.readOnlyScopes).toEqual([]); expect(component.readOnlyDeliverables).toEqual([]);
+    expect(component.paymentDeliverables.map(row => row.reference)).toEqual(['offer:65']);
+    component.deliverablesDraft.offer_components[0].value.deliverables[0].title = 'Final report'; component.fixedPrice = 3000;
+    const patch = component.editPatch;
+    expect(patch.deliverables).toEqual([{ project_service_id: 44, items: [jasmine.objectContaining({ id: 65, title: 'Final report' })] }]);
+    expect(patch.installments![1]).toEqual(jasmine.objectContaining({ project_proposal_offer_deliverable_id: 65 }));
+    expect(patch.installments![1].project_service_deliverable_id).toBeUndefined();
+  });
+  it('links a payment to a deliverable created in the same request by its key', () => {
+    const key = 'frontend-deliverable-3';
+    component.deliverablesDraft.offer_components[0].value.deliverables.push({ key, title: 'Implementation report', period_days: 25, report_type: ['pdf'], way: { selected: 'on_platform', address: null } });
+    expect(component.paymentDeliverables.some(row => row.reference === key)).toBeTrue();
+    component.selectInstallmentDeliverable(component.installments[1], key);
+    const patch = component.editPatch;
+    expect(patch.deliverables![0].items[1]).toEqual(jasmine.objectContaining({ key, title: 'Implementation report' }));
+    expect(patch.deliverables![0].items[1].id).toBeUndefined();
+    expect(patch.installments![1]).toEqual(jasmine.objectContaining({ deliverable_key: key }));
+    expect(patch.installments![1].project_proposal_offer_deliverable_id).toBeUndefined();
   });
 });

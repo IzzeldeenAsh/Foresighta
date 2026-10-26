@@ -3,7 +3,7 @@ import { forkJoin, from, Observable } from 'rxjs';
 import { ProfileService } from 'src/app/_fake/services/get-profile/get-profile.service';
 import { AgreementRevisionsService } from 'src/app/_fake/services/agreement-revisions/agreement-revisions.service';
 import { agreementIsLocked, agreementPaymentStarted, commercialDraft, CommercialDraft, COVER_LETTER_MAX_LENGTH, emptyAgreementGroups, emptiedScopeFiles, linkedDeliverableIds, payloadHasFiles, OFFER_FILE_EXTENSIONS, offerDurationSuggestion, offerFileError } from 'src/app/_fake/services/agreement-revisions/agreement-revisions.model';
-import { offerEditRequirements, offerEditPatch, offerEditFingerprint, editableOfferScopes, editableOfferDeliverables, OfferTermsDraft } from 'src/app/_fake/services/agreement-revisions/offer-edit.model';
+import { offerEditRequirements, offerEditPatch, offerEditFingerprint, editableOfferScopes, editableOfferDeliverables, insighterOwnsProjectRow, OfferTermsDraft } from 'src/app/_fake/services/agreement-revisions/offer-edit.model';
 import { MissingOfferRequirements, OfferRequirementDraft, appendRequirementFormData, mapMissingOfferRequirements, offerRequirementsAreComplete } from 'src/app/_fake/services/project-phase2/project-requirements.model';
 import { Component, HostListener, Injector, OnDestroy, OnInit, QueryList, ViewChildren } from '@angular/core';
 import { CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
@@ -491,14 +491,19 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
       offerDeliverables.filter(row => !this.editRequirements.service_components.some(group => group.project_service_id === row.project_service_id)).forEach(row => {
         if (row.id) offerRows.push({ reference: `offer:${row.id}`, title: row.title, period_days: row.period_days, date: null });
       });
+      // The insighter's project deliverables are award-time copies of offer rows, which installments link to instead.
+      const copies = new Set(this.proposal!.project.project_services.reduce<number[]>((all, service) =>
+        all.concat((service.deliverables ?? []).filter(row => insighterOwnsProjectRow(row, this.editUserId)).map(row => row.id)), []));
+      const saved = existing.filter(row => !copies.has(row.id));
+      // Edited offer rows link by offer ID; new ones by the key the same request creates them with.
+      this.deliverablesDraft.offer_components.forEach(component => (component.value?.deliverables ?? []).forEach((row: any, index: number) => {
+        const reference = row.id ? `offer:${row.id}` : row.key;
+        if (reference) saved.push({ ...row, reference, title: row.title?.trim() || `${this.lang === 'ar' ? 'مخرج' : 'Deliverable'} ${index + 1}`, period_days: row.period_days ?? null });
+      }));
       // Keep an existing offer-deliverable link selectable even on older detail responses.
       this.installments.filter(item => item.deliverable_key?.startsWith('offer:')).forEach(item => {
-        if (!offerRows.some(row => row.reference === item.deliverable_key)) offerRows.push({ reference: item.deliverable_key!, title: item.title, period_days: item.period_days, date: null });
+        if (![...saved, ...offerRows].some(row => row.reference === item.deliverable_key)) offerRows.push({ reference: item.deliverable_key!, title: item.title, period_days: item.period_days, date: null });
       });
-      const saved = existing.filter(row => !this.editRequirements.service_components.some(group => group.project_service_id === row.project_service_id && editableOfferDeliverables(this.proposal!, group.project_service_id!, this.editUserId).source === 'project' && editableOfferDeliverables(this.proposal!, group.project_service_id!, this.editUserId).items.some(item => item.id === row.id)));
-      this.deliverablesDraft.offer_components.forEach(component => (component.value?.deliverables ?? []).forEach((row: any) => {
-        if (row.id) saved.push({ ...row, reference: editableOfferDeliverables(this.proposal!, component.project_service_id!, this.editUserId).source === 'offer' ? `offer:${row.id}` : row.id });
-      }));
       return [...saved, ...offerRows];
     }
     return [...existing, ...drafted];
@@ -842,11 +847,10 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
     const record = this.proposal;
     if (!record) return [];
     return record.project.project_services.filter(service => service.id !== null).map(service => {
-      const editable = editableOfferScopes(record, service.id!, this.editUserId);
+      const editable = editableOfferScopes(record, service.id!);
       const offerRows = !service.scopes.length;
       const original = (record.offer?.offer_scopes ?? []).filter(row => row.project_service_id === service.id);
-      const source = offerRows ? original : this.editLocked && editable.source === 'offer' ? [...service.scopes, ...original] : service.scopes;
-      const items = this.editLocked || editable.source !== (offerRows ? 'offer' : 'project') ? source : source.filter(row => !editable.items.includes(row));
+      const items = this.readOnlyRows(service.scopes, original, editable);
       return { serviceId: service.id!, title: service.title || service.service?.name || '', items, offerRows };
     }).filter(group => group.items.length > 0);
   }
@@ -854,15 +858,23 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
     const record = this.proposal;
     if (!record) return [];
     return record.project.project_services.filter(service => service.id !== null).map(service => {
-      const editable = editableOfferDeliverables(record, service.id!, this.editUserId);
+      const editable = editableOfferDeliverables(record, service.id!);
       const offerRows = !service.deliverables.length;
       // Same rows editableOfferDeliverables returns, so the editable ones drop out of this read-only list.
       const original = record.offer?.offer_deliverables?.filter(row => row.project_service_id === service.id)
         ?? (record.offer?.offer_components ?? []).filter(row => row.project_service_id === service.id).reduce<any[]>((all, row) => all.concat(row.value?.deliverables ?? []), []);
-      const source = offerRows ? original : this.editLocked && editable.source === 'offer' ? [...service.deliverables, ...original] : service.deliverables;
-      const items = this.editLocked || editable.source !== (offerRows ? 'offer' : 'project') ? source : source.filter(row => !editable.items.includes(row));
+      const items = this.readOnlyRows(service.deliverables, original, editable);
       return { serviceId: service.id!, title: service.title || service.service?.name || '', items, offerRows };
     }).filter(group => group.items.length > 0);
+  }
+  /**
+   * Requirement rows shown read only for one service. Once awarded, the project already holds copies of the
+   * insighter's offer rows, so those copies are hidden in favour of the offer rows the editor works on.
+   */
+  private readOnlyRows(projectRows: any[], offerRows: any[], editable: any[]): any[] {
+    const synced = projectRows.some(row => insighterOwnsProjectRow(row, this.editUserId));
+    if (this.editLocked) return !projectRows.length ? offerRows : synced ? projectRows : [...projectRows, ...offerRows];
+    return projectRows.length ? projectRows.filter(row => !insighterOwnsProjectRow(row, this.editUserId)) : offerRows.filter(row => !editable.includes(row));
   }
   /** Why the read-only scopes and deliverables can't be changed, shown on hover of their badge. */
   get readOnlyReason(): string {
@@ -887,7 +899,8 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
       daily_rate: this.dailyRate, estimated_days: this.estimatedDays, payment_plan: this.paymentPlan,
       installments: this.installments.map(item => ({ title: item.title, percentage: item.percentage, due_type: item.due_type,
         period_days: item.period_days, project_service_deliverable_id: item.project_service_deliverable_id,
-        project_proposal_offer_deliverable_id: item.deliverable_key?.startsWith('offer:') ? Number(item.deliverable_key.slice(6)) : null })) });
+        project_proposal_offer_deliverable_id: item.deliverable_key?.startsWith('offer:') ? Number(item.deliverable_key.slice(6)) : null,
+        deliverable_key: item.deliverable_key && !item.deliverable_key.startsWith('offer:') ? item.deliverable_key : null })) });
   }
   private get editTerms(): OfferTermsDraft {
     return { coverLetter: this.coverLetter || '', retainedAttachmentUuids: this.retainedAttachmentUuids, newFileCount: this.selectedAttachments.length,
@@ -896,22 +909,22 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
   get editPatch() {
     if (!this.proposal || this.editLocked) return {};
     const commercial = this.editCommercialLocked ? commercialDraft(this.proposal.offer) : this.editCommercial();
-    return offerEditPatch(this.proposal, this.editUserId, this.requirementDraft, commercial, this.editTerms);
+    return offerEditPatch(this.proposal, this.requirementDraft, commercial, this.editTerms);
   }
   /** Review tab: the duration the offer suggested before this edit. */
   get editSavedSuggestion(): number | null { return offerDurationSuggestion(this.proposal?.offer, this.durationDays); }
   get editDurationChanged(): boolean { return !this.durationLocked && this.suggestedDurationDays !== this.editSavedSuggestion; }
   get editRemovedAttachments(): ProjectOfferFile[] { return this.existingAttachments.filter(row => !row.kept).map(row => row.file); }
-  get editScopeChanges() { return [...(this.editPatch.scopes ?? []), ...(this.editPatch.offer_scopes ?? [])]; }
-  get editDeliverableChanges() { return [...(this.editPatch.deliverables ?? []), ...(this.editPatch.offer_deliverables ?? [])]; }
+  get editScopeChanges() { return this.editPatch.scopes ?? []; }
+  get editDeliverableChanges() { return this.editPatch.deliverables ?? []; }
   get editDirty(): boolean { return this.editMode && Object.keys(this.editPatch).length > 0; }
   get editChangeSummary(): string[] {
     const patch = this.editPatch, ar = this.lang === 'ar', result: string[] = [];
-    for (const group of [...(patch.scopes ?? []), ...(patch.offer_scopes ?? [])]) {
+    for (const group of patch.scopes ?? []) {
       const service = this.proposal?.project.project_services.find(s => s.id === group.project_service_id);
       result.push(`${ar ? 'تحديث النطاقات' : 'Update scopes'} · ${service?.title || service?.service?.name || ''}`);
     }
-    for (const group of [...(patch.deliverables ?? []), ...(patch.offer_deliverables ?? [])]) {
+    for (const group of patch.deliverables ?? []) {
       const service = this.proposal?.project.project_services.find(s => s.id === group.project_service_id);
       result.push(`${ar ? 'تحديث المخرجات' : 'Update deliverables'} · ${service?.title || service?.service?.name || ''}`);
     }
@@ -994,12 +1007,12 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
     forkJoin({ record: this.projectOffersService.getProposalDetails(uuid), user: this.profile.getProfile() }).pipe(takeUntil(this.unsubscribe$)).subscribe({
       next: ({ record, user }) => {
         this.proposal = record; this.editUserId = Number(user?.id) || null;
-        const adapted = offerEditRequirements(record, this.editUserId);
+        const adapted = offerEditRequirements(record);
         this.editRequirements = this.editLocked ? mapMissingOfferRequirements(null) : adapted.requirements;
         this.scopeSeed = { offer_scopes: this.editLocked ? [] : adapted.draft.offer_scopes, offer_components: [] };
         this.deliverablesSeed = { offer_scopes: [], offer_components: this.editLocked ? [] : adapted.draft.offer_components };
         this.scopeDraft = JSON.parse(JSON.stringify(this.scopeSeed)); this.deliverablesDraft = JSON.parse(JSON.stringify(this.deliverablesSeed));
-        this.editOfferDeliverableServiceIds = new Set(this.editRequirements.service_components.filter(group => editableOfferDeliverables(record, group.project_service_id!, this.editUserId).source === 'offer').map(group => group.project_service_id!));
+        this.editOfferDeliverableServiceIds = new Set(this.editRequirements.service_components.map(group => group.project_service_id!));
         const scopes = this.readOnlyScopes, deliverables = this.readOnlyDeliverables;
         this.readOnlyScopeRequirements = { scopes: scopes.map(group => ({ project_service_id: group.serviceId, required_in_offer: false })), project_components: [], service_components: [] };
         this.readOnlyScopeSeed = { offer_scopes: scopes.reduce<OfferRequirementDraft['offer_scopes']>((all, group) => all.concat(group.items.map(item => ({ ...item, project_service_id: group.serviceId }))), []), offer_components: [] };

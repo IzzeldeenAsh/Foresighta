@@ -59,6 +59,8 @@ export interface DeliverableDraft {
   period_days: number;
   report_type: string[];
   way: { selected: string | null; address: string | null };
+  /** New offer deliverable only: a request-scoped key an installment's `deliverable_key` can point at. */
+  key?: string;
 }
 export interface AgreementGroup<T> { project_service_id: number; items: T[]; }
 export interface CommercialDraft {
@@ -73,6 +75,8 @@ export interface CommercialDraft {
     title: string; percentage: number; due_type: string; period_days?: number | null;
     project_service_deliverable_id?: number | null;
     project_proposal_offer_deliverable_id?: number | null;
+    /** Links a deliverable created in the same request by its `key`. */
+    deliverable_key?: string | null;
   }>;
 }
 export interface AgreementPatch extends Partial<CommercialDraft> {
@@ -137,9 +141,8 @@ export function agreementFormData(payload: AgreementPatch, files: File[]): FormD
 }
 
 /** Requirement groups emptied in this patch: a multipart body cannot carry their empty `items` list. */
-export function emptyAgreementGroups(payload: AgreementPatch & Record<string, any>): boolean {
-  return ['scopes', 'deliverables', 'offer_scopes', 'offer_deliverables']
-    .some(key => (payload[key] ?? []).some((group: AgreementGroup<unknown>) => !group.items?.length));
+export function emptyAgreementGroups(payload: AgreementPatch): boolean {
+  return [...(payload.scopes ?? []), ...(payload.deliverables ?? [])].some(group => !group.items?.length);
 }
 
 /** Only these component values are returned by the API, so only these can be edited safely. */
@@ -244,9 +247,9 @@ export function payloadHasFiles(value: unknown): boolean {
   return !!value && typeof value === 'object' && Object.values(value as Record<string, unknown>).some(payloadHasFiles);
 }
 /** A sub-scope whose files are all removed with nothing uploaded: multipart cannot send its empty `file_uuids` list. */
-export function emptiedScopeFiles(payload: AgreementPatch & Record<string, any>): boolean {
-  return ['scopes', 'offer_scopes'].some(key => (payload[key] ?? []).some((group: AgreementGroup<ScopeDraft>) =>
-    (group.items ?? []).some(scope => (scope.subscopes ?? []).some(child => Array.isArray(child.file_uuids) && !child.file_uuids.length && !child.file?.length))));
+export function emptiedScopeFiles(payload: AgreementPatch): boolean {
+  return (payload.scopes ?? []).some(group =>
+    (group.items ?? []).some(scope => (scope.subscopes ?? []).some(child => Array.isArray(child.file_uuids) && !child.file_uuids.length && !child.file?.length)));
 }
 export function deliverableDraft(row: any): DeliverableDraft {
   return {
@@ -264,8 +267,10 @@ export function commercialDraft(offer: any): CommercialDraft {
     installments: (offer.installments ?? []).map((row: any) => ({
       title: row.title, percentage: Number(row.percentage), due_type: row.due_type,
       ...(row.due_type === 'date' ? { period_days: row.period_days } : {}),
-      ...(row.due_type === 'deliverable' && row.project_service_deliverable_id ? { project_service_deliverable_id: row.project_service_deliverable_id } : {}),
-      ...(row.due_type === 'deliverable' && row.project_proposal_offer_deliverable_id ? { project_proposal_offer_deliverable_id: row.project_proposal_offer_deliverable_id } : {}),
+      // Offer deliverable IDs survive an awarded sync; the project-side copy they map to is recreated by it.
+      ...(row.due_type === 'deliverable' && row.project_proposal_offer_deliverable_id ? { project_proposal_offer_deliverable_id: row.project_proposal_offer_deliverable_id }
+        : row.due_type === 'deliverable' && row.project_service_deliverable_id ? { project_service_deliverable_id: row.project_service_deliverable_id } : {}),
+      ...(row.due_type === 'deliverable' && row.deliverable_key && !row.project_proposal_offer_deliverable_id && !row.project_service_deliverable_id ? { deliverable_key: row.deliverable_key } : {}),
     })),
   };
 }
