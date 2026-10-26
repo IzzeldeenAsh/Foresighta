@@ -509,6 +509,16 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
     return [...existing, ...drafted];
   }
 
+  private draftLinks = { signature: '', references: new Set<number | string>() };
+  /** Deliverables the current payment schedule links, so the deliverables step can't delete them. Kept stable between checks. */
+  get draftLinkedDeliverables(): Set<number | string> {
+    const references = this.installments.filter(item => item.due_type === 'deliverable')
+      .map(item => this.installmentDeliverableReference(item)).filter((reference): reference is number | string => reference !== null);
+    const signature = JSON.stringify(references);
+    if (signature !== this.draftLinks.signature) this.draftLinks = { signature, references: new Set(references) };
+    return this.draftLinks.references;
+  }
+
   installmentDeliverableReference(item: InstallmentDraft): number | string | null {
     return item.project_service_deliverable_id ?? item.deliverable_key ?? null;
   }

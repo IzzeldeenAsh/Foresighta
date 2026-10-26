@@ -54,6 +54,8 @@ export class OfferRequirementsEditorComponent implements OnChanges {
   @Input() linkedDeliverableIds = new Set<number>();
   @Input() linkedOfferDeliverableIds = new Set<number>();
   @Input() offerDeliverableServiceIds = new Set<number>();
+  /** Deliverables the payment schedule links right now (unsaved): project IDs, `offer:{id}` or a new deliverable's frontend key. */
+  @Input() draftLinkedDeliverables = new Set<number | string>();
   @Input() section: 'scope' | 'deliverables' = 'scope';
   /** Project schedule, so deliverable due days show real dates and stay inside the duration. */
   @Input() plannedStartDate: string | null = null;
@@ -407,7 +409,15 @@ export class OfferRequirementsEditorComponent implements OnChanges {
     this.emit();
   }
   isDeliverableLinked(req: MissingComponentRequirement, deliverable: any): boolean {
+    return this.savedLinkBlocksDelete(req, deliverable) || this.draftLinkBlocksDelete(req, deliverable);
+  }
+  /** A saved installment keeps the deliverable until the unlinked payment schedule is saved. */
+  savedLinkBlocksDelete(req: MissingComponentRequirement, deliverable: any): boolean {
     return (this.offerDeliverableServiceIds.has(req.project_service_id!) ? this.linkedOfferDeliverableIds : this.linkedDeliverableIds).has(deliverable?.id);
+  }
+  private draftLinkBlocksDelete(req: MissingComponentRequirement, deliverable: any): boolean {
+    if (deliverable?.id) return this.draftLinkedDeliverables.has(this.offerDeliverableServiceIds.has(req.project_service_id!) ? `offer:${deliverable.id}` : deliverable.id);
+    return !!deliverable?.key && this.draftLinkedDeliverables.has(deliverable.key);
   }
   removeDeliverable(req: MissingComponentRequirement, index: number): void { if (this.isDeliverableLinked(req, this.componentDraft(req).value.deliverables[index])) return; this.componentDraft(req).value.deliverables.splice(index, 1); this.openMenu = null; this.emit(); }
   toggleFormat(deliverable: any, format: string): void { deliverable.report_type = deliverable.report_type.includes(format) ? deliverable.report_type.filter((f: string) => f !== format) : [...deliverable.report_type, format]; this.emit(); }

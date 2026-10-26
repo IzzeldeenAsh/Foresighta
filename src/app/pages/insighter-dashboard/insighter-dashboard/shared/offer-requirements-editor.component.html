@@ -115,7 +115,11 @@
                     [placeholder]="ar ? 'صف ما سيغطيه هذا النطاق…' : 'Describe what this scope will cover…'"></textarea>
                 </label>
                 <p class="sw-hint" *ngIf="!pick.children.length && !pick.customChildren.length">
-                  {{ ar ? 'سيتم تضمين هذا النطاق بالكامل. أضف نطاقات فرعية إذا أردت تفاصيل أكثر.' : 'This whole scope will be included. Add sub-scopes if you want to be more specific.' }}
+                  {{ readOnly ? (ar ? 'سيتم تضمين هذا النطاق بالكامل.' : 'This whole scope will be included.')
+                    : ar ? 'سيتم تضمين هذا النطاق بالكامل. أضف نطاقًا فرعيًا إذا أردت تفاصيل أكثر أو إرفاق وصف وملفات.' : 'This whole scope will be included. Add a sub-scope to be more specific or to attach a description and files.' }}
+                </p>
+                <p class="sw-hint" *ngIf="!readOnly && pick.children.length && !pickedChildren(pick).length">
+                  {{ ar ? 'اختر نطاقًا فرعيًا أو أضف واحدًا لإرفاق وصف وملفات له.' : 'Pick or add a sub-scope to attach a description and files to it.' }}
                 </p>
                 <div class="sw-tags">
                   <button type="button" class="sw-tag" *ngFor="let child of pick.children" [class.is-checked]="isChildPicked(pick, child)"
@@ -236,7 +240,10 @@
                         <i class="ki-outline ki-trash"></i>
                       </button>
                     </div>
-                    <p class="sw-hint" *ngIf="isDeliverableLinked(req, deliverable)">{{ ar ? 'مرتبط بدفعة. احذف الدفعة المرتبطة واحفظ أولاً لإتاحة حذف المخرج.' : 'Linked to a payment. Remove the linked installment and save first to delete this deliverable.' }}</p>
+                    <p class="sw-hint" *ngIf="isDeliverableLinked(req, deliverable)">
+                      <ng-container *ngIf="savedLinkBlocksDelete(req, deliverable); else draftLink">{{ ar ? 'مرتبط بدفعة. احذف الدفعة المرتبطة واحفظ أولاً لإتاحة حذف المخرج.' : 'Linked to a payment. Remove the linked installment and save first to delete this deliverable.' }}</ng-container>
+                      <ng-template #draftLink>{{ ar ? 'مرتبط بدفعة في جدول الدفعات. غيّر الدفعة المرتبطة أولاً لإتاحة حذف المخرج.' : 'Linked to a payment in the payment schedule. Change that installment first to delete this deliverable.' }}</ng-template>
+                    </p>
                     <input [id]="controlPrefix + '-deliverable-title-' + r + '-' + j" class="sw-input sw-dlv__title" maxlength="120"
                       [class.is-invalid]="showError(deliverable.title)" [(ngModel)]="deliverable.title" (ngModelChange)="emit()"
                       [placeholder]="ar ? 'مثال: تقرير تحليل السوق' : 'e.g. Market analysis report'" required />

@@ -264,5 +264,28 @@ describe('Offer requirement completion', () => {
     expect(editor.draft.offer_components[0].value.deliverables).toEqual([]);
     expect(editor.complete).toBeTrue();
   });
+  it('keeps a new deliverable while an unsaved installment links to it', () => {
+    const requirement = editor.missing.service_components[0];
+    const list = editor.componentDraft(requirement).value.deliverables;
+    editor.addDeliverable(requirement);
+    const linked = list[1];
+    editor.draftLinkedDeliverables = new Set([linked.key]);
+    expect(editor.isDeliverableLinked(requirement, linked)).toBeTrue();
+    expect(editor.savedLinkBlocksDelete(requirement, linked)).toBeFalse();
+    editor.removeDeliverable(requirement, 1);
+    expect(list.length).toBe(2);
+    editor.draftLinkedDeliverables = new Set();
+    editor.removeDeliverable(requirement, 1);
+    expect(list.length).toBe(1);
+  });
+  it('matches unsaved links to saved deliverables by their own ID kind', () => {
+    const requirement = editor.missing.service_components[0];
+    editor.draftLinkedDeliverables = new Set<number | string>(['offer:88']);
+    expect(editor.isDeliverableLinked(requirement, { id: 88 })).toBeFalse();
+    editor.offerDeliverableServiceIds = new Set([requirement.project_service_id!]);
+    expect(editor.isDeliverableLinked(requirement, { id: 88 })).toBeTrue();
+    editor.offerDeliverableServiceIds = new Set(); editor.draftLinkedDeliverables = new Set([88]);
+    expect(editor.isDeliverableLinked(requirement, { id: 88 })).toBeTrue();
+  });
 
 });
