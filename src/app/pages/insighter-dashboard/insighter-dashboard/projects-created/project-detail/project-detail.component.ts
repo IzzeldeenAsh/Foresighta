@@ -738,6 +738,16 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
     return !this.isProjectAwarded() || !awardedOfferUuid || invite.offer.uuid === awardedOfferUuid;
   }
 
+  /**
+   * After the award there is no offer to go back to, so the project tab shows the awarded
+   * negotiation's full history (the client's and the Insighter's revisions) instead of the client's own.
+   */
+  get awardedRevisionsInvite(): CreatedProjectProposalInvite | null {
+    const awardedOfferUuid = this.project?.offer?.uuid;
+    const invite = this.invitedInsighters.find(item => awardedOfferUuid ? item.offer?.uuid === awardedOfferUuid : item.offer?.status === 'awarded');
+    return invite && this.canViewOfferRevisions(invite) ? invite : null;
+  }
+
   offerRevisionsNew(invite: CreatedProjectProposalInvite | null | undefined): number {
     return invite?.agreement_match_uuid ? this.offerRevisionUnseen[invite.agreement_match_uuid] || 0 : 0;
   }

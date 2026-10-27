@@ -113,11 +113,23 @@
           </div>
 
           <ng-container *ngIf="activeTab === 'revisions'">
-            <div class="pd-revisions-hint">
-              <i class="ki-outline ki-information-5" aria-hidden="true"></i>
-              <span>{{ lang === 'ar' ? 'هنا تعديلاتك على المشروع فقط. تعديلات كل خبير على عرضه تجدها داخل العرض في تبويب «التعديلات».' : 'Your changes to the project only. Each Insighter\'s changes to their offer are in that offer, under Revisions.' }}</span>
-            </div>
-            <app-agreement-revisions [record]="p" role="client" layout="accordion" authorRole="client" [matchList]="invitedInsighters" [lang]="lang" (revisionSeen)="p.unseen_agreement_revisions_count = lowerCount(p.unseen_agreement_revisions_count)" (refreshed)="onAgreementRefreshed($event)"></app-agreement-revisions>
+            <ng-container *ngIf="awardedRevisionsInvite as awarded; else ownRevisions">
+              <div class="pd-revisions-hint">
+                <i class="ki-outline ki-information-5" aria-hidden="true"></i>
+                <span>{{ lang === 'ar' ? 'كل تعديلات الاتفاق بعد الترسية: تعديلاتك وتعديلات الخبير على عرضه.' : 'Every change to the agreement: yours and the Insighter\'s changes to their offer.' }}</span>
+              </div>
+              <app-agreement-revisions [record]="p" role="client" layout="accordion" [matchList]="invitedInsighters" [onlyMatch]="awarded.agreement_match_uuid || ''"
+                [counterpartName]="awarded.insighter?.name || ''" [lang]="lang"
+                (revisionSeen)="onOfferRevisionSeen(awarded)"
+                (accessClosed)="onOfferRevisionsClosed(awarded)" (refreshed)="onAgreementRefreshed($event)"></app-agreement-revisions>
+            </ng-container>
+            <ng-template #ownRevisions>
+              <div class="pd-revisions-hint">
+                <i class="ki-outline ki-information-5" aria-hidden="true"></i>
+                <span>{{ lang === 'ar' ? 'هنا تعديلاتك على المشروع فقط. تعديلات كل خبير على عرضه تجدها داخل العرض في تبويب «التعديلات».' : 'Your changes to the project only. Each Insighter\'s changes to their offer are in that offer, under Revisions.' }}</span>
+              </div>
+              <app-agreement-revisions [record]="p" role="client" layout="accordion" authorRole="client" [matchList]="invitedInsighters" [lang]="lang" (revisionSeen)="p.unseen_agreement_revisions_count = lowerCount(p.unseen_agreement_revisions_count)" (refreshed)="onAgreementRefreshed($event)"></app-agreement-revisions>
+            </ng-template>
           </ng-container>
           <ng-container *ngIf="visibleActiveTab === 'overview'">
           <!-- Description -->

@@ -1,6 +1,6 @@
 import { of, Subject, throwError } from 'rxjs';
 import { AgreementRevisionsComponent } from './agreement-revisions.component';
-import { agreementIsLocked, ownsAgreementGroup, scopeDraft, linkedDeliverableIds, commercialDraft } from 'src/app/_fake/services/agreement-revisions/agreement-revisions.model';
+import { agreementIsLocked, insighterCanEditOffer, ownsAgreementGroup, scopeDraft, linkedDeliverableIds, commercialDraft } from 'src/app/_fake/services/agreement-revisions/agreement-revisions.model';
 import { mapProjectServices } from 'src/app/_fake/services/project-phase2/project-phase2.model';
 
 const service = () => ({ id: 44, uuid: 'service-uuid', title: 'Market research', position: 1,
@@ -103,6 +103,11 @@ describe('Agreement revisions safeguards', () => {
     expect(agreementIsLocked({ user_sign_at: true, insighter_sign_at: false })).toBeTrue();
     expect(agreementIsLocked({ user_sign_at: false, insighter_sign_at: '2026-10-15' })).toBeTrue();
     expect(agreementIsLocked({ user_sign_at: '0', insighter_sign_at: false })).toBeFalse();
+  });
+  it('lets the Insighter edit an awarded offer during contracting until the client signs', () => {
+    const awarded = (contract: any) => ({ project: { status: 'contracting', project_services: [] }, offer: { uuid: 'offer-uuid', status: 'awarded' }, contract_uuid: 'contract-uuid', contract });
+    expect(insighterCanEditOffer(awarded({ user_sign_at: false, insighter_sign_at: false }), 32)).toBeTrue();
+    expect(insighterCanEditOffer(awarded({ user_sign_at: true, insighter_sign_at: false }), 32)).toBeFalse();
   });
   it('denies missing, mixed and another Insighter ownership', () => {
     expect(ownsAgreementGroup([], 'client', 31)).toBeFalse();
