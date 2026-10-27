@@ -1014,7 +1014,7 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
     return !!invite?.offer?.uuid
       && !this.offerActionUuid
       && this.isOfferTechnicalAccepted(invite)
-      && (this.hasSingleSubmittedOffer() || this.isLastProposalDeadlinePassed());
+      && !this.isAwardBlockedByProposalDeadline();
   }
 
   isOfferReadOnlyProject(project: CreatedProject | null = this.project): boolean {
@@ -1040,9 +1040,14 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
     }
   }
 
-  hasSingleSubmittedOffer(): boolean {
-    // `submitted` lists every invited match, including ones that never sent an offer.
-    return this.invitedInsighters.filter(invite => this.hasInviteOffer(invite)).length === 1;
+  /**
+   * Mirrors the backend award rule: in general matching with more than one invited Insighter, an offer
+   * cannot be awarded until the latest proposal deadline has passed — even when only one of them sent an offer.
+   */
+  isAwardBlockedByProposalDeadline(project: CreatedProject | null = this.project): boolean {
+    if (this.normalizeValue(project?.matching_mode) !== 'general') return false;
+    // `invited` is already one entry per Insighter across every proposal round, as the backend counts them.
+    return (project?.invited || []).length > 1 && !this.isLastProposalDeadlinePassed(project);
   }
 
   shouldShowSubmittedOfferTimer(project: CreatedProject | null = this.project): boolean {
@@ -1179,7 +1184,7 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
         : 'The offer can only be awarded after it is technically accepted.';
     }
 
-    if (!this.hasSingleSubmittedOffer() && !this.isLastProposalDeadlinePassed()) {
+    if (this.isAwardBlockedByProposalDeadline()) {
       return this.lang === 'ar'
         ? 'يمكن ترسية العرض بعد انتهاء الموعد النهائي لاستلام العروض.'
         : 'The offer can be awarded once the proposal deadline has passed.';
