@@ -1246,6 +1246,11 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
       || !!project.offer;
   }
 
+  /** The awarded Insighter changed the offer after the contract was drawn up, and the client has not signed yet. */
+  get showAwardRevisionWarning(): boolean {
+    return !!this.project?.has_insighter_agreement_revision_after_award && this.getContractSignatureState() === 'waiting_user';
+  }
+
   getContractSignatureState(
     project: CreatedProject | null = this.project,
   ): 'waiting_user' | 'waiting_insighter' | 'completed' | null {

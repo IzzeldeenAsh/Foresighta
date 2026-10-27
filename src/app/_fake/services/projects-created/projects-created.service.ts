@@ -177,6 +177,8 @@ export interface CreatedProject {
   last_proposal_deadline?: string | null;
   /** Agreement revisions the client has not opened yet. */
   unseen_agreement_revisions_count?: number;
+  /** The awarded Insighter revised the offer after the contract was created; the client should review before signing. */
+  has_insighter_agreement_revision_after_award?: boolean;
   /** Unread Insighter messages across every private offer thread (0 outside the proposal stage). */
   unread_private_messages_count?: number;
   created_at?: string | null;
@@ -800,6 +802,7 @@ export class ProjectsCreatedService {
       budget_max: p?.budget_max ?? null,
       last_proposal_deadline: p?.last_proposal_deadline ?? null,
       unseen_agreement_revisions_count: Number(p?.unseen_agreement_revisions_count) || 0,
+      has_insighter_agreement_revision_after_award: p?.has_insighter_agreement_revision_after_award === true,
       unread_private_messages_count: Number(p?.unread_private_messages_count) || 0,
       created_at: p?.created_at ?? null,
       schedule: mapProjectSchedule(p),

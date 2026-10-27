@@ -219,10 +219,14 @@ describe('Edit offer wizard', () => {
     component.fixedPrice = 2500; component.clearSuggestedDuration();
     expect(component.editPatch).toEqual({ suggested_duration_days: 30 });
   });
-  it('locks the suggestion once the offer is awarded', () => {
+  it('lets an awarded offer extend the project duration until the client signs', () => {
     record.offer.status = 'awarded'; record.offer.suggested_duration_days = 45; record.project.schedule.duration_days = 45;
     (component as any).loadEditedOffer('project');
-    expect(component.durationLocked).toBeTrue(); expect(component.suggestedDurationDays).toBeNull();
+    expect(component.durationLocked).toBeFalse(); expect(component.suggestedDurationDays).toBeNull(); expect(component.durationSuggestionHint).toContain('becomes the project duration');
+    component.setSuggestedDuration(60);
+    expect(component.editPatch.suggested_duration_days).toBe(60);
+    record.contract = { user_sign_at: true }; (component as any).loadEditedOffer('project');
+    expect(component.durationLocked).toBeTrue();
     component.fixedPrice = 3000;
     expect(component.editPatch.suggested_duration_days).toBeUndefined();
   });

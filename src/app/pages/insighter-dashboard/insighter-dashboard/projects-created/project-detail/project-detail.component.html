@@ -52,6 +52,12 @@
               </div>
           </div>
 
+          <div class="pd-revisions-hint pd-award-revision" role="alert" *ngIf="showAwardRevisionWarning">
+            <i class="ki-outline ki-information-5" aria-hidden="true"></i>
+            <span>{{ lang === 'ar' ? 'عدّل الخبير عرضه بعد الترسية. راجع التعديلات قبل توقيع العقد.' : 'The Insighter changed their offer after the award. Review the changes before you sign the contract.' }}</span>
+            <button type="button" (click)="setActiveTab('revisions')">{{ lang === 'ar' ? 'مراجعة التعديلات' : 'Review changes' }}</button>
+          </div>
+
           <div class="pd-tabs" role="tablist" [attr.aria-label]="lang === 'ar' ? 'أقسام المشروع' : 'Project sections'">
             <button type="button"
                     class="pd-tab"

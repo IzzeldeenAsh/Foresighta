@@ -380,9 +380,19 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
 
   // ---------- Suggested project duration ----------
 
-  /** Edit mode: the suggestion is fixed once the client awards the offer. */
+  /** Edit mode: the duration follows the offer's edit lock (the client's signature), awarded or not. */
   get durationLocked(): boolean {
-    return this.editMode && (this.editLocked || this.proposal?.offer?.status === 'awarded');
+    return this.editMode && this.editLocked;
+  }
+
+  /** Once awarded, a longer duration replaces the project's duration as soon as it is saved. */
+  get offerAwarded(): boolean { return this.editMode && this.proposal?.offer?.status === 'awarded'; }
+
+  get durationSuggestionHint(): string {
+    const ar = this.lang === 'ar';
+    return this.offerAwarded
+      ? (ar ? 'عرضك مُرسّى، لذا تصبح هذه مدة المشروع عند الحفظ، ويُنبَّه العميل قبل التوقيع.' : 'Your offer is awarded, so this becomes the project duration once saved. The client is alerted before signing.')
+      : (ar ? 'يرى العميل الاقتراح مع عرضك، ولا تتغير مدة المشروع إلا إذا رسّى العرض عليك.' : 'The client sees the suggestion with your offer. The project duration only changes if they award your offer.');
   }
 
   /** The duration deliverables and payments are planned against: the suggestion when there is one. */

@@ -752,7 +752,7 @@
       <p>{{ lang === 'ar'
         ? 'آخر مخرج مستحق في اليوم ' + durationOverflowDays + '، بينما ينتهي المشروع في اليوم ' + effectiveDurationDays + '. اقترح تمديد المشروع إلى ' + durationOverflowDays + ' يومًا.'
         : 'Your latest deliverable is due on day ' + durationOverflowDays + ', but the project ends on day ' + effectiveDurationDays + '. Suggest extending the project to ' + durationOverflowDays + ' days.' }}</p>
-      <p class="sp-duration-callout__hint">{{ lang === 'ar' ? 'يرى العميل الاقتراح مع عرضك، ولا تتغير مدة المشروع إلا إذا رسّى العرض عليك.' : 'The client sees the suggestion with your offer. The project duration only changes if they award your offer.' }}</p>
+      <p class="sp-duration-callout__hint">{{ durationSuggestionHint }}</p>
     </div>
     <button type="button" class="btn btn-sm sp-duration-callout__btn" (click)="suggestDurationForDeliverables()">{{ lang === 'ar' ? 'اقترح ' + durationOverflowDays + ' يومًا' : 'Suggest ' + durationOverflowDays + ' days' }}</button>
   </div>
@@ -777,7 +777,7 @@
       </div>
       <p class="sp-duration-callout__hint">
         {{ suggestionNeeded
-          ? (lang === 'ar' ? 'يرى العميل الاقتراح مع عرضك، ولا تتغير مدة المشروع إلا إذا رسّى العرض عليك.' : 'The client sees the suggestion with your offer. The project duration only changes if they award your offer.')
+          ? durationSuggestionHint
           : (lang === 'ar' ? 'لم يعد أي من مخرجاتك يحتاج هذا الوقت الإضافي.' : 'None of your deliverables needs the extra time anymore.') }}
       </p>
     </div>

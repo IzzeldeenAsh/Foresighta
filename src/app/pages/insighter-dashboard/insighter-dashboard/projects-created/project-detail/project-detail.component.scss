@@ -435,6 +435,18 @@
   }
 }
 
+.pd-award-revision {
+  flex-wrap: wrap;
+  align-items: center;
+  border-color: #fde6b0;
+  background: #fff8e8;
+  color: #7a4b00;
+
+  i { margin-top: 0; color: #b45309; }
+  span { flex: 1; }
+  button { border: 0; background: none; padding: 0; color: #b45309; font-weight: 600; white-space: nowrap; }
+}
+
 .pd-new-ribbon {
   position: absolute;
   top: 8px;
