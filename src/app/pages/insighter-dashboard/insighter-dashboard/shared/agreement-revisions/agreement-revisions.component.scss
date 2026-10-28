@@ -241,3 +241,10 @@
   .rv-sheet__status { padding: 16px 20px; padding-inline-start: 64px; } }
 @media (max-width: 640px) { .rv-sheet--inline { .rv-item, .rv-sheet__status { padding-inline: 16px; } .rv-sheet__aside { margin-inline: 16px; } } }
 @media (prefers-reduced-motion: reduce) { .rv-acc__chevron { transition: none; } }
+
+.rv-pay__bar { overflow-x: auto; }
+.rv-pay__seg { min-width: 30px; flex-shrink: 0; }
+.rv-pay__bar-label { color: #166534; font-weight: 600; }
+.rv-pay__bar-label:first-child { color: #92400e; }
+.rv-table .rv-before, .rv-text__side.is-before > span { color: #92400e; }
+.rv-table .rv-after, .rv-text__side:not(.is-before) > span { color: #166534; }

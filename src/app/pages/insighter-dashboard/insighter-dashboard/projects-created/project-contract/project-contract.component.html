@@ -17,6 +17,11 @@
       <span>{{ lang === 'ar' ? 'عقد المشروع' : 'Project Contract' }}</span>
       <strong>{{ project?.title || (lang === 'ar' ? 'تحميل المشروع...' : 'Loading project...') }}</strong>
     </div>
+    <button type="button" class="btn btn-light-primary ms-auto" *ngIf="contract && (contractHtml || contract.is_attach_type)"
+      [disabled]="isDownloading || agreementChanged || isLoadingContract || isPreparingContract || isSubmitting" (click)="downloadContract()">
+      <i class="ki-outline ki-file-down" aria-hidden="true"></i>
+      {{ isDownloading ? (lang === 'ar' ? 'جاري التنزيل…' : 'Downloading…') : contract.is_attach_type ? (lang === 'ar' ? 'تنزيل العقد الأصلي' : 'Download original contract') : (lang === 'ar' ? 'تنزيل العقد PDF' : 'Download contract PDF') }}
+    </button>
   </div>
 
   <div class="contract-layout" [class.contract-layout--single]="!project?.insighter">

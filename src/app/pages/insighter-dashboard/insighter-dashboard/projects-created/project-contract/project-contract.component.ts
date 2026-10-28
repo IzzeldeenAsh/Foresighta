@@ -43,6 +43,7 @@ export class ProjectContractComponent extends BaseComponent implements OnInit {
   isLoadingCountries = false;
   isPreparingContract = false;
   isSubmitting = false;
+  isDownloading = false;
   isContractSigned = false;
   canSignDefault = false;
   selectedFile: File | null = null;
@@ -380,10 +381,13 @@ export class ProjectContractComponent extends BaseComponent implements OnInit {
           this.successMessage = this.lang === 'ar'
             ? 'تم توقيع العقد بنجاح. بانتظار توقيع الخبير.'
             : 'Contract signed successfully. Waiting for the insighter signature.';
-          this.showSuccess(
-            this.lang === 'ar' ? 'نجاح' : 'Success',
-            this.successMessage
-          );
+          void Swal.fire({
+            icon: 'success',
+            title: this.lang === 'ar' ? 'تم توقيع العقد' : 'Contract signed',
+            text: this.successMessage,
+            confirmButtonText: this.lang === 'ar' ? 'تم' : 'Done',
+            allowOutsideClick: false,
+          });
         },
         error: err => {
           this.errorMessage = this.getServerErrorMessage(err);
@@ -463,6 +467,31 @@ export class ProjectContractComponent extends BaseComponent implements OnInit {
     this.contractHtml = this.sanitizer.bypassSecurityTrustHtml(html);
     setTimeout(() => this.updateCanSignDefault());
     return true;
+  }
+
+  downloadContract(): void {
+    if (!this.contractUuid || this.isDownloading || this.agreementChanged) return;
+    this.isDownloading = true;
+    this.projectsCreatedService.downloadProjectContract(this.contractUuid)
+      .pipe(takeUntil(this.unsubscribe$), finalize(() => this.isDownloading = false))
+      .subscribe({
+        next: blob => {
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = this.contract?.is_attach_type
+            ? this.contract.file?.name || 'contract'
+            : `contract-${this.contractUuid}.pdf`;
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+          setTimeout(() => URL.revokeObjectURL(url), 10000);
+        },
+        error: () => this.showError(
+          this.lang === 'ar' ? 'تعذر تنزيل العقد' : 'Could not download contract',
+          this.lang === 'ar' ? 'حدّث معاينة العقد ثم حاول مجددًا.' : 'Refresh the contract preview and try again.'
+        ),
+      });
   }
 
   private getContractBody(contract: CreatedProjectContract): string {

@@ -1180,9 +1180,9 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
 
   protected openPendingPrivateMessages(): void {
     const offerUuid = this.pendingPrivateOfferUuid;
-    if (!offerUuid || !this.selectedOffer) return;
+    if (!offerUuid || !this.selectedOffer?.offer) return;
     this.pendingPrivateOfferUuid = null;
-    if (this.selectedOffer.offer?.uuid === offerUuid) this.openPrivateMessages(this.selectedOffer);
+    if (this.selectedOffer.offer.uuid === offerUuid) this.openPrivateMessages(this.selectedOffer);
   }
 
   getProposalFiles(

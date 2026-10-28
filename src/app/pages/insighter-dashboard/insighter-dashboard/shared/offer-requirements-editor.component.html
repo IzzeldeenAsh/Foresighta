@@ -52,7 +52,7 @@
           <ng-container *ngIf="scopeState[req.project_service_id] as state">
             <div class="sw-pick">
               <div class="sw-pick__head">
-                <span class="sw-label">{{ ar ? 'النطاقات المقترحة' : 'Suggested scopes' }}</span>
+                <span class="sw-label">{{ ar ? 'النطاقات الرئيسية المقترحة' : 'Suggested main scopes' }}</span>
                 <button type="button" class="sw-link" *ngIf="state.options.length" (click)="toggleAllScopes(req.project_service_id)">
                   {{ allScopesPicked(req.project_service_id) ? (ar ? 'إلغاء تحديد الكل' : 'Deselect all') : (ar ? 'تحديد الكل' : 'Select all') }}
                 </button>
@@ -109,11 +109,6 @@
                     {{ allChildrenPicked(pick) ? (ar ? 'إلغاء تحديد الكل' : 'Clear') : (ar ? 'تحديد الكل' : 'Select all') }}
                   </button>
                 </div>
-                <label *ngIf="!readOnly || pick.description" class="sw-field">
-                  <span class="sw-label">{{ ar ? 'وصف النطاق' : 'Scope description' }} <span class="sw-optional">{{ ar ? 'اختياري' : 'Optional' }}</span></span>
-                  <textarea class="sw-input sw-textarea" rows="2" [maxlength]="descriptionMax" [(ngModel)]="pick.description" (ngModelChange)="syncScopes()"
-                    [placeholder]="ar ? 'صف ما سيغطيه هذا النطاق…' : 'Describe what this scope will cover…'"></textarea>
-                </label>
                 <p class="sw-hint" *ngIf="!pick.children.length && !pick.customChildren.length">
                   {{ readOnly ? (ar ? 'سيتم تضمين هذا النطاق بالكامل.' : 'This whole scope will be included.')
                     : ar ? 'سيتم تضمين هذا النطاق بالكامل. أضف نطاقًا فرعيًا إذا أردت تفاصيل أكثر أو إرفاق وصف وملفات.' : 'This whole scope will be included. Add a sub-scope to be more specific or to attach a description and files.' }}
@@ -217,6 +212,11 @@
                     </ng-container>
                   </li>
                 </ul>
+                <label *ngIf="!readOnly || pick.description" class="sw-field">
+                  <span class="sw-label">{{ ar ? 'وصف النطاق' : 'Scope description' }} <span class="sw-optional">{{ ar ? 'اختياري' : 'Optional' }}</span></span>
+                  <textarea class="sw-input sw-textarea" rows="2" [maxlength]="descriptionMax" [(ngModel)]="pick.description" (ngModelChange)="syncScopes()"
+                    [placeholder]="ar ? 'صف ما سيغطيه هذا النطاق…' : 'Describe what this scope will cover…'"></textarea>
+                </label>
               </div>
             </div>
           </ng-container>

@@ -1,7 +1,7 @@
 import { AgreementRevisionsComponent } from '../../shared/agreement-revisions/agreement-revisions.component';
 import { ViewChild, Component, Injector, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { BehaviorSubject, forkJoin, Observable } from 'rxjs';
+import { BehaviorSubject, forkJoin, Observable, of } from 'rxjs';
 import { finalize, map, shareReplay, switchMap, takeUntil, tap } from 'rxjs/operators';
 import Swal from 'sweetalert2';
 import { WalletService } from 'src/app/_fake/services/wallet/wallet.service';
@@ -940,8 +940,13 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
       return;
     }
 
-    void this.confirmAwardOffer(offerDurationSuggestion(invite?.offer, this.project?.schedule?.duration_days)).then(confirmed => {
-      if (!confirmed) return;
+    if (!this.canAwardOffer(invite)) return;
+    void this.confirmAwardOffer(offerDurationSuggestion(invite?.offer, this.project?.schedule?.duration_days)).then(action => {
+      if (action === 'message' && invite) {
+        this.openProposalDrawer(invite, 'discussion');
+        return;
+      }
+      if (action !== 'award' || !this.canAwardOffer(invite)) return;
       this.submitAwardOffer(invite, offerUuid);
     });
   }
@@ -952,8 +957,20 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
     this.offerActionUuid = offerUuid;
     this.offerActionKind = 'award';
 
-    this.projectsCreatedService.awardProposalOffer(offerUuid)
-      .pipe(takeUntil(this.unsubscribe$))
+    // A single invitation awards in one step: technical acceptance first, then the award.
+    let acceptedNow = false;
+    const accept$ = this.isOfferTechnicalAccepted(invite)
+      ? of(null)
+      : this.projectsCreatedService.decideProposalOfferTechnically(offerUuid, 'technical_accepted').pipe(
+          tap(() => {
+            acceptedNow = true;
+            this.updateOfferStatus(invite, 'technical_accepted');
+          })
+        );
+    accept$.pipe(
+        switchMap(() => this.projectsCreatedService.awardProposalOffer(offerUuid)),
+        takeUntil(this.unsubscribe$)
+      )
       .subscribe({
         next: () => {
           this.updateOfferStatus(invite, 'awarded');
@@ -971,7 +988,16 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
         },
         error: (err) => {
           this.resetOfferActionState();
-          this.handleServerErrors(err);
+          if (!acceptedNow) {
+            this.handleServerErrors(err);
+            return;
+          }
+          this.showError(
+            this.lang === 'ar' ? 'تم القبول الفني ولم تكتمل الترسية' : 'Accepted, but not awarded',
+            this.getServerErrorMessage(err, this.lang === 'ar'
+              ? 'تم قبول العرض فنياً، لكن تعذرت ترسيته. حاول الترسية مرة أخرى.'
+              : 'The offer was technically accepted, but awarding it failed. Try awarding it again.')
+          );
         },
         complete: () => {
           this.resetOfferActionState();
@@ -1009,11 +1035,18 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
     return deadlineTime <= Date.now();
   }
 
+  /** One invited Insighter (or a specific request): Award also performs the technical acceptance. */
+  isDirectAward(): boolean {
+    return this.normalizeValue(this.project?.matching_mode) === 'specific' || this.project?.invited?.length === 1;
+  }
+
   canAwardOffer(invite: CreatedProjectProposalInvite | null): boolean {
     if (this.isOfferReadOnlyProject()) return false;
     return !!invite?.offer?.uuid
       && !this.offerActionUuid
-      && this.isOfferTechnicalAccepted(invite)
+      && !['awarded', 'not_selected', 'closed', 'cancelled', 'expired'].includes(this.getOfferStatus(invite))
+      && (this.isOfferTechnicalAccepted(invite)
+        || (this.isDirectAward() && this.getOfferStatus(invite) !== 'technical_rejected' && this.canMakeOfferTechnicalDecision(invite, 'technical_accepted')))
       && !this.isAwardBlockedByProposalDeadline();
   }
 
@@ -1178,7 +1211,13 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
   }
 
   getAwardDisabledReason(invite: CreatedProjectProposalInvite | null): string {
-    if (!this.isOfferTechnicalAccepted(invite)) {
+    if (this.getOfferStatus(invite) === 'technical_rejected') {
+      return this.lang === 'ar'
+        ? 'تم رفض هذا العرض فنياً، لذا لا يمكن ترسيته.'
+        : 'This offer was technically rejected, so it cannot be awarded.';
+    }
+
+    if (!this.isDirectAward() && !this.isOfferTechnicalAccepted(invite)) {
       return this.lang === 'ar'
         ? 'يمكن ترسية العرض فقط بعد قبوله فنياً.'
         : 'The offer can only be awarded after it is technically accepted.';
@@ -1648,7 +1687,7 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
   }
 
   /** A suggested duration is applied by the award itself, so the confirmation says so before the client commits. */
-  private async confirmAwardOffer(suggestedDurationDays: number | null = null): Promise<boolean> {
+  private async confirmAwardOffer(suggestedDurationDays: number | null = null): Promise<'award' | 'message' | null> {
     const ar = this.lang === 'ar';
     const durationNote = suggestedDurationDays === null ? '' : ar
       ? ` يقترح هذا العرض مدة ${suggestedDurationDays} يومًا للمشروع، وترسيته ستجعل مدة المشروع ${suggestedDurationDays} يومًا.`
@@ -1656,12 +1695,13 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
     const result = await Swal.fire({
       title: ar ? 'تأكيد ترسية العرض' : 'Confirm award',
       text: (ar
-        ? 'هل أنت متأكد من ترسية هذا العرض؟ لا يزال لديك فرصة لطلب تعديل على العقد قبل التوقيع.'
-        : 'Are you sure you want to award this offer? You still have a chance to ask for a change before signing the contract.') + durationNote,
+        ? 'هل أنت متأكد من ترسية هذا العرض؟ لا يزال لديك فرصة لطلب تعديل على العقد قبل التوقيع. إن كان لديك سؤال، توقف وأرسل رسالة للخبير أولاً.'
+        : 'Are you sure you want to award this offer? You still have a chance to ask for a change before signing the contract. If you have a question, stop and message the Insighter first.') + durationNote,
       icon: 'question',
       showCancelButton: true,
-      confirmButtonText: this.lang === 'ar' ? 'نعم، ترسية العرض' : 'Yes, award offer',
-      cancelButtonText: this.lang === 'ar' ? 'إلغاء' : 'Cancel',
+      showCloseButton: true,
+      confirmButtonText: this.lang === 'ar' ? 'قبول وترسية العرض' : 'Accept and award',
+      cancelButtonText: this.lang === 'ar' ? 'توقف وأرسل رسالة' : 'Stop and send message',
       reverseButtons: this.lang === 'ar',
       buttonsStyling: false,
       customClass: {
@@ -1672,7 +1712,7 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
       },
     });
 
-    return result.isConfirmed;
+    return result.isConfirmed ? 'award' : result.dismiss === Swal.DismissReason.cancel ? 'message' : null;
   }
 
   private async confirmCancelProject(): Promise<boolean> {

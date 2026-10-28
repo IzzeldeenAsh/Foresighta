@@ -86,7 +86,7 @@
 
         <div class="sp-card">
           <div class="sp-field">
-            <label class="sp-field__label" for="sp-cover-letter">{{ lang === 'ar' ? 'نص العرض الفني' : 'Technical proposal text' }} <span *ngIf="editMode && editLocked" class="sp-readonly-badge">{{ lang === 'ar' ? 'للعرض فقط' : 'Read-only' }}</span></label>
+            <label class="sp-field__label" for="sp-cover-letter">{{ lang === 'ar' ? 'المقدمة' : 'Introduction' }} <span *ngIf="editMode && editLocked" class="sp-readonly-badge">{{ lang === 'ar' ? 'للعرض فقط' : 'Read-only' }}</span></label>
             <textarea id="sp-cover-letter" name="coverLetter" class="sp-input sp-textarea" rows="6"
               [(ngModel)]="coverLetter" [disabled]="editMode && editLocked" #coverLetterModel="ngModel" required [maxlength]="coverLetterMaxLength"
               [class.is-invalid]="shouldShowFieldError(coverLetterModel, isCoverLetterInvalid())"
@@ -96,7 +96,7 @@
             </textarea>
             <div class="sp-field__hint sp-field__hint--danger"
               *ngIf="shouldShowFieldError(coverLetterModel, isCoverLetterInvalid())">
-              {{ lang === 'ar' ? 'نص العرض الفني مطلوب.' : 'Technical proposal text is required.' }}
+              {{ lang === 'ar' ? 'المقدمة مطلوبة.' : 'Introduction is required.' }}
             </div>
             <div class="sp-field__meta" *ngIf="!(editMode && editLocked)">
               <span class="sp-field__hint">
@@ -137,7 +137,7 @@
             <p class="sp-field__hint" *ngIf="editMode && editLocked && !existingAttachments.length">{{ lang === 'ar' ? 'لا توجد مرفقات.' : 'No attachments.' }}</p>
 
             <ng-container *ngIf="!(editMode && editLocked)">
-              <label class="sp-file-upload" for="sp-attachments">
+              <label class="sp-file-upload" [class.has-files]="selectedAttachments.length > 0" for="sp-attachments">
                 <i class="ki-outline ki-plus"></i>
                 <span class="sp-file-upload__copy">
                   <span class="sp-file-upload__text">
@@ -145,7 +145,7 @@
                   </span>
                   <span class="sp-file-upload__suggest">{{ lang === 'ar' ? 'مقترحات للإرفاق:' : 'Suggested to attach:' }}</span>
                   <span class="sp-file-upload__tags">
-                    <span class="sp-file-upload__tag" *ngFor="let item of suggestedAttachments">{{ lang === 'ar' ? item.ar : item.en }}</span>
+                    <span class="sp-file-upload__tag" *ngFor="let item of suggestedAttachments"><i class="ki-outline ki-document" aria-hidden="true"></i> {{ lang === 'ar' ? item.ar : item.en }}</span>
                   </span>
                 </span>
                 <span class="sp-file-upload__hint">
@@ -581,7 +581,7 @@
                 </span>
                 <span class="sp-tl__value">
                   <strong>{{ formatPrice(row.amount) }}</strong>
-                  <small>{{ row.item.percentage ?? 0 }}% · {{ row.cumulative }}% {{ lang === 'ar' ? 'حتى الآن' : 'to date' }}</small>
+                  <small>{{ row.item.percentage ?? 0 }}% · <span class="sp-cumulative">{{ row.cumulative }}% {{ lang === 'ar' ? 'حتى الآن' : 'to date' }}</span></small>
                 </span>
               </li>
             </ol>
@@ -645,7 +645,7 @@
 
           <!-- Technical proposal, attachments and suggested duration -->
           <section class="sp-rv-block" *ngIf="editPatch.cover_letter !== undefined">
-            <h3>{{ lang === 'ar' ? 'نص العرض الفني' : 'Technical proposal text' }}</h3>
+            <h3>{{ lang === 'ar' ? 'المقدمة' : 'Introduction' }}</h3>
             <div class="sp-rv-text">
               <div class="sp-rv-text__side is-before"><span>{{ lang === 'ar' ? 'قبل' : 'Before' }}</span><p>{{ p.offer?.cover_letter || '—' }}</p></div>
               <div class="sp-rv-text__side is-after"><span>{{ lang === 'ar' ? 'بعد' : 'After' }}</span><p>{{ editPatch.cover_letter }}</p></div>

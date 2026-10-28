@@ -22,7 +22,8 @@
     "prestart": "npm run dev:sources",
     "prewatch": "npm run dev:sources",
     "predev:ssr": "npm run dev:sources",
-    "test:send-proposal": "ng test --watch=false --browsers=ChromeHeadless --main=src/test-send-proposal.ts --ts-config=tsconfig.send-proposal-spec.json --include=src/app/pages/insighter-dashboard/insighter-dashboard/project-offers/send-proposal/send-proposal.component.spec.ts --include=src/app/pages/insighter-dashboard/insighter-dashboard/project-offers/send-proposal/edit-offer.component.spec.ts"
+    "test:send-proposal": "ng test --watch=false --browsers=ChromeHeadless --main=src/test-send-proposal.ts --ts-config=tsconfig.send-proposal-spec.json --include=src/app/pages/insighter-dashboard/insighter-dashboard/project-offers/send-proposal/send-proposal.component.spec.ts --include=src/app/pages/insighter-dashboard/insighter-dashboard/project-offers/send-proposal/edit-offer.component.spec.ts",
+    "test:meeting-flows": "ng test --watch=false --browsers=ChromeHeadless --main=src/test-meeting-flows.ts --ts-config=tsconfig.meeting-flows-spec.json --include=src/app/pages/insighter-dashboard/insighter-dashboard/projects-created/project-detail/project-award.component.spec.ts --include=src/app/pages/insighter-dashboard/insighter-dashboard/shared/offer-overview.component.spec.ts"
   },
   "private": true,
   "dependencies": {

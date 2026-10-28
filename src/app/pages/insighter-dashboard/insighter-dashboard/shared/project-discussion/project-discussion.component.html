@@ -1,3 +1,7 @@
+<p class="discussion-audience" *ngIf="sharedWithInvitees && !isPrivateThread">
+  <i class="ki-outline ki-messages" aria-hidden="true"></i>
+  {{ lang === 'ar' ? 'الرسائل العامة هنا مرئية لجميع الخبراء المدعوين. لطلب تعديل عرض محدد، استخدم رسائله الخاصة.' : 'General messages here are visible to all invited Insighters. To discuss a specific offer, use its private messages.' }}
+</p>
 <div class="discussion-card" [class.discussion-card--empty]="hasEmptyThread" [class.discussion-card--private]="isPrivateThread" [attr.dir]="lang === 'ar' ? 'rtl' : 'ltr'">
   <div class="discussion-card__private" *ngIf="isPrivateThread">
     <i class="ki-outline ki-lock-2 fs-5" aria-hidden="true"></i>
@@ -93,7 +97,7 @@
       rows="2"
       [(ngModel)]="draft"
       [disabled]="isSending || !normalizedProjectUuid || !canCompose"
-      [placeholder]="lang === 'ar' ? 'اكتب رسالة' : 'Type a message'"
+      [placeholder]="isPrivateThread && context === 'client' ? (lang === 'ar' ? 'اسأل عن السعر المقترح أو نطاق العمل أو موعد التسليم…' : 'Ask about the proposed price, scope, or delivery timeline…') : (lang === 'ar' ? 'اكتب رسالة' : 'Type a message')"
       (keydown)="onMessageKeydown($event)">
     </textarea>
 

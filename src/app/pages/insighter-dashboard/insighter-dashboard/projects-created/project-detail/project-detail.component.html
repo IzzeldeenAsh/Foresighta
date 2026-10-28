@@ -115,7 +115,7 @@
               <i class="ki-outline ki-messages pd-tab__icon" aria-hidden="true"></i>
               <span>{{ lang === 'ar' ? 'النقاش' : 'Discussion' }}</span>
             </button>
-            <button type="button" class="pd-tab" role="tab" [class.active]="activeTab === 'revisions'" [attr.aria-selected]="activeTab === 'revisions'" (click)="setActiveTab('revisions')"><i class="ki-outline ki-time pd-tab__icon" aria-hidden="true"></i><span>{{ lang === 'ar' ? 'سجل التعديلات' : 'Changes Revisions' }}</span></button>
+            <button type="button" class="pd-tab" role="tab" [class.active]="activeTab === 'revisions'" [attr.aria-selected]="activeTab === 'revisions'" (click)="setActiveTab('revisions')"><i class="ki-outline ki-time pd-tab__icon" aria-hidden="true"></i><span>{{ lang === 'ar' ? 'سجل التعديلات' : 'Changes History' }}</span></button>
           </div>
 
           <ng-container *ngIf="activeTab === 'revisions'">
@@ -132,7 +132,7 @@
             <ng-template #ownRevisions>
               <div class="pd-revisions-hint">
                 <i class="ki-outline ki-information-5" aria-hidden="true"></i>
-                <span>{{ lang === 'ar' ? 'هنا تعديلاتك على المشروع فقط. تعديلات كل خبير على عرضه تجدها داخل العرض في تبويب «التعديلات».' : 'Your changes to the project only. Each Insighter\'s changes to their offer are in that offer, under Revisions.' }}</span>
+                <span>{{ lang === 'ar' ? 'هنا تعديلاتك على المشروع فقط. تعديلات كل خبير على عرضه تجدها داخل العرض في تبويب «التعديلات».' : 'Your changes to the project only. Each Insighter\'s changes to their offer are in that offer, under Changes History.' }}</span>
               </div>
               <app-agreement-revisions [record]="p" role="client" layout="accordion" authorRole="client" [matchList]="invitedInsighters" [lang]="lang" (revisionSeen)="p.unseen_agreement_revisions_count = lowerCount(p.unseen_agreement_revisions_count)" (refreshed)="onAgreementRefreshed($event)"></app-agreement-revisions>
             </ng-template>
@@ -686,7 +686,7 @@
           </ng-container>
 
           <ng-container *ngIf="activeTab === 'discussion'">
-            <app-project-discussion
+            <app-project-discussion [sharedWithInvitees]="!isProjectAwarded()"
               [projectUuid]="p.uuid"
               context="client">
             </app-project-discussion>
@@ -1691,7 +1691,7 @@
                     [attr.aria-selected]="proposalDrawerSection === 'revisions'"
                     (click)="setProposalDrawerSection('revisions')">
               <i class="ki-outline ki-time" aria-hidden="true"></i>
-              <span>{{ lang === 'ar' ? 'التعديلات' : 'Revisions' }}</span>
+              <span>{{ lang === 'ar' ? 'التعديلات' : 'Changes History' }}</span>
               <span class="pd-tab-badge" *ngIf="offerRevisionsNew(invite) > 0"
                     [attr.aria-label]="lang === 'ar' ? 'تعديلات جديدة' : 'New revisions'">{{ offerRevisionsNew(invite) }}</span>
             </button>
@@ -1782,7 +1782,11 @@
                 ? (lang === 'ar'
                     ? 'راجع تفاصيل العرض الذي تمت ترسيته لهذا المشروع.'
                     : 'Review the offer awarded for this project.')
-                : (lang === 'ar'
+                : isDirectAward()
+                  ? (lang === 'ar'
+                      ? 'راجع تفاصيل العرض ثم رسِّه مباشرة؛ الترسية تتضمن القبول الفني. يمكنك أيضاً رفضه فنياً.'
+                      : 'Review the offer, then award it directly; awarding includes the technical acceptance. You can also technically reject it.')
+                  : (lang === 'ar'
                     ? 'راجع تفاصيل العرض ثم أضفه إلى القائمة المختصرة أو ارفضه فنياً. تتم الترسية من العروض المقبولة فنياً.'
                     : 'Review the offer, then shortlist or technically reject it. Award only from technically accepted offers.')
             }}
@@ -1795,7 +1799,7 @@
 
           <div class="row g-2 mb-2"
                *ngIf="!isOfferReadOnlyProject() && !isAwardedOfferDrawer() && getOfferStatus(invite) !== 'technical_accepted' && getOfferStatus(invite) !== 'technical_rejected'">
-            <div class="col-12">
+            <div class="col-12" *ngIf="!isDirectAward()">
               <button type="button"
                       class="btn btn-light-success w-100"
                       [disabled]="!canMakeOfferTechnicalDecision(invite, 'technical_accepted')"
@@ -1824,10 +1828,11 @@
             </div>
           </div>
 
-          <ng-container *ngIf="!isOfferReadOnlyProject() && !isAwardedOfferDrawer() && isOfferTechnicalAccepted(invite)">
+          <ng-container *ngIf="!isOfferReadOnlyProject() && !isAwardedOfferDrawer()">
             <button type="button"
                     class="btn btn-info w-100"
                     [disabled]="!canAwardOffer(invite)"
+                    [attr.aria-describedby]="!canAwardOffer(invite) && getAwardDisabledReason(invite) ? 'pd-award-disabled-reason' : null"
                     (click)="awardOffer(invite)">
               <i class="ki-outline ki-award fs-6 me-1"></i>
               {{
@@ -1837,7 +1842,7 @@
               }}
             </button>
 
-            <p *ngIf="!canAwardOffer(invite) && getAwardDisabledReason(invite)"
+            <p *ngIf="!canAwardOffer(invite) && getAwardDisabledReason(invite)" id="pd-award-disabled-reason"
                class="pd-proposal-drawer__aside-hint text-muted mt-2 mb-0">
               <i class="ki-outline ki-information-5 fs-7 me-1"></i>
               {{ getAwardDisabledReason(invite) }}
@@ -1847,9 +1852,9 @@
           <button *ngIf="canUsePrivateOfferDiscussion(invite)"
                   type="button"
                   class="btn btn-light-warning w-100 pd-request-change"
-                  [class.mt-2]="getOfferStatus(invite) === 'technical_accepted' || getOfferStatus(invite) === 'technical_rejected'"
+                  [class.mt-2]="!isOfferReadOnlyProject() && !isAwardedOfferDrawer()"
                   (click)="openOfferChangeRequest(proposalDrawerMain, proposalDrawerBody)">
-            <i class="ki-outline ki-message-edit fs-6 me-1"></i>
+            <i class="ki-outline ki-messages fs-6 me-1"></i>
             {{ lang === 'ar' ? 'طلب تعديل العرض' : 'Offer Change Request' }}
             <span class="pd-tab-badge ms-2" *ngIf="offerUnreadMessages(invite) > 0"
                   [attr.aria-label]="lang === 'ar' ? 'رسائل غير مقروءة' : 'Unread messages'">{{ offerUnreadMessages(invite) }}</span>
@@ -1871,11 +1876,7 @@
                   <td>{{ formatDate(invite.deadline_offer) }}</td>
                 </tr>
                 <tr>
-                  <th scope="row">{{ lang === 'ar' ? 'التسعير' : 'Pricing' }}</th>
-                  <td>{{ getPricingSummary(invite.offer) }}</td>
-                </tr>
-                <tr>
-                  <th scope="row">{{ lang === 'ar' ? 'السعر' : 'Price' }}</th>
+                  <th scope="row">{{ lang === 'ar' ? 'السعر المقترح' : 'Proposed Price' }}</th>
                   <td>{{ formatPrice(invite.offer?.proposed_price) }}</td>
                 </tr>
               </tbody>

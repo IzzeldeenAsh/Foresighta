@@ -32,6 +32,7 @@ export class ProjectDiscussionComponent extends BaseComponent implements OnInit,
   @Input() projectUuid: string | null | undefined = null;
   @Input() context: ProjectDiscussionContext = 'client';
   @Input() canSend = true;
+  @Input() sharedWithInvitees = false;
   @Input() disabledBadgeLabel: string | null = null;
   @Input() disabledBadgeClass = 'badge-light-warning';
   @Input() disabledMessage: string | null = null;

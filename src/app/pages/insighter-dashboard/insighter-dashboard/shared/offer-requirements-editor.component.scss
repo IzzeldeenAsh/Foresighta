@@ -1444,3 +1444,5 @@ button.sw-tag.is-checked {
     display: none;
   }
 }
+
+.sw-options { grid-template-columns: minmax(0, 1fr); }

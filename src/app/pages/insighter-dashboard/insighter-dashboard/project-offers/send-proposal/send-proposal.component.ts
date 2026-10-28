@@ -970,7 +970,7 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
       result.push(`${ar ? 'تحديث المخرجات' : 'Update deliverables'} · ${service?.title || service?.service?.name || ''}`);
     }
     if (patch.price_type) result.push(ar ? 'تحديث السعر وجدول الدفعات' : 'Update pricing and payment schedule');
-    if (patch.cover_letter !== undefined) result.push(ar ? 'تحديث نص العرض الفني' : 'Update the technical proposal');
+    if (patch.cover_letter !== undefined) result.push(ar ? 'تحديث المقدمة' : 'Update the introduction');
     if (patch.attachment_uuids) result.push(ar ? 'تحديث المرفقات' : 'Update attachments');
     if (this.editDurationChanged) result.push(ar ? 'تحديث مدة المشروع المقترحة' : 'Update the suggested project duration');
     return result;

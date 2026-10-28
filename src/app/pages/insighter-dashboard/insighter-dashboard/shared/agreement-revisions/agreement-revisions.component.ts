@@ -532,9 +532,9 @@ export class AgreementRevisionsComponent implements OnInit, OnChanges, OnDestroy
       contract: ['On signing', 'عند التوقيع'], date: ['After project start', 'بعد بدء المشروع'], fixed: ['Fixed price', 'سعر ثابت'], hourly: ['Hourly', 'بالساعة'], daily: ['Daily', 'باليوم'],
       full: ['Full payment', 'دفع كامل'], partial: ['Installments', 'دفعات'], on_platform: ['On platform', 'على المنصة'], session: ['Session', 'جلسة'], physical_workshop: ['In-person workshop', 'ورشة حضورية'],
       position: ['Order', 'الترتيب'], value: ['Value', 'القيمة'], selected: ['Method', 'الطريقة'], way: ['Delivery', 'التسليم'], address: ['Address', 'العنوان'],
-      cover_letter: ['Technical proposal', 'نص العرض الفني'], suggested_duration_days: ['Suggested project duration', 'مدة المشروع المقترحة'],
+      cover_letter: ['Introduction', 'المقدمة'], suggested_duration_days: ['Suggested project duration', 'مدة المشروع المقترحة'],
       primary_data: ['Primary data', 'بيانات أولية'], secondary_data: ['Secondary data', 'بيانات ثانوية'], both: ['Primary and secondary data', 'بيانات أولية وثانوية'], does_not_matter: ['No preference', 'لا تفضيل'],
-      offer_cover_letter: ['Technical proposal', 'نص العرض الفني'], offer_attachment: ['Offer attachments', 'مرفقات العرض'], scope_attachment: ['Sub-scope attachments', 'مرفقات النطاقات الفرعية'], offer_duration_days: ['Suggested project duration', 'مدة المشروع المقترحة'],
+      offer_cover_letter: ['Introduction', 'المقدمة'], offer_attachment: ['Offer attachments', 'مرفقات العرض'], scope_attachment: ['Sub-scope attachments', 'مرفقات النطاقات الفرعية'], offer_duration_days: ['Suggested project duration', 'مدة المشروع المقترحة'],
     };
     return labels[value] ? this.text(...labels[value]) : value.replace(/_/g, ' ');
   }
@@ -548,7 +548,7 @@ export class AgreementRevisionsComponent implements OnInit, OnChanges, OnDestroy
       component: ['ki-element-11', 'component', 'Requirements', 'المتطلبات'],
       project_property: ['ki-calendar-8', 'deliverable', 'Schedule', 'الجدول الزمني'],
       proposal_property: ['ki-time', 'scope', 'Offer deadline', 'موعد انتهاء العرض'],
-      offer_cover_letter: ['ki-document', 'component', 'Technical proposal', 'العرض الفني'],
+      offer_cover_letter: ['ki-document', 'component', 'Introduction', 'المقدمة'],
       offer_attachment: ['ki-paper-clip', 'component', 'Attachments', 'المرفقات'],
       scope_attachment: ['ki-paper-clip', 'scope', 'Sub-scope files', 'ملفات النطاقات الفرعية'],
       offer_duration_days: ['ki-time', 'deliverable', 'Suggested duration', 'المدة المقترحة'],

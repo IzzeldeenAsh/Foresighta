@@ -39,14 +39,15 @@
               <button type="button"
                       *ngIf="canViewOffer"
                       class="pd-tl-party-action pd-tl-party-action--offer"
+                      [class.pd-tl-party-action--full]="!isClient"
                       [pTooltip]="viewOfferLabel()"
                       tooltipPosition="top"
                       [attr.aria-label]="viewOfferLabel()"
                       (click)="onOfferAction(step)">
-                <i class="ki-outline ki-eye lh-0 fs-4"></i>
+                <i class="ki-outline ki-eye lh-0 fs-4"></i><span *ngIf="!isClient">{{ viewOfferLabel() }}</span>
               </button>
 
-              <button *ngIf="step.party?.uuid"
+              <button *ngIf="isClient && step.party?.uuid"
                       type="button"
                       class="pd-tl-party-action pd-tl-party-action--offer"
                       [pTooltip]="requestServiceLabel()"
@@ -58,7 +59,7 @@
                 <span class="spinner-border spinner-border-sm" *ngIf="isRequestServiceLoading(step)" aria-hidden="true"></span>
               </button>
 
-              <a *ngIf="partyMeetUrl(step)"
+              <a *ngIf="isClient && partyMeetUrl(step)"
                  class="pd-tl-party-action pd-tl-party-action--meet"
                  [pTooltip]="meetLabel()"
                  tooltipPosition="top"

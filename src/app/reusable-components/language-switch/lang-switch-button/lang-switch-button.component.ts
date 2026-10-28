@@ -4,6 +4,7 @@ import { filter } from 'rxjs/operators';
 
 import { FontService } from 'src/app/_fake/services/font-change/font.service';
 import { TranslationService } from 'src/app/modules/i18n/translation.service';
+import { confirmLanguageChange } from 'src/app/modules/i18n/unsaved-work-guard';
 import { CookieService } from 'src/app/utils/cookie.service';
 
 @Component({
@@ -50,9 +51,10 @@ export class LangSwitchButtonComponent implements OnInit {
     });
   }
 
-  switchLanguage(): void {
+  async switchLanguage(): Promise<void> {
     // Toggle between English and Arabic
     const newLang = this.selectedLang === 'en' ? 'ar' : 'en';
+    if (!(await confirmLanguageChange(this.selectedLang))) return;
 
     // Change the language in the app
     // translationService.setLanguage() handles: ngx-translate switch, localStorage,

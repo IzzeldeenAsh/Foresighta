@@ -111,10 +111,13 @@ export class ProjectContractComponent extends BaseComponent implements OnInit {
             : this.contract;
           this.successMessage = response?.message
             || (this.lang === 'ar' ? 'تم توقيع العقد بنجاح.' : 'Contract signed successfully.');
-          this.showSuccess(
-            this.lang === 'ar' ? 'نجاح' : 'Success',
-            this.successMessage
-          );
+          void Swal.fire({
+            icon: 'success',
+            title: this.lang === 'ar' ? 'تم توقيع العقد' : 'Contract signed',
+            text: this.successMessage,
+            confirmButtonText: this.lang === 'ar' ? 'تم' : 'Done',
+            allowOutsideClick: false,
+          });
         },
         error: err => {
           this.errorMessage = this.getServerErrorMessage(err);

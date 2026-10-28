@@ -84,6 +84,12 @@ export class ProjectOfferDetailsComponent extends ProjectOffersComponent impleme
 
   /** A notification's `?revision=` is handled once; drop it so reopening the drawer starts fresh. */
   protected override onOfferDrawerClosed(): void {
+    this.handledOfferParam = null;
+    this.pendingOfferSection = null;
+    this.pendingPrivateOfferUuid = null;
+    if (this.route.snapshot.queryParamMap.has('offer')) {
+      this.detailsRouter.navigate([], { relativeTo: this.route, queryParams: { offer: null, tab: 'overview' }, queryParamsHandling: 'merge', replaceUrl: true });
+    }
     if (!this.route.snapshot.queryParamMap.has('revision')) return;
     this.detailsRouter.navigate([], { relativeTo: this.route, queryParams: { revision: null }, queryParamsHandling: 'merge', replaceUrl: true });
   }

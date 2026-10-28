@@ -40,9 +40,9 @@
       <i class="ki-outline ki-notification-on fs-1"></i>
       <div
         *ngIf="notificationCount > 0"
-        class="badge badge-circle badge-danger position-absolute translate-middle bottom-0 ms-10 mt-7 h-15px w-15px fs-9"
+        class="badge badge-pill badge-danger position-absolute translate-middle bottom-0 ms-10 mt-7 h-20px px-1 fs-9"
       >
-        {{ notificationCount }}
+        {{ notificationCount > 99 ? '99+' : notificationCount }}
       </div>  
     </div>
     <div class="position-relative">

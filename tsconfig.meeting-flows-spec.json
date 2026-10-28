@@ -1,0 +1,6 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": { "outDir": "./out-tsc/meeting-flows", "types": ["jasmine"] },
+  "files": ["src/test-meeting-flows.ts", "src/polyfills.ts"],
+  "include": ["src/**/*.d.ts"]
+}

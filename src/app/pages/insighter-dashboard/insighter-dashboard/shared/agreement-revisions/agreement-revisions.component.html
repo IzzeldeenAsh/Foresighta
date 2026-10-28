@@ -11,7 +11,7 @@
   <div class="empty" *ngIf="listContexts.length && !loading && !error && !forbidden && !revisions.length"><i class="pi pi-history" aria-hidden="true"></i><h3>{{ text('No changes yet', 'لا توجد تغييرات بعد') }}</h3><p>{{ projectHistory ? text('You have not changed the project yet. Your saved edits will appear here.', 'لم تعدّل المشروع بعد. ستظهر تعديلاتك المحفوظة هنا.') : text('No revisions yet. Saved changes will appear here for both parties.', 'لا توجد مراجعات بعد. ستظهر التغييرات المحفوظة هنا للطرفين.') }}</p></div>
   <p class="rv-unseen" role="status" *ngIf="layout === 'list' && unseenCount > 0">{{ unseenCount === 1 ? text('1 new revision', 'مراجعة جديدة واحدة') : text(unseenCount + ' new revisions', unseenCount + ' مراجعات جديدة') }}</p>
   <div class="rv-acc__head" *ngIf="layout === 'accordion' && revisions.length">
-    <span class="rv-acc__title">{{ authorRole === 'client' ? text('Project changes', 'تعديلات المشروع') : text('Revision history', 'سجل التعديلات') }}<span class="rv-acc__new" *ngIf="newCount > 0">{{ newCount === 1 ? text('1 new', 'تعديل جديد') : text(newCount + ' new', newCount + ' جديدة') }}</span></span>
+    <span class="rv-acc__title">{{ authorRole === 'client' ? text('Project changes', 'تعديلات المشروع') : text('Changes History', 'سجل التعديلات') }}<span class="rv-acc__new" *ngIf="newCount > 0">{{ newCount === 1 ? text('1 new', 'تعديل جديد') : text(newCount + ' new', newCount + ' جديدة') }}</span></span>
     <div class="rv-acc__tools">
       <div class="rv-acc__filter" role="group" *ngIf="showAuthorFilter" [attr.aria-label]="text('Filter by author', 'تصفية حسب الطرف')">
         <button type="button" [attr.aria-pressed]="authorFilter === 'all'" (click)="setAuthorFilter('all')">{{ text('All', 'الكل') }} <span>{{ authorCount('all') }}</span></button>
@@ -41,7 +41,7 @@
   </div>
   <div class="rv-list" *ngIf="layout === 'list' && revisions.length">
     <div class="rv-list__toolbar">
-      <span class="rv-list__title">{{ text('Revision history', 'سجل المراجعات') }}</span>
+      <span class="rv-list__title">{{ text('Changes History', 'سجل المراجعات') }}</span>
       <ng-container *ngIf="showEditAction && canEdit && role === 'insighter'" [ngTemplateOutlet]="editAction"></ng-container>
     </div>
     <div role="list">
@@ -102,7 +102,7 @@
             <ng-container *ngFor="let bar of diff.bars">
               <span class="rv-pay__bar-label">{{ bar.label }}</span>
               <div class="rv-pay__bar">
-                <span class="rv-pay__seg" *ngFor="let segment of bar.segments" [ngClass]="'is-' + segment.status" [style.flex-grow]="segment.share" [title]="segment.hint">{{ segment.share >= 8 ? segment.share + '%' : '' }}</span>
+                <span class="rv-pay__seg" *ngFor="let segment of bar.segments" [ngClass]="'is-' + segment.status" [style.flex-grow]="segment.share" [title]="segment.hint">{{ segment.share + '%' }}</span>
                 <span class="rv-pay__empty" *ngIf="!bar.segments.length">{{ text('No payments', 'لا توجد دفعات') }}</span>
               </div>
             </ng-container>
@@ -241,9 +241,9 @@
           <div class="entry" *ngFor="let scope of group.scopes; let si = index">
             <div class="entry__heading"><strong>{{ text('Scope', 'النطاق') }} {{ si + 1 }}</strong><button class="remove" type="button" (click)="group.scopes.splice(si, 1)">{{ text('Remove scope', 'حذف النطاق') }}</button></div>
             <label>{{ text('Title', 'العنوان') }}<input [(ngModel)]="scope.scope" maxlength="255" required></label>
-            <label>{{ text('Description (optional)', 'الوصف (اختياري)') }}<textarea [(ngModel)]="scope.description" maxlength="2500" rows="2"></textarea></label>
             <div class="subscope" *ngFor="let child of scope.subscopes; let ci = index"><div class="entry__heading"><strong>{{ text('Subscope', 'النطاق الفرعي') }} {{ ci + 1 }}</strong><button class="remove" type="button" (click)="scope.subscopes.splice(ci, 1)">{{ text('Remove', 'حذف') }}</button></div><label>{{ text('Title', 'العنوان') }}<input [(ngModel)]="child.scope" maxlength="255" required></label><label>{{ text('Description (optional)', 'الوصف (اختياري)') }}<textarea [(ngModel)]="child.description" maxlength="2500" rows="2"></textarea></label></div>
             <button type="button" class="add" (click)="addSubscope(scope)">+ {{ text('Add subscope', 'إضافة نطاق فرعي') }}</button>
+            <label>{{ text('Description (optional)', 'الوصف (اختياري)') }}<textarea [(ngModel)]="scope.description" maxlength="2500" rows="2"></textarea></label>
           </div>
           <button type="button" class="add" (click)="addScope(group)">+ {{ text('Add scope', 'إضافة نطاق') }}</button>
         </ng-container>

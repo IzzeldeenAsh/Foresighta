@@ -6,7 +6,7 @@
     </div>
     <div class="offer-overview__terms">
       <div class="offer-overview__price"><strong>{{ price() }}</strong><span>USD</span></div>
-      <div class="offer-overview__basis">{{ pricingSummary }}</div>
+      <div class="offer-overview__basis">{{ ar ? 'السعر المقترح' : 'Proposed Price' }}</div>
       <div class="offer-overview__status">
         <span class="badge" [ngClass]="statusClass"><i class="pi pi-clock" *ngIf="offer.status === 'pending'" aria-hidden="true"></i>{{ offer.status === 'pending' ? (ar ? 'بانتظار المراجعة' : 'Pending review') : statusLabel }}</span>
         <small *ngIf="offer.status === 'pending'">{{ context === 'client' ? (ar ? 'بانتظار مراجعتك' : 'Awaiting your review') : (ar ? 'بانتظار رد العميل' : 'Awaiting client response') }}</small>
@@ -20,8 +20,8 @@
   </div>
 
   <section class="offer-overview__letter">
-    <h3>{{ ar ? 'خطاب العرض' : 'Cover letter' }}</h3>
-    <p>{{ offer.cover_letter || (ar ? 'لا توجد رسالة مرفقة بالعرض.' : 'No cover letter was included.') }}</p>
+    <h3>{{ ar ? 'المقدمة' : 'Introduction' }}</h3>
+    <p>{{ offer.cover_letter || (ar ? 'لم تُرفق مقدمة بالعرض.' : 'No introduction was included.') }}</p>
   </section>
 
   <!-- Offer attachments and other parent content sit right under the cover letter -->

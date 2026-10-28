@@ -1,6 +1,7 @@
 import { Component, HostBinding, Injector, OnInit, AfterViewInit, ElementRef, Renderer2, Output, EventEmitter } from '@angular/core';
 import { Observable, first, of } from 'rxjs';
 import { TranslationService } from '../../../../../../modules/i18n';
+import { confirmLanguageChange } from 'src/app/modules/i18n/unsaved-work-guard';
 import { AuthService, UserType } from '../../../../../../modules/auth';
 import { IKnoldgProfile } from 'src/app/_fake/models/profile.interface';
 import { Router } from '@angular/router';
@@ -262,7 +263,10 @@ export class UserInnerComponent extends BaseComponent implements OnInit, AfterVi
     window.location.href = `/auth/logout?redirect_uri=${redirectUri}`;
   }
 
-  selectLanguage(lang: string) {
+  async selectLanguage(lang: string) {
+    const current = this.translationService.getSelectedLanguage();
+    if (lang === current) return;
+    if (!(await confirmLanguageChange(current))) return;
     this.translationService.setLanguage(lang);
     this.setLanguage(lang);
     window.location.reload();

@@ -1131,7 +1131,7 @@
               [class.active]="offerSection(offer) === 'revisions'" [attr.aria-selected]="offerSection(offer) === 'revisions'"
               (click)="setOfferDrawerSection('revisions')">
               <i class="ki-outline ki-time" aria-hidden="true"></i>
-              <span>{{ lang === 'ar' ? 'التعديلات' : 'Revisions' }}</span>
+              <span>{{ lang === 'ar' ? 'التعديلات' : 'Changes History' }}</span>
               <span class="po-tab-badge" *ngIf="offerRevisionsUnseen > 0" [attr.aria-label]="lang === 'ar' ? 'تعديلات جديدة' : 'New revisions'">{{ offerRevisionsUnseen }}</span>
             </button>
           </div>
@@ -1202,7 +1202,7 @@
           </p>
           <p class="po-aside-card__hint" *ngIf="hasSubmittedOffer(offer)">
             {{ canEditOffer(offer)
-              ? (lang === 'ar' ? 'يمكنك تعديل عرضك ما دام العميل يراجعه. كل تعديل محفوظ يظهر في «التعديلات» للطرفين.' : 'You can edit your offer while the client reviews it. Every saved change appears in Revisions for both sides.')
+              ? (lang === 'ar' ? 'يمكنك تعديل عرضك ما دام العميل يراجعه. كل تعديل محفوظ يظهر في «التعديلات» للطرفين.' : 'You can edit your offer while the client reviews it. Every saved change appears in Changes History for both sides.')
               : (lang === 'ar' ? 'راجع عرضك ورسائله وسجل تعديلاته.' : 'Review your offer, its messages and its revision history.') }}
           </p>
 
@@ -1222,11 +1222,7 @@
                   <td>{{ getDeadlineLabel(offer) }}</td>
                 </tr>
                 <tr>
-                  <th scope="row">{{ lang === 'ar' ? 'التسعير' : 'Pricing' }}</th>
-                  <td>{{ getOfferPaymentSummary(submittedOffer) || '-' }}</td>
-                </tr>
-                <tr>
-                  <th scope="row">{{ lang === 'ar' ? 'السعر' : 'Price' }}</th>
+                  <th scope="row">{{ lang === 'ar' ? 'السعر المقترح' : 'Proposed Price' }}</th>
                   <td>{{ submittedOffer.proposed_price != null && submittedOffer.proposed_price !== '' ? '$' + formatMoney(submittedOffer.proposed_price) : '-' }}</td>
                 </tr>
               </tbody>
