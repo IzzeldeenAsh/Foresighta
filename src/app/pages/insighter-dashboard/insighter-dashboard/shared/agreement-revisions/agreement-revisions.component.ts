@@ -571,7 +571,8 @@ export class AgreementRevisionsComponent implements OnInit, OnChanges, OnDestroy
   /** Updated items list only the fields that changed; added/removed items get a one-line summary. */
   changeRows(item: AgreementRevisionItem): ChangeRow[] {
     // Backend-built rows win; the raw diff below is the fallback for older revisions.
-    if (Array.isArray(item.changes) && item.changes.length) return item.changes.map(change => this.backendRow(item, change));
+    if (Array.isArray(item.changes) && item.changes.length)
+      return item.changes.filter(change => !this.hiddenKey(change.field)).map(change => this.backendRow(item, change));
     const before = this.plain(item.before_value), after = this.plain(item.after_value);
     if (item.action !== 'updated' || !before || !after) return [];
     // Schedule and offer-deadline items carry a single { value }; the header already names it.
@@ -855,7 +856,8 @@ export class AgreementRevisionsComponent implements OnInit, OnChanges, OnDestroy
   private plain(value: unknown): Record<string, any> | null {
     return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, any> : null;
   }
-  private hiddenKey(key: string): boolean { return key === 'id' || key === 'position' || key.endsWith('_id'); }
+  /** `fixed_price` always mirrors the proposed price, so only "Proposed Price" is shown. */
+  private hiddenKey(key: string): boolean { return key === 'id' || key === 'position' || key === 'fixed_price' || key.endsWith('_id'); }
   describe(value: any): string {
     if (value === null || value === undefined || value === '') return '—';
     if (Array.isArray(value)) return value.map(v => this.describe(v)).join(' · ');

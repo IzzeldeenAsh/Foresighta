@@ -4046,3 +4046,17 @@
     min-width: 120px;
   }
 }
+
+/* Secondary action reads as a button: light gray fill with a soft border. */
+.po-submitted__close.btn.btn-light {
+  background-color: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  color: #1e293b;
+
+  &:hover,
+  &:focus-visible {
+    background-color: #e2e8f0;
+    border-color: #cbd5e1;
+    color: #0f172a;
+  }
+}

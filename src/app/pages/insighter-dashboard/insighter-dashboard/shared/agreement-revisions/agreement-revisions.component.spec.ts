@@ -33,7 +33,7 @@ describe('Agreement revisions safeguards', () => {
     expect(component.coverLetter(revision.items[0].after_value)).toBe('Updated');
     expect(component.changeRows(revision.items[1])[0]).toEqual(jasmine.objectContaining({ before: '—', after: '45 days' }));
     expect(component.durationNote(revision.items[1])).toContain('45 days');
-    expect(component.revisionTitle(revision)).toBe('Technical proposal and Suggested duration and Attachments');
+    expect(component.revisionTitle(revision)).toBe('Introduction and Suggested duration and Attachments');
   });
   describe('accordion layout', () => {
     const rows = [
@@ -217,8 +217,10 @@ describe('Agreement revisions safeguards', () => {
       before_value: { value: 30 }, after_value: { value: 45 }, changes: [{ field: 'value', label: 'Value', before: 30, after: 45 }] } as any);
     expect(duration).toEqual([{ label: 'Changed', before: '30 days', after: '45 days' }]);
     const priced = component.changeRows({ id: 2, action: 'updated', target_type: 'offer_price', target_label: 'Price', before_value: {}, after_value: {},
-      changes: [{ field: 'fixed_price', label: 'Fixed price', before: 2500, after: 5555 }] } as any);
-    expect(priced).toEqual([{ label: 'Fixed price', before: '$2,500.00', after: '$5,555.00', delta: '+$3,055.00' }]);
+      changes: [{ field: 'fixed_price', label: 'Fixed price', before: 2500, after: 5555 },
+        { field: 'proposed_price', label: 'Proposed price', before: 2500, after: 5555 }] } as any);
+    // fixed_price mirrors the proposed price, so only the proposed price row is shown.
+    expect(priced).toEqual([{ label: 'Proposed price', before: '$2,500.00', after: '$5,555.00', delta: '+$3,055.00' }]);
   });
   it('names target markets by type and resolves ids against the loaded market lists', () => {
     api.markets = jasmine.createSpy().and.callFake((type: string) => of(type === 'region'

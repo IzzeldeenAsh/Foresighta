@@ -1258,7 +1258,7 @@
       {{ lang === 'ar' ? 'سيراجع العميل عرضك، وسنُعلمك فور رده.' : 'The client will review your offer, and we will notify you as soon as they respond.' }}
     </p>
     <div class="po-submitted__actions">
-      <button type="button" class="btn btn-sm btn-light" (click)="offerSubmittedVisible = false">
+      <button type="button" class="btn btn-sm btn-light po-submitted__close" (click)="offerSubmittedVisible = false">
         {{ lang === 'ar' ? 'إغلاق' : 'Close' }}
       </button>
       <button type="button" class="btn btn-sm btn-primary" [disabled]="!selectedOffer" (click)="viewSubmittedOffer()">
