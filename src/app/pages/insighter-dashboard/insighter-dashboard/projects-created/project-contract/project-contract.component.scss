@@ -334,12 +334,12 @@
   }
 }
 
-.pcn-contract-meta {
-  display: flex;
+.pcn-download {
+  display: inline-flex;
   align-items: center;
-  justify-content: flex-end;
-  flex-wrap: wrap;
-  gap: 8px;
+  gap: 6px;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .pcn-prepare-panel {

@@ -1797,7 +1797,28 @@
             <span>{{ getOfferReadOnlyMessage() }}</span>
           </div>
 
-          <div class="row g-2 mb-2"
+          <ng-container *ngIf="!isOfferReadOnlyProject() && !isAwardedOfferDrawer()">
+            <button type="button"
+                    class="btn btn-info w-100"
+                    [disabled]="!canAwardOffer(invite)"
+                    [attr.aria-describedby]="!canAwardOffer(invite) && getAwardDisabledReason(invite) ? 'pd-award-disabled-reason' : null"
+                    (click)="awardOffer(invite)">
+              <i class="ki-outline ki-award fs-6 me-1"></i>
+              {{
+                isOfferActionInProgress(invite, 'award')
+                  ? (lang === 'ar' ? 'جاري الترسية...' : 'Awarding...')
+                  : (lang === 'ar' ? 'ترسية العرض' : 'Award Offer')
+              }}
+            </button>
+
+            <p *ngIf="!canAwardOffer(invite) && getAwardDisabledReason(invite)" id="pd-award-disabled-reason"
+               class="pd-proposal-drawer__aside-hint text-muted mt-2 mb-0">
+              <i class="ki-outline ki-information-5 fs-7 me-1"></i>
+              {{ getAwardDisabledReason(invite) }}
+            </p>
+          </ng-container>
+
+          <div class="row g-2 mt-0 mb-2"
                *ngIf="!isOfferReadOnlyProject() && !isAwardedOfferDrawer() && getOfferStatus(invite) !== 'technical_accepted' && getOfferStatus(invite) !== 'technical_rejected'">
             <div class="col-12" *ngIf="!isDirectAward()">
               <button type="button"
@@ -1827,27 +1848,6 @@
               </button>
             </div>
           </div>
-
-          <ng-container *ngIf="!isOfferReadOnlyProject() && !isAwardedOfferDrawer()">
-            <button type="button"
-                    class="btn btn-info w-100"
-                    [disabled]="!canAwardOffer(invite)"
-                    [attr.aria-describedby]="!canAwardOffer(invite) && getAwardDisabledReason(invite) ? 'pd-award-disabled-reason' : null"
-                    (click)="awardOffer(invite)">
-              <i class="ki-outline ki-award fs-6 me-1"></i>
-              {{
-                isOfferActionInProgress(invite, 'award')
-                  ? (lang === 'ar' ? 'جاري الترسية...' : 'Awarding...')
-                  : (lang === 'ar' ? 'ترسية العرض' : 'Award Offer')
-              }}
-            </button>
-
-            <p *ngIf="!canAwardOffer(invite) && getAwardDisabledReason(invite)" id="pd-award-disabled-reason"
-               class="pd-proposal-drawer__aside-hint text-muted mt-2 mb-0">
-              <i class="ki-outline ki-information-5 fs-7 me-1"></i>
-              {{ getAwardDisabledReason(invite) }}
-            </p>
-          </ng-container>
 
           <button *ngIf="canUsePrivateOfferDiscussion(invite)"
                   type="button"

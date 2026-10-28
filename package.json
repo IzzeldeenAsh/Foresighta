@@ -58,6 +58,7 @@
     "express": "^4.18.2",
     "file-saver": "^2.0.5",
     "gsap": "^3.12.5",
+    "html2pdf.js": "0.10.3",
     "i18n-iso-countries": "^7.14.0",
     "jodit": "^3.24.9",
     "jodit-angular": "^1.14.2",

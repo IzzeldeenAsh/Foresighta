@@ -125,7 +125,7 @@
             <i class="ki-outline ki-notification-on fs-1"></i>
             <div
               *ngIf="notificationCount > 0"
-              class="badge badge-pill badge-danger position-absolute translate-middle bottom-0 ms-10 mt-7 h-20px px-1 fs-9"
+              class="header-bell-badge"
             >
               {{ notificationCount > 99 ? '99+' : notificationCount }}
             </div>  
@@ -271,8 +271,7 @@
             <i class="ki-outline ki-notification-on fs-3"></i>
             <span
               *ngIf="notificationCount > 0"
-              class="badge badge-pill badge-danger position-absolute translate-middle top-0 start-100 fs-8"
-              style="font-size: 10px !important; min-width: 20px; height: 20px; line-height: 18px; padding-inline: 4px;">
+              class="header-bell-badge">
               {{ notificationCount > 99 ? '99+' : notificationCount }}
             </span>  
           </button>

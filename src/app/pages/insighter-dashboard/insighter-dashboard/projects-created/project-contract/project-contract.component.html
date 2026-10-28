@@ -17,10 +17,11 @@
       <span>{{ lang === 'ar' ? 'عقد المشروع' : 'Project Contract' }}</span>
       <strong>{{ project?.title || (lang === 'ar' ? 'تحميل المشروع...' : 'Loading project...') }}</strong>
     </div>
-    <button type="button" class="btn btn-light-primary ms-auto" *ngIf="contract && (contractHtml || contract.is_attach_type)"
-      [disabled]="isDownloading || agreementChanged || isLoadingContract || isPreparingContract || isSubmitting" (click)="downloadContract()">
+    <!-- Uploaded contracts download from here; the platform contract has its button on the contract panel. -->
+    <button type="button" class="btn btn-light-primary ms-auto" *ngIf="contract?.is_attach_type && contract?.file?.url"
+      [disabled]="isDownloading || isLoadingContract || isSubmitting" (click)="downloadContract()">
       <i class="ki-outline ki-file-down" aria-hidden="true"></i>
-      {{ isDownloading ? (lang === 'ar' ? 'جاري التنزيل…' : 'Downloading…') : contract.is_attach_type ? (lang === 'ar' ? 'تنزيل العقد الأصلي' : 'Download original contract') : (lang === 'ar' ? 'تنزيل العقد PDF' : 'Download contract PDF') }}
+      {{ isDownloading ? (lang === 'ar' ? 'جاري التنزيل…' : 'Downloading…') : (lang === 'ar' ? 'تنزيل العقد الأصلي' : 'Download original contract') }}
     </button>
   </div>
 
@@ -173,10 +174,12 @@
               <span>{{ lang === 'ar' ? 'عقد المنصة' : 'Platform Contract' }}</span>
               <h4>{{ contractDisplayName }}</h4>
             </div>
-            <div class="pcn-contract-meta">
-              <small *ngIf="selectedContractLanguageLabel">{{ selectedContractLanguageLabel }}</small>
-              <small *ngIf="selectedCourtCountryName">{{ selectedCourtCountryName }}</small>
-            </div>
+            <button type="button" class="btn btn-sm btn-light-info pcn-download" *ngIf="contractHtml"
+              [disabled]="isDownloading || agreementChanged || isLoadingContract || isPreparingContract || isSubmitting" (click)="downloadContract()">
+              <span class="spinner-border spinner-border-sm" *ngIf="isDownloading" aria-hidden="true"></span>
+              <i class="ki-outline ki-file-down fs-5" *ngIf="!isDownloading" aria-hidden="true"></i>
+              {{ isDownloading ? (lang === 'ar' ? 'جاري التنزيل…' : 'Downloading…') : (lang === 'ar' ? 'تنزيل العقد' : 'Download contract') }}
+            </button>
           </div>
 
           <div *ngIf="isLoadingContract" class="pcn-loading">

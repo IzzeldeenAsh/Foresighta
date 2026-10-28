@@ -734,13 +734,6 @@ export class ProjectsCreatedService {
     );
   }
 
-  downloadProjectContract(contractUuid: string): Observable<Blob> {
-    return this.http.get(`${this.baseUrl}/contract/download/${contractUuid}`, {
-      headers: this.getHeaders(),
-      responseType: 'blob',
-    });
-  }
-
   getProjectContract(contractUuid: string): Observable<CreatedProjectContract> {
     this.setLoading(true);
 

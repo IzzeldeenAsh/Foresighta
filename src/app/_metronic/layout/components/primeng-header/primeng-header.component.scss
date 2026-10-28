@@ -1371,6 +1371,25 @@ app-user-inner {
   }
 }
 
+/* Count sits on the bell's top corner (logical, so it mirrors in RTL); "99+" widens it outward, never over the icon. */
+.header-bell-badge {
+  position: absolute;
+  top: -4px;
+  inset-inline-end: -8px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: #e11d48;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 20px;
+  text-align: center;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
 .header-feed {
   background: linear-gradient(90deg, #f59e0b 0%, #facc15 100%);
   color: #fff;

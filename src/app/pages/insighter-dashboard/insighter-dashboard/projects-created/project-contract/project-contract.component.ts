@@ -4,6 +4,7 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { ActivatedRoute, Router } from '@angular/router';
 import { finalize, switchMap, takeUntil } from 'rxjs/operators';
 import Swal from 'sweetalert2';
+import { exportContractPdf } from './contract-pdf-export';
 import { CountriesService, Country } from 'src/app/_fake/services/countries/countries.service';
 import {
   CreatedProjectContract,
@@ -469,29 +470,41 @@ export class ProjectContractComponent extends BaseComponent implements OnInit {
     return true;
   }
 
-  downloadContract(): void {
-    if (!this.contractUuid || this.isDownloading || this.agreementChanged) return;
+  /** Exported in the browser: the platform contract becomes a PDF, an uploaded contract downloads its original file. */
+  async downloadContract(): Promise<void> {
+    const contract = this.contract;
+    if (!contract || this.isDownloading || this.agreementChanged) return;
+
+    if (contract.is_attach_type) {
+      if (!contract.file?.url) return;
+      const link = document.createElement('a');
+      link.href = contract.file.url;
+      link.download = contract.file.name || 'contract';
+      link.target = '_blank';
+      link.rel = 'noopener';
+      link.click();
+      return;
+    }
+
+    const html = this.getContractBody(contract);
+    if (!html) return;
     this.isDownloading = true;
-    this.projectsCreatedService.downloadProjectContract(this.contractUuid)
-      .pipe(takeUntil(this.unsubscribe$), finalize(() => this.isDownloading = false))
-      .subscribe({
-        next: blob => {
-          const url = URL.createObjectURL(blob);
-          const link = document.createElement('a');
-          link.href = url;
-          link.download = this.contract?.is_attach_type
-            ? this.contract.file?.name || 'contract'
-            : `contract-${this.contractUuid}.pdf`;
-          document.body.appendChild(link);
-          link.click();
-          link.remove();
-          setTimeout(() => URL.revokeObjectURL(url), 10000);
-        },
-        error: () => this.showError(
-          this.lang === 'ar' ? 'تعذر تنزيل العقد' : 'Could not download contract',
-          this.lang === 'ar' ? 'حدّث معاينة العقد ثم حاول مجددًا.' : 'Refresh the contract preview and try again.'
-        ),
-      });
+    try {
+      const direction = (contract.language || this.lang) === 'ar' ? 'rtl' : 'ltr';
+      await exportContractPdf(html, `${this.contractFileName()}.pdf`, direction);
+    } catch {
+      this.showError(
+        this.lang === 'ar' ? 'تعذر تنزيل العقد' : 'Could not download contract',
+        this.lang === 'ar' ? 'تعذر إنشاء ملف PDF للعقد. حاول مرة أخرى.' : 'The contract PDF could not be created. Please try again.'
+      );
+    } finally {
+      this.isDownloading = false;
+    }
+  }
+
+  private contractFileName(): string {
+    const title = (this.project?.title || '').trim().replace(/[\\/:*?"<>|]+/g, '').replace(/\s+/g, '-');
+    return `contract-${title || this.contractUuid || 'project'}`;
   }
 
   private getContractBody(contract: CreatedProjectContract): string {
