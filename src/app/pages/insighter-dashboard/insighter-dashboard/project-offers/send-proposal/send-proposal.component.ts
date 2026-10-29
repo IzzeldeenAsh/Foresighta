@@ -1304,6 +1304,16 @@ export class SendProposalComponent extends BaseComponent implements OnInit, OnDe
     return Array.isArray(files) ? files : [];
   }
 
+  /** Icon for a file, picked from its extension. */
+  fileIcon(fileName: string | null | undefined): string {
+    const icons: { [extension: string]: string } = {
+      pdf: 'pdf', doc: 'doc', odt: 'doc', docx: 'docx', xls: 'xsl', xlsx: 'xlsx', csv: 'csv',
+      ppt: 'ppt', pptx: 'pptx', txt: 'txt', jpg: 'jpg', jpeg: 'jpg', png: 'jpg',
+    };
+    const extension = (fileName || '').split('.').pop()?.toLowerCase() || '';
+    return icons[extension] ? `./assets/media/svg/new-files/${icons[extension]}.svg` : './assets/media/svg/files/default.svg';
+  }
+
   getProjectFileName(file: ProjectOfferFile | null | undefined): string {
     const rawName = (file?.url || '').split('/').pop()?.split('?')[0];
     return rawName ? decodeURIComponent(rawName) : (this.lang === 'ar' ? 'ملف' : 'File');

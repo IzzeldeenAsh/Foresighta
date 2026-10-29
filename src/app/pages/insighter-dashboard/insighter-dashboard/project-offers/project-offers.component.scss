@@ -3887,10 +3887,32 @@
   line-height: 1;
   vertical-align: middle;
   white-space: nowrap;
+  cursor: pointer;
+
+  &:hover {
+    background: #b91c1c;
+  }
+
+  &:focus-visible {
+    outline: 2px solid #fca5a5;
+    outline-offset: 2px;
+  }
 
   i {
     color: inherit;
     font-size: 12px;
+  }
+}
+
+/* "View Offer" with the red Offer Messages badge inside it (same badge as the offers list). */
+.po-view-offer-row {
+  margin-bottom: 0.5rem;
+
+  .po-view-offer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
   }
 }
 

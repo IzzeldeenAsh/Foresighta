@@ -77,6 +77,8 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
   protected notificationMatchUuid: string | null = null;
   /** `?offer=` from a private-message notification, opened once the offer details load. */
   protected pendingPrivateOfferUuid: string | null = null;
+  /** `?messages=unread` (the list's red messages badge): open this offer's messages once it loads. */
+  protected pendingUnreadMessages = false;
   offers: ProjectOffer[] = [];
   viewMode: ViewMode = 'list';
   offerReadImageUrl = 'https://res.cloudinary.com/dsiku9ipv/image/upload/v1777637418/job-offer_8062313_lqbkuq.png';
@@ -1058,6 +1060,18 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
     return Number(offer?.unread_private_messages_count) || 0;
   }
 
+  /** The list's red messages badge opens the offer straight on its Offer Messages. */
+  openUnreadMessages(offer: ProjectOffer, event: Event): void {
+    event.stopPropagation();
+    event.preventDefault();
+    const detailsUuid = this.getProposalDetailsUuid(offer);
+    if (!detailsUuid || this.isActiveProject(offer)) {
+      this.openDrawer(offer);
+      return;
+    }
+    this.router.navigate(['/app/insighter-dashboard/project-offers/details', detailsUuid], { queryParams: { messages: 'unread' } });
+  }
+
   /** The open thread was marked read on the server — clear the drawer badges and the matching list row. */
   onOfferThreadRead(offer: ProjectOffer): void {
     if (offer.offer) offer.offer.unread_private_messages_count = 0;
@@ -1111,9 +1125,9 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
 
   setOfferDrawerSection(section: OfferDrawerSection): void { this.offerDrawerSection = section; }
 
-  /** Badge on "View Offer": unread offer messages plus unseen client revisions. */
-  offerDrawerBadge(offer: ProjectOffer | null | undefined): number {
-    return this.offerUnreadMessages(offer) + (this.canViewRevisions(offer) ? this.offerRevisionsUnseen : 0);
+  /** Badge inside "View Offer": unseen client revisions (unread messages have their own red badge beside it). */
+  offerRevisionsBadge(offer: ProjectOffer | null | undefined): number {
+    return this.canViewRevisions(offer) ? this.offerRevisionsUnseen : 0;
   }
 
   /** Reads the match timeline's unseen count; a 403 means this match has no timeline (hide its Revisions). */
@@ -1179,6 +1193,13 @@ export class ProjectOffersComponent extends BaseComponent implements OnInit, OnD
   }
 
   protected openPendingPrivateMessages(): void {
+    if (this.pendingUnreadMessages && this.selectedOffer) {
+      this.pendingUnreadMessages = false;
+      // Before this Insighter's own offer thread exists, the badge opens the client's changes instead.
+      if (this.canUsePrivateOfferDiscussion(this.selectedOffer)) this.openPrivateMessages(this.selectedOffer);
+      else this.openOfferDrawer(this.selectedOffer, 'revisions');
+      return;
+    }
     const offerUuid = this.pendingPrivateOfferUuid;
     if (!offerUuid || !this.selectedOffer?.offer) return;
     this.pendingPrivateOfferUuid = null;

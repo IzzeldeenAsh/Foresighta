@@ -131,7 +131,8 @@
               <span class="po-table__project-copy">
                 <span class="po-table__project-title">
                   {{ offer.project.title }}
-                  <span class="po-msg-badge" *ngIf="listUnreadMessages(offer) > 0"
+                  <span class="po-msg-badge" *ngIf="listUnreadMessages(offer) > 0" role="button" tabindex="0"
+                        (click)="openUnreadMessages(offer, $event)" (keydown.enter)="openUnreadMessages(offer, $event)"
                         [pTooltip]="lang === 'ar' ? 'رسائل عرض غير مقروءة' : 'Unread offer messages'" tooltipPosition="top"
                         [attr.aria-label]="lang === 'ar' ? 'رسائل عرض غير مقروءة' : 'Unread offer messages'">
                         <i class="ki-outline ki-messages" aria-hidden="true"></i>{{ listUnreadMessages(offer) }}
@@ -211,7 +212,8 @@
                     <ng-container *ngTemplateOutlet="typeIcon; context:{ $implicit: offer.project.type }"></ng-container>
                   </span>
                   {{ offer.project.title }}
-                  <span class="po-msg-badge" *ngIf="listUnreadMessages(offer) > 0"
+                  <span class="po-msg-badge" *ngIf="listUnreadMessages(offer) > 0" role="button" tabindex="0"
+                        (click)="openUnreadMessages(offer, $event)" (keydown.enter)="openUnreadMessages(offer, $event)"
                         [pTooltip]="lang === 'ar' ? 'رسائل عرض غير مقروءة' : 'Unread offer messages'" tooltipPosition="top"
                         [attr.aria-label]="lang === 'ar' ? 'رسائل عرض غير مقروءة' : 'Unread offer messages'">
                         <i class="ki-outline ki-messages" aria-hidden="true"></i>{{ listUnreadMessages(offer) }}
@@ -265,7 +267,8 @@
       <div class="po-card__content">
         <div class="po-card__title fs-1" [title]="offer.project.title">
           {{ offer.project.title }}
-          <span class="po-msg-badge" *ngIf="listUnreadMessages(offer) > 0"
+          <span class="po-msg-badge" *ngIf="listUnreadMessages(offer) > 0" role="button" tabindex="0"
+                        (click)="openUnreadMessages(offer, $event)" (keydown.enter)="openUnreadMessages(offer, $event)"
                 [pTooltip]="lang === 'ar' ? 'رسائل عرض غير مقروءة' : 'Unread offer messages'" tooltipPosition="top"
                 [attr.aria-label]="lang === 'ar' ? 'رسائل عرض غير مقروءة' : 'Unread offer messages'">
                 <i class="ki-outline ki-messages" aria-hidden="true"></i>{{ listUnreadMessages(offer) }}
@@ -994,12 +997,20 @@
             </div>
           </div>
 
-          <button *ngIf="!isActiveProject(offer) && hasSubmittedOffer(offer)" type="button" class="btn btn-info w-100 mb-2 po-view-offer" (click)="openOfferDrawer(offer, offerUnreadMessages(offer) > 0 ? 'messages' : offerRevisionsUnseen > 0 ? 'revisions' : 'offer')">
-            <i class="ki-outline ki-eye fs-6 me-1"></i>
-            {{ lang === 'ar' ? 'عرض العرض' : 'View Offer' }}
-            <span class="po-view-offer__badge ms-2" *ngIf="offerDrawerBadge(offer) > 0"
-              [attr.aria-label]="lang === 'ar' ? 'رسائل أو تعديلات جديدة' : 'New messages or revisions'">{{ offerDrawerBadge(offer) }}</span>
-          </button>
+          <div class="po-view-offer-row" *ngIf="!isActiveProject(offer) && hasSubmittedOffer(offer)">
+            <button type="button" class="btn btn-info po-view-offer" (click)="openOfferDrawer(offer, offerRevisionsBadge(offer) > 0 ? 'revisions' : 'offer')">
+              <i class="ki-outline ki-eye fs-6 me-1"></i>
+              {{ lang === 'ar' ? 'عرض العرض' : 'View Offer' }}
+              <span class="po-view-offer__badge ms-2" *ngIf="offerRevisionsBadge(offer) > 0"
+                [attr.aria-label]="lang === 'ar' ? 'تعديلات جديدة' : 'New revisions'">{{ offerRevisionsBadge(offer) }}</span>
+              <span class="po-msg-badge ms-2" *ngIf="offerUnreadMessages(offer) > 0"
+                    (click)="$event.stopPropagation(); openPrivateMessages(offer)"
+                    [pTooltip]="lang === 'ar' ? 'رسائل عرض غير مقروءة' : 'Unread offer messages'" tooltipPosition="top"
+                    [attr.aria-label]="lang === 'ar' ? 'رسائل عرض غير مقروءة' : 'Unread offer messages'">
+                <i class="ki-outline ki-messages" aria-hidden="true"></i>{{ offerUnreadMessages(offer) }}
+              </span>
+            </button>
+          </div>
 
           <ng-container *ngIf="!isActiveProject(offer) && !isOfferTimedOut(offer)">
             <button *ngIf="hasContractAction(offer)" type="button" class="btn btn-info w-100 mb-2" (click)="viewContract(offer)">
@@ -1029,8 +1040,10 @@
           <button *ngIf="!isActiveProject(offer) && !hasSubmittedOffer(offer) && canViewRevisions(offer)" type="button" class="btn btn-outline btn-outline-info w-100 mb-2" (click)="openOfferDrawer(offer, 'revisions')">
             <i class="ki-outline ki-time fs-6 me-1"></i>
             {{ lang === 'ar' ? 'تعديلات العميل' : 'Client changes' }}
-            <span class="po-tab-badge ms-2" *ngIf="offerRevisionsUnseen > 0"
-              [attr.aria-label]="lang === 'ar' ? 'تعديلات جديدة' : 'New revisions'">{{ offerRevisionsUnseen }}</span>
+            <span class="po-msg-badge ms-2" *ngIf="offerRevisionsUnseen > 0"
+              [attr.aria-label]="lang === 'ar' ? 'تعديلات جديدة' : 'New revisions'">
+              <i class="ki-outline ki-messages" aria-hidden="true"></i>{{ offerRevisionsUnseen }}
+            </span>
           </button>
 
           <ng-container *ngIf="!isActiveProject(offer) && !isOfferTimedOut(offer)">
@@ -1132,7 +1145,9 @@
               (click)="setOfferDrawerSection('revisions')">
               <i class="ki-outline ki-time" aria-hidden="true"></i>
               <span>{{ lang === 'ar' ? 'التعديلات' : 'Changes History' }}</span>
-              <span class="po-tab-badge" *ngIf="offerRevisionsUnseen > 0" [attr.aria-label]="lang === 'ar' ? 'تعديلات جديدة' : 'New revisions'">{{ offerRevisionsUnseen }}</span>
+              <span class="po-msg-badge" *ngIf="offerRevisionsUnseen > 0" [attr.aria-label]="lang === 'ar' ? 'تعديلات جديدة' : 'New revisions'">
+                <i class="ki-outline ki-messages" aria-hidden="true"></i>{{ offerRevisionsUnseen }}
+              </span>
             </button>
           </div>
 

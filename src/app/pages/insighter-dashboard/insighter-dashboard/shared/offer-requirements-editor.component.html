@@ -64,12 +64,18 @@
               </p>
 
               <div class="sw-options" role="group" [attr.aria-label]="ar ? 'نطاقات الخدمة' : 'Service scopes'">
-                <label class="sw-option" *ngFor="let option of availableScopeOptions(req.project_service_id)" [class.is-checked]="isPicked(req.project_service_id, option)">
-                  <input type="checkbox" [checked]="isPicked(req.project_service_id, option)" (change)="toggleScope(req.project_service_id, option)" />
-                  <span class="sw-option__name">{{ option.name }}</span>
-                </label>
+                <ng-container *ngFor="let option of availableScopeOptions(req.project_service_id)">
+                  <label class="sw-option" [class.is-checked]="isPicked(req.project_service_id, option)">
+                    <input type="checkbox" [checked]="isPicked(req.project_service_id, option)" (change)="toggleScope(req.project_service_id, option)" />
+                    <span class="sw-option__name">{{ option.name }}</span>
+                  </label>
+                  <ng-container *ngIf="pick(req.project_service_id, 'c' + option.id) as picked">
+                    <ng-container *ngTemplateOutlet="subscopeEntry; context: { $implicit: picked }"></ng-container>
+                  </ng-container>
+                </ng-container>
 
-                <div class="sw-option is-checked" *ngFor="let pick of customPicks(req.project_service_id)">
+                <ng-container *ngFor="let pick of customPicks(req.project_service_id)">
+                <div class="sw-option is-checked">
                   <span class="sw-option__mark" aria-hidden="true"><i class="ki-outline ki-check"></i></span>
                   <span class="sw-option__name" *ngIf="!revisionMode">{{ pick.name }}</span><input *ngIf="revisionMode" class="sw-option__input" [(ngModel)]="pick.name" (ngModelChange)="syncScopes()" maxlength="255" [attr.aria-label]="ar ? 'عنوان النطاق' : 'Scope title'" />
                   <button type="button" class="sw-option__remove" (click)="removeScopePick(req.project_service_id, pick)"
@@ -77,6 +83,8 @@
                     <i class="ki-outline ki-cross"></i>
                   </button>
                 </div>
+                <ng-container *ngTemplateOutlet="subscopeEntry; context: { $implicit: pick }"></ng-container>
+                </ng-container>
 
                 <div class="sw-option sw-option--pending" *ngIf="isPendingScope(req.project_service_id)">
                   <input [id]="'scope-new-' + req.project_service_id" class="sw-option__input" maxlength="255"
@@ -100,11 +108,11 @@
               </p>
             </div>
 
-            <div class="sw-pick" *ngIf="orderedPicks(req.project_service_id).length">
-              <span class="sw-label">{{ ar ? 'النطاقات الفرعية' : 'Sub-scopes' }} <span class="sw-optional">{{ ar ? 'اختياري' : 'Optional' }}</span></span>
-              <div class="sw-entry sw-entry--scope" *ngFor="let pick of orderedPicks(req.project_service_id)">
+            <!-- Sub-scope details sit right under the scope they belong to -->
+            <ng-template #subscopeEntry let-pick>
+              <div class="sw-entry sw-entry--scope sw-entry--nested">
                 <div class="sw-entry__head">
-                  <span class="sw-entry__title">{{ pick.name }}</span>
+                  <span class="sw-label">{{ ar ? 'النطاقات الفرعية' : 'Sub-scopes' }} <span class="sw-optional">{{ ar ? 'اختياري' : 'Optional' }}</span></span>
                   <button type="button" class="sw-link" *ngIf="pick.children.length" (click)="toggleAllChildren(pick)">
                     {{ allChildrenPicked(pick) ? (ar ? 'إلغاء تحديد الكل' : 'Clear') : (ar ? 'تحديد الكل' : 'Select all') }}
                   </button>
@@ -218,7 +226,7 @@
                     [placeholder]="ar ? 'صف ما سيغطيه هذا النطاق…' : 'Describe what this scope will cover…'"></textarea>
                 </label>
               </div>
-            </div>
+            </ng-template>
           </ng-container>
         </ng-container>
 

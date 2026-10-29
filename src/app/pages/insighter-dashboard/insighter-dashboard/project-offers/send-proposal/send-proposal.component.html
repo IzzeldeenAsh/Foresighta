@@ -58,7 +58,6 @@
               <ng-template #stepNumber>{{ i + 1 }}</ng-template>
             </span>
             <span class="sp-step__text">
-              <span class="sp-step__count">{{ lang === 'ar' ? 'الخطوة' : 'Step' }} {{ i + 1 }}</span>
               <span class="sp-step__label">{{ lang === 'ar' ? tab.label.ar : tab.label.en }}</span>
               <span class="sp-step__readonly" *ngIf="isEditTabReadOnly(tab.key)">{{ lang === 'ar' ? 'للعرض فقط' : 'Read-only' }}</span>
             </span>
@@ -119,7 +118,7 @@
             <div class="sp-attachment-list" *ngIf="editMode && existingAttachments.length">
               <div class="sp-attachment" *ngFor="let row of existingAttachments; trackBy: trackByExistingAttachment" [class.is-removed]="!row.kept">
                 <div class="sp-attachment__meta">
-                  <i class="ki-outline ki-document fs-5"></i>
+                  <img class="sp-attachment__icon" [src]="fileIcon(row.file.name || getProjectFileName(row.file))" alt="" />
                   <div class="sp-attachment__text">
                     <button type="button" class="sp-attachment__open" [disabled]="!row.kept || isOpeningFile(row.file)" (click)="openProjectFile(row.file)">{{ row.file.name || getProjectFileName(row.file) }}</button>
                     <span class="sp-attachment__size">{{ row.kept ? (lang === 'ar' ? 'مرفق حالي' : 'Current file') : (lang === 'ar' ? 'سيُحذف عند الحفظ' : 'Removed when you save') }}</span>
@@ -143,10 +142,8 @@
                   <span class="sp-file-upload__text">
                     {{ editMode ? (lang === 'ar' ? 'أضف ملفات جديدة' : 'Add new files') : (lang === 'ar' ? 'اختر الملفات المرفقة' : 'Choose files to attach') }}
                   </span>
-                  <span class="sp-file-upload__suggest">{{ lang === 'ar' ? 'مقترحات للإرفاق:' : 'Suggested to attach:' }}</span>
-                  <span class="sp-file-upload__tags">
-                    <span class="sp-file-upload__tag" *ngFor="let item of suggestedAttachments"><i class="ki-outline ki-document" aria-hidden="true"></i> {{ lang === 'ar' ? item.ar : item.en }}</span>
-                  </span>
+                  <span class="sp-file-upload__suggest">{{ lang === 'ar' ? 'مقترحات للإرفاق:' : 'Suggested to attach:' }}
+                    <ng-container *ngFor="let item of suggestedAttachments; let last = last">{{ lang === 'ar' ? item.ar : item.en }}{{ last ? '' : (lang === 'ar' ? '، ' : ', ') }}</ng-container></span>
                 </span>
                 <span class="sp-file-upload__hint">
                   {{ lang === 'ar' ? 'PDF · ملفات Office · صور حتى 50MB' : 'PDF, Office files, images · up to 50 MB' }}
@@ -159,7 +156,7 @@
             <div class="sp-attachment-list" *ngIf="selectedAttachments.length">
               <div class="sp-attachment" *ngFor="let file of selectedAttachments; let i = index">
                 <div class="sp-attachment__meta">
-                  <i class="ki-outline ki-file fs-5"></i>
+                  <img class="sp-attachment__icon" [src]="fileIcon(file.name)" alt="" />
                   <div class="sp-attachment__text">
                     <span class="sp-attachment__name">{{ file.name }}</span>
                     <span class="sp-attachment__size">{{ formatFileSize(file) }}<ng-container *ngIf="editMode"> · {{ lang === 'ar' ? 'جديد' : 'New' }}</ng-container></span>
@@ -350,12 +347,15 @@
                 <b>{{ suggestedDurationDays }} {{ lang === 'ar' ? 'يوم' : 'days' }}<small *ngIf="suggestedCloseDate"> · {{ formatDate(suggestedCloseDate) }}</small></b>
               </div>
             </div>
-            <div class="sp-deliverables" *ngIf="deliverables.length">
-              <span class="sp-deliverables__chip" *ngFor="let deliverable of deliverables; trackBy: trackByDeliverable">
-                {{ deliverable.title }}
-                <em>{{ periodLabel(deliverable.period_days) }}<ng-container *ngIf="deliverable.date"> · {{ formatDate(deliverable.date) }}</ng-container></em>
-              </span>
-            </div>
+            <ng-container *ngIf="deliverables.length">
+              <span class="badge badge-light-info align-self-start">{{ lang === 'ar' ? 'المخرجات' : 'Deliverables' }}</span>
+              <div class="sp-deliverables">
+                <span class="sp-deliverables__chip" *ngFor="let deliverable of deliverables; trackBy: trackByDeliverable">
+                  {{ deliverable.title }}
+                  <em>{{ periodLabel(deliverable.period_days) }}<ng-container *ngIf="deliverable.date"> · {{ formatDate(deliverable.date) }}</ng-container></em>
+                </span>
+              </div>
+            </ng-container>
           </div>
 
           <!-- Payment plan -->

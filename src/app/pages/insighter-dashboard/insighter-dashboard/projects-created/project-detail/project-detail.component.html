@@ -841,15 +841,19 @@
                   <button type="button"
                           *ngIf="canViewSubmittedOffer(invite)"
                           class="btn btn-link btn-sm p-0 border-0 bg-transparent text-info fw-bold pd-invite-card__offer-btn"
-                          (click)="openProposalDrawer(invite, offerUnreadMessages(invite) > 0 ? 'discussion' : offerRevisionsNew(invite) > 0 ? 'revisions' : 'offer')">
+                          (click)="openProposalDrawer(invite, offerRevisionsNew(invite) > 0 ? 'revisions' : 'offer')">
                     <span>{{ lang === 'ar' ? 'عرض العرض' : 'View Offer' }}</span>
-                    <span class="pd-tab-badge ms-2" *ngIf="offerUnreadMessages(invite) > 0"
-                          [pTooltip]="lang === 'ar' ? 'رسائل عرض غير مقروءة' : 'Unread offer messages'" tooltipPosition="top"
-                          [attr.aria-label]="lang === 'ar' ? 'رسائل عرض غير مقروءة' : 'Unread offer messages'">{{ offerUnreadMessages(invite) }}</span>
                     <span class="pd-tab-badge pd-tab-badge--revisions ms-2" *ngIf="offerRevisionsNew(invite) > 0"
                           [pTooltip]="lang === 'ar' ? 'تعديلات جديدة على العرض' : 'New offer revisions'" tooltipPosition="top"
                           [attr.aria-label]="lang === 'ar' ? 'تعديلات جديدة على العرض' : 'New offer revisions'"><i class="ki-outline ki-time" aria-hidden="true"></i>{{ offerRevisionsNew(invite) }}</span>
                   </button>
+                  <!-- Same red Offer Messages badge as the projects list; opens the offer's messages. -->
+                  <span class="pd-msg-badge" *ngIf="canViewSubmittedOffer(invite) && offerUnreadMessages(invite) > 0" role="button" tabindex="0"
+                        (click)="openProposalDrawer(invite, 'discussion')" (keydown.enter)="openProposalDrawer(invite, 'discussion')"
+                        [pTooltip]="lang === 'ar' ? 'رسائل عرض غير مقروءة' : 'Unread offer messages'" tooltipPosition="top"
+                        [attr.aria-label]="lang === 'ar' ? 'رسائل عرض غير مقروءة' : 'Unread offer messages'">
+                    <i class="ki-outline ki-messages" aria-hidden="true"></i>{{ offerUnreadMessages(invite) }}
+                  </span>
                 </div>
               </article>
             </div>

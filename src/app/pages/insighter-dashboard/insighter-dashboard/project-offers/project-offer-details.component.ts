@@ -49,6 +49,7 @@ export class ProjectOfferDetailsComponent extends ProjectOffersComponent impleme
           this.handledOfferParam = offerParam;
           this.pendingPrivateOfferUuid = offerParam;
         }
+        if (params.get('messages') === 'unread') this.pendingUnreadMessages = true;
         const matchParam = params.get('match');
         if (matchParam && params.get('revision')) this.notificationMatchUuid = matchParam;
         const tabParam = params.get(this.detailTabParam);
@@ -87,8 +88,10 @@ export class ProjectOfferDetailsComponent extends ProjectOffersComponent impleme
     this.handledOfferParam = null;
     this.pendingOfferSection = null;
     this.pendingPrivateOfferUuid = null;
-    if (this.route.snapshot.queryParamMap.has('offer')) {
-      this.detailsRouter.navigate([], { relativeTo: this.route, queryParams: { offer: null, tab: 'overview' }, queryParamsHandling: 'merge', replaceUrl: true });
+    this.pendingUnreadMessages = false;
+    const query = this.route.snapshot.queryParamMap;
+    if (query.has('offer') || query.has('messages')) {
+      this.detailsRouter.navigate([], { relativeTo: this.route, queryParams: { offer: null, messages: null, tab: 'overview' }, queryParamsHandling: 'merge', replaceUrl: true });
     }
     if (!this.route.snapshot.queryParamMap.has('revision')) return;
     this.detailsRouter.navigate([], { relativeTo: this.route, queryParams: { revision: null }, queryParamsHandling: 'merge', replaceUrl: true });

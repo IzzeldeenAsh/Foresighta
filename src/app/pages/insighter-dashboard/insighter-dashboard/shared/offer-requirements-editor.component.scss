@@ -1446,3 +1446,6 @@ button.sw-tag.is-checked {
 }
 
 .sw-options { grid-template-columns: minmax(0, 1fr); }
+
+// Sub-scope details sit directly under their scope, slightly indented
+.sw-entry--nested { margin-inline-start: 16px; }

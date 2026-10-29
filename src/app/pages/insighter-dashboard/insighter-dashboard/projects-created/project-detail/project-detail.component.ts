@@ -185,6 +185,8 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
   private pendingRevisionMatchUuid: string | null = null;
   /** `?offer=` from a discussion notification, opened once the submitted offers load. */
   private pendingDiscussionOfferUuid: string | null = null;
+  /** `?messages=unread` (the list's red messages badge): open the offer that has unread messages. */
+  private pendingUnreadMessages = false;
   openingFileUuid: string | null = null;
   offerActionUuid: string | null = null;
   offerActionKind: ProjectOfferTechnicalDecisionStatus | 'award' | null = null;
@@ -269,6 +271,10 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
       if (matchUuid && params.get('revision')) {
         this.pendingRevisionMatchUuid = matchUuid;
         this.openPendingRevisionMatch();
+      }
+      if (params.get('messages') === 'unread') {
+        this.pendingUnreadMessages = true;
+        this.openPendingOfferDiscussion();
       }
       const offerUuid = params.get('offer');
       if (offerUuid) {
@@ -850,6 +856,15 @@ export class ProjectDetailComponent extends BaseComponent implements OnInit, OnD
   }
 
   private openPendingOfferDiscussion(): void {
+    if (this.pendingUnreadMessages && this.project && this.invitedInsighters.length) {
+      this.pendingUnreadMessages = false;
+      // Several offers can have unread messages; open the one with the most.
+      const invite = [...this.invitedInsighters]
+        .filter(item => this.offerUnreadMessages(item) > 0)
+        .sort((a, b) => this.offerUnreadMessages(b) - this.offerUnreadMessages(a))[0];
+      if (invite && this.canUsePrivateOfferDiscussion(invite)) this.openProposalDrawer(invite, 'discussion');
+      this.router.navigate([], { relativeTo: this.route, queryParams: { messages: null }, queryParamsHandling: 'merge', replaceUrl: true });
+    }
     const offerUuid = this.pendingDiscussionOfferUuid;
     if (!offerUuid || !this.project) return;
     const invite = this.invitedInsighters.find(item => item.offer?.uuid === offerUuid);

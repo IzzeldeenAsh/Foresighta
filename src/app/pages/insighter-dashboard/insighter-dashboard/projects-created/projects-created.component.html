@@ -152,7 +152,8 @@
               <div class="pc-table__project">
                 <span class="pc-table__project-title">
                   {{ project.title }}
-                  <span class="pc-msg-badge" *ngIf="unreadOfferMessages(project) > 0"
+                  <span class="pc-msg-badge" *ngIf="unreadOfferMessages(project) > 0" role="button" tabindex="0"
+                      (click)="viewUnreadMessages(project, $event)" (keydown.enter)="viewUnreadMessages(project, $event)"
                       [pTooltip]="lang === 'ar' ? 'رسائل عروض غير مقروءة' : 'Unread offer messages'" tooltipPosition="top"
                       [attr.aria-label]="lang === 'ar' ? 'رسائل عروض غير مقروءة' : 'Unread offer messages'">
                   <i class="ki-outline ki-messages" aria-hidden="true"></i>{{ unreadOfferMessages(project) }}
@@ -230,7 +231,8 @@
                    [alt]="lang === 'ar' ? 'أيقونة المشروع' : 'Project icon'">
               <div class="pc-mobile-table__copy">
                 <span class="pc-mobile-table__title">{{ project.title }}
-                  <span class="pc-msg-badge" *ngIf="unreadOfferMessages(project) > 0"
+                  <span class="pc-msg-badge" *ngIf="unreadOfferMessages(project) > 0" role="button" tabindex="0"
+                      (click)="viewUnreadMessages(project, $event)" (keydown.enter)="viewUnreadMessages(project, $event)"
                       [pTooltip]="lang === 'ar' ? 'رسائل عروض غير مقروءة' : 'Unread offer messages'" tooltipPosition="top"
                       [attr.aria-label]="lang === 'ar' ? 'رسائل عروض غير مقروءة' : 'Unread offer messages'">
                   <i class="ki-outline ki-messages" aria-hidden="true"></i>{{ unreadOfferMessages(project) }}
@@ -294,7 +296,8 @@
 
     <div class="pc-card__content">
       <h6 class="pc-card__title" [title]="project.title">{{ project.title }}
-        <span class="pc-msg-badge" *ngIf="unreadOfferMessages(project) > 0"
+        <span class="pc-msg-badge" *ngIf="unreadOfferMessages(project) > 0" role="button" tabindex="0"
+                      (click)="viewUnreadMessages(project, $event)" (keydown.enter)="viewUnreadMessages(project, $event)"
                       [pTooltip]="lang === 'ar' ? 'رسائل عروض غير مقروءة' : 'Unread offer messages'" tooltipPosition="top"
                       [attr.aria-label]="lang === 'ar' ? 'رسائل عروض غير مقروءة' : 'Unread offer messages'">
                   <i class="ki-outline ki-messages" aria-hidden="true"></i>{{ unreadOfferMessages(project) }}

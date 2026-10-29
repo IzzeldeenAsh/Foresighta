@@ -389,6 +389,38 @@
   }
 }
 
+/* Red Offer Messages badge — same look as the projects list (`.pc-msg-badge`). */
+.pd-msg-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  height: 20px;
+  margin-inline-start: 8px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: #dc2626;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+
+  &:hover {
+    background: #b91c1c;
+  }
+
+  &:focus-visible {
+    outline: 2px solid #fca5a5;
+    outline-offset: 2px;
+  }
+
+  i {
+    color: inherit;
+    font-size: 12px;
+  }
+}
+
 .pd-tab-badge {
   display: inline-flex;
   align-items: center;
