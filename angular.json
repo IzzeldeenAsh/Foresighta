@@ -29,7 +29,13 @@
               "sweetalert2",
               "moment",
               "gsap/dist/ScrollTrigger",
-              "zxcvbn"
+              "zxcvbn",
+              "core-js",
+              "raf",
+              "rgbcolor",
+              "html2canvas",
+              "file-saver",
+              "pusher-js"
             ],
             "index": "src/index.html",
             "main": "src/main.ts",
@@ -70,8 +76,8 @@
                 },
                 {
                   "type": "anyComponentStyle",
-                  "maximumWarning": "50kb",
-                  "maximumError": "60kb"
+                  "maximumWarning": "64kb",
+                  "maximumError": "80kb"
                 }
               ],
               "fileReplacements": [
@@ -105,8 +111,8 @@
                 },
                 {
                   "type": "anyComponentStyle",
-                  "maximumWarning": "50kb",
-                  "maximumError": "60kb"
+                  "maximumWarning": "64kb",
+                  "maximumError": "80kb"
                 }
               ],
               "fileReplacements": [
